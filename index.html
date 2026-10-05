@@ -99,8 +99,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791232920",
-  buildTime: "2026-10-05T20:42:00",
+  version: "1.2.1791233194",
+  buildTime: "2026-10-05T20:46:34",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2358,51 +2358,51 @@ window.BooksPage = function(props) {
     };
   }, [speakingChapterIdx, isAudioPaused]);
 
-  // دالة لاختيار وتفضيل صوت أنثى مصرية أو أنثى عربية
+  // دالة لاختيار أفضل صوت أنثوي مصري أو عربي متاح
   var getBestEgyptianFemaleVoice = function() {
     if (!("speechSynthesis" in window)) return null;
     var voices = window.speechSynthesis.getVoices() || [];
-    if (!voices.length) return null;
+    if (!voices || voices.length === 0) return null;
 
-    // 1. البحث عن صوت مصري أنثوي صريح (ar-EG و أنثى)
+    // 1. صوت مصري أنثوي صريح
     var egFemale = voices.find(function(v) {
-      var lang = (v.lang || "").toLowerCase();
-      var name = (v.name || "").toLowerCase();
-      var isEg = lang.indexOf("eg") !== -1 || lang === "ar-eg";
-      var isFemale = name.indexOf("female") !== -1 || name.indexOf("salma") !== -1 || name.indexOf("hoda") !== -1 || name.indexOf("laila") !== -1 || name.indexOf("mariam") !== -1 || name.indexOf("zeina") !== -1;
-      return isEg && isFemale;
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      var isEg = l.indexOf("eg") !== -1;
+      var isFem = n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1;
+      return isEg && isFem;
     });
     if (egFemale) return egFemale;
 
-    // 2. البحث عن أي صوت أنثوي عربي (ar-SA, ar-XA, etc. أنثى)
+    // 2. أي صوت أنثوي عربي
     var arFemale = voices.find(function(v) {
-      var lang = (v.lang || "").toLowerCase();
-      var name = (v.name || "").toLowerCase();
-      var isAr = lang.startsWith("ar") || lang.indexOf("arabic") !== -1;
-      var isFemale = name.indexOf("female") !== -1 || name.indexOf("salma") !== -1 || name.indexOf("hoda") !== -1 || name.indexOf("laila") !== -1 || name.indexOf("mariam") !== -1 || name.indexOf("zeina") !== -1 || name.indexOf("zari") !== -1 || name.indexOf("fatima") !== -1;
-      return isAr && isFemale;
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      var isAr = l.startsWith("ar") || l.indexOf("arabic") !== -1;
+      var isFem = n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1 || n.indexOf("zari") !== -1 || n.indexOf("fatima") !== -1;
+      return isAr && isFem;
     });
     if (arFemale) return arFemale;
 
-    // 3. البحث عن أي صوت مصري عام (ar-EG)
-    var egGeneral = voices.find(function(v) {
-      var lang = (v.lang || "").toLowerCase();
-      return lang.indexOf("eg") !== -1 || lang === "ar-eg";
+    // 3. أي صوت مصري عام
+    var egGen = voices.find(function(v) {
+      return (v.lang || "").toLowerCase().indexOf("eg") !== -1;
     });
-    if (egGeneral) return egGeneral;
+    if (egGen) return egGen;
 
-    // 4. البحث عن أي صوت عربي متاح
-    var arGeneral = voices.find(function(v) {
-      var lang = (v.lang || "").toLowerCase();
-      return lang.startsWith("ar") || lang.indexOf("arabic") !== -1;
+    // 4. أي صوت عربي متاح في النظام
+    var arGen = voices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      return l.startsWith("ar") || l.indexOf("arabic") !== -1;
     });
-    return arGeneral || null;
+    return arGen || null;
   };
 
   // تشغيل الجملة المحددة بمحرك الكلام الصوتي
   var speakChunkAtIndex = function(idx) {
     var p = audioPlayerRef.current;
-    if (!p.isPlaying) return;
+    if (!p.isPlaying || p.isPaused) return;
+
     if (idx < 0 || idx >= p.chunks.length) {
       stopAudioPlayback();
       return;
@@ -2424,20 +2424,40 @@ window.BooksPage = function(props) {
     }
 
     var chunk = p.chunks[idx];
-    var utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = "ar-EG";
-    utterance.rate = p.playbackRate || 1.0;
-    // رفع النبرة (pitch) قليلاً (1.18) لضمان صوت ناعم أنثوي وودود حتى لو كان الصوت الافتراضي حيادياً
-    utterance.pitch = 1.18;
-
-    var bestVoice = getBestEgyptianFemaleVoice();
-    if (bestVoice) {
-      utterance.voice = bestVoice;
-      if (bestVoice.lang) utterance.lang = bestVoice.lang;
+    if (!chunk || !chunk.trim()) {
+      if (idx + 1 < p.chunks.length) {
+        speakChunkAtIndex(idx + 1);
+      } else {
+        stopAudioPlayback();
+      }
+      return;
     }
 
+    var utterance = new SpeechSynthesisUtterance(chunk);
+    utterance.rate = p.playbackRate || 1.0;
+    utterance.pitch = 1.15; // نبرة هادئة ودافئة وأنثوية
+
+    var voice = getBestEgyptianFemaleVoice();
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang || "ar-SA";
+    } else {
+      utterance.lang = "ar-SA";
+    }
+
+    // حفظ المرجع عالمياً لمنع V8 Garbage Collection من قطع الصوت فوراً
+    window._activeTtsUtterance = utterance;
+    p.utterance = utterance;
+
+    // علم لمنع التكرار المزدوج
+    var hasHandledCompletion = false;
+
     utterance.onend = function() {
+      if (hasHandledCompletion) return;
+      hasHandledCompletion = true;
+      window._activeTtsUtterance = null;
       if (!p.isPlaying || p.isPaused) return;
+
       if (p.chunkIdx + 1 < p.chunks.length) {
         speakChunkAtIndex(p.chunkIdx + 1);
       } else {
@@ -2446,40 +2466,39 @@ window.BooksPage = function(props) {
     };
 
     utterance.onerror = function(err) {
-      // إذا كان الإلغاء ناتجاً عن إيقاف مقصود أو تبديل لا نستمر في التخطي السريع
+      if (hasHandledCompletion) return;
+      window._activeTtsUtterance = null;
+      // لا تفعل شيئاً إذا كان الصوت متوقفاً أو تم مقاطعته عمداً
       if (!p.isPlaying || p.isPaused) return;
+
+      // تجاهل أخطاء المقاطعة والإلغاء حتى لا تسبب القفز السريع
       if (err && (err.error === "canceled" || err.error === "interrupted")) {
         return;
       }
-      console.warn("TTS chunk playback notice:", err);
-      // إذا حدث خطأ حقيقي، ننتقل للجملة التالية بتأخير مناسب
-      if (p.chunkIdx + 1 < p.chunks.length) {
-        setTimeout(function() {
-          if (p.isPlaying && !p.isPaused) {
-            speakChunkAtIndex(p.chunkIdx + 1);
-          }
-        }, 300);
-      } else {
-        stopAudioPlayback();
-      }
+
+      hasHandledCompletion = true;
+      console.warn("TTS Error Notice:", err);
+
+      // في حال حدوث خطأ حقيقي ننتقل للجملة التالية بعد ثانية كاملة لمنع الجريان السريع
+      setTimeout(function() {
+        if (p.isPlaying && !p.isPaused && p.chunkIdx + 1 < p.chunks.length) {
+          speakChunkAtIndex(p.chunkIdx + 1);
+        } else {
+          stopAudioPlayback();
+        }
+      }, 1000);
     };
 
-    p.utterance = utterance;
-
-    // منع تجمد محرك الصوت في الخلفية في متصفحات كروم
-    if (!p.keepAliveTimer) {
-      p.keepAliveTimer = setInterval(function() {
-        if (window.speechSynthesis && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }
-      }, 10000);
-    }
-
+    // استئناف محرك الصوت في حال كان معلقاً
     if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
-    window.speechSynthesis.speak(utterance);
+
+    try {
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {
+      console.error("speechSynthesis.speak failed:", e);
+    }
   };
 
   // تشغيل / إيقاف المشغل الصوتي
@@ -3066,17 +3085,10 @@ window.BooksPage = function(props) {
                         )
                       ),
 
-                      // أدوات الجانب الأيسر: إشعار الصوت الأنثوي المصري الموحد وزر الإنهاء
+                      // أدوات الجانب الأيسر: زر الإنهاء
                       React.createElement(
                         "div",
                         { className: "flex items-center gap-2 mr-auto" },
-                        // شارة توضيح الصوت الأنثوي المصري المخصص
-                        React.createElement(
-                          "div",
-                          { className: "flex items-center gap-1.5 bg-pink-950/40 text-pink-300 border border-pink-800/40 px-2.5 py-1 rounded-xl text-[11px] font-medium" },
-                          React.createElement("span", null, "👩🏻"),
-                          React.createElement("span", null, "صوت أنثوي مصري")
-                        ),
                         // زر إنهاء الاستماع
                         isSpeaking && React.createElement(
                           "button",
