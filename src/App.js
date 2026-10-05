@@ -21,18 +21,24 @@ function App() {
     var checkAppUpdate = async function() {
       try {
         var base = window.location.href.split("#")[0].split("?")[0];
-        var response = await fetch(base + "?t=" + Date.now(), { cache: "no-store" });
+        var response = await fetch(base + "?t=" + Date.now(), {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+        });
         if (response.ok) {
           var htmlText = await response.text();
           var match = htmlText.match(/version:\s*"([^"]+)"/);
+          var bTimeMatch = htmlText.match(/buildTime:\s*"([^"]+)"/);
           if (match && match[1] && match[1] !== cfg.version) {
+            setHasUpdateAvailable(true);
+          } else if (bTimeMatch && bTimeMatch[1] && bTimeMatch[1] !== cfg.buildTime) {
             setHasUpdateAvailable(true);
           }
         }
       } catch (e) {}
     };
 
-    var interval = setInterval(checkAppUpdate, 15000);
+    var interval = setInterval(checkAppUpdate, 5000);
     checkAppUpdate();
 
     var onFocus = function() { checkAppUpdate(); };

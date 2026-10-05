@@ -39,6 +39,24 @@ window.Header = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-2" },
+        // زر تحديث فوري للمنصة وإفراغ الذاكرة
+        React.createElement(
+          "button",
+          {
+            onClick: function() {
+              if ("caches" in window) {
+                caches.keys().then(function(names) {
+                  for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+                });
+              }
+              window.location.reload(true);
+            },
+            title: "تحديث فوري وإفراغ الذاكرة المؤقتة",
+            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-all text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-95"
+          },
+          React.createElement("span", null, "🔄"),
+          React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
+        ),
         // تبديل المظهر
         React.createElement(
           "button",
