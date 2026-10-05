@@ -199,6 +199,47 @@ window.BooksPage = function(props) {
     };
   }, [speakingChapterIdx, isAudioPaused]);
 
+  // دالة لاختيار وتفضيل صوت أنثى مصرية أو أنثى عربية
+  var getBestEgyptianFemaleVoice = function() {
+    if (!("speechSynthesis" in window)) return null;
+    var voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+
+    // 1. البحث عن صوت مصري أنثوي صريح (ar-EG و أنثى)
+    var egFemale = voices.find(function(v) {
+      var lang = (v.lang || "").toLowerCase();
+      var name = (v.name || "").toLowerCase();
+      var isEg = lang.indexOf("eg") !== -1 || lang === "ar-eg";
+      var isFemale = name.indexOf("female") !== -1 || name.indexOf("salma") !== -1 || name.indexOf("hoda") !== -1 || name.indexOf("laila") !== -1 || name.indexOf("mariam") !== -1 || name.indexOf("zeina") !== -1;
+      return isEg && isFemale;
+    });
+    if (egFemale) return egFemale;
+
+    // 2. البحث عن أي صوت أنثوي عربي (ar-SA, ar-XA, etc. أنثى)
+    var arFemale = voices.find(function(v) {
+      var lang = (v.lang || "").toLowerCase();
+      var name = (v.name || "").toLowerCase();
+      var isAr = lang.startsWith("ar") || lang.indexOf("arabic") !== -1;
+      var isFemale = name.indexOf("female") !== -1 || name.indexOf("salma") !== -1 || name.indexOf("hoda") !== -1 || name.indexOf("laila") !== -1 || name.indexOf("mariam") !== -1 || name.indexOf("zeina") !== -1 || name.indexOf("zari") !== -1 || name.indexOf("fatima") !== -1;
+      return isAr && isFemale;
+    });
+    if (arFemale) return arFemale;
+
+    // 3. البحث عن أي صوت مصري عام (ar-EG)
+    var egGeneral = voices.find(function(v) {
+      var lang = (v.lang || "").toLowerCase();
+      return lang.indexOf("eg") !== -1 || lang === "ar-eg";
+    });
+    if (egGeneral) return egGeneral;
+
+    // 4. البحث عن أي صوت عربي متاح
+    var arGeneral = voices.find(function(v) {
+      var lang = (v.lang || "").toLowerCase();
+      return lang.startsWith("ar") || lang.indexOf("arabic") !== -1;
+    });
+    return arGeneral || null;
+  };
+
   // تشغيل الجملة المحددة بمحرك الكلام الصوتي
   var speakChunkAtIndex = function(idx) {
     var p = audioPlayerRef.current;
@@ -223,30 +264,17 @@ window.BooksPage = function(props) {
       return;
     }
 
-    try {
-      window.speechSynthesis.cancel();
-    } catch (e) {}
-
     var chunk = p.chunks[idx];
     var utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.lang = "ar-SA";
+    utterance.lang = "ar-EG";
     utterance.rate = p.playbackRate || 1.0;
-    utterance.pitch = 1.0;
+    // رفع النبرة (pitch) قليلاً (1.18) لضمان صوت ناعم أنثوي وودود حتى لو كان الصوت الافتراضي حيادياً
+    utterance.pitch = 1.18;
 
-    // استخدام الصوت المختار من المستخدم (ذكر / أنثى) أو أفضل صوت متاح
-    var voices = window.speechSynthesis.getVoices() || [];
-    var voiceToUse = null;
-    if (selectedVoiceUri) {
-      voiceToUse = voices.find(function(v) { return (v.voiceURI || v.name) === selectedVoiceUri; });
-    }
-    if (!voiceToUse) {
-      voiceToUse = voices.find(function(v) {
-        var l = (v.lang || "").toLowerCase();
-        return l.startsWith("ar") || l.indexOf("arabic") !== -1;
-      });
-    }
-    if (voiceToUse) {
-      utterance.voice = voiceToUse;
+    var bestVoice = getBestEgyptianFemaleVoice();
+    if (bestVoice) {
+      utterance.voice = bestVoice;
+      if (bestVoice.lang) utterance.lang = bestVoice.lang;
     }
 
     utterance.onend = function() {
@@ -259,9 +287,19 @@ window.BooksPage = function(props) {
     };
 
     utterance.onerror = function(err) {
-      if (!p.isPlaying) return;
+      // إذا كان الإلغاء ناتجاً عن إيقاف مقصود أو تبديل لا نستمر في التخطي السريع
+      if (!p.isPlaying || p.isPaused) return;
+      if (err && (err.error === "canceled" || err.error === "interrupted")) {
+        return;
+      }
+      console.warn("TTS chunk playback notice:", err);
+      // إذا حدث خطأ حقيقي، ننتقل للجملة التالية بتأخير مناسب
       if (p.chunkIdx + 1 < p.chunks.length) {
-        setTimeout(function() { speakChunkAtIndex(p.chunkIdx + 1); }, 80);
+        setTimeout(function() {
+          if (p.isPlaying && !p.isPaused) {
+            speakChunkAtIndex(p.chunkIdx + 1);
+          }
+        }, 300);
       } else {
         stopAudioPlayback();
       }
@@ -269,7 +307,7 @@ window.BooksPage = function(props) {
 
     p.utterance = utterance;
 
-    // منع تجمد الصوت في الخلفية
+    // منع تجمد محرك الصوت في الخلفية في متصفحات كروم
     if (!p.keepAliveTimer) {
       p.keepAliveTimer = setInterval(function() {
         if (window.speechSynthesis && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
@@ -412,13 +450,14 @@ window.BooksPage = function(props) {
       var prompt = "أنت باحث ومتخصص في علوم المشورة والنمو الإنساني.\n" +
         "قم بإعداد دراسة وتلخيص مركز ومكثف لـ: '" + chName + "' من كتاب: '" + activeBook.title + "' للمؤلف '" + (activeBook.author || "") + "'.\n" +
         "شروط هامة جداً:\n" +
-        "- اكتب بلغة عربية فصيحة سلسة وواضحة، بأسلوب علمي وإنساني طبيعي.\n" +
+        "- اكتب الملخص المكتوب (writtenSummary) بلغة عربية فصيحة سلسة وواضحة، بأسلوب علمي وإنساني طبيعي.\n" +
+        "- اكتب السيناريو الصوتي (audioScript) بلهجة مصرية عامية راقية وودودة وهادئة (مثل بودكاست مصري مشوق يقرأ بصوت متكلمة مصرية تشرح لصديق)، يسهل جداً على الأذن سماعه وفهمه والاستمتاع به.\n" +
         "- ادخل مباشرة في جوهر الأفكار والتحليل النفسي والروحي والتطبيقات العملية دون أي مقدمات نمطية أو ترحيبات سطحية.\n" +
         "- لا تذكر نهائياً عبارات مثل (أثناء القيادة، السيارة، الذكاء الاصطناعي، مرحباً بك، بصفتي مساعدك).\n" +
         "المطلوب إرجاع صيغة JSON نظيفة:\n" +
         "{\n" +
-        '  "writtenSummary": "أهم المفاهيم الجوهرية والنقاط العملية المشروحة بوضوح للقراءة السريعة والمذاكرة",\n' +
-        '  "audioScript": "نص مسموع شائق يقرأ كأنه إلقاء صوتي هادئ ومركز، يدخل في صلب الأفكار مباشرة ويشرح المفهوم بوضوح وعمق في 3-5 دقائق"\n' +
+        '  "writtenSummary": "أهم المفاهيم الجوهرية والنقاط العملية المشروحة بوضوح للقراءة السريعة والمذاكرة بالفصحى المبسطة",\n' +
+        '  "audioScript": "نص صوتي مشوق بالعامية المصرية الهادئة والراقية، يدخل في صلب الموضوع مباشرة ويشرح الأفكار بعمق وبساطة تامة كأنها جلسة ودية ممتعة في 3-5 دقائق"\n' +
         "}\n" +
         "أرجع الـ JSON فقط بدون علامات ماركداون إضافية وبدون أي نصوص خارجية.";
       
@@ -844,28 +883,16 @@ window.BooksPage = function(props) {
                         )
                       ),
 
-                      // أدوات الجانب الأيسر: اختيار صوت المتكلم وزر الإنهاء
+                      // أدوات الجانب الأيسر: إشعار الصوت الأنثوي المصري الموحد وزر الإنهاء
                       React.createElement(
                         "div",
                         { className: "flex items-center gap-2 mr-auto" },
-                        // قائمة اختيار الصوت (ذكر / أنثى)
-                        availableVoices.length > 1 && React.createElement(
-                          "select",
-                          {
-                            value: selectedVoiceUri,
-                            onChange: function(e) { handleVoiceChange(e.target.value); },
-                            className: "bg-slate-800 border border-slate-700 text-slate-200 text-[11px] font-medium rounded-lg px-2 py-1 focus:ring-1 focus:ring-emerald-500 outline-none"
-                          },
-                          availableVoices.map(function(v, i) {
-                            var vName = v.name || ("صوت " + (i + 1));
-                            // تبسيط وتوضيح اسم الصوت
-                            var label = vName.indexOf("Female") !== -1 || vName.indexOf("Salma") !== -1 || vName.indexOf("Laila") !== -1 || vName.indexOf("Zari") !== -1 || vName.indexOf("Zeina") !== -1
-                              ? "صوت أنثوي (" + (i + 1) + ")"
-                              : vName.indexOf("Male") !== -1 || vName.indexOf("Shakir") !== -1 || vName.indexOf("Tarik") !== -1 || vName.indexOf("Naayf") !== -1
-                              ? "صوت رجالي (" + (i + 1) + ")"
-                              : ("قارئ عربي " + (i + 1));
-                            return React.createElement("option", { key: v.voiceURI || v.name || i, value: v.voiceURI || v.name }, label);
-                          })
+                        // شارة توضيح الصوت الأنثوي المصري المخصص
+                        React.createElement(
+                          "div",
+                          { className: "flex items-center gap-1.5 bg-pink-950/40 text-pink-300 border border-pink-800/40 px-2.5 py-1 rounded-xl text-[11px] font-medium" },
+                          React.createElement("span", null, "👩🏻"),
+                          React.createElement("span", null, "صوت أنثوي مصري")
                         ),
                         // زر إنهاء الاستماع
                         isSpeaking && React.createElement(
