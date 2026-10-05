@@ -1,0 +1,5 @@
+atomic-sync.ps1
+sync-github.ps1
+push-changes.ps1
+check-remote.ps1
+.env

@@ -1,0 +1,3690 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منصة دراسة المشورة والتعلم الذكي</title>
+  <meta name="description" content="منصة دراسة المشورة الشخصية والتعلم الذكي">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <!-- PWA Manifest & Mobile App Capabilities -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f172a'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌿%3C/text%3E%3C/svg%3E">
+
+  <!-- الخطوط العربية الراقية -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- تنسيقات التصميم السريع -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            cairo: ['Cairo', 'sans-serif'],
+            tajawal: ['Tajawal', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- مكتبات الواجهة الأساسية -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- مكتبات فايربيز السحابية المستقرة -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
+  <style>
+    html, body {
+      font-family: 'Cairo', 'Tajawal', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* شريط التمرير الواضح لسهولة السحب بالماوس أو اللمس */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(226, 232, 240, 0.6);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: rgba(30, 41, 59, 0.7);
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* خطوط واضحة وقابلة للقراءة على الهاتف */
+    @media (max-width: 640px) {
+      body {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen selection:bg-slate-800 selection:text-white">
+  <div id="root"></div>
+  <script>
+
+// Module: config/appConfig.js
+// إعدادات التطبيق وتخزين المفاتيح
+window.APP_CONFIG = {
+  appName: "منصة دراسة المشورة والتعلم الذكي",
+  version: "1.2.1791226853",
+  buildTime: "2026-10-05T19:00:54",
+  // بوابة رفع الملفات التلقائية إلى جوجل درايف
+  driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
+  // مفاتيح التخزين المحلي الآمن
+  storageKeys: {
+    apiKey: "counsel_ai_api_key",
+    theme: "counsel_theme",
+    lectures: "counsel_lectures_data",
+    books: "counsel_books_data",
+    tasks: "counsel_tasks_data",
+    playbackPositions: "counsel_playback_positions",
+    bookPages: "counsel_book_pages"
+  }
+};
+
+// Module: config/firebase.js
+// تهيئة وإعداد فايربيز وقاعدة البيانات السحابية لمشروع دراسة المشورة
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8",
+  authDomain: "counseling-study-app.firebaseapp.com",
+  projectId: "counseling-study-app",
+  storageBucket: "counseling-study-app.firebasestorage.app",
+  messagingSenderId: "423516287917",
+  appId: "1:423516287917:web:8e9067abd3b71f900b2724"
+};
+
+(function() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+    }
+    window.db = firebase.firestore();
+    
+    // تفعيل التخزين المؤقت المحلي للعمل دون اتصال
+    window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+      console.warn("Firebase persistence notice:", err.code);
+    });
+    
+    console.log("Firebase connected successfully to counseling-study-app");
+  } catch (e) {
+    console.error("Firebase init error:", e);
+  }
+})();
+
+// Module: services/cloudSync.js
+// خدمة المزامنة السحابية اللحظية مع فايربيز
+window.CloudSyncService = {
+  // الاشتراك اللحظي في المحاضرات
+  subscribeLectures: function(onUpdate) {
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("lectures").orderBy("date", "desc").onSnapshot(function(snapshot) {
+        var list = [];
+        snapshot.forEach(function(doc) {
+          list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        onUpdate(list);
+      }, function(err) {
+        console.warn("Firestore lectures read fallback to local:", err);
+      });
+    } catch (e) {
+      return function() {};
+    }
+  },
+
+  // حفظ أو تعديل محاضرة سحابياً
+  saveLecture: function(lecture) {
+    if (!window.db) return Promise.resolve();
+    var docId = lecture.id || ("lec-" + Date.now());
+    var data = Object.assign({}, lecture, {
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return window.db.collection("lectures").doc(docId).set(data, { merge: true });
+  },
+
+  // حفظ موضع الاستماع فقط (ثانية التوقف) لتوفير الباندويث
+  updatePlaybackPosition: function(lectureId, seconds) {
+    if (!window.db || !lectureId) return Promise.resolve();
+    return window.db.collection("lectures").doc(lectureId).set({
+      lastPosition: seconds,
+      lastPlayedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  },
+
+  // الاشتراك اللحظي في الكتب
+  subscribeBooks: function(onUpdate) {
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("books").onSnapshot(function(snapshot) {
+        var list = [];
+        snapshot.forEach(function(doc) {
+          list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        onUpdate(list);
+      });
+    } catch (e) {
+      return function() {};
+    }
+  },
+
+  // حفظ أو تعديل كتاب
+  saveBook: function(book) {
+    if (!window.db) return Promise.resolve();
+    var docId = book.id || ("book-" + Date.now());
+    return window.db.collection("books").doc(docId).set(book, { merge: true });
+  },
+
+  // حفظ موضع الصفحة فقط في الكتاب
+  updateBookPage: function(bookId, page) {
+    if (!window.db || !bookId) return Promise.resolve();
+    return window.db.collection("books").doc(bookId).set({
+      currentPage: page
+    }, { merge: true });
+  },
+
+  // الاشتراك في الملاحظات الدراسية
+  subscribeNotes: function(onUpdate) {
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("personal_notes").orderBy("date", "desc").onSnapshot(function(snapshot) {
+        var list = [];
+        snapshot.forEach(function(doc) {
+          list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        onUpdate(list);
+      });
+    } catch (e) {
+      return function() {};
+    }
+  },
+
+  saveNote: function(note) {
+    if (!window.db) return Promise.resolve();
+    var docId = note.id || ("note-" + Date.now());
+    return window.db.collection("personal_notes").doc(docId).set(note, { merge: true });
+  }
+};
+
+// Module: services/geminiService.js
+// خدمة استدعاء الذكاء الاصطناعي للتلخيص والبودكاست والمساعد الدراسي
+window.GeminiAIService = {
+  // مفتاح تخزين السحابة
+  storageKey: "counsel_ai_api_key",
+
+  // استخراج المفتاح من فايربيز أولاً أو التخزين المحلي الآمن
+  getApiKey: async function() {
+    try {
+      if (window.db) {
+        var doc = await window.db.collection("settings").doc("ai_config").get();
+        if (doc.exists && doc.data().apiKey) {
+          return doc.data().apiKey.trim();
+        }
+      }
+    } catch (e) {}
+    return window.APP_UTILS.getLocal(window.GeminiAIService.storageKey, "");
+  },
+
+  // حفظ المفتاح في السحابة ومحلياً
+  saveApiKey: async function(key) {
+    if (window.db) {
+      await window.db.collection("settings").doc("ai_config").set({
+        apiKey: key.trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+    window.APP_UTILS.setLocal(window.GeminiAIService.storageKey, key.trim());
+  },
+
+  // دالة الاستدعاء المباشر لنماذج جيميني مع التبديل التلقائي للنماذج المتاحة
+  callGemini: async function(prompt, systemInstruction) {
+    var key = await window.GeminiAIService.getApiKey();
+    if (!key) {
+      throw new Error("يرجى إدخال مفتاح واجهة برمجة التطبيقات في صفحة الإعدادات لحفظه سحابياً.");
+    }
+
+    var defaultInstruction = "أنت مساعد دراسي متخصص في دراسة ومناهج المشورة الإنسانية والنفسية. لغتك عربية نقية وواضحة، تقدم تحليلات عميقة وشروحات دقيقة تخدم الدارس وتساعده على الاستيعاب.";
+    var instruction = systemInstruction || defaultInstruction;
+
+    var candidateModels = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash-8b",
+      "gemini-pro"
+    ];
+
+    var body = {
+      systemInstruction: {
+        parts: [{ text: instruction }]
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2048
+      }
+    };
+
+    var lastErrorMessage = "";
+
+    for (var m = 0; m < candidateModels.length; m++) {
+      var modelName = candidateModels[m];
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+
+      try {
+        var response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+
+        if (response.ok) {
+          var data = await response.json();
+          if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            return data.candidates[0].content.parts[0].text;
+          }
+        } else {
+          var errData = await response.json().catch(function() { return {}; });
+          lastErrorMessage = (errData.error && errData.error.message) || ("فشل الاستدعاء للنموذج " + modelName);
+        }
+      } catch (networkErr) {
+        lastErrorMessage = networkErr.message;
+      }
+    }
+
+    throw new Error(lastErrorMessage || "تعذر العثور على نموذج متوافق مع هذا المفتاح");
+  },
+
+  // توليد حوار البودكاست التفاعلي بين شخصين
+  generatePodcastDialogue: async function(lectureTitle, notesOrContent) {
+    var prompt = "قم بإنشاء سيناريو حواري بودكاست تفاعلي ممتع بين شخصين (المحاور الأول: فادي، والمحاورة الثانية: سارة) لمناقشة وشرح موضوع: '" + lectureTitle + "'.\n" +
+      "المحتوى والنقاط الأساسية:\n" + (notesOrContent || "أسس الفهم الإنساني والمشورة") + "\n\n" +
+      "المطلوب: أخرج الحوار في شكل متبادل بين فادي وسارة بلغة عربية سلسلة وهادئة مناسبة للاستماع في السيارة أثناء القيادة، يطرح فادي الأسئلة وتجيب سارة بشرح أعمق وتطبيقات عملية.";
+    
+    return await window.GeminiAIService.callGemini(prompt);
+  },
+
+  // توليد كبسولة مراجعة الامتحان
+  generateExamSummary: async function(title, content) {
+    var prompt = "استخرج كبسولة مراجعة سريعة ومركزة ليلة الامتحان للموضوع التالي: '" + title + "'.\n" +
+      "المحتوى:\n" + (content || "") + "\n\n" +
+      "المطلوب:\n" +
+      "1. المفاهيم والتعريفات الجوهرية.\n" +
+      "2. الفروق الدقيقة والمصطلحات الأساسية.\n" +
+      "3. أسئلة متوقعة وأجوبتها النموذجية المختصرة.";
+    
+    return await window.GeminiAIService.callGemini(prompt);
+  }
+};
+
+// Module: services/notificationService.js
+// خدمة الإشعارات السحابية وإشعارات المتصفح
+window.NotificationService = {
+  // طلب تفعيل الإشعارات من المستخدم
+  requestPermission: async function() {
+    if (!("Notification" in window)) {
+      alert("متصفحك لا يدعم الإشعارات المباشرة.");
+      return false;
+    }
+    var permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      new Notification("منصة دراسة المشورة", {
+        body: "تم تفعيل الإشعارات بنجاح! ستصلك تنبيهات فور نزول أي محاضرة جديدة.",
+        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f172a'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌿%3C/text%3E%3C/svg%3E"
+      });
+      return true;
+    }
+    return false;
+  },
+
+  // إرسال إشعار سحابي إلى فايربيز ليظهر لجميع الدارسين
+  broadcastNewLectureNotification: async function(lecture) {
+    if (!window.db) return;
+    try {
+      var notifData = {
+        title: "🎙️ محاضرة جديدة: " + lecture.title,
+        body: "ألقاها: " + lecture.speaker + " (تاريخ: " + lecture.date + ")",
+        lectureId: lecture.id,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not broadcast notification:", e);
+    }
+  },
+
+  // الاستماع للإشعارات الجديدة وعرضها للمستخدمين
+  subscribeNotifications: function(onNewNotification) {
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("notifications")
+        .orderBy("createdAt", "desc")
+        .limit(10)
+        .onSnapshot(function(snapshot) {
+          var list = [];
+          snapshot.forEach(function(doc) {
+            list.push(Object.assign({ id: doc.id }, doc.data()));
+          });
+          onNewNotification(list);
+        });
+    } catch (e) {
+      return function() {};
+    }
+  }
+};
+
+// Module: services/errorReportService.js
+// خدمة التقاط أخطاء النظام السحابية
+window.ErrorReportService = {
+  lastError: null,
+
+  initGlobalErrorHandler: function() {
+    window.onerror = function(message, source, lineno, colno, error) {
+      window.ErrorReportService.lastError = {
+        message: message,
+        source: source,
+        line: lineno,
+        col: colno,
+        stack: error ? error.stack : "",
+        time: new Date().toISOString()
+      };
+      console.warn("Global error captured:", window.ErrorReportService.lastError);
+    };
+
+    window.addEventListener("unhandledrejection", function(event) {
+      window.ErrorReportService.lastError = {
+        message: event.reason ? (event.reason.message || event.reason) : "Unhandled Promise Rejection",
+        stack: event.reason && event.reason.stack ? event.reason.stack : "",
+        time: new Date().toISOString()
+      };
+      console.warn("Unhandled promise rejection captured:", window.ErrorReportService.lastError);
+    });
+  },
+
+  // إرسال تقرير الخطأ إلى فايربيز
+  sendReport: async function(reportData) {
+    if (!window.db) throw new Error("قاعدة البيانات غير متصلة");
+    var docId = "err_" + Date.now();
+    var payload = Object.assign({}, reportData, {
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status: "open" // 'open' or 'resolved'
+    });
+    return window.db.collection("error_reports").doc(docId).set(payload);
+  }
+};
+
+window.ErrorReportService.initGlobalErrorHandler();
+
+// Module: utils/helpers.js
+// دوال مساعدة عامة للتعامل مع التخزين المحلي، روابط جوجل درايف، وتنسيق الوقت
+window.APP_UTILS = {
+  // استخراج المعرف المباشر من رابط جوجل درايف
+  extractDriveId: function(url) {
+    if (!url) return "";
+    var match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) return match[1];
+    match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) return match[1];
+    return url.trim();
+  },
+
+  // تحويل رابط جوجل درايف إلى رابط تشغيل وتضمين مباشر
+  getDrivePreviewUrl: function(driveIdOrUrl) {
+    var id = window.APP_UTILS.extractDriveId(driveIdOrUrl);
+    if (!id) return "";
+    return "https://drive.google.com/file/d/" + id + "/preview";
+  },
+
+  // تنسيق الثواني إلى دقائق وثوانٍ
+  formatDuration: function(seconds) {
+    if (!seconds || isNaN(seconds)) return "00:00";
+    var m = Math.floor(seconds / 60);
+    var s = Math.floor(seconds % 60);
+    return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+  },
+
+  // حفظ واسترجاع من التخزين المحلي
+  getLocal: function(key, defaultValue) {
+    try {
+      var item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (e) {
+      return defaultValue;
+    }
+  },
+
+  setLocal: function(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {}
+  }
+};
+
+// Module: utils/embedHelpers.js
+// دالة استخراج وتضمين يوتيوب أو جوجل درايف
+window.APP_UTILS.getMediaEmbedUrl = function(url) {
+  if (!url) return "";
+  // فحص يوتيوب
+  var ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return "https://www.youtube.com/embed/" + ytMatch[1];
+  }
+  // فحص جوجل درايف
+  var driveId = window.APP_UTILS.extractDriveId(url);
+  if (driveId) {
+    return "https://drive.google.com/file/d/" + driveId + "/preview";
+  }
+  return url;
+};
+
+// Module: components/Sidebar.js
+// القائمة الجانبية المركزة مع قسم بلاغات الأعطال للمسؤول
+window.Sidebar = function(props) {
+  var activeTab = props.activeTab;
+  var onTabChange = props.onTabChange;
+  var currentUser = props.currentUser;
+  var onSwitchRole = props.onSwitchRole;
+  var onOpenAuth = props.onOpenAuth;
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+
+  var menuItems = [
+    { id: "lectures", label: "المحاضرات الدراسية", icon: "🎙️" },
+    { id: "books", label: "المراجع والكتب", icon: "📚" },
+    { id: "curriculum", label: "المنهج الدراسي والتقارير", icon: "📑" },
+    { id: "notes", label: "ملاحظاتي الدراسية", icon: "📝" }
+  ];
+
+  if (currentUser.role === "admin") {
+    menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
+    menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
+  }
+
+  menuItems.push({ id: "settings", label: "الإعدادات العامة", icon: "⚙️" });
+
+  return React.createElement(
+    React.Fragment,
+    null,
+    isOpen && React.createElement("div", {
+      onClick: onClose,
+      className: "fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity cursor-pointer"
+    }),
+
+    React.createElement(
+      "aside",
+      {
+        className: "fixed top-0 bottom-0 right-0 z-50 w-72 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out " +
+          (isOpen ? "translate-x-0 shadow-2xl" : "translate-x-full")
+      },
+      React.createElement(
+        "div",
+        { className: "p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-3" },
+          React.createElement("div", { className: "w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-lg shadow-sm" }, "🌿"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h2", { className: "text-base font-bold text-slate-900 dark:text-white" }, "دراسة المشورة"),
+            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "منظومة متابعة الدارسين")
+          )
+        ),
+        React.createElement("button", {
+          onClick: onClose,
+          title: "إخفاء القائمة الجانبية لتوسيع الشاشة",
+          className: "text-slate-400 hover:text-slate-700 dark:hover:text-white p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1 text-xs font-semibold"
+        },
+          React.createElement("span", { className: "text-base" }, "✕"),
+          React.createElement("span", { className: "hidden sm:inline text-[11px]" }, "إخفاء")
+        )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "p-4 mx-4 my-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("span", { className: "text-xs text-slate-500 block" }, "الحساب الحالي:"),
+            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, currentUser.fullName || "الأدمن")
+          ),
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (currentUser.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700") },
+            currentUser.role === "admin" ? "مسؤول" : "دارس"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 pt-1" },
+          React.createElement(
+            "button",
+            {
+              onClick: onOpenAuth,
+              className: "flex-1 text-xs py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 text-center"
+            },
+            "تبديل الحساب"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "space-y-2 pt-1 border-t border-slate-200/50 dark:border-slate-700/50" },
+          // زر تفعيل التنبيهات البارز
+          React.createElement(
+            "button",
+            {
+              onClick: props.onToggleNotification,
+              className: "w-full text-xs py-2 px-3 rounded-xl border font-bold flex items-center justify-between transition-all " +
+                (props.hasNotificationPermission
+                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
+                  : "bg-emerald-600 hover:bg-emerald-700 border-emerald-600 text-white shadow-sm")
+            },
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-base" }, "🔔"),
+              React.createElement("span", null, props.hasNotificationPermission ? "الإشعارات مفعلة بنجاح" : "اضغط هنا لتفعيل التنبيهات")
+            ),
+            React.createElement("span", { className: "text-[11px] opacity-75" }, props.hasNotificationPermission ? "✓" : "👈")
+          ),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-2" },
+            // زر تثبيت التطبيق
+            React.createElement(
+              "button",
+              {
+                onClick: props.onOpenInstallPrompt,
+                className: "text-[11px] py-1.5 px-2 rounded-xl bg-slate-800 dark:bg-slate-200 border border-slate-700 text-white dark:text-slate-900 font-bold flex items-center justify-center gap-1.5 shadow-2xs"
+              },
+              React.createElement("span", null, "📲"),
+              React.createElement("span", null, "تثبيت التطبيق")
+            ),
+            // زر إبلاغ عن عطل
+            React.createElement(
+              "button",
+              {
+                onClick: function() {
+                  if (props.onOpenErrorReport) props.onOpenErrorReport();
+                  if (onClose) onClose();
+                },
+                className: "text-[11px] py-1.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 font-bold flex items-center justify-center gap-1.5"
+              },
+              React.createElement("span", null, "🚨"),
+              React.createElement("span", null, "إبلاغ عن عطل")
+            )
+          )
+        )
+      ),
+
+      React.createElement(
+        "nav",
+        { className: "flex-1 px-3 py-2 space-y-1 overflow-y-auto" },
+        menuItems.map(function(item) {
+          var isActive = activeTab === item.id;
+          return React.createElement(
+            "button",
+            {
+              key: item.id,
+              onClick: function() {
+                onTabChange(item.id);
+                onClose();
+              },
+              className: "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-right " +
+                (isActive
+                  ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60")
+            },
+            React.createElement("span", { className: "text-lg" }, item.icon),
+            React.createElement("span", null, item.label)
+          );
+        })
+      ),
+
+      React.createElement(
+        "div",
+        { className: "p-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-400" },
+        "منصة المشورة • دراسة شخصية مستقلة للدارسين"
+      )
+    )
+  );
+};
+
+// Module: components/Header.js
+// شريط الترويسة العلوي مع زر الإبلاغ عن عطل السريع
+window.Header = function(props) {
+  var onOpenSidebar = props.onOpenSidebar;
+  var theme = props.theme;
+  var onToggleTheme = props.onToggleTheme;
+  var currentUser = props.currentUser;
+  var onOpenErrorReport = props.onOpenErrorReport;
+
+  return React.createElement(
+    "header",
+    {
+      className: "sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors shadow-sm"
+    },
+    React.createElement(
+      "div",
+      { className: "px-4 md:px-8 h-16 flex items-center justify-between" },
+
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-3" },
+        React.createElement(
+          "button",
+          {
+            onClick: onOpenSidebar,
+            title: props.isSidebarOpen ? "إغفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
+            className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700 shadow-2xs active:scale-95"
+          },
+          React.createElement("span", { className: "text-base" }, "☰"),
+          React.createElement("span", { className: "text-[11px]" }, props.isSidebarOpen ? "إخفاء القائمة" : "القائمة")
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white" }, "منصة متابعة المشورة"),
+          React.createElement("span", { className: "hidden sm:inline-block text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-0.5 rounded-full font-medium" }, "دفعة المشورة")
+        )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-2" },
+        // تبديل المظهر
+        React.createElement(
+          "button",
+          {
+            onClick: onToggleTheme,
+            title: "تبديل المظهر",
+            className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
+          },
+          theme === "dark" ? "☀️" : "🌙"
+        )
+      )
+    )
+  );
+};
+
+// Module: components/BottomNav.js
+// شريط التنقل السفلي المخصص لشاشات الهواتف المحمولة
+window.BottomNav = function(props) {
+  var activeTab = props.activeTab;
+  var onTabChange = props.onTabChange;
+
+  var items = [
+    { id: "lectures", label: "المحاضرات", icon: "🎙️" },
+    { id: "books", label: "المراجع", icon: "📚" },
+    { id: "curriculum", label: "المنهج", icon: "📑" },
+    { id: "notes", label: "ملاحظاتي", icon: "📝" },
+    { id: "menu", label: "القائمة", icon: "☰" }
+  ];
+
+  return React.createElement(
+    "nav",
+    {
+      className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 shadow-lg px-2 py-1.5 flex items-center justify-around"
+    },
+    items.map(function(item) {
+      var isActive = activeTab === item.id;
+      return React.createElement(
+        "button",
+        {
+          key: item.id,
+          onClick: function() {
+            if (item.id === "menu") {
+              if (props.onToggleSidebar) props.onToggleSidebar();
+            } else {
+              onTabChange(item.id);
+            }
+          },
+          className: "flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all " +
+            (isActive
+              ? "text-emerald-600 dark:text-emerald-400 font-bold scale-105"
+              : "text-slate-500 dark:text-slate-400 font-medium")
+        },
+        React.createElement("span", { className: "text-lg leading-none mb-1" }, item.icon),
+        React.createElement("span", { className: "text-[11px]" }, item.label)
+      );
+    })
+  );
+};
+
+// Module: components/AuthModal.js
+// نافذة تسجيل الدخول وطلب الانضمام للمنصة
+window.AuthModal = function(props) {
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+  var onLoginSuccess = props.onLoginSuccess;
+
+  var [isLogin, setIsLogin] = React.useState(true);
+  var [email, setEmail] = React.useState("");
+  var [phone, setPhone] = React.useState("");
+  var [fullName, setFullName] = React.useState("");
+  var [instituteMessage, setInstituteMessage] = React.useState("");
+  var [isLoading, setIsLoading] = React.useState(false);
+  var [pendingNotice, setPendingNotice] = React.useState(false);
+  var [errorMsg, setErrorMsg] = React.useState("");
+
+  if (!isOpen) return null;
+
+  var handleRegisterRequest = async function(e) {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة");
+
+      // فحص الحساب المسؤول الافتراضي
+      if (email.trim().toLowerCase().includes("admin") || email.trim().toLowerCase().includes("nader") || phone.trim() === "01275571569") {
+        onLoginSuccess({
+          fullName: "الأدمن المسؤول",
+          email: email.trim(),
+          phone: phone.trim(),
+          role: "admin",
+          status: "approved"
+        });
+        onClose();
+        return;
+      }
+
+      var userDocId = "user_" + phone.trim().replace(/\D/g, "");
+      var userData = {
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        instituteMessage: instituteMessage.trim(),
+        role: "student",
+        status: "pending", // قيد انتظار موافقة الأدمن
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
+      setPendingNotice(true);
+    } catch (err) {
+      setErrorMsg(err.message || "حدث خطأ أثناء إرسال الطلب");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  var handleLogin = async function(e) {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      // فحص إذا كان حساب الأدمن
+      if (email.trim().toLowerCase().includes("admin") || email.trim().toLowerCase().includes("nader") || phone.trim() === "01275571569") {
+        onLoginSuccess({
+          fullName: "الأدمن المسؤول",
+          email: email.trim(),
+          phone: phone.trim(),
+          role: "admin",
+          status: "approved"
+        });
+        onClose();
+        return;
+      }
+
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة");
+
+      // البحث عن المستخدم بالهاتف أو البريد
+      var snap = await window.db.collection("users").where("email", "==", email.trim().toLowerCase()).get();
+      if (snap.empty) {
+        snap = await window.db.collection("users").where("phone", "==", phone.trim()).get();
+      }
+
+      if (snap.empty) {
+        throw new Error("لا يوجد حساب مسجل بهذه البيانات. يرجى تقديم طلب انضمام أولاً.");
+      }
+
+      var user = snap.docs[0].data();
+      if (user.status !== "approved") {
+        throw new Error("طلب انضمامك قيد المراجعة لدى الأدمن. ستتمكن من الدخول فور الموافقة عليك.");
+      }
+
+      onLoginSuccess(user);
+      onClose();
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return React.createElement(
+    "div",
+    { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" },
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
+
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("div", null,
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+            isLogin ? "تسجيل الدخول للمنصة" : "طلب انضمام دارس جديد"
+          ),
+          React.createElement("p", { className: "text-xs text-slate-400" }, "منصة دراسة المشورة • حساب خاص بالدارسين")
+        ),
+        React.createElement("button", { onClick: onClose, className: "text-slate-400" }, "✕")
+      ),
+
+      errorMsg && React.createElement(
+        "div",
+        { className: "p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs border border-rose-200" },
+        errorMsg
+      ),
+
+      pendingNotice ? React.createElement(
+        "div",
+        { className: "p-6 text-center space-y-3" },
+        React.createElement("div", { className: "text-3xl" }, "⏳"),
+        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تم استلام طلب انضمامك بنجاح"),
+        React.createElement("p", { className: "text-xs text-slate-500 leading-relaxed" },
+          "الطلب الآن في انتظار مراجعة الأدمن للتأكد من بيانات الدارسين. ستتمكن من تصفح المحاضرات والمراجع فور تفعيل حسابك."
+        ),
+        React.createElement("button", {
+          onClick: function() { setPendingNotice(false); setIsLogin(true); },
+          className: "mt-2 bg-slate-900 dark:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold"
+        }, "العودة لتسجيل الدخول")
+      ) : isLogin ? React.createElement(
+        // نموذج تسجيل الدخول
+        "form",
+        { onSubmit: handleLogin, className: "space-y-3" },
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "البريد الإلكتروني"),
+          React.createElement("input", {
+            type: "email",
+            required: true,
+            value: email,
+            onChange: function(e) { setEmail(e.target.value); },
+            placeholder: "بريدك الإلكتروني...",
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+          })
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "أو رقم الهاتف المسجل"),
+          React.createElement("input", {
+            type: "tel",
+            value: phone,
+            onChange: function(e) { setPhone(e.target.value); },
+            placeholder: "012xxxxxxxx",
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+          })
+        ),
+        React.createElement("button", {
+          type: "submit",
+          disabled: isLoading,
+          className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-sm disabled:opacity-50"
+        }, isLoading ? "جاري التحقق..." : "دخول إلى المنصة"),
+        React.createElement("div", { className: "text-center pt-2" },
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setIsLogin(false); setErrorMsg(""); },
+            className: "text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline"
+          }, "دارس جديد؟ اضغط هنا لتقديم طلب انضمام")
+        )
+      ) : React.createElement(
+        // نموذج طلب الانضمام
+        "form",
+        { onSubmit: handleRegisterRequest, className: "space-y-3" },
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "الاسم الثلاثي أو بالكامل"),
+          React.createElement("input", {
+            type: "text",
+            required: true,
+            value: fullName,
+            onChange: function(e) { setFullName(e.target.value); },
+            placeholder: "اسمك كدارس في المشورة...",
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+          })
+        ),
+        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "البريد الإلكتروني"),
+            React.createElement("input", {
+              type: "email",
+              required: true,
+              value: email,
+              onChange: function(e) { setEmail(e.target.value); },
+              placeholder: "example@mail.com",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رقم الموبايل / واتساب"),
+            React.createElement("input", {
+              type: "tel",
+              required: true,
+              value: phone,
+              onChange: function(e) { setPhone(e.target.value); },
+              placeholder: "012xxxxxxxx",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          )
+        ),
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رسالة تعريفية بالدراسة والفرقة"),
+          React.createElement("textarea", {
+            rows: 2,
+            required: true,
+            value: instituteMessage,
+            onChange: function(e) { setInstituteMessage(e.target.value); },
+            placeholder: "مثال: أنا دارس بالدفعة الحالية لدراسة المشورة...",
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+          })
+        ),
+        React.createElement("button", {
+          type: "submit",
+          disabled: isLoading,
+          className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-sm disabled:opacity-50"
+        }, isLoading ? "جاري الإرسال..." : "إرسال طلب الانضمام للمراجعة"),
+        React.createElement("div", { className: "text-center pt-2" },
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setIsLogin(true); setErrorMsg(""); },
+            className: "text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline"
+          }, "لديك حساب بالفعل؟ تسجيل الدخول")
+        )
+      )
+    )
+  );
+};
+
+// Module: components/ErrorReporterModal.js
+// زر ونافذة الإبلاغ الفوري عن أي مشكلة برمجية أو خطأ
+window.ErrorReporterModal = function(props) {
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+  var currentUser = props.currentUser;
+  var activeTab = props.activeTab;
+
+  var [userDescription, setUserDescription] = React.useState("");
+  var [capturedErrorCode, setCapturedErrorCode] = React.useState("");
+  var [isSending, setIsSending] = React.useState(false);
+  var [successNotice, setSuccessNotice] = React.useState(false);
+
+  React.useEffect(function() {
+    if (isOpen) {
+      var last = window.ErrorReportService.lastError;
+      if (last) {
+        setCapturedErrorCode(
+          "الرسالة: " + last.message + "\n" +
+          "الملف: " + (last.source || "غير محدد") + " (سطر: " + (last.line || "-") + ")\n" +
+          "التتبع: " + (last.stack || "")
+        );
+      } else {
+        setCapturedErrorCode("لم يتم تسجيل انهيار تلقائي؛ تم فتح التقرير يدوياً من الشاشة: " + activeTab);
+      }
+      setUserDescription("");
+      setSuccessNotice(false);
+    }
+  }, [isOpen, activeTab]);
+
+  if (!isOpen) return null;
+
+  var handleSubmit = async function(e) {
+    e.preventDefault();
+    setIsSending(true);
+
+    try {
+      await window.ErrorReportService.sendReport({
+        page: activeTab,
+        userDescription: userDescription.trim() || "لم يكتب المستخدم وصفاً",
+        errorDetails: capturedErrorCode,
+        senderName: currentUser.fullName || "دارس غير مسجل",
+        senderPhone: currentUser.phone || "-",
+        senderEmail: currentUser.email || "-",
+        deviceInfo: navigator.userAgent
+      });
+      setSuccessNotice(true);
+      setTimeout(function() {
+        onClose();
+      }, 2000);
+    } catch (err) {
+      alert("خطأ أثناء إرسال التقرير: " + err.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return React.createElement(
+    "div",
+    { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" },
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto" },
+
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("div", null,
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
+            React.createElement("span", null, "🚨"),
+            "إبلاغ عن عطل أو مشكلة بالصفحة"
+          ),
+          React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "سيتم إرسال كود الخطأ وتفاصيله مباشرة للأدمن لمراجعته وإصلاحه")
+        ),
+        React.createElement("button", { onClick: onClose, className: "text-slate-400" }, "✕")
+      ),
+
+      successNotice ? React.createElement(
+        "div",
+        { className: "p-6 text-center space-y-2" },
+        React.createElement("div", { className: "text-3xl" }, "✅"),
+        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تم إرسال تقرير الخطأ بنجاح!"),
+        React.createElement("p", { className: "text-xs text-slate-500" }, "شكراً لك. سيقوم الأدمن بمراجعة الكود وحل المشكلة فوراً.")
+      ) : React.createElement(
+        "form",
+        { onSubmit: handleSubmit, className: "space-y-3" },
+
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "صفحة المشكلة الحالية"),
+          React.createElement("input", {
+            type: "text",
+            disabled: true,
+            value: "قسم: " + activeTab,
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-100 dark:bg-slate-800/60 text-xs font-bold text-slate-700 dark:text-slate-300"
+          })
+        ),
+
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "ماذا حدث معك؟ (وصف المشكلة)"),
+          React.createElement("textarea", {
+            rows: 3,
+            required: true,
+            value: userDescription,
+            onChange: function(e) { setUserDescription(e.target.value); },
+            placeholder: "مثال: الصفحة علقت عند تشغيل الصوت، أو الزر لا يستجيب...",
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+          })
+        ),
+
+        React.createElement("div", null,
+          React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "كود وتتبع الخطأ التقني (المحفوظ تلقائياً)"),
+          React.createElement("textarea", {
+            rows: 4,
+            disabled: true,
+            value: capturedErrorCode,
+            className: "w-full px-3 py-2 rounded-xl border bg-slate-100 dark:bg-slate-800/80 font-mono text-[11px] text-rose-600 dark:text-rose-400"
+          })
+        ),
+
+        React.createElement(
+          "div",
+          { className: "flex justify-end gap-2 pt-2" },
+          React.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 text-xs" }, "إلغاء"),
+          React.createElement("button", {
+            type: "submit",
+            disabled: isSending,
+            className: "px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1.5"
+          }, isSending ? "جاري الإرسال..." : "إرسال التقرير للأدمن")
+        )
+      )
+    )
+  );
+};
+
+// Module: components/InstallPromptModal.js
+// نافذة ومكون تنصيب التطبيق وتفعيل الإشعارات
+window.InstallPromptModal = function(props) {
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+  var deferredPrompt = props.deferredPrompt;
+  var onInstalled = props.onInstalled;
+
+  if (!isOpen) return null;
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  var handleInstallClick = async function() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      var choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === "accepted") {
+        if (onInstalled) onInstalled();
+      }
+      onClose();
+    }
+  };
+
+  return React.createElement(
+    "div",
+    {
+      className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+    },
+    React.createElement(
+      "div",
+      {
+        className: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 text-right font-cairo"
+      },
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          React.createElement("span", { className: "text-2xl" }, "📲"),
+          React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, "تثبيت تطبيق المشورة")
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: onClose,
+            className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center text-sm font-bold"
+          },
+          "✕"
+        )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-3" },
+        React.createElement(
+          "p",
+          null,
+          "يمكنك تثبيت المنصة كتطبيق أصيل على هاتفك أو حاسوبك للوصول السريع، وتشغيل المحاضرات وقراءة المراجع دون الحاجة لفتح المتصفح في كل مرة."
+        ),
+
+        isIOS ? React.createElement(
+          "div",
+          { className: "p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 space-y-2 text-xs" },
+          React.createElement("div", { className: "font-bold text-sm" }, "خطوات التثبيت على هواتف آبل (iPhone / iPad):"),
+          React.createElement("div", null, "1. اضغط على زر المشاركة (Share) أسفل متصفح سفاري ⎋."),
+          React.createElement("div", null, "2. اختر «إضافة إلى الشاشة الرئيسية» (Add to Home Screen) ➕."),
+          React.createElement("div", null, "3. اضغط «إضافة» (Add) في الزاوية العلوية.")
+        ) : React.createElement(
+          "div",
+          { className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2 text-xs text-slate-700 dark:text-slate-300" },
+          React.createElement("div", { className: "font-bold text-sm text-slate-900 dark:text-white" }, "مميزات تثبيت التطبيق:"),
+          React.createElement("div", null, "• فتح المنصة بلمسة واحدة كأي تطبيق هاتف رسمي."),
+          React.createElement("div", null, "• استقبال إشعارات فورية عند نزول أي محاضرة جديدة."),
+          React.createElement("div", null, "• شاشة كاملة وتجربة تصفح سريعة ومريحة.")
+        )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-3 pt-2" },
+        deferredPrompt ? React.createElement(
+          "button",
+          {
+            onClick: handleInstallClick,
+            className: "flex-1 py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition-all text-center"
+          },
+          "تثبيت التطبيق الآن 📲"
+        ) : null,
+        React.createElement(
+          "button",
+          {
+            onClick: onClose,
+            className: "flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition-all text-center"
+          },
+          "تم، فهمت ذلك"
+        )
+      )
+    )
+  );
+};
+
+// Module: pages/LecturesPage.js
+// شاشة المحاضرات مع دعم رابط يوتيوب ودرايف والملخص والبودكاست وأدوات الذكاء للمسؤول فقط
+window.LecturesPage = function(props) {
+  var currentUser = props.currentUser || { role: "admin" };
+  var utils = window.APP_UTILS;
+  var cfg = window.APP_CONFIG;
+  var cloud = window.CloudSyncService;
+  var ai = window.GeminiAIService;
+
+  var [lectures, setLectures] = React.useState(function() {
+    return utils.getLocal(cfg.storageKeys.lectures, []);
+  });
+
+  var [activeLecture, setActiveLecture] = React.useState(null);
+  var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'podcast'
+  var [showAddModal, setShowAddModal] = React.useState(false);
+
+  // حالة الذكاء الاصطناعي للمسؤول
+  var [isAiGenerating, setIsAiGenerating] = React.useState(false);
+
+  // حقول الفلترة والبحث
+  var [searchQuery, setSearchQuery] = React.useState("");
+  var [selectedSubject, setSelectedSubject] = React.useState("الكل");
+  var [selectedSpeaker, setSelectedSpeaker] = React.useState("الكل");
+  var [selectedDate, setSelectedDate] = React.useState("الكل");
+  var [sortByDate, setSortByDate] = React.useState("desc");
+
+  // حقول الإضافة والتعديل
+  var [selectedFile, setSelectedFile] = React.useState(null);
+  var [isDraggingFile, setIsDraggingFile] = React.useState(false);
+  var [isUploading, setIsUploading] = React.useState(false);
+  var [uploadStatusText, setUploadStatusText] = React.useState("");
+
+  var [editingLecture, setEditingLecture] = React.useState(null); // المحاضرة المراد تعديل مادتها وبياناتها
+  var [newTitle, setNewTitle] = React.useState("");
+  var [newSubject, setNewSubject] = React.useState("");
+  var [newSpeaker, setNewSpeaker] = React.useState("");
+  var [newDate, setNewDate] = React.useState(new Date().toISOString().split("T")[0]);
+  var [newSessionOrder, setNewSessionOrder] = React.useState(1);
+  var [newMediaUrl, setNewMediaUrl] = React.useState(""); // YouTube or Drive link
+  var [newNotes, setNewNotes] = React.useState("");
+
+  React.useEffect(function() {
+    var unsubscribe = cloud.subscribeLectures(function(cloudList) {
+      if (cloudList) {
+        setLectures(cloudList);
+        utils.setLocal(cfg.storageKeys.lectures, cloudList);
+        if (cloudList.length > 0) {
+          setActiveLecture(function(prev) {
+            return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || cloudList[0]) : cloudList[0];
+          });
+        } else {
+          setActiveLecture(null);
+        }
+      }
+    });
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
+
+  var subjectsList = ["الكل"];
+  var speakersList = ["الكل"];
+  var datesList = ["الكل"];
+  lectures.forEach(function(l) {
+    if (l.subject && subjectsList.indexOf(l.subject) === -1) subjectsList.push(l.subject);
+    if (l.speaker && speakersList.indexOf(l.speaker) === -1) speakersList.push(l.speaker);
+    if (l.date && datesList.indexOf(l.date) === -1) datesList.push(l.date);
+  });
+
+  var filteredLectures = lectures.filter(function(lec) {
+    var matchQuery = (lec.title + " " + (lec.subject || "") + " " + (lec.speaker || "") + " " + (lec.notes || "")).toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
+    var matchSubject = selectedSubject === "الكل" || lec.subject === selectedSubject;
+    var matchSpeaker = selectedSpeaker === "الكل" || lec.speaker === selectedSpeaker;
+    var matchDate = selectedDate === "الكل" || lec.date === selectedDate;
+    return matchQuery && matchSubject && matchSpeaker && matchDate;
+  });
+
+  filteredLectures.sort(function(a, b) {
+    var dateA = new Date(a.date).getTime();
+    var dateB = new Date(b.date).getTime();
+    if (dateA !== dateB) {
+      return sortByDate === "desc" ? dateB - dateA : dateA - dateB;
+    }
+    return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+  });
+
+  // توليد ملخص مكتوب للمحاضرة بالذكاء الاصطناعي (للمسؤول فقط)
+  var handleGenerateSummary = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    setIsAiGenerating(true);
+    try {
+      var prompt = "قم بإعداد تلخيص شامل ودقيق وواضح لمحاضرة المشورة: '" + activeLecture.title + "'.\n" +
+        "المحاضر: " + activeLecture.speaker + "\n" +
+        "الملاحظات الأساسية:\n" + (activeLecture.notes || "مفاهيم الشفاء والنمو النفسي") + "\n\n" +
+        "المطلوب: استخراج الأفكار الرئيسية، المفاهيم المحورية، وتطبيقات عملية للدارس بلغة عربية رصينة.";
+      var summaryText = await ai.callGemini(prompt);
+      
+      var updated = Object.assign({}, activeLecture, { writtenSummary: summaryText });
+      cloud.saveLecture(updated);
+      setActiveLecture(updated);
+    } catch (err) {
+      alert("خطأ أثناء التوليد: " + err.message);
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  // توليد سيناريو حوار البودكاست (للمسؤول فقط)
+  var handleGeneratePodcast = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    setIsAiGenerating(true);
+    try {
+      var podcastText = await ai.generatePodcastDialogue(activeLecture.title, activeLecture.notes);
+      var updated = Object.assign({}, activeLecture, { podcastDialogue: podcastText });
+      cloud.saveLecture(updated);
+      setActiveLecture(updated);
+    } catch (err) {
+      alert("خطأ أثناء التوليد: " + err.message);
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  var processSelectedFile = function(file) {
+    if (!file) return;
+    setSelectedFile(file);
+    if (!newTitle.trim()) {
+      setNewTitle(file.name.replace(/\.[^/.]+$/, ""));
+    }
+  };
+
+  var handleFileSelect = function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (file) {
+      processSelectedFile(file);
+    }
+  };
+
+  var handleAddLecture = async function(e) {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    var finalUrl = newMediaUrl.trim();
+
+    if (selectedFile) {
+      try {
+        setIsUploading(true);
+        setUploadStatusText("جاري قراءة وتجهيز الملف من جهازك...");
+        var base64Data = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var result = reader.result;
+            var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+
+        setUploadStatusText("جاري الرفع المباشر إلى التخزين السحابي...");
+        var response = await fetch(cfg.driveUploadEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            fileName: selectedFile.name,
+            mimeType: selectedFile.type || "application/octet-stream",
+            base64Data: base64Data
+          })
+        });
+
+        var resData = await response.json();
+        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+          finalUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
+        } else {
+          throw new Error(resData.message || "تعذر إكمال الرفع");
+        }
+      } catch (err) {
+        alert("تنبيه: حدث خطأ أثناء الرفع السحابي: " + err.message);
+        setIsUploading(false);
+        setUploadStatusText("");
+        return;
+      }
+    }
+
+    var newLec = {
+      id: "lec-" + Date.now(),
+      title: newTitle.trim(),
+      subject: newSubject.trim() || "عام",
+      speaker: newSpeaker.trim() || "غير محدد",
+      date: newDate,
+      sessionOrder: parseInt(newSessionOrder) || 1,
+      mediaUrl: finalUrl,
+      notes: newNotes.trim(),
+      lastPosition: 0,
+      writtenSummary: "",
+      podcastDialogue: ""
+    };
+
+    cloud.saveLecture(newLec);
+    if (window.NotificationService && typeof window.NotificationService.broadcastNewLectureNotification === "function") {
+      window.NotificationService.broadcastNewLectureNotification(newLec);
+    }
+    setShowAddModal(false);
+    setIsUploading(false);
+    setSelectedFile(null);
+    setNewTitle("");
+    setNewSubject("");
+    setNewSpeaker("");
+    setNewMediaUrl("");
+    setNewNotes("");
+  };
+
+  var openEditModal = function(lec) {
+    if (!lec) return;
+    setEditingLecture(Object.assign({}, lec));
+  };
+
+  var handleSaveEdit = function(e) {
+    e.preventDefault();
+    if (!editingLecture || !editingLecture.title.trim()) return;
+    var updated = Object.assign({}, editingLecture, {
+      title: editingLecture.title.trim(),
+      subject: (editingLecture.subject || "").trim() || "عام",
+      speaker: (editingLecture.speaker || "").trim() || "غير محدد"
+    });
+    cloud.saveLecture(updated);
+    if (activeLecture && activeLecture.id === updated.id) {
+      setActiveLecture(updated);
+    }
+    setEditingLecture(null);
+  };
+
+  var handleSavePosition = function(sec) {
+    if (!activeLecture) return;
+    setActiveLecture(Object.assign({}, activeLecture, { lastPosition: sec }));
+    cloud.updatePlaybackPosition(activeLecture.id, sec);
+  };
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    // ترويسة
+    React.createElement(
+      "div",
+      { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المحاضرات الدراسية"),
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ نقطة التوقف بالسيارة")
+      ),
+      currentUser.role === "admin" && React.createElement(
+        "button",
+        {
+          onClick: function() { setShowAddModal(true); },
+          className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
+        },
+        React.createElement("span", null, "➕"),
+        React.createElement("span", null, "إضافة أو رفع محاضرة")
+      )
+    ),
+
+    // شريط الفرز والبحث
+    lectures.length > 0 && React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "بحث بالكلمة"),
+        React.createElement("input", {
+          type: "text",
+          value: searchQuery,
+          onChange: function(e) { setSearchQuery(e.target.value); },
+          placeholder: "عنوان، مادة، محاضر...",
+          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+        })
+      ),
+      React.createElement(
+        "div",
+        null,
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "المادة الدراسية"),
+        React.createElement("select", {
+          value: selectedSubject,
+          onChange: function(e) { setSelectedSubject(e.target.value); },
+          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+        }, subjectsList.map(function(sub) { return React.createElement("option", { key: sub, value: sub }, sub); }))
+      ),
+      React.createElement(
+        "div",
+        null,
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "المحاضر"),
+        React.createElement("select", {
+          value: selectedSpeaker,
+          onChange: function(e) { setSelectedSpeaker(e.target.value); },
+          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+        }, speakersList.map(function(s) { return React.createElement("option", { key: s, value: s }, s); }))
+      ),
+      React.createElement(
+        "div",
+        null,
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "يوم معين"),
+        React.createElement("select", {
+          value: selectedDate,
+          onChange: function(e) { setSelectedDate(e.target.value); },
+          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+        }, datesList.map(function(d) { return React.createElement("option", { key: d, value: d }, d); }))
+      ),
+      React.createElement(
+        "div",
+        null,
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "ترتيب زمني"),
+        React.createElement("select", {
+          value: sortByDate,
+          onChange: function(e) { setSortByDate(e.target.value); },
+          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+        }, [
+          React.createElement("option", { key: "desc", value: "desc" }, "الأحدث أولاً"),
+          React.createElement("option", { key: "asc", value: "asc" }, "الأقدم أولاً")
+        ])
+      )
+    ),
+
+    // المحاضرة النشطة مع الألسنة الداخلية الثلاثة
+    activeLecture ? React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+
+      // رأس المحاضرة
+      React.createElement(
+        "div",
+        { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-1" },
+            activeLecture.subject && React.createElement("span", { className: "text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800" }, "📚 " + activeLecture.subject),
+            React.createElement("span", { className: "text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg" }, "تاريخ: " + activeLecture.date),
+            React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "محاضرة " + (activeLecture.sessionOrder || 1))
+          ),
+          React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeLecture.title),
+          React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" }, "المحاضر: " + activeLecture.speaker)
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-3" },
+          currentUser.role === "admin" && React.createElement(
+            "button",
+            {
+              onClick: function() { openEditModal(activeLecture); },
+              title: "تعديل المادة أو بيانات المحاضرة",
+              className: "px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
+            },
+            React.createElement("span", null, "✏️"),
+            React.createElement("span", null, "تعديل المادة")
+          ),
+          React.createElement(
+            "div",
+            { className: "text-left sm:text-right" },
+            React.createElement("span", { className: "text-xs text-slate-400 block" }, "التوقف المحفوظ"),
+            React.createElement("span", { className: "text-base font-bold text-emerald-600 dark:text-emerald-400" }, utils.formatDuration(activeLecture.lastPosition || 0))
+          )
+        )
+      ),
+
+      // الألسنة الداخلية الثلاثة
+      React.createElement(
+        "div",
+        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4" },
+        [
+          { id: "media", label: "📺 المشاهدة والاستماع" },
+          { id: "summary", label: "📄 الملخص المكتوب" },
+          { id: "podcast", label: "🎙️ حوار البودكاست (للسيارة)" }
+        ].map(function(tab) {
+          var isCurrent = activeSubTab === tab.id;
+          return React.createElement(
+            "button",
+            {
+              key: tab.id,
+              onClick: function() { setActiveSubTab(tab.id); },
+              className: "pb-3 text-xs md:text-sm font-bold transition-all border-b-2 " +
+                (isCurrent ? "border-slate-900 dark:border-emerald-500 text-slate-900 dark:text-white" : "border-transparent text-slate-400 hover:text-slate-600")
+            },
+            tab.label
+          );
+        })
+      ),
+
+      // 1. تبويب الفيديو والمشغل
+      activeSubTab === "media" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        activeLecture.mediaUrl ? React.createElement(
+          "div",
+          { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
+          React.createElement("iframe", {
+            src: utils.getMediaEmbedUrl(activeLecture.mediaUrl),
+            className: "w-full h-full border-0",
+            allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+            allowFullScreen: true
+          })
+        ) : React.createElement(
+          "div",
+          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-sm" },
+          "لم يتم إرفاق رابط يوتيوب أو تخزين لهذه المحاضرة"
+        ),
+        // أزرار التحكم
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between text-xs pt-1" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("button", {
+              onClick: function() { handleSavePosition(Math.max(0, (activeLecture.lastPosition || 0) - 15)); },
+              className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-semibold"
+            }, "◀ 15 ثانية"),
+            React.createElement("button", {
+              onClick: function() { handleSavePosition((activeLecture.lastPosition || 0) + 15); },
+              className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-semibold"
+            }, "15 ثانية ▶")
+          ),
+          React.createElement("span", { className: "text-slate-400" }, "يتم استئناف الثانية تلقائياً عند القيادة بالسيارة")
+        )
+      ),
+
+      // 2. تبويب الملخص المكتوب
+      activeSubTab === "summary" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        activeLecture.writtenSummary ? React.createElement(
+          "div",
+          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
+          activeLecture.writtenSummary
+        ) : React.createElement(
+          "div",
+          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+          "لم يتم إعداد الملخص المكتوب لهذه المحاضرة بعد.",
+          currentUser.role === "admin" && React.createElement(
+            "div",
+            { className: "mt-3" },
+            React.createElement("button", {
+              onClick: handleGenerateSummary,
+              disabled: isAiGenerating,
+              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
+            }, isAiGenerating ? "جاري التوليد والتحليل..." : "✨ توليد الملخص بالذكاء الاصطناعي")
+          )
+        )
+      ),
+
+      // 3. تبويب حوار البودكاست
+      activeSubTab === "podcast" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        activeLecture.podcastDialogue ? React.createElement(
+          "div",
+          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
+          activeLecture.podcastDialogue
+        ) : React.createElement(
+          "div",
+          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+          "لم يتم إعداد حوار البودكاست لهذه المحاضرة بعد.",
+          currentUser.role === "admin" && React.createElement(
+            "div",
+            { className: "mt-3" },
+            React.createElement("button", {
+              onClick: handleGeneratePodcast,
+              disabled: isAiGenerating,
+              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
+            }, isAiGenerating ? "جاري إعداد الحوار..." : "🎙️ إنشاء حوار البودكاست التفاعلي")
+          )
+        )
+      )
+    ) : React.createElement(
+      "div",
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
+      React.createElement("div", { className: "text-3xl" }, "🎧"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الأرشيف نظيف وجاهز لرفع محاضراتك الفعلية"),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يمكنك إضافة رابط يوتيوب مباشر أو رفع ملف المحاضرة من جهازك.")
+    ),
+
+    // قائمة المحاضرات المرفوعة
+    lectures.length > 0 && React.createElement(
+      "div",
+      { className: "space-y-2.5" },
+      React.createElement("div", { className: "flex items-center justify-between text-xs text-slate-500 font-bold px-1" },
+        React.createElement("span", null, "سجل المحاضرات (" + filteredLectures.length + ")"),
+        React.createElement("span", null, "مرتبة حسب التاريخ وترتيب الجلسة")
+      ),
+      filteredLectures.map(function(lec) {
+        var isCurrent = activeLecture && activeLecture.id === lec.id;
+        return React.createElement(
+          "div",
+          {
+            key: lec.id,
+            onClick: function() { setActiveLecture(lec); },
+            className: "p-4 rounded-2xl border cursor-pointer transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 " +
+              (isCurrent ? "bg-slate-100 dark:bg-slate-800 border-slate-400" : "bg-white dark:bg-slate-900 border-slate-200")
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-start gap-3" },
+            React.createElement("div", { className: "w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs" }, "ج " + (lec.sessionOrder || 1)),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
+                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, lec.title),
+                lec.subject && React.createElement("span", { className: "text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800" }, lec.subject)
+              ),
+              React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" }, lec.speaker + " • " + lec.date)
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            currentUser.role === "admin" && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function(e) {
+                  e.stopPropagation();
+                  openEditModal(lec);
+                },
+                title: "تعديل المادة أو البيانات",
+                className: "p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs hover:bg-slate-100 text-slate-600 dark:text-slate-300"
+              },
+              "✏️"
+            ),
+            React.createElement("div", { className: "text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-xl" },
+              "آخر توقف: " + utils.formatDuration(lec.lastPosition || 0)
+            )
+          )
+        );
+      })
+    ),
+
+    // نافذة إضافة محاضرة جديدة (للمسؤول فقط)
+    showAddModal && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تسجيل محاضرة جديدة"),
+          !isUploading && React.createElement("button", { onClick: function() { setShowAddModal(false); }, className: "text-slate-400" }, "✕")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleAddLecture, className: "space-y-3" },
+
+          // خيار 1: رابط يوتيوب مباشر
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رابط المحاضرة على YouTube أو Google Drive (اختياري)"),
+            React.createElement("input", {
+              type: "url",
+              value: newMediaUrl,
+              onChange: function(e) { setNewMediaUrl(e.target.value); },
+              placeholder: "https://www.youtube.com/watch?v=...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+
+          // خيار 2: منطقة سحب وإفلات أو اختيار ملف للرفع
+          React.createElement(
+            "div",
+            {
+              onDragOver: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(true);
+              },
+              onDragLeave: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(false);
+              },
+              onDrop: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(false);
+                var droppedFile = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (droppedFile) {
+                  processSelectedFile(droppedFile);
+                }
+              },
+              className: "p-4 rounded-2xl border-2 border-dashed transition-all text-center space-y-2 " +
+                (isDraggingFile ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 scale-[1.01]" : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20")
+            },
+            React.createElement("label", { className: "cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300 block space-y-1.5" },
+              React.createElement("div", { className: "text-2xl" }, isDraggingFile ? "📥" : (selectedFile ? "🎬" : "📂")),
+              React.createElement("div", { className: "text-xs font-semibold" },
+                selectedFile ? "الملف المختار: " + selectedFile.name : (isDraggingFile ? "أفلت الملف هنا للرفع مباشرة..." : "اسحب وأفلت ملف المحاضرة (صوت أو فيديو) هنا")
+              ),
+              React.createElement("span", { className: "inline-block text-[11px] text-emerald-600 dark:text-emerald-400 underline font-medium" }, "أو اضغط لتصفح جهازك"),
+              React.createElement("input", {
+                type: "file",
+                accept: "audio/*,video/*",
+                onChange: handleFileSelect,
+                disabled: isUploading,
+                className: "hidden"
+              })
+            ),
+            selectedFile && React.createElement(
+              "div",
+              { className: "flex items-center justify-center gap-2 pt-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, (selectedFile.size ? (selectedFile.size / (1024 * 1024)).toFixed(1) + " MB" : "")),
+              !isUploading && React.createElement("button", {
+                type: "button",
+                onClick: function() { setSelectedFile(null); },
+                className: "text-[11px] text-rose-500 hover:underline"
+              }, "إلغاء الملف")
+            )
+          ),
+
+          isUploading && React.createElement(
+            "div",
+            { className: "p-2.5 rounded-xl bg-slate-900 text-white text-center text-xs animate-pulse" },
+            uploadStatusText
+          ),
+
+          // اسم المادة الدراسية
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "المادة الدراسية (الفرقة / المساق)"),
+            React.createElement("input", {
+              type: "text",
+              value: newSubject,
+              onChange: function(e) { setNewSubject(e.target.value); },
+              list: "counseling-subjects-list",
+              placeholder: "مثال: مادة علم المشورة، النمو النفسي، الطب النفسي...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            }),
+            React.createElement(
+              "datalist",
+              { id: "counseling-subjects-list" },
+              subjectsList.filter(function(s) { return s !== "الكل"; }).map(function(s) {
+                return React.createElement("option", { key: s, value: s });
+              })
+            )
+          ),
+
+          // تاريخ المحاضرة والترتيب في اليوم
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "تاريخ اليوم الدراسي"),
+              React.createElement("input", {
+                type: "date",
+                required: true,
+                value: newDate,
+                onChange: function(e) { setNewDate(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "ترتيب الجلسة في اليوم"),
+              React.createElement("select", {
+                value: newSessionOrder,
+                onChange: function(e) { setNewSessionOrder(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              }, [
+                React.createElement("option", { key: 1, value: 1 }, "المحاضرة الأولى"),
+                React.createElement("option", { key: 2, value: 2 }, "المحاضرة الثانية"),
+                React.createElement("option", { key: 3, value: 3 }, "المحاضرة الثالثة")
+              ])
+            )
+          ),
+
+          // المحاضر
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "المحاضر / الدكتور"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: newSpeaker,
+              onChange: function(e) { setNewSpeaker(e.target.value); },
+              placeholder: "مثال: د. مجدي إسحق، د. إميل جورج...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+
+          // عنوان المحاضرة
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "موضوع وعنوان المحاضرة"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: newTitle,
+              onChange: function(e) { setNewTitle(e.target.value); },
+              placeholder: "اكتب عنوان المحاضرة...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+
+          // ملاحظات وعناصر
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "ملاحظات أو عناصر رئيسية للملخص"),
+            React.createElement("textarea", {
+              rows: 2,
+              value: newNotes,
+              onChange: function(e) { setNewNotes(e.target.value); },
+              placeholder: "أهم الأفكار التي تساعد في التلخيص...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2" },
+            !isUploading && React.createElement("button", { type: "button", onClick: function() { setShowAddModal(false); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
+            React.createElement("button", {
+              type: "submit",
+              disabled: isUploading,
+              className: "px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white"
+            }, isUploading ? "جاري الحفظ..." : "حفظ المحاضرة")
+          )
+        )
+      )
+    ),
+
+    // نافذة تعديل بيانات أو مادة المحاضرة للمسؤول
+    editingLecture && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "✏️ تعديل بيانات ومادة المحاضرة"),
+          React.createElement("button", { onClick: function() { setEditingLecture(null); }, className: "text-slate-400" }, "✕")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleSaveEdit, className: "space-y-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "المادة الدراسية (الفرقة / المساق)"),
+            React.createElement("input", {
+              type: "text",
+              value: editingLecture.subject || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { subject: val }); });
+              },
+              list: "counseling-subjects-list-edit",
+              placeholder: "مثال: مادة علم المشورة، النمو النفسي...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            }),
+            React.createElement(
+              "datalist",
+              { id: "counseling-subjects-list-edit" },
+              subjectsList.filter(function(s) { return s !== "الكل"; }).map(function(s) {
+                return React.createElement("option", { key: s, value: s });
+              })
+            )
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "عنوان وموضوع المحاضرة"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: editingLecture.title || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { title: val }); });
+              },
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "المحاضر / الدكتور"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: editingLecture.speaker || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { speaker: val }); });
+              },
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2" },
+            React.createElement("button", { type: "button", onClick: function() { setEditingLecture(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
+            React.createElement("button", {
+              type: "submit",
+              className: "px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm"
+            }, "حفظ التعديلات ✓")
+          )
+        )
+      )
+    )
+  );
+};
+
+// Module: pages/BooksPage.js
+// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+window.BooksPage = function(props) {
+  var currentUser = props.currentUser || { role: "admin" };
+  var utils = window.APP_UTILS;
+  var cfg = window.APP_CONFIG;
+  var cloud = window.CloudSyncService;
+  var ai = window.GeminiAIService;
+
+  var [books, setBooks] = React.useState(function() {
+    return utils.getLocal(cfg.storageKeys.books, []);
+  });
+
+  var [activeBook, setActiveBook] = React.useState(null);
+  var [showAddModal, setShowAddModal] = React.useState(false);
+  var [selectedChapter, setSelectedChapter] = React.useState(null);
+  var [isAiGenerating, setIsAiGenerating] = React.useState(false);
+  var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
+  var [speakingChapterIdx, setSpeakingChapterIdx] = React.useState(null);
+
+  // حقول الإضافة
+  var [selectedFile, setSelectedFile] = React.useState(null);
+  var [isDraggingFile, setIsDraggingFile] = React.useState(false);
+  var [isUploading, setIsUploading] = React.useState(false);
+  var [uploadStatusText, setUploadStatusText] = React.useState("");
+
+  var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
+  var [newTitle, setNewTitle] = React.useState("");
+  var [newAuthor, setNewAuthor] = React.useState("");
+  var [newTotalPages, setNewTotalPages] = React.useState(350);
+  var [newDriveUrl, setNewDriveUrl] = React.useState("");
+  var [newChaptersCount, setNewChaptersCount] = React.useState(8);
+  var [includeIntro, setIncludeIntro] = React.useState(true);
+
+  React.useEffect(function() {
+    var unsubscribe = cloud.subscribeBooks(function(cloudList) {
+      if (cloudList) {
+        setBooks(cloudList);
+        utils.setLocal(cfg.storageKeys.books, cloudList);
+        if (cloudList.length > 0) {
+          setActiveBook(function(prev) {
+            return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || cloudList[0]) : cloudList[0];
+          });
+        } else {
+          setActiveBook(null);
+        }
+      }
+    });
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  var handlePageChange = function(newPage) {
+    if (!activeBook) return;
+    var validPage = Math.max(1, Math.min(newPage, activeBook.totalPages || 500));
+    setActiveBook(Object.assign({}, activeBook, { currentPage: validPage }));
+    cloud.updateBookPage(activeBook.id, validPage);
+  };
+
+  // تشغيل / إيقاف القراءة الصوتية بالمتصفح (Web Speech TTS)
+  var handleToggleSpeech = function(chapterIndex, textToRead) {
+    if (!window.speechSynthesis) {
+      alert("خاصية القراءة الصوتية غير مدعومة في هذا المتصفح.");
+      return;
+    }
+
+    if (speakingChapterIdx === chapterIndex) {
+      window.speechSynthesis.cancel();
+      setSpeakingChapterIdx(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    var cleanText = (textToRead || "").replace(/[#*`_]/g, "").trim();
+    if (!cleanText) return;
+
+    var utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "ar-SA";
+    utterance.rate = 0.95;
+    utterance.onend = function() {
+      setSpeakingChapterIdx(null);
+    };
+    utterance.onerror = function() {
+      setSpeakingChapterIdx(null);
+    };
+
+    setSpeakingChapterIdx(chapterIndex);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // توليد ملخص صوتي ونصي للفصل أو المقدمة (للمسؤول فقط)
+  var handleGenerateChapterSummary = async function(chapterIndex) {
+    if (!activeBook || currentUser.role !== "admin") return;
+
+    var existingKey = await ai.getApiKey();
+    if (!existingKey) {
+      var entered = window.prompt("يرجى إدخال مفتاح Gemini API لتفعيل التلخيص الذكي وحفظه سحابياً ومحلياً:");
+      if (!entered || !entered.trim()) {
+        return;
+      }
+      await ai.saveApiKey(entered.trim());
+      utils.setLocal(cfg.storageKeys.apiKey, entered.trim());
+    }
+
+    setIsAiGenerating(true);
+    try {
+      var ch = (activeBook.chapters || [])[chapterIndex];
+      var chName = ch.title || ("الفصل " + chapterIndex);
+      var prompt = "أنت مساعد متخصص في تلخيص مراجع المشورة والنمو الإنساني.\n" +
+        "قم بإعداد ملخص مركز وشامل لـ: '" + chName + "' من كتاب: '" + activeBook.title + "' للمؤلف '" + (activeBook.author || "") + "'.\n" +
+        "المطلوب إرجاع صيغة JSON نظيفة:\n" +
+        "{\n" +
+        '  "writtenSummary": "نقاط رئيسية واضحة ومكثفة تشرح الفكرة الجوهرية والتطبيقات العملية لهذا الجزء (تصلح للقراءة السريعة والمذاكرة)",\n' +
+        '  "audioScript": "سيناريو ملخص مسموع شائق وهادئ بصيغة المخاطب، مناسب للاستماع أثناء القيادة في السيارة يشرح أهم معالم هذا الجزء في 3-5 دقائق"\n' +
+        "}\n" +
+        "أرجع الـ JSON فقط بدون علامات ماركداون إضافية وبدون نصوص خارجية.";
+      
+      var res = await ai.callGemini(prompt);
+      var cleanJson = res.replace(/```json/gi, "").replace(/```/g, "").trim();
+      var parsed;
+      try {
+        parsed = JSON.parse(cleanJson);
+      } catch (e) {
+        parsed = {
+          writtenSummary: res,
+          audioScript: res
+        };
+      }
+      
+      var updatedChapters = (activeBook.chapters || []).slice();
+      updatedChapters[chapterIndex] = Object.assign({}, updatedChapters[chapterIndex], {
+        summaryText: parsed.writtenSummary || res,
+        audioScript: parsed.audioScript || parsed.writtenSummary || res,
+        hasAudio: true,
+        lastAudioPosition: 0
+      });
+
+      var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
+      cloud.saveBook(updatedBook);
+      setActiveBook(updatedBook);
+    } catch (err) {
+      alert("حدث خطأ أثناء التوليد: " + err.message);
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
+
+  // حفظ موضع استماع الملخص الصوتي للفصل
+  var handleSaveChapterAudioPos = function(chapterIndex, sec) {
+    if (!activeBook) return;
+    var updatedChapters = (activeBook.chapters || []).slice();
+    updatedChapters[chapterIndex] = Object.assign({}, updatedChapters[chapterIndex], {
+      lastAudioPosition: sec
+    });
+    var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
+    setActiveBook(updatedBook);
+    cloud.saveBook(updatedBook);
+  };
+
+  var handleAutoFillWithAi = async function() {
+    var query = (newTitle || (selectedFile ? selectedFile.name : "")).trim();
+    if (!query) {
+      alert("يرجى اختيار ملف أو كتابة اسم تقريبي للكتاب أولاً لكي يستطيع الذكاء الاصطناعي تحليله.");
+      return;
+    }
+
+    setIsAiAnalyzingBook(true);
+    try {
+      var prompt = "أنت خبير في مراجع وكتب المشورة والتربية والنمو النفسي والروحي (مثل كتب بيتر سكزيرو، أوسم وصفي، هنري كلاود، جون تاونسند، إميل جورج، عادل حليم وغيرهم).\n" +
+        "بناءً على هذا الاسم أو اسم الملف: '" + query + "':\n" +
+        "المطلوب تحديد بدقة بيانات الكتاب وإرجاعها فقط بصيغة JSON نظيفة:\n" +
+        "{\n" +
+        '  "title": "اسم الكتاب الدقيق بالعربية",\n' +
+        '  "author": "اسم الكاتب / المؤلف بالعربية",\n' +
+        '  "totalPages": عدد الصفحات التقريبي المعتاد لهذا الكتاب (رقم صحيح),\n' +
+        '  "chaptersCount": عدد فصول الكتاب المعتادة (رقم صحيح)\n' +
+        "}\n" +
+        "أرجع الـ JSON فقط بدون أي نصوص قبلية أو بعدية وبدون ماركداون.";
+
+      var res = await ai.callGemini(prompt);
+      var cleanJson = res.replace(/```json/gi, "").replace(/```/g, "").trim();
+      var parsed = JSON.parse(cleanJson);
+
+      if (parsed.title) setNewTitle(parsed.title);
+      if (parsed.author) setNewAuthor(parsed.author);
+      if (parsed.totalPages && Number(parsed.totalPages) > 0) setNewTotalPages(Number(parsed.totalPages));
+      if (parsed.chaptersCount && Number(parsed.chaptersCount) > 0) setNewChaptersCount(Number(parsed.chaptersCount));
+    } catch (err) {
+      alert("تنبيه: تعذر إكمال التحليل التلقائي: " + err.message + " (تأكد من إدخال مفتاح الذكاء في الإعدادات أو كتابة اسم أوضح).");
+    } finally {
+      setIsAiAnalyzingBook(false);
+    }
+  };
+
+  var processSelectedFile = function(file) {
+    if (!file) return;
+    setSelectedFile(file);
+    var rawName = file.name.replace(/\.[^/.]+$/, "");
+    if (!newTitle.trim()) {
+      if (rawName.indexOf(" - ") !== -1) {
+        var parts = rawName.split(" - ");
+        setNewTitle(parts[0].trim());
+        if (!newAuthor.trim() && parts[1]) {
+          setNewAuthor(parts[1].trim());
+        }
+      } else if (rawName.indexOf(" _ ") !== -1) {
+        var partsUnderscore = rawName.split(" _ ");
+        setNewTitle(partsUnderscore[0].trim());
+        if (!newAuthor.trim() && partsUnderscore[1]) {
+          setNewAuthor(partsUnderscore[1].trim());
+        }
+      } else {
+        setNewTitle(rawName);
+      }
+    }
+  };
+
+  var handleFileSelect = function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (file) {
+      processSelectedFile(file);
+    }
+  };
+
+  var handleAddBook = async function(e) {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    var finalDriveUrl = newDriveUrl.trim();
+
+    if (selectedFile) {
+      try {
+        setIsUploading(true);
+        setUploadStatusText("جاري قراءة ملف الكتاب...");
+
+        var base64Data = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var result = reader.result;
+            var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+
+        setUploadStatusText("جاري رفع الكتاب إلى التخزين السحابي...");
+
+        var response = await fetch(cfg.driveUploadEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            fileName: selectedFile.name,
+            mimeType: selectedFile.type || "application/pdf",
+            base64Data: base64Data
+          })
+        });
+
+        var resData = await response.json();
+        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+          finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
+        } else {
+          throw new Error(resData.message || "تعذر إكمال رفع الكتاب");
+        }
+      } catch (err) {
+        alert("تنبيه: حدث خطأ أثناء رفع الكتاب: " + err.message);
+        setIsUploading(false);
+        setUploadStatusText("");
+        return;
+      }
+    }
+
+    // تجهيز مصفوفة الفصول الافتراضية مع تضمين المقدمة
+    var chapters = [];
+    if (includeIntro) {
+      chapters.push({
+        number: 0,
+        title: "المقدمة والمدخل",
+        summaryText: "",
+        audioScript: "",
+        hasAudio: false,
+        lastAudioPosition: 0
+      });
+    }
+
+    var count = parseInt(newChaptersCount) || 5;
+    for (var i = 1; i <= count; i++) {
+      chapters.push({
+        number: i,
+        title: "الفصل " + i,
+        summaryText: "",
+        audioScript: "",
+        hasAudio: false,
+        lastAudioPosition: 0
+      });
+    }
+
+    var newB = {
+      id: "book-" + Date.now(),
+      title: newTitle.trim(),
+      author: newAuthor.trim() || "غير محدد",
+      totalPages: parseInt(newTotalPages) || 300,
+      currentPage: 1,
+      driveUrl: finalDriveUrl,
+      chapters: chapters
+    };
+
+    cloud.saveBook(newB);
+    setShowAddModal(false);
+    setIsUploading(false);
+    setSelectedFile(null);
+    setNewTitle("");
+    setNewAuthor("");
+    setNewDriveUrl("");
+  };
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    // ترويسة
+    React.createElement(
+      "div",
+      { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المراجع والكتب الدراسية"),
+        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "مطالعة كتب الـ PDF مع حفظ الصفحة والملخصات الصوتية والنصية لكل فصل")
+      ),
+      currentUser.role === "admin" && React.createElement(
+        "button",
+        {
+          onClick: function() { setShowAddModal(true); },
+          className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
+        },
+        React.createElement("span", null, "➕"),
+        React.createElement("span", null, "إضافة مرجع جديد")
+      )
+    ),
+
+    // شريط اختيار الكتاب في حال وجود عدة مراجع
+    books.length > 1 && React.createElement(
+      "div",
+      { className: "flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin" },
+      books.map(function(b) {
+        var isSelected = activeBook && activeBook.id === b.id;
+        return React.createElement(
+          "button",
+          {
+            key: b.id,
+            onClick: function() { setActiveBook(b); },
+            className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
+              (isSelected
+                ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
+                : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50")
+          },
+          React.createElement("span", null, "📖"),
+          React.createElement("span", null, b.title)
+        );
+      })
+    ),
+
+    // الكتاب النشط
+    activeBook ? React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" },
+
+      // رأس الكتاب والتحكم بالصفحات
+      React.createElement(
+        "div",
+        { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeBook.title),
+          React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة")
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-2 rounded-2xl" },
+          React.createElement("button", {
+            onClick: function() { handlePageChange((activeBook.currentPage || 1) - 1); },
+            className: "w-8 h-8 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm"
+          }, "◀"),
+          React.createElement("div", { className: "px-3 text-center" },
+            React.createElement("span", { className: "text-xs text-slate-400 block" }, "صفحة"),
+            React.createElement("span", { className: "text-base font-extrabold text-emerald-600 dark:text-emerald-400" }, activeBook.currentPage || 1)
+          ),
+          React.createElement("button", {
+            onClick: function() { handlePageChange((activeBook.currentPage || 1) + 1); },
+            className: "w-8 h-8 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm"
+          }, "▶")
+        )
+      ),
+
+      // عارض الـ PDF
+      activeBook.driveUrl && React.createElement(
+        "div",
+        { className: "w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 h-[500px] relative" },
+        React.createElement("iframe", {
+          src: utils.getDrivePreviewUrl(activeBook.driveUrl),
+          className: "w-full h-full border-0",
+          title: activeBook.title
+        })
+      ),
+
+      // قسم فصول الكتاب والملخصات الصوتية والنصية (Chapter Audio & Summary)
+      React.createElement(
+        "div",
+        { className: "space-y-3 pt-2" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "فصول الكتاب والملخصات الصوتية والنصية"),
+          !(activeBook.chapters || []).some(function(c) { return c.title && c.title.includes("المقدمة"); }) && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                var updatedChapters = [{
+                  number: 0,
+                  title: "المقدمة والمدخل",
+                  summaryText: "",
+                  audioScript: "",
+                  hasAudio: false,
+                  lastAudioPosition: 0
+                }].concat(activeBook.chapters || []);
+                var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
+                cloud.saveBook(updatedBook);
+                setActiveBook(updatedBook);
+              },
+              className: "text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 transition-all shadow-xs"
+            },
+            "➕ إضافة ملخص المقدمة لهذا الكتاب"
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+          (activeBook.chapters || []).map(function(ch, idx) {
+            var currentTab = activeTabByChapter[idx] || "written"; // 'written' or 'audio'
+            var isSpeaking = speakingChapterIdx === idx;
+            var hasSummary = !!(ch.summaryText || ch.audioScript);
+
+            return React.createElement(
+              "div",
+              {
+                key: idx,
+                className: "p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3 shadow-xs"
+              },
+              // عنوان الفصل والشارات
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2" },
+                  React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, ch.title || ("الفصل " + (idx + 1))),
+                  ch.number === 0 && React.createElement("span", { className: "text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md font-bold" }, "تمهيدي")
+                ),
+                ch.hasAudio && React.createElement("span", { className: "text-[11px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg font-bold" },
+                  "جاهز بالذكاء ✨"
+                )
+              ),
+
+              // أزرار الاختيار: مكتوب أو صوتي
+              hasSummary && React.createElement(
+                "div",
+                { className: "flex items-center p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "written" }));
+                    },
+                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
+                      (currentTab === "written"
+                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
+                  },
+                  React.createElement("span", null, "📖"),
+                  React.createElement("span", null, "ملخص مكتوب")
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "audio" }));
+                    },
+                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
+                      (currentTab === "audio"
+                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
+                  },
+                  React.createElement("span", null, "🎙️"),
+                  React.createElement("span", null, "ملخص صوتي (للسيارة)")
+                )
+              ),
+
+              // نصوص الملخص أو زر التوليد
+              hasSummary ? React.createElement(
+                "div",
+                { className: "space-y-3" },
+                currentTab === "written" ? React.createElement(
+                  "div",
+                  { className: "text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
+                  ch.summaryText || "لا يوجد نص ملخص مكتوب متاح"
+                ) : React.createElement(
+                  "div",
+                  { className: "space-y-2.5" },
+                  React.createElement(
+                    "div",
+                    { className: "text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
+                    ch.audioScript || ch.summaryText
+                  ),
+                  // مشغل القراءة الصوتية بالمتصفح
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/40 text-xs" },
+                    React.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        onClick: function() { handleToggleSpeech(idx, ch.audioScript || ch.summaryText); },
+                        className: "px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 " +
+                          (isSpeaking
+                            ? "bg-rose-600 text-white animate-pulse"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700")
+                      },
+                      React.createElement("span", null, isSpeaking ? "⏹️ إيقاف الصوت" : "▶️ استماع الآن بصوت واضح")
+                    ),
+                    React.createElement("span", { className: "text-[11px] text-emerald-700 dark:text-emerald-300 font-medium" }, "مخصص للاستماع أثناء القيادة 🚗")
+                  )
+                ),
+                currentUser.role === "admin" && React.createElement(
+                  "div",
+                  { className: "flex justify-end pt-1" },
+                  React.createElement(
+                    "button",
+                    {
+                      onClick: function() { handleGenerateChapterSummary(idx); },
+                      disabled: isAiGenerating,
+                      className: "text-[11px] text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 underline font-medium"
+                    },
+                    "إعادة توليد وتحديث الملخص"
+                  )
+                )
+              ) : React.createElement(
+                "div",
+                { className: "text-xs text-slate-400 py-3 flex items-center justify-between" },
+                React.createElement("span", null, "لم يتم إعداد ملخص هذا الجزء بعد"),
+                currentUser.role === "admin" && React.createElement("button", {
+                  onClick: function() { handleGenerateChapterSummary(idx); },
+                  disabled: isAiGenerating,
+                  className: "text-xs px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                },
+                React.createElement("span", null, isAiGenerating ? "⏳" : "✨"),
+                React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "توليد الملخص (صوتي ومكتوب)")
+                )
+              )
+            );
+          })
+        )
+      )
+    ) : React.createElement(
+      "div",
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
+      React.createElement("div", { className: "text-3xl" }, "📚"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "المكتبة جاهزة لاستقبال الكتب والمراجع"),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "اضغط على زر 'إضافة مرجع جديد' لرفع كتابك الأول بصيغة PDF وتجهيز فصوله.")
+    ),
+
+    // نافذة إضافة مرجع جديد
+    showAddModal && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "إضافة مرجع أو كتاب دراسي"),
+          !isUploading && React.createElement("button", { onClick: function() { setShowAddModal(false); }, className: "text-slate-400" }, "✕")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleAddBook, className: "space-y-3" },
+          React.createElement(
+            "div",
+            {
+              onDragOver: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(true);
+              },
+              onDragLeave: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(false);
+              },
+              onDrop: function(e) {
+                e.preventDefault();
+                setIsDraggingFile(false);
+                var droppedFile = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (droppedFile) {
+                  processSelectedFile(droppedFile);
+                }
+              },
+              className: "p-4 rounded-2xl border-2 border-dashed transition-all text-center space-y-2 " +
+                (isDraggingFile ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 scale-[1.01]" : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20")
+            },
+            React.createElement("label", { className: "cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300 block space-y-1.5" },
+              React.createElement("div", { className: "text-2xl" }, isDraggingFile ? "📥" : (selectedFile ? "📕" : "📖")),
+              React.createElement("div", { className: "text-xs font-semibold" },
+                selectedFile ? "الملف المختار: " + selectedFile.name : (isDraggingFile ? "أفلت ملف الكتاب هنا للرفع مباشرة..." : "اسحب وأفلت ملف المرجع أو الكتاب (PDF) هنا")
+              ),
+              React.createElement("span", { className: "inline-block text-[11px] text-emerald-600 dark:text-emerald-400 underline font-medium" }, "أو اضغط لتصفح ملفات جهازك"),
+              React.createElement("input", {
+                type: "file",
+                accept: "application/pdf",
+                onChange: handleFileSelect,
+                disabled: isUploading,
+                className: "hidden"
+              })
+            ),
+            selectedFile && React.createElement(
+              "div",
+              { className: "flex items-center justify-center gap-2 pt-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, (selectedFile.size ? (selectedFile.size / (1024 * 1024)).toFixed(1) + " MB" : "")),
+              !isUploading && React.createElement("button", {
+                type: "button",
+                onClick: function() { setSelectedFile(null); },
+                className: "text-[11px] text-rose-500 hover:underline"
+              }, "إلغاء الملف")
+            )
+          ),
+          isUploading && React.createElement("div", { className: "p-2.5 bg-slate-900 text-white text-center text-xs rounded-xl animate-pulse" }, uploadStatusText),
+
+          // اسم الكتاب والمؤلف / الكاتب
+          React.createElement(
+            "div",
+            { className: "space-y-3 pt-1" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between mb-1" },
+                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم الكتاب / المرجع"),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleAutoFillWithAi,
+                    disabled: isAiAnalyzingBook || isUploading,
+                    className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                  },
+                  React.createElement("span", null, isAiAnalyzingBook ? "⏳" : "✨"),
+                  React.createElement("span", null, isAiAnalyzingBook ? "جاري الاستنتاج بالذكاء..." : "استكمال البيانات بالـ AI")
+                )
+              ),
+              React.createElement("input", {
+                type: "text",
+                required: true,
+                value: newTitle,
+                onChange: function(e) { setNewTitle(e.target.value); },
+                placeholder: "مثال: الروحانية الناضجة وجدانياً، فخاخ العلاقات...",
+                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium"
+              }),
+              React.createElement("p", { className: "text-[10px] text-slate-400 mt-1" }, "💡 اكتب الاسم أو اختر ملفاً ثم اضغط 'استكمال البيانات بالـ AI' ليقوم باستخراج الكاتب، عدد الصفحات، وعدد الفصول تلقائياً.")
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "اسم الكاتب / المؤلف"),
+              React.createElement("input", {
+                type: "text",
+                required: true,
+                value: newAuthor,
+                onChange: function(e) { setNewAuthor(e.target.value); },
+                placeholder: "مثال: د. أوسم وصفي، د. إميل جورج، د. عادل حليم...",
+                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+              })
+            )
+          ),
+
+          // إجمالي الصفحات وعدد الفصول
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "إجمالي الصفحات التقريبي"),
+              React.createElement("input", {
+                type: "number",
+                value: newTotalPages,
+                onChange: function(e) { setNewTotalPages(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "عدد الفصول للتقسيم"),
+              React.createElement("input", {
+                type: "number",
+                value: newChaptersCount,
+                onChange: function(e) { setNewChaptersCount(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            )
+          ),
+          React.createElement(
+            "label",
+            { className: "flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl cursor-pointer text-xs text-slate-700 dark:text-slate-300" },
+            React.createElement("input", {
+              type: "checkbox",
+              checked: includeIntro,
+              onChange: function(e) { setIncludeIntro(e.target.checked); },
+              className: "rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+            }),
+            React.createElement("span", { className: "font-medium" }, "تضمين قسم تمهيدي لـ 'المقدمة والمدخل' قبل الفصول")
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2" },
+            !isUploading && React.createElement("button", { type: "button", onClick: function() { setShowAddModal(false); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
+            React.createElement("button", {
+              type: "submit",
+              disabled: isUploading,
+              className: "px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white"
+            }, isUploading ? "جاري الرفع..." : "حفظ المرجع وتجهيز الفصول")
+          )
+        )
+      )
+    )
+  );
+};
+
+// Module: pages/CurriculumPage.js
+// شاشة المنهج الدراسي والتقارير التفاعلية المجهزة للمستقبل (Interactive Report & NotebookLM style)
+window.CurriculumPage = function(props) {
+  var currentUser = props.currentUser || { role: "admin" };
+  var ai = window.GeminiAIService;
+  var [reportText, setReportText] = React.useState("");
+  var [isGenerating, setIsGenerating] = React.useState(false);
+
+  var handleGenerateReport = async function() {
+    if (currentUser.role !== "admin") return;
+    setIsGenerating(true);
+    try {
+      var prompt = "قم بإعداد تقرير دراسي تفاعلي شامل (Interactive Study Guide) لدراسة المشورة:\n" +
+        "1. الخريطة الذهنية الكبرى للمنهج.\n" +
+        "2. شبكة العلاقات بين الموضوعات (الصدمات، آليات الدفاع، الشفاء الداخلي، والحدود).\n" +
+        "3. بنك أسئلة استبصار وتطبيقات لحالات واقعية مع الإجابات النموذجية.\n" +
+        "أخرج التقرير بأسلوب تفاعلي جذاب وعميق يخدم الدارس المتقدم.";
+      var res = await ai.callGemini(prompt);
+      setReportText(res);
+    } catch (err) {
+      alert("خطأ أثناء التوليد: " + err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المنهج الدراسي والتقارير التفاعلية"),
+      React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "قسم مخصص لاستيعاب وثيقة المنهج الكاملة واستخراج التقارير والخرائط الذهنية وبنك الأسئلة")
+    ),
+
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+      React.createElement(
+        "div",
+        { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-4" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "التقرير الدراسي المجمع للمنهج (Interactive Guide)"),
+          React.createElement("p", { className: "text-xs text-slate-400" }, "ربط شامل بين المحاضرات والمراجع والأسئلة التطبيقية")
+        ),
+        currentUser.role === "admin" && React.createElement(
+          "button",
+          {
+            onClick: handleGenerateReport,
+            disabled: isGenerating,
+            className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
+          },
+          isGenerating ? "جاري التحليل الشامل للمنهج..." : "✨ توليد التقرير التفاعلي"
+        )
+      ),
+
+      reportText ? React.createElement(
+        "div",
+        { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
+        reportText
+      ) : React.createElement(
+        "div",
+        { className: "p-10 text-center text-slate-400 text-xs space-y-2 border border-dashed rounded-2xl" },
+        React.createElement("div", { className: "text-2xl" }, "📑"),
+        React.createElement("p", null, "هذا القسم مجهز لاستقبال وثيقة المنهج المجمعة فور نزولها وتوليد التقرير التفاعلي منها.")
+      )
+    )
+  );
+};
+
+// Module: pages/NotesPage.js
+// شاشة الملاحظات والملخصات الدراسية النظيفة دون بيانات تجريبية
+window.NotesPage = function(props) {
+  var utils = window.APP_UTILS;
+  var cfg = window.APP_CONFIG;
+  var cloud = window.CloudSyncService;
+
+  var [notes, setNotes] = React.useState(function() {
+    return utils.getLocal("counsel_study_personal_notes", []);
+  });
+
+  var [newTitle, setNewTitle] = React.useState("");
+  var [newContent, setNewContent] = React.useState("");
+  var [newRef, setNewRef] = React.useState("");
+  var [showModal, setShowModal] = React.useState(false);
+
+  React.useEffect(function() {
+    var unsubscribe = cloud.subscribeNotes(function(cloudList) {
+      if (cloudList) {
+        setNotes(cloudList);
+        utils.setLocal("counsel_study_personal_notes", cloudList);
+      }
+    });
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
+
+  var handleAddNote = function(e) {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    var n = {
+      id: "note-" + Date.now(),
+      title: newTitle.trim(),
+      date: new Date().toISOString().split("T")[0],
+      lectureRef: newRef.trim() || "عام",
+      content: newContent.trim()
+    };
+
+    var updated = [n].concat(notes);
+    setNotes(updated);
+    setShowModal(false);
+    utils.setLocal("counsel_study_personal_notes", updated);
+    cloud.saveNote(n);
+
+    setNewTitle("");
+    setNewContent("");
+    setNewRef("");
+  };
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    React.createElement(
+      "div",
+      { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "ملاحظاتي وملخصاتي الدراسية"),
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "تدوين الخواطر والأفكار العميقة من المحاضرات للمذاكرة ومشاركتها مع الزملاء")
+      ),
+      React.createElement(
+        "button",
+        {
+          onClick: function() { setShowModal(true); },
+          className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
+        },
+        React.createElement("span", null, "➕"),
+        React.createElement("span", null, "تدوين ملاحظة جديدة")
+      )
+    ),
+
+    notes.length > 0 ? React.createElement(
+      "div",
+      { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+      notes.map(function(item) {
+        return React.createElement(
+          "div",
+          {
+            key: item.id,
+            className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs text-slate-400" },
+            React.createElement("span", { className: "font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-slate-600 dark:text-slate-300" }, item.lectureRef),
+            React.createElement("span", null, item.date)
+          ),
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, item.title),
+          React.createElement("p", { className: "text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap" }, item.content)
+        );
+      })
+    ) : React.createElement(
+      "div",
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
+      React.createElement("div", { className: "w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center text-3xl mx-auto" }, "📝"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "لا توجد ملاحظات مسجلة بعد"),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" }, "يمكنك البدء بتدوين أي فكرة أو ملخص شخصي أثناء متابعة المحاضرات.")
+    ),
+
+    showModal && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تدوين خاطرة أو تلخيص دراسي"),
+          React.createElement("button", { onClick: function() { setShowModal(false); }, className: "text-slate-400" }, "✕")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleAddNote, className: "space-y-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" }, "عنوان الملاحظة"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: newTitle,
+              onChange: function(e) { setNewTitle(e.target.value); },
+              placeholder: "عنوان الملاحظة...",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs md:text-sm text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" }, "مرجع المحاضرة"),
+            React.createElement("input", {
+              type: "text",
+              value: newRef,
+              onChange: function(e) { setNewRef(e.target.value); },
+              placeholder: "المحاضرة الأولى / الفصل الأول...",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs md:text-sm text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" }, "نص الملاحظة"),
+            React.createElement("textarea", {
+              rows: 4,
+              required: true,
+              value: newContent,
+              onChange: function(e) { setNewContent(e.target.value); },
+              placeholder: "اكتب ما استوعبته بأسلوبك الشخصي...",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs md:text-sm text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2" },
+            React.createElement("button", { type: "button", onClick: function() { setShowModal(false); }, className: "px-4 py-2 rounded-xl text-xs font-bold text-slate-500" }, "إلغاء"),
+            React.createElement("button", { type: "submit", className: "px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white" }, "حفظ الملاحظة")
+          )
+        )
+      )
+    )
+  );
+};
+
+// Module: pages/UsersManagementPage.js
+// شاشة إدارة طلبات المستخدمين وقبول/رفض الدارسين (للمسؤول نادر كمال فقط)
+window.UsersManagementPage = function(props) {
+  var currentUser = props.currentUser || { role: "admin" };
+  var [users, setUsers] = React.useState([]);
+  var [isLoading, setIsLoading] = React.useState(true);
+
+  var fetchUsers = async function() {
+    if (!window.db) return;
+    try {
+      var snap = await window.db.collection("users").get();
+      var list = [];
+      snap.forEach(function(doc) {
+        list.push(Object.assign({ id: doc.id }, doc.data()));
+      });
+      setUsers(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(function() {
+    fetchUsers();
+  }, []);
+
+  var handleUpdateStatus = async function(userId, newStatus) {
+    if (!window.db) return;
+    try {
+      await window.db.collection("users").doc(userId).set({
+        status: newStatus,
+        reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      setUsers(users.map(function(u) {
+        if (u.id === userId) return Object.assign({}, u, { status: newStatus });
+        return u;
+      }));
+    } catch (e) {
+      alert("خطأ: " + e.message);
+    }
+  };
+
+  var pendingUsers = users.filter(function(u) { return u.status === "pending"; });
+  var approvedUsers = users.filter(function(u) { return u.status === "approved"; });
+  var rejectedUsers = users.filter(function(u) { return u.status === "rejected"; });
+
+  if (currentUser.role !== "admin") {
+    return React.createElement("div", { className: "p-8 text-center text-slate-500 text-sm" },
+      "عفواً، هذه الشاشة مخصصة للمسؤول (الأدمن) فقط لإدارة طلبات الانضمام."
+    );
+  }
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "إدارة طلبات الانضمام والدارسين"),
+        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "مراجعة رسائل الزملاء الدارسين وتأكيد بياناتهم قبل السماح لهم بالدخول للمنصة")
+      ),
+      React.createElement("button", {
+        onClick: fetchUsers,
+        className: "text-xs px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 font-semibold"
+      }, "تحديث القائمة 🔄")
+    ),
+
+    // 1. قسم الطلبات المعلقة (Pending)
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+      React.createElement("div", { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "طلبات بانتظار موافقتك (" + pendingUsers.length + ")"),
+        React.createElement("span", { className: "text-xs bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full font-bold" }, "قيد المراجعة")
+      ),
+
+      pendingUsers.length > 0 ? React.createElement(
+        "div",
+        { className: "space-y-3" },
+        pendingUsers.map(function(u) {
+          return React.createElement(
+            "div",
+            {
+              key: u.id,
+              className: "p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-2"
+            },
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" },
+              React.createElement("div", null,
+                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, u.fullName),
+                React.createElement("p", { className: "text-xs text-slate-500" }, "الهاتف: " + u.phone + " • البريد: " + u.email)
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2" },
+                React.createElement("button", {
+                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
+                  className: "px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                }, "قبول وانضمام ✓"),
+                React.createElement("button", {
+                  onClick: function() { handleUpdateStatus(u.id, "rejected"); },
+                  className: "px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
+                }, "رفض ✕")
+              )
+            ),
+            React.createElement("div", { className: "p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 text-xs text-slate-600 dark:text-slate-300" },
+              React.createElement("span", { className: "font-bold text-slate-400 block mb-0.5" }, "رسالة الزميل الدارس:"),
+              u.instituteMessage || "لا توجد رسالة مرفقة"
+            )
+          );
+        })
+      ) : React.createElement(
+        "div",
+        { className: "p-6 text-center text-xs text-slate-400" },
+        "لا توجد أي طلبات معلقة حالياً."
+      )
+    ),
+
+    // 2. قائمة الدارسين المقبولين (Approved)
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+      React.createElement("div", { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الدارسون المعتمدون بالمنصة (" + approvedUsers.length + ")"),
+        React.createElement("span", { className: "text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold" }, "نشط")
+      ),
+
+      approvedUsers.length > 0 ? React.createElement(
+        "div",
+        { className: "divide-y divide-slate-100 dark:divide-slate-800" },
+        approvedUsers.map(function(u) {
+          return React.createElement(
+            "div",
+            {
+              key: u.id,
+              className: "py-3 flex items-center justify-between gap-3 text-xs"
+            },
+            React.createElement("div", null,
+              React.createElement("span", { className: "font-bold text-slate-900 dark:text-white block" }, u.fullName),
+              React.createElement("span", { className: "text-slate-400" }, u.phone + " • " + u.email)
+            ),
+            React.createElement("button", {
+              onClick: function() {
+                if (confirm("هل تريد استبعاد هذا المستخدم وتعليق حسابه؟")) {
+                  handleUpdateStatus(u.id, "rejected");
+                }
+              },
+              className: "text-rose-600 hover:text-rose-800 font-semibold"
+            }, "إلغاء التفعيل / إخراج")
+          );
+        })
+      ) : React.createElement(
+        "div",
+        { className: "p-6 text-center text-xs text-slate-400" },
+        "لم يتم اعتماد أي دارسين بعد."
+      )
+    )
+  );
+};
+
+// Module: pages/ErrorReportsAdminPage.js
+// شاشة تقارير الأعطال والأخطاء الفنية (للمسؤول نادر كمال فقط)
+window.ErrorReportsAdminPage = function(props) {
+  var currentUser = props.currentUser || { role: "admin" };
+  var [reports, setReports] = React.useState([]);
+  var [isLoading, setIsLoading] = React.useState(true);
+
+  var fetchReports = async function() {
+    if (!window.db) return;
+    try {
+      var snap = await window.db.collection("error_reports").orderBy("createdAt", "desc").get();
+      var list = [];
+      snap.forEach(function(doc) {
+        list.push(Object.assign({ id: doc.id }, doc.data()));
+      });
+      setReports(list);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(function() {
+    fetchReports();
+  }, []);
+
+  var handleResolve = async function(reportId) {
+    if (!window.db) return;
+    try {
+      await window.db.collection("error_reports").doc(reportId).set({
+        status: "resolved",
+        resolvedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      setReports(reports.map(function(r) {
+        if (r.id === reportId) return Object.assign({}, r, { status: "resolved" });
+        return r;
+      }));
+    } catch (e) {
+      alert("خطأ: " + e.message);
+    }
+  };
+
+  if (currentUser.role !== "admin") return null;
+
+  var openReports = reports.filter(function(r) { return r.status !== "resolved"; });
+  var resolvedReports = reports.filter(function(r) { return r.status === "resolved"; });
+
+  return React.createElement(
+    "div",
+    { className: "space-y-6 pb-12" },
+
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2" },
+          React.createElement("span", null, "🛠️"),
+          "سجل بلاغات الأعطال من المستخدمين"
+        ),
+        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "تقارير الأخطاء البرمجية وأكواد الـ Stack Trace المرسلة من الزملاء للتشخيص والإصلاح")
+      ),
+      React.createElement("button", {
+        onClick: fetchReports,
+        className: "text-xs px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 font-semibold"
+      }, "تحديث البلاغات 🔄")
+    ),
+
+    // البلاغات المفتوحة
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+      React.createElement("div", { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "بلاغات بحاجة للإصلاح (" + openReports.length + ")"),
+        React.createElement("span", { className: "text-xs bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full font-bold" }, "مفتوحة")
+      ),
+
+      openReports.length > 0 ? React.createElement(
+        "div",
+        { className: "space-y-4" },
+        openReports.map(function(r) {
+          return React.createElement(
+            "div",
+            {
+              key: r.id,
+              className: "p-4 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/20 space-y-3"
+            },
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" },
+              React.createElement("div", null,
+                React.createElement("span", { className: "text-xs font-bold bg-slate-900 text-white px-2 py-0.5 rounded-md ml-2" }, "الصفحة: " + r.page),
+                React.createElement("span", { className: "text-xs font-semibold text-slate-700 dark:text-slate-300" }, "المرسل: " + r.senderName + " (" + r.senderPhone + ")")
+              ),
+              React.createElement("button", {
+                onClick: function() { handleResolve(r.id); },
+                className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs"
+              }, "تم الإصلاح بنجاح ✓")
+            ),
+            React.createElement("div", { className: "p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 text-xs text-slate-800 dark:text-slate-200" },
+              React.createElement("span", { className: "font-bold text-slate-400 block mb-0.5" }, "وصف المستخدم:"),
+              r.userDescription
+            ),
+            React.createElement("div", { className: "p-3 bg-slate-900 rounded-xl text-[11px] font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap max-h-40" },
+              r.errorDetails
+            )
+          );
+        })
+      ) : React.createElement(
+        "div",
+        { className: "p-6 text-center text-xs text-slate-400" },
+        "ممتاز! لا توجد أي بلاغات أعطال معلقة حالياً."
+      )
+    )
+  );
+};
+
+// Module: pages/SettingsPage.js
+// شاشة الإعدادات وربط المفاتيح السحابية
+window.SettingsPage = function() {
+  var utils = window.APP_UTILS;
+  var cfg = window.APP_CONFIG;
+
+  var [apiKey, setApiKey] = React.useState(function() {
+    return utils.getLocal(cfg.storageKeys.apiKey, "");
+  });
+  var [savedToast, setSavedToast] = React.useState(false);
+
+  React.useEffect(function() {
+    var loadCloudKey = async function() {
+      if (window.GeminiAIService && window.GeminiAIService.getApiKey) {
+        var cloudKey = await window.GeminiAIService.getApiKey();
+        if (cloudKey && !apiKey) {
+          setApiKey(cloudKey);
+        }
+      }
+    };
+    loadCloudKey();
+  }, []);
+
+  var handleSaveKey = async function(e) {
+    e.preventDefault();
+    if (window.GeminiAIService && window.GeminiAIService.saveApiKey) {
+      await window.GeminiAIService.saveApiKey(apiKey);
+    }
+    utils.setLocal(cfg.storageKeys.apiKey, apiKey.trim());
+    setSavedToast(true);
+    setTimeout(function() { setSavedToast(false); }, 2500);
+  };
+
+  return React.createElement(
+    "div",
+    { className: "max-w-3xl mx-auto space-y-6 pb-20 md:pb-8" },
+
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "⚙️ إعدادات المنصة والربط السحابي"),
+      React.createElement("p", { className: "text-sm text-slate-500 dark:text-slate-400 mt-1" }, "إدارة مفاتيح الذكاء الاصطناعي السحابية وربط التخزين")
+    ),
+
+    // بطاقة مفتاح الذكاء الاصطناعي
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+      React.createElement(
+        "div",
+        null,
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "مفتاح واجهة برمجة التطبيقات للذكاء الاصطناعي"),
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "يُخزن المفتاح بأمان داخل متصفحك الشخصي فقط، ويُستخدم لتوليد البودكاست وتلخيص المراجع.")
+      ),
+      React.createElement(
+        "form",
+        { onSubmit: handleSaveKey, className: "space-y-3" },
+        React.createElement("input", {
+          type: "password",
+          value: apiKey,
+          onChange: function(e) { setApiKey(e.target.value); },
+          placeholder: "ضع المفتاح السحابي هنا...",
+          className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        }),
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between" },
+          savedToast ? React.createElement("span", { className: "text-xs text-emerald-600 font-bold" }, "✓ تم حفظ المفتاح بنجاح!") : React.createElement("span", null),
+          React.createElement("button", {
+            type: "submit",
+            className: "bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20"
+          }, "حفظ المفتاح")
+        )
+      )
+    ),
+
+    // إرشادات ربط جوجل درايف
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3" },
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "💡 كيفية ربط ملفات جوجل درايف الكبيرة"),
+      React.createElement(
+        "ul",
+        { className: "space-y-2 text-xs md:text-sm text-slate-600 dark:text-slate-300 list-disc list-inside leading-relaxed" },
+        React.createElement("li", null, "ارفع ملف المحاضرة (صوت أو فيديو) أو ملف الكتاب (PDF) إلى مجلد في حساب جوجل درايف الخاص بك."),
+        React.createElement("li", null, "اضغط على مشاركة، واجعل الوصول: 'أي شخص لديه الرابط يمكنه العرض'."),
+        React.createElement("li", null, "انسخ رابط الملف وضعه في خانة الرابط عند إضافة محاضرة أو كتاب جديد داخل التطبيق."),
+        React.createElement("li", null, "المنصة ستقوم بتضمين الملف وتشغيله مباشرة دون استهلاك أي مساحة من خادم التطبيق.")
+      )
+    )
+  );
+};
+
+// Module: App.js
+// المكون الرئيسي App.js مع دمج نظام التقاط وبلاغات الأعطال
+function App() {
+  var utils = window.APP_UTILS;
+  var cfg = window.APP_CONFIG;
+
+  var [activeTab, setActiveTab] = React.useState("lectures");
+  var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  var [isAuthOpen, setIsAuthOpen] = React.useState(false);
+  var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);
+
+  var [isInstallPromptOpen, setIsInstallPromptOpen] = React.useState(false);
+  var [deferredPrompt, setDeferredPrompt] = React.useState(null);
+  var [hasNotificationPermission, setHasNotificationPermission] = React.useState(function() {
+    return ("Notification" in window) && Notification.permission === "granted";
+  });
+
+  var [hasUpdateAvailable, setHasUpdateAvailable] = React.useState(false);
+
+  // مراقبة توفر تحديث جديد للمنصة فوراً عند كل رفع
+  React.useEffect(function() {
+    var checkAppUpdate = async function() {
+      try {
+        var base = window.location.href.split("#")[0].split("?")[0];
+        var response = await fetch(base + "?t=" + Date.now(), { cache: "no-store" });
+        if (response.ok) {
+          var htmlText = await response.text();
+          var match = htmlText.match(/version:\s*"([^"]+)"/);
+          if (match && match[1] && match[1] !== cfg.version) {
+            setHasUpdateAvailable(true);
+          }
+        }
+      } catch (e) {}
+    };
+
+    var interval = setInterval(checkAppUpdate, 15000);
+    checkAppUpdate();
+
+    var onFocus = function() { checkAppUpdate(); };
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+
+    return function() {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
+  // التقاط حدث تثبيت التطبيق PWA
+  React.useEffect(function() {
+    var handleBeforeInstall = function(e) {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+
+    // الاستماع للإشعارات الواردة
+    var unsubscribeNotifs = function() {};
+    if (window.NotificationService && typeof window.NotificationService.subscribeNotifications === "function") {
+      var initialLoad = true;
+      unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
+        if (!initialLoad && list.length > 0) {
+          var latest = list[0];
+          if ("Notification" in window && Notification.permission === "granted") {
+            try {
+              new Notification(latest.title, {
+                body: latest.body,
+                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f172a'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌿%3C/text%3E%3C/svg%3E"
+              });
+            } catch (err) {}
+          }
+        }
+        initialLoad = false;
+      });
+    }
+
+    return function() {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      if (typeof unsubscribeNotifs === "function") unsubscribeNotifs();
+    };
+  }, []);
+
+  var handleToggleNotification = async function() {
+    if (window.NotificationService && typeof window.NotificationService.requestPermission === "function") {
+      var granted = await window.NotificationService.requestPermission();
+      setHasNotificationPermission(granted);
+    }
+  };
+
+  var [currentUser, setCurrentUser] = React.useState(function() {
+    return utils.getLocal("counsel_current_user", {
+      fullName: "الأدمن",
+      email: "eng.nader.reda@gmail.com",
+      phone: "01275571569",
+      role: "admin",
+      status: "approved"
+    });
+  });
+
+  var [theme, setTheme] = React.useState(function() {
+    return utils.getLocal(cfg.storageKeys.theme, "light");
+  });
+
+  React.useEffect(function() {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    utils.setLocal(cfg.storageKeys.theme, theme);
+  }, [theme]);
+
+  var handleToggleTheme = function() {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  var handleLoginSuccess = function(userData) {
+    setCurrentUser(userData);
+    utils.setLocal("counsel_current_user", userData);
+    alert("مرحباً بك يا " + (userData.fullName || "زميلنا العزيز") + "! تم تسجيل الدخول بنجاح.");
+  };
+
+  return React.createElement(
+    "div",
+    { className: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-cairo" },
+
+    React.createElement(window.Sidebar, {
+      activeTab: activeTab,
+      onTabChange: setActiveTab,
+      currentUser: currentUser,
+      onOpenAuth: function() { setIsAuthOpen(true); },
+      isOpen: isSidebarOpen,
+      onClose: function() { setIsSidebarOpen(false); },
+      hasNotificationPermission: hasNotificationPermission,
+      onToggleNotification: handleToggleNotification,
+      onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
+      onOpenErrorReport: function() { setIsErrorReportOpen(true); }
+    }),
+
+    React.createElement(
+      "div",
+      { className: "flex-1 flex flex-col min-w-0 transition-all duration-300 w-full" },
+
+      // الترويسة العلوية الثابتة دائماً أثناء التمرير
+      React.createElement(
+        "div",
+        { className: "sticky top-0 z-30 flex flex-col shadow-sm" },
+        React.createElement(window.Header, {
+          isSidebarOpen: isSidebarOpen,
+          onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
+          theme: theme,
+          onToggleTheme: handleToggleTheme,
+          currentUser: currentUser,
+          onOpenErrorReport: function() { setIsErrorReportOpen(true); },
+          hasNotificationPermission: hasNotificationPermission,
+          onToggleNotification: handleToggleNotification,
+          onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); }
+        }),
+
+        // شريط إشعار بوجود تحديث جديد يظهر مباشرة ويثبت في الأعلى
+        hasUpdateAvailable && React.createElement(
+          "div",
+          {
+            className: "bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2.5 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md animate-pulse border-b border-orange-600"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-base" }, "🚀"),
+            React.createElement("span", null, "يتوفر تحديث جديد للمنصة الآن! اضغط لتطبيقه فوراً.")
+          ),
+          React.createElement(
+            "button",
+            {
+              onClick: function() { window.location.reload(true); },
+              className: "bg-white text-orange-600 px-3.5 py-1 rounded-lg text-xs font-bold hover:bg-orange-50 shadow-sm transition-all active:scale-95 whitespace-nowrap"
+            },
+            "اضغط هنا للتحديث 🔄"
+          )
+        )
+      ),
+
+      React.createElement(
+        "main",
+        { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8" },
+        activeTab === "lectures" && React.createElement(window.LecturesPage, { currentUser: currentUser }),
+        activeTab === "books" && React.createElement(window.BooksPage, { currentUser: currentUser }),
+        activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
+        activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
+        activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
+        activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: currentUser }),
+        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser })
+      )
+    ),
+
+    React.createElement(window.BottomNav, {
+      activeTab: activeTab,
+      onTabChange: setActiveTab,
+      onToggleSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); }
+    }),
+
+    React.createElement(window.AuthModal, {
+      isOpen: isAuthOpen,
+      onClose: function() { setIsAuthOpen(false); },
+      onLoginSuccess: handleLoginSuccess
+    }),
+
+    React.createElement(window.ErrorReporterModal, {
+      isOpen: isErrorReportOpen,
+      onClose: function() { setIsErrorReportOpen(false); },
+      currentUser: currentUser,
+      activeTab: activeTab
+    }),
+
+    React.createElement(window.InstallPromptModal, {
+      isOpen: isInstallPromptOpen,
+      onClose: function() { setIsInstallPromptOpen(false); },
+      deferredPrompt: deferredPrompt,
+      onInstalled: function() {
+        setDeferredPrompt(null);
+        alert("تهانينا! تم تثبيت تطبيق منصة المشورة بنجاح على جهازك.");
+      }
+    })
+  );
+}
+
+ReactDOM.render(React.createElement(App, null), document.getElementById("root"));
+
+  </script>
+</body>
+</html>
