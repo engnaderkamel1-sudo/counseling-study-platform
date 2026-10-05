@@ -16,6 +16,9 @@ window.BooksPage = function(props) {
   var [isAiGenerating, setIsAiGenerating] = React.useState(false);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
   var [speakingChapterIdx, setSpeakingChapterIdx] = React.useState(null);
+  var [isAudioPaused, setIsAudioPaused] = React.useState(false);
+  var [audioProgress, setAudioProgress] = React.useState({ current: 0, total: 0 });
+  var [audioPlaybackRate, setAudioPlaybackRate] = React.useState(1.0); // 0.8x, 1.0x, 1.25x, 1.5x, 2.0x
 
   // حقول الإضافة
   var [selectedFile, setSelectedFile] = React.useState(null);
@@ -50,35 +53,40 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // مرجع إدارة تشغيل الصوت المباشر والاحتياطي
+  // مرجع إدارة تشغيل الصوت المباشر
   var audioPlayerRef = React.useRef({
-    audio: null,
+    utterance: null,
     chunks: [],
     chunkIdx: 0,
     isPlaying: false,
-    chapterIdx: null
+    isPaused: false,
+    playbackRate: 1.0,
+    chapterIdx: null,
+    keepAliveTimer: null
   });
 
   // تنظيف وإيقاف الصوت
   var stopAudioPlayback = function() {
     var p = audioPlayerRef.current;
+    if (p.keepAliveTimer) {
+      clearInterval(p.keepAliveTimer);
+      p.keepAliveTimer = null;
+    }
     p.isPlaying = false;
+    p.isPaused = false;
     p.chapterIdx = null;
     p.chunks = [];
     p.chunkIdx = 0;
-    if (p.audio) {
-      try {
-        p.audio.pause();
-        p.audio.src = "";
-      } catch (e) {}
-      p.audio = null;
-    }
+    p.utterance = null;
+
     if (window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();
       } catch (e) {}
     }
     setSpeakingChapterIdx(null);
+    setIsAudioPaused(false);
+    setAudioProgress({ current: 0, total: 0 });
   };
 
   React.useEffect(function() {
@@ -116,7 +124,7 @@ window.BooksPage = function(props) {
       .trim();
   };
 
-  // تقسيم النص إلى جمل صوتية سلسة تضمن استقرار ونقاء الصوت في كافة الأجهزة
+  // تقسيم النص إلى جمل متوسطة مريحة للأذن ولا تقطع في أي متصفح
   var splitIntoSpokenChunks = function(text) {
     if (!text) return [];
     var rawParts = text.split(/([.\n،؛!؟]+)/);
@@ -125,15 +133,15 @@ window.BooksPage = function(props) {
     for (var i = 0; i < rawParts.length; i++) {
       var part = rawParts[i].trim();
       if (!part) continue;
-      if ((cur + " " + part).length <= 140) {
+      if ((cur + " " + part).length <= 110) {
         cur = cur ? (cur + " " + part) : part;
       } else {
         if (cur) chunks.push(cur);
-        if (part.length > 140) {
+        if (part.length > 110) {
           var words = part.split(/\s+/);
           var subCur = "";
           for (var w = 0; w < words.length; w++) {
-            if ((subCur + " " + words[w]).length <= 140) {
+            if ((subCur + " " + words[w]).length <= 110) {
               subCur = subCur ? (subCur + " " + words[w]) : words[w];
             } else {
               if (subCur) chunks.push(subCur);
@@ -151,81 +159,104 @@ window.BooksPage = function(props) {
     return chunks.length > 0 ? chunks : [text];
   };
 
-  // تشغيل الجملة التالية في قائمة الصوت
-  var playNextChunk = function() {
+  // تشغيل الجملة المحددة بمحرك الكلام الصوتي
+  var speakChunkAtIndex = function(idx) {
     var p = audioPlayerRef.current;
     if (!p.isPlaying) return;
-    if (p.chunkIdx >= p.chunks.length) {
+    if (idx < 0 || idx >= p.chunks.length) {
       stopAudioPlayback();
       return;
     }
 
-    var chunk = p.chunks[p.chunkIdx];
-    var encoded = encodeURIComponent(chunk);
-    var ttsUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=" + encoded;
+    p.chunkIdx = idx;
+    setAudioProgress({ current: idx + 1, total: p.chunks.length });
 
-    var audio = new Audio();
-    p.audio = audio;
-
-    var hasFallenBack = false;
-    var fallbackToNativeSpeech = function() {
-      if (hasFallenBack || !p.isPlaying) return;
-      hasFallenBack = true;
-      if (!("speechSynthesis" in window)) {
-        stopAudioPlayback();
-        return;
-      }
-      try {
-        var utterance = new SpeechSynthesisUtterance(chunk);
-        utterance.lang = "ar-SA";
-        utterance.rate = 0.95;
-        var voices = window.speechSynthesis.getVoices();
-        var arVoice = voices.find(function(v) { return v.lang && v.lang.toLowerCase().startsWith("ar"); });
-        if (arVoice) utterance.voice = arVoice;
-        utterance.onend = function() {
-          if (!p.isPlaying) return;
-          p.chunkIdx++;
-          playNextChunk();
-        };
-        utterance.onerror = function() {
-          if (!p.isPlaying) return;
-          p.chunkIdx++;
-          playNextChunk();
-        };
-        if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        stopAudioPlayback();
-      }
-    };
-
-    audio.onended = function() {
-      if (!p.isPlaying) return;
-      p.chunkIdx++;
-      playNextChunk();
-    };
-
-    audio.onerror = function() {
-      fallbackToNativeSpeech();
-    };
+    if (!("speechSynthesis" in window)) {
+      alert("خاصية الصوت غير مدعومة في هذا المتصفح.");
+      stopAudioPlayback();
+      return;
+    }
 
     try {
-      audio.src = ttsUrl;
-      var playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(function() {
-          fallbackToNativeSpeech();
-        });
-      }
-    } catch (e) {
-      fallbackToNativeSpeech();
+      window.speechSynthesis.cancel();
+    } catch (e) {}
+
+    var chunk = p.chunks[idx];
+    var utterance = new SpeechSynthesisUtterance(chunk);
+    utterance.lang = "ar-SA";
+    utterance.rate = p.playbackRate || 1.0;
+    utterance.pitch = 1.0;
+
+    // محاولة اختيار أفضل صوت عربي متاح على الجهاز (أندرويد / آيفون / ويندوز)
+    var voices = window.speechSynthesis.getVoices();
+    var arVoice = voices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      return l.startsWith("ar") || l.indexOf("arabic") !== -1;
+    });
+    if (arVoice) {
+      utterance.voice = arVoice;
     }
+
+    utterance.onend = function() {
+      if (!p.isPlaying || p.isPaused) return;
+      if (p.chunkIdx + 1 < p.chunks.length) {
+        speakChunkAtIndex(p.chunkIdx + 1);
+      } else {
+        stopAudioPlayback();
+      }
+    };
+
+    utterance.onerror = function(err) {
+      if (!p.isPlaying) return;
+      // إذا حدث انقطاع، ننتقل تلقائياً للجملة التالية
+      if (p.chunkIdx + 1 < p.chunks.length) {
+        setTimeout(function() { speakChunkAtIndex(p.chunkIdx + 1); }, 80);
+      } else {
+        stopAudioPlayback();
+      }
+    };
+
+    p.utterance = utterance;
+
+    // حل مشكلة تجميد الصوت بعد 15 ثانية على متصفحات كروم وآيفون
+    if (!p.keepAliveTimer) {
+      p.keepAliveTimer = setInterval(function() {
+        if (window.speechSynthesis && window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 10000);
+    }
+
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+    window.speechSynthesis.speak(utterance);
   };
 
-  // تشغيل / إيقاف الصوت بنبرة طبيعية وإنسانية
+  // تشغيل / إيقاف المشغل الصوتي
   var handleToggleSpeech = function(chapterIndex, textToRead) {
+    var p = audioPlayerRef.current;
+
+    // إذا كان نفس الفصل شغال، يتم التبديل بين تشغيل وإيقاف مؤقت
     if (speakingChapterIdx === chapterIndex) {
-      stopAudioPlayback();
+      if (isAudioPaused) {
+        // استئناف
+        p.isPaused = false;
+        setIsAudioPaused(false);
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        } else {
+          speakChunkAtIndex(p.chunkIdx);
+        }
+      } else {
+        // إيقاف مؤقت
+        p.isPaused = true;
+        setIsAudioPaused(true);
+        if (window.speechSynthesis) {
+          window.speechSynthesis.pause();
+        }
+      }
       return;
     }
 
@@ -240,14 +271,47 @@ window.BooksPage = function(props) {
     var chunks = splitIntoSpokenChunks(cleanText);
     if (chunks.length === 0) return;
 
-    var p = audioPlayerRef.current;
     p.isPlaying = true;
+    p.isPaused = false;
     p.chapterIdx = chapterIndex;
     p.chunks = chunks;
     p.chunkIdx = 0;
+    p.playbackRate = audioPlaybackRate;
 
     setSpeakingChapterIdx(chapterIndex);
-    playNextChunk();
+    setIsAudioPaused(false);
+    speakChunkAtIndex(0);
+  };
+
+  // تقديم 10 ثوانٍ (جملة للأمام)
+  var handleAudioSeekForward = function() {
+    var p = audioPlayerRef.current;
+    if (!p.isPlaying) return;
+    var nextIdx = Math.min(p.chunks.length - 1, p.chunkIdx + 1);
+    p.isPaused = false;
+    setIsAudioPaused(false);
+    speakChunkAtIndex(nextIdx);
+  };
+
+  // ترجيع 10 ثوانٍ (جملة للخلف)
+  var handleAudioSeekBackward = function() {
+    var p = audioPlayerRef.current;
+    if (!p.isPlaying) return;
+    var prevIdx = Math.max(0, p.chunkIdx - 1);
+    p.isPaused = false;
+    setIsAudioPaused(false);
+    speakChunkAtIndex(prevIdx);
+  };
+
+  // تغيير سرعة القراءة (1x, 1.25x, 1.5x, 0.8x)
+  var handleAudioSpeedChange = function(newRate) {
+    setAudioPlaybackRate(newRate);
+    var p = audioPlayerRef.current;
+    p.playbackRate = newRate;
+    if (p.isPlaying && !p.isPaused) {
+      // إعادة نطق الجملة الحالية بالسرعة الجديدة
+      speakChunkAtIndex(p.chunkIdx);
+    }
   };
 
   // توليد ملخص صوتي ومكتوب احترافي بدون عبارات نمطية
@@ -682,23 +746,110 @@ window.BooksPage = function(props) {
                     { className: "text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
                     cleanSpokenText(ch.audioScript || ch.summaryText)
                   ),
-                  // مشغل القراءة الصوتية الطبيعي
+                  // مشغل صوتي تفاعلي كامل بتجربة Audio Player
                   React.createElement(
                     "div",
-                    { className: "flex items-center justify-between p-2.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/40 text-xs" },
+                    { className: "p-3 bg-gradient-to-br from-slate-900 to-slate-800 text-white dark:from-slate-950 dark:to-emerald-950/60 rounded-2xl border border-slate-700/60 dark:border-emerald-800/40 shadow-sm space-y-2.5 text-xs" },
+                    
+                    // شريط الحالة والتحكم الأساسي
                     React.createElement(
-                      "button",
-                      {
-                        type: "button",
-                        onClick: function() { handleToggleSpeech(idx, ch.audioScript || ch.summaryText); },
-                        className: "px-3 py-1.5 rounded-lg font-bold flex items-center gap-2 " +
-                          (isSpeaking
-                            ? "bg-rose-600 text-white animate-pulse"
-                            : "bg-emerald-600 text-white hover:bg-emerald-700")
-                      },
-                      React.createElement("span", null, isSpeaking ? "⏹️ إيقاف الصوت" : "▶️ استماع الآن بصوت واضح")
+                      "div",
+                      { className: "flex items-center justify-between gap-2" },
+                      React.createElement(
+                        "div",
+                        { className: "flex items-center gap-1.5" },
+                        React.createElement("span", { className: "text-base" }, isSpeaking ? (isAudioPaused ? "⏸️" : "🔊") : "🎧"),
+                        React.createElement("span", { className: "font-bold text-xs" }, isSpeaking ? (isAudioPaused ? "متوقف مؤقتاً" : "جاري الاستماع الآن") : "مشغل الملخص الصوتي"),
+                        isSpeaking && audioProgress.total > 0 && React.createElement(
+                          "span",
+                          { className: "text-[11px] bg-slate-800 dark:bg-emerald-900/60 text-emerald-400 px-2 py-0.5 rounded-full font-mono mr-1" },
+                          audioProgress.current + " / " + audioProgress.total
+                        )
+                      ),
+                      // زر إيقاف كامل عند التشغيل
+                      isSpeaking && React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: stopAudioPlayback,
+                          className: "text-[11px] text-rose-400 hover:text-rose-300 font-medium px-2 py-1 rounded-lg bg-rose-950/40 border border-rose-800/40 transition-all active:scale-95"
+                        },
+                        "إنهاء الاستماع ⏹️"
+                      )
                     ),
-                    React.createElement("span", { className: "text-[11px] text-emerald-700 dark:text-emerald-300 font-medium" }, "استماع صوتي في أي وقت 🎧")
+
+                    // شريط أزرار التحكم (ترجيع، تشغيل/إيقاف، تقديم، تسريع)
+                    React.createElement(
+                      "div",
+                      { className: "flex items-center justify-between pt-1 gap-2 border-t border-slate-700/50" },
+                      
+                      // مجموعة أزرار المشغل
+                      React.createElement(
+                        "div",
+                        { className: "flex items-center gap-1.5" },
+                        // زر ترجيع 10 ثوانٍ (جملة للخلف)
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: handleAudioSeekBackward,
+                            disabled: !isSpeaking,
+                            title: "تخطي جملة للخلف",
+                            className: "p-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-all active:scale-95"
+                          },
+                          React.createElement("span", null, "⏪ 10ث")
+                        ),
+
+                        // زر تشغيل / إيقاف مؤقت الرئيسي
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: function() { handleToggleSpeech(idx, ch.audioScript || ch.summaryText); },
+                            className: "px-4 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 " +
+                              (isSpeaking
+                                ? (isAudioPaused ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse")
+                                : "bg-emerald-600 hover:bg-emerald-700 text-white")
+                          },
+                          React.createElement("span", null, isSpeaking ? (isAudioPaused ? "▶️ استئناف" : "⏸️ إيقاف مؤقت") : "▶️ بدء الاستماع")
+                        ),
+
+                        // زر تقديم 10 ثوانٍ (جملة للأمام)
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: handleAudioSeekForward,
+                            disabled: !isSpeaking,
+                            title: "تخطي جملة للأمام",
+                            className: "p-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-all active:scale-95"
+                          },
+                          React.createElement("span", null, "10ث ⏩")
+                        )
+                      ),
+
+                      // خيارات السرعة (0.8x, 1x, 1.25x, 1.5x)
+                      React.createElement(
+                        "div",
+                        { className: "flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60" },
+                        [0.85, 1.0, 1.25, 1.5].map(function(speed) {
+                          var isActive = audioPlaybackRate === speed;
+                          return React.createElement(
+                            "button",
+                            {
+                              key: speed,
+                              type: "button",
+                              onClick: function() { handleAudioSpeedChange(speed); },
+                              className: "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all " +
+                                (isActive
+                                  ? "bg-emerald-500 text-slate-950 shadow-xs"
+                                  : "text-slate-400 hover:text-white")
+                            },
+                            speed + "x"
+                          );
+                        })
+                      )
+                    )
                   )
                 ),
                 currentUser.role === "admin" && React.createElement(
