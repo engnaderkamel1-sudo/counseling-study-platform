@@ -248,7 +248,7 @@ window.LecturesPage = function(props) {
         "div",
         null,
         React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المحاضرات الدراسية"),
-        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ نقطة التوقف بالسيارة")
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ موضع الاستماع التلقائي")
       ),
       currentUser.role === "admin" && React.createElement(
         "button",
@@ -371,7 +371,7 @@ window.LecturesPage = function(props) {
         [
           { id: "media", label: "📺 المشاهدة والاستماع" },
           { id: "summary", label: "📄 الملخص المكتوب" },
-          { id: "podcast", label: "🎙️ حوار البودكاست (للسيارة)" }
+          { id: "podcast", label: "🎙️ حوار البودكاست المسموع" }
         ].map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
@@ -421,7 +421,7 @@ window.LecturesPage = function(props) {
               className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 font-semibold"
             }, "15 ثانية ▶")
           ),
-          React.createElement("span", { className: "text-slate-400" }, "يتم استئناف الثانية تلقائياً عند القيادة بالسيارة")
+          React.createElement("span", { className: "text-slate-400" }, "يتم حفظ واستئناف موضع التوقف تلقائياً")
         )
       ),
 

@@ -87,7 +87,7 @@ window.SummaryPodcastPage = function() {
                     ? "bg-slate-900 dark:bg-emerald-600 text-white border-transparent"
                     : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700")
               },
-              "🎙️ حوار بودكاست (للسيارة)"
+              "🎙️ حوار بودكاست مسموع"
             ),
             React.createElement(
               "button",
