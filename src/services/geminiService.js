@@ -61,6 +61,52 @@ window.GeminiAIService = {
       }
     };
 
+    // 1. الاستعلام التلقائي من حساب المستخدم عن النماذج المتاحة والمدعومة
+    var availableModels = [];
+    try {
+      var listResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + key);
+      if (listResp.ok) {
+        var listData = await listResp.json();
+        if (listData.models && Array.isArray(listData.models)) {
+          availableModels = listData.models
+            .filter(function(m) {
+              return m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent");
+            })
+            .map(function(m) {
+              return m.name.replace(/^models\//, "");
+            });
+        }
+      }
+    } catch (e) {}
+
+    // ترتيب النماذج بحيث يتم تفضيل النماذج السريعة مثل 2.5 أو 2.0 أو flash أو أي نموذج متاح
+    var priorityList = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-exp",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro-latest",
+      "gemini-1.5-pro"
+    ];
+
+    var candidateModels = [];
+    // إضافة النماذج ذات الأولوية إذا كانت متاحة أو افتراضياً
+    for (var p = 0; p < priorityList.length; p++) {
+      if (availableModels.length === 0 || availableModels.includes(priorityList[p])) {
+        candidateModels.push(priorityList[p]);
+      }
+    }
+    // إضافة بقية النماذج المتاحة من حساب المستخدم
+    for (var a = 0; a < availableModels.length; a++) {
+      if (!candidateModels.includes(availableModels[a])) {
+        candidateModels.push(availableModels[a]);
+      }
+    }
+    if (candidateModels.length === 0) {
+      candidateModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash-latest"];
+    }
+
     var lastErrorMessage = "";
 
     for (var m = 0; m < candidateModels.length; m++) {
