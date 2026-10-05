@@ -99,8 +99,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791232297",
-  buildTime: "2026-10-05T20:31:37",
+  version: "1.2.1791232920",
+  buildTime: "2026-10-05T20:42:00",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2190,6 +2190,7 @@ window.BooksPage = function(props) {
   var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
+  var [newCoverUrl, setNewCoverUrl] = React.useState("");
   var [newTotalPages, setNewTotalPages] = React.useState(350);
   var [newDriveUrl, setNewDriveUrl] = React.useState("");
   var [newChaptersCount, setNewChaptersCount] = React.useState(8);
@@ -2202,7 +2203,8 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, cloudList);
         if (cloudList.length > 0) {
           setActiveBook(function(prev) {
-            return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || cloudList[0]) : cloudList[0];
+            // إذا كان المستخدم فاتح كتاب بالفعل، نحدث بياناته، وإلا يبقى في صفحة المعرض الرئيسية
+            return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || null) : null;
           });
         } else {
           setActiveBook(null);
@@ -2802,6 +2804,7 @@ window.BooksPage = function(props) {
       id: "book-" + Date.now(),
       title: newTitle.trim(),
       author: newAuthor.trim() || "غير محدد",
+      coverUrl: (newCoverUrl || "").trim(),
       totalPages: parseInt(newTotalPages) || 300,
       currentPage: 1,
       driveUrl: finalDriveUrl,
@@ -2814,6 +2817,7 @@ window.BooksPage = function(props) {
     setSelectedFile(null);
     setNewTitle("");
     setNewAuthor("");
+    setNewCoverUrl("");
     setNewDriveUrl("");
   };
 
@@ -2842,8 +2846,8 @@ window.BooksPage = function(props) {
       )
     ),
 
-    // شريط اختيار الكتاب في حال وجود عدة مراجع
-    books.length > 1 && React.createElement(
+    // شريط اختيار الكتاب السريع في حال كان هناك كتاب مفتوح ويوجد عدة مراجع
+    activeBook && books.length > 1 && React.createElement(
       "div",
       { className: "flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin" },
       books.map(function(b) {
@@ -2852,7 +2856,10 @@ window.BooksPage = function(props) {
           "button",
           {
             key: b.id,
-            onClick: function() { setActiveBook(b); },
+            onClick: function() {
+              stopAudioPlayback();
+              setActiveBook(b);
+            },
             className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
               (isSelected
                 ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
@@ -2864,20 +2871,39 @@ window.BooksPage = function(props) {
       })
     ),
 
-    // الكتاب النشط
+    // الكتاب النشط أو معرض الكتب والمراجع
     activeBook ? React.createElement(
       "div",
       { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" },
 
-      // رأس الكتاب والتحكم بالصفحات
+      // رأس الكتاب وزر العودة للمعرض والتحكم بالصفحات
       React.createElement(
         "div",
         { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-4" },
         React.createElement(
           "div",
-          null,
-          React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeBook.title),
-          React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة")
+          { className: "flex items-center gap-3" },
+          // زر العودة لقائمة الكتب
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                stopAudioPlayback();
+                setActiveBook(null);
+              },
+              title: "الرجوع لقائمة الكتب والمراجع",
+              className: "flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all active:scale-95 border border-slate-200 dark:border-slate-700"
+            },
+            React.createElement("span", null, "←"),
+            React.createElement("span", null, "كل الكتب")
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeBook.title),
+            React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة")
+          )
         ),
         React.createElement(
           "div",
@@ -3210,13 +3236,109 @@ window.BooksPage = function(props) {
           })
         )
       )
+    ) : (books.length > 0 ? React.createElement(
+      "div",
+      { className: "space-y-4" },
+      // ترويسة رف الكتب
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between px-1" },
+        React.createElement("h3", { className: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2" },
+          React.createElement("span", null, "📚"),
+          React.createElement("span", null, "رف الكتب والمراجع المعتمدة (" + books.length + ")")
+        ),
+        React.createElement("span", { className: "text-xs text-slate-400" }, "اضغط على أي كتاب لفتحه وبدء القراءة والاستماع")
+      ),
+
+      // شبكة بطاقات الكتب (Book Cover Cards Grid)
+      React.createElement(
+        "div",
+        { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" },
+        books.map(function(b, bIdx) {
+          // ألوان خلفيات مميزة أنيقة للأغلفة الافتراضية
+          var coverPalettes = [
+            "from-emerald-800 via-teal-900 to-slate-900",
+            "from-indigo-800 via-purple-900 to-slate-900",
+            "from-amber-700 via-stone-800 to-slate-900",
+            "from-blue-800 via-cyan-900 to-slate-900",
+            "from-rose-800 via-slate-900 to-slate-950"
+          ];
+          var palette = coverPalettes[bIdx % coverPalettes.length];
+
+          return React.createElement(
+            "div",
+            {
+              key: b.id,
+              onClick: function() {
+                stopAudioPlayback();
+                setActiveBook(b);
+              },
+              className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs hover:shadow-xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between"
+            },
+
+            // غلاف الكتاب (Image or Styled Book Spine Cover)
+            React.createElement(
+              "div",
+              {
+                className: "w-full aspect-[3/4] rounded-xl overflow-hidden relative shadow-md mb-3 flex flex-col justify-between p-3.5 bg-gradient-to-br " + palette
+              },
+              b.coverUrl ? React.createElement("img", {
+                src: b.coverUrl,
+                alt: b.title,
+                className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              }) : [
+                // تصميم كتاب فخم في حال عدم وجود صورة غلاف خارجية
+                React.createElement(
+                  "div",
+                  { key: "top", className: "flex items-center justify-between text-white/70 text-[10px]" },
+                  React.createElement("span", { className: "font-mono" }, "مرجع دراسي"),
+                  React.createElement("span", null, "📖")
+                ),
+                React.createElement(
+                  "div",
+                  { key: "mid", className: "text-center my-auto px-1" },
+                  React.createElement("div", { className: "text-2xl mb-1.5 transform group-hover:scale-110 transition-transform" }, "📕"),
+                  React.createElement("h4", { className: "font-extrabold text-white text-xs leading-snug line-clamp-3 text-shadow" }, b.title)
+                ),
+                React.createElement(
+                  "div",
+                  { key: "bot", className: "text-center border-t border-white/20 pt-1.5" },
+                  React.createElement("p", { className: "text-[10px] text-emerald-300 font-medium truncate" }, b.author || "معهد المشورة")
+                )
+              ],
+              // شارة عدد الفصول
+              React.createElement(
+                "span",
+                {
+                  className: "absolute top-2 left-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-700/50"
+                },
+                ((b.chapters || []).length) + " فصول"
+              )
+            ),
+
+            // معلومات الكتاب أسفل الغلاف
+            React.createElement(
+              "div",
+              { className: "space-y-1 text-right px-0.5" },
+              React.createElement("h4", { className: "font-bold text-xs text-slate-900 dark:text-white line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" }, b.title),
+              React.createElement("p", { className: "text-[11px] text-slate-500 truncate" }, "✍️ " + (b.author || "غير محدد")),
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between pt-1 text-[10px] text-slate-400" },
+                React.createElement("span", null, (b.totalPages || 0) + " ص"),
+                React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold group-hover:underline" }, "فتح الكتاب ◀")
+              )
+            )
+          );
+        })
+      )
     ) : React.createElement(
       "div",
       { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
       React.createElement("div", { className: "text-3xl" }, "📚"),
       React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "المكتبة جاهزة لاستقبال الكتب والمراجع"),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "اضغط على زر 'إضافة مرجع جديد' لرفع كتابك الأول بصيغة PDF وتجهيز فصوله.")
-    ),
+    )),
 
     // نافذة إضافة مرجع جديد
     showAddModal && React.createElement(
@@ -3326,6 +3448,18 @@ window.BooksPage = function(props) {
                 value: newAuthor,
                 onChange: function(e) { setNewAuthor(e.target.value); },
                 placeholder: "مثال: د. أوسم وصفي، د. إميل جورج، د. عادل حليم...",
+                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رابط صورة غلاف الكتاب (اختياري)"),
+              React.createElement("input", {
+                type: "url",
+                value: newCoverUrl,
+                onChange: function(e) { setNewCoverUrl(e.target.value); },
+                placeholder: "https://... صورة غلاف الكتاب أو اتركه لاستخدام غلاف افتراضي أنيق",
                 className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
               })
             )
