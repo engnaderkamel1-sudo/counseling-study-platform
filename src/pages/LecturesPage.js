@@ -364,14 +364,15 @@ window.LecturesPage = function(props) {
         )
       ),
 
-      // الألسنة الداخلية الثلاثة
+      // الألسنة الداخلية الأربعة
       React.createElement(
         "div",
-        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4" },
+        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "📺 المشاهدة والاستماع" },
           { id: "summary", label: "📄 الملخص المكتوب" },
-          { id: "podcast", label: "🎙️ حوار البودكاست المسموع" }
+          { id: "audio_summary", label: "🎙️ ملخص مسموع (MP3)" },
+          { id: "quiz", label: "📝 كويز واختبار تفاعلي" }
         ].map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
@@ -379,7 +380,7 @@ window.LecturesPage = function(props) {
             {
               key: tab.id,
               onClick: function() { setActiveSubTab(tab.id); },
-              className: "pb-3 text-xs md:text-sm font-bold transition-all border-b-2 " +
+              className: "pb-3 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap " +
                 (isCurrent ? "border-slate-900 dark:border-emerald-500 text-slate-900 dark:text-white" : "border-transparent text-slate-400 hover:text-slate-600")
             },
             tab.label
@@ -431,44 +432,86 @@ window.LecturesPage = function(props) {
         { className: "space-y-4" },
         activeLecture.writtenSummary ? React.createElement(
           "div",
-          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
+          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal" },
           activeLecture.writtenSummary
         ) : React.createElement(
           "div",
           { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-          "لم يتم إعداد الملخص المكتوب لهذه المحاضرة بعد.",
+          "لم يتم إدخال الملخص المكتوب لهذه المحاضرة بعد.",
           currentUser.role === "admin" && React.createElement(
-            "div",
-            { className: "mt-3" },
-            React.createElement("button", {
-              onClick: handleGenerateSummary,
-              disabled: isAiGenerating,
-              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
-            }, isAiGenerating ? "جاري التوليد والتحليل..." : "✨ توليد الملخص بالذكاء الاصطناعي")
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك لصق الملخص المستخرج من NotebookLM عبر زر 'تعديل المادة'."
           )
         )
       ),
 
-      // 3. تبويب حوار البودكاست
-      activeSubTab === "podcast" && React.createElement(
+      // 3. تبويب الملخص المسموع (مشغل صوت حقيقي MP3)
+      activeSubTab === "audio_summary" && React.createElement(
         "div",
         { className: "space-y-4" },
-        activeLecture.podcastDialogue ? React.createElement(
+        (activeLecture.audioSummaryUrl || activeLecture.mediaUrl) ? React.createElement(
           "div",
-          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
-          activeLecture.podcastDialogue
+          { className: "p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-md space-y-3" },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "font-bold text-xs flex items-center gap-2" },
+              React.createElement("span", { className: "text-base" }, "🎧"),
+              React.createElement("span", null, "مشغل الملخص الصوتي المباشر (NotebookLM / MP3)")
+            ),
+            React.createElement("span", { className: "text-[11px] text-emerald-400 font-mono" }, "جودة صوت فائقة")
+          ),
+          React.createElement("audio", {
+            controls: true,
+            src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl || activeLecture.mediaUrl),
+            className: "w-full rounded-xl mt-2 accent-emerald-500"
+          })
         ) : React.createElement(
           "div",
           { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-          "لم يتم إعداد حوار البودكاست لهذه المحاضرة بعد.",
+          "لم يتم إضافة ملف صوتي للملخص بعد.",
           currentUser.role === "admin" && React.createElement(
-            "div",
-            { className: "mt-3" },
-            React.createElement("button", {
-              onClick: handleGeneratePodcast,
-              disabled: isAiGenerating,
-              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
-            }, isAiGenerating ? "جاري إعداد الحوار..." : "🎙️ إنشاء حوار البودكاست التفاعلي")
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك إرفاق ملف الـ MP3 المستخرج من NotebookLM عبر زر 'تعديل المادة'."
+          )
+        )
+      ),
+
+      // 4. تبويب الكويز والاختبار التفاعلي
+      activeSubTab === "quiz" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0 ? React.createElement(
+          "div",
+          { className: "space-y-4" },
+          activeLecture.quizQuestions.map(function(q, qIdx) {
+            return React.createElement(
+              "div",
+              { key: qIdx, className: "p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2.5" },
+              React.createElement("h5", { className: "text-xs md:text-sm font-bold text-slate-900 dark:text-white" }, (qIdx + 1) + ". " + q.question),
+              React.createElement(
+                "div",
+                { className: "space-y-1.5 pt-1" },
+                (q.options || []).map(function(opt, oIdx) {
+                  return React.createElement(
+                    "label",
+                    { key: oIdx, className: "flex items-center gap-2 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 text-xs cursor-pointer hover:border-emerald-500 transition-all" },
+                    React.createElement("input", { type: "radio", name: "quiz-q-" + qIdx, className: "accent-emerald-600" }),
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-200" }, opt)
+                  );
+                })
+              ),
+              q.explanation && React.createElement("p", { className: "text-[11px] text-slate-500 pt-1" }, "💡 الشرح: " + q.explanation)
+            );
+          })
+        ) : React.createElement(
+          "div",
+          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+          "لم يتم وضع أسئلة كويز لهذه المحاضرة بعد.",
+          currentUser.role === "admin" && React.createElement(
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك إضافة أسئلة الكويز بسهولة عبر زر 'تعديل المادة'."
           )
         )
       )
@@ -805,6 +848,51 @@ window.LecturesPage = function(props) {
           ),
           React.createElement(
             "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رابط ملف الملخص الصوتي (MP3 أو رابط Google Drive المباشر)"),
+            React.createElement("input", {
+              type: "url",
+              value: editingLecture.audioSummaryUrl || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { audioSummaryUrl: val }); });
+              },
+              placeholder: "https://drive.google.com/file/d/... أو رابط ملف mp3",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "الملخص المكتوب (لصق من NotebookLM)"),
+            React.createElement("textarea", {
+              rows: 4,
+              value: editingLecture.writtenSummary || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { writtenSummary: val }); });
+              },
+              placeholder: "الصق هنا الملخص المكتوب الذي استخرجته من NotebookLM...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "أسئلة الكويز (بصيغة JSON أو سؤال وخيارات)"),
+            React.createElement("textarea", {
+              rows: 3,
+              value: typeof editingLecture.quizQuestions === "string" ? editingLecture.quizQuestions : JSON.stringify(editingLecture.quizQuestions || [], null, 2),
+              onChange: function(e) {
+                var val = e.target.value;
+                var parsed = null;
+                try { parsed = JSON.parse(val); } catch (err) {}
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { quizQuestions: parsed || val }); });
+              },
+              placeholder: '[{"question":"السؤال الأول؟","options":["أ","ب","ج"],"correct":0}]',
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs font-mono"
+            })
+          ),
             { className: "flex justify-end gap-2 pt-2" },
             React.createElement("button", { type: "button", onClick: function() { setEditingLecture(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
             React.createElement("button", {

@@ -13,3 +13,13 @@ window.APP_UTILS.getMediaEmbedUrl = function(url) {
   }
   return url;
 };
+
+// تحويل رابط جوجل درايف أو الملفات لرابط تشغيل صوتي مباشر بمشغل HTML5 Audio
+window.APP_UTILS.getAudioStreamUrl = function(url) {
+  if (!url) return "";
+  var driveId = window.APP_UTILS.extractDriveId(url);
+  if (driveId) {
+    return "https://docs.google.com/uc?export=download&id=" + driveId;
+  }
+  return url;
+};

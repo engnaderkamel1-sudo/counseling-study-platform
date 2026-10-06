@@ -39,5 +39,76 @@ window.APP_UTILS = {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {}
+  },
+
+  // تخزين الملفات الكبيرة (PDFs) بدون إنترنت عبر IndexedDB
+  openOfflineDb: function() {
+    return new Promise(function(resolve, reject) {
+      if (!("indexedDB" in window)) {
+        reject(new Error("IndexedDB غير مدعوم"));
+        return;
+      }
+      var req = indexedDB.open("counsel_offline_storage", 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains("books_pdf")) {
+          db.createObjectStore("books_pdf", { keyPath: "bookId" });
+        }
+      };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  },
+
+  saveOfflinePdf: async function(bookId, blobData) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readwrite");
+        var store = tx.objectStore("books_pdf");
+        var req = store.put({ bookId: bookId, data: blobData, savedAt: Date.now() });
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function(e) { reject(e.target.error); };
+      });
+    } catch (e) {
+      console.warn("Offline save failed:", e);
+      return false;
+    }
+  },
+
+  getOfflinePdf: async function(bookId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readonly");
+        var store = tx.objectStore("books_pdf");
+        var req = store.get(bookId);
+        req.onsuccess = function(e) {
+          if (e.target.result && e.target.result.data) {
+            resolve(e.target.result.data);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = function() { resolve(null); };
+      });
+    } catch (e) {
+      return null;
+    }
+  },
+
+  removeOfflinePdf: async function(bookId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readwrite");
+        var store = tx.objectStore("books_pdf");
+        var req = store.delete(bookId);
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function() { resolve(false); };
+      });
+    } catch (e) {
+      return false;
+    }
   }
 };

@@ -47,6 +47,14 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
+  <!-- مكتبة PDF.js الرسمية المدمجة للقراءة الأوفلاين وحفظ الصفحات -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
   <style>
     html, body {
       font-family: 'Cairo', 'Tajawal', sans-serif;
@@ -99,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791264374",
-  buildTime: "2026-10-06T05:26:14",
+  version: "1.2.1791265099",
+  buildTime: "2026-10-06T05:38:20",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -540,6 +548,77 @@ window.APP_UTILS = {
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {}
+  },
+
+  // تخزين الملفات الكبيرة (PDFs) بدون إنترنت عبر IndexedDB
+  openOfflineDb: function() {
+    return new Promise(function(resolve, reject) {
+      if (!("indexedDB" in window)) {
+        reject(new Error("IndexedDB غير مدعوم"));
+        return;
+      }
+      var req = indexedDB.open("counsel_offline_storage", 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains("books_pdf")) {
+          db.createObjectStore("books_pdf", { keyPath: "bookId" });
+        }
+      };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  },
+
+  saveOfflinePdf: async function(bookId, blobData) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readwrite");
+        var store = tx.objectStore("books_pdf");
+        var req = store.put({ bookId: bookId, data: blobData, savedAt: Date.now() });
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function(e) { reject(e.target.error); };
+      });
+    } catch (e) {
+      console.warn("Offline save failed:", e);
+      return false;
+    }
+  },
+
+  getOfflinePdf: async function(bookId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readonly");
+        var store = tx.objectStore("books_pdf");
+        var req = store.get(bookId);
+        req.onsuccess = function(e) {
+          if (e.target.result && e.target.result.data) {
+            resolve(e.target.result.data);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = function() { resolve(null); };
+      });
+    } catch (e) {
+      return null;
+    }
+  },
+
+  removeOfflinePdf: async function(bookId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("books_pdf", "readwrite");
+        var store = tx.objectStore("books_pdf");
+        var req = store.delete(bookId);
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function() { resolve(false); };
+      });
+    } catch (e) {
+      return false;
+    }
   }
 };
 
@@ -556,6 +635,16 @@ window.APP_UTILS.getMediaEmbedUrl = function(url) {
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
     return "https://drive.google.com/file/d/" + driveId + "/preview";
+  }
+  return url;
+};
+
+// تحويل رابط جوجل درايف أو الملفات لرابط تشغيل صوتي مباشر بمشغل HTML5 Audio
+window.APP_UTILS.getAudioStreamUrl = function(url) {
+  if (!url) return "";
+  var driveId = window.APP_UTILS.extractDriveId(url);
+  if (driveId) {
+    return "https://docs.google.com/uc?export=download&id=" + driveId;
   }
   return url;
 };
@@ -1700,14 +1789,15 @@ window.LecturesPage = function(props) {
         )
       ),
 
-      // الألسنة الداخلية الثلاثة
+      // الألسنة الداخلية الأربعة
       React.createElement(
         "div",
-        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4" },
+        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "📺 المشاهدة والاستماع" },
           { id: "summary", label: "📄 الملخص المكتوب" },
-          { id: "podcast", label: "🎙️ حوار البودكاست المسموع" }
+          { id: "audio_summary", label: "🎙️ ملخص مسموع (MP3)" },
+          { id: "quiz", label: "📝 كويز واختبار تفاعلي" }
         ].map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
@@ -1715,7 +1805,7 @@ window.LecturesPage = function(props) {
             {
               key: tab.id,
               onClick: function() { setActiveSubTab(tab.id); },
-              className: "pb-3 text-xs md:text-sm font-bold transition-all border-b-2 " +
+              className: "pb-3 text-xs md:text-sm font-bold transition-all border-b-2 whitespace-nowrap " +
                 (isCurrent ? "border-slate-900 dark:border-emerald-500 text-slate-900 dark:text-white" : "border-transparent text-slate-400 hover:text-slate-600")
             },
             tab.label
@@ -1767,44 +1857,86 @@ window.LecturesPage = function(props) {
         { className: "space-y-4" },
         activeLecture.writtenSummary ? React.createElement(
           "div",
-          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
+          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal" },
           activeLecture.writtenSummary
         ) : React.createElement(
           "div",
           { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-          "لم يتم إعداد الملخص المكتوب لهذه المحاضرة بعد.",
+          "لم يتم إدخال الملخص المكتوب لهذه المحاضرة بعد.",
           currentUser.role === "admin" && React.createElement(
-            "div",
-            { className: "mt-3" },
-            React.createElement("button", {
-              onClick: handleGenerateSummary,
-              disabled: isAiGenerating,
-              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
-            }, isAiGenerating ? "جاري التوليد والتحليل..." : "✨ توليد الملخص بالذكاء الاصطناعي")
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك لصق الملخص المستخرج من NotebookLM عبر زر 'تعديل المادة'."
           )
         )
       ),
 
-      // 3. تبويب حوار البودكاست
-      activeSubTab === "podcast" && React.createElement(
+      // 3. تبويب الملخص المسموع (مشغل صوت حقيقي MP3)
+      activeSubTab === "audio_summary" && React.createElement(
         "div",
         { className: "space-y-4" },
-        activeLecture.podcastDialogue ? React.createElement(
+        (activeLecture.audioSummaryUrl || activeLecture.mediaUrl) ? React.createElement(
           "div",
-          { className: "p-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-wrap" },
-          activeLecture.podcastDialogue
+          { className: "p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl shadow-md space-y-3" },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "font-bold text-xs flex items-center gap-2" },
+              React.createElement("span", { className: "text-base" }, "🎧"),
+              React.createElement("span", null, "مشغل الملخص الصوتي المباشر (NotebookLM / MP3)")
+            ),
+            React.createElement("span", { className: "text-[11px] text-emerald-400 font-mono" }, "جودة صوت فائقة")
+          ),
+          React.createElement("audio", {
+            controls: true,
+            src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl || activeLecture.mediaUrl),
+            className: "w-full rounded-xl mt-2 accent-emerald-500"
+          })
         ) : React.createElement(
           "div",
           { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-          "لم يتم إعداد حوار البودكاست لهذه المحاضرة بعد.",
+          "لم يتم إضافة ملف صوتي للملخص بعد.",
           currentUser.role === "admin" && React.createElement(
-            "div",
-            { className: "mt-3" },
-            React.createElement("button", {
-              onClick: handleGeneratePodcast,
-              disabled: isAiGenerating,
-              className: "bg-slate-900 dark:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs"
-            }, isAiGenerating ? "جاري إعداد الحوار..." : "🎙️ إنشاء حوار البودكاست التفاعلي")
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك إرفاق ملف الـ MP3 المستخرج من NotebookLM عبر زر 'تعديل المادة'."
+          )
+        )
+      ),
+
+      // 4. تبويب الكويز والاختبار التفاعلي
+      activeSubTab === "quiz" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0 ? React.createElement(
+          "div",
+          { className: "space-y-4" },
+          activeLecture.quizQuestions.map(function(q, qIdx) {
+            return React.createElement(
+              "div",
+              { key: qIdx, className: "p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2.5" },
+              React.createElement("h5", { className: "text-xs md:text-sm font-bold text-slate-900 dark:text-white" }, (qIdx + 1) + ". " + q.question),
+              React.createElement(
+                "div",
+                { className: "space-y-1.5 pt-1" },
+                (q.options || []).map(function(opt, oIdx) {
+                  return React.createElement(
+                    "label",
+                    { key: oIdx, className: "flex items-center gap-2 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-900 text-xs cursor-pointer hover:border-emerald-500 transition-all" },
+                    React.createElement("input", { type: "radio", name: "quiz-q-" + qIdx, className: "accent-emerald-600" }),
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-200" }, opt)
+                  );
+                })
+              ),
+              q.explanation && React.createElement("p", { className: "text-[11px] text-slate-500 pt-1" }, "💡 الشرح: " + q.explanation)
+            );
+          })
+        ) : React.createElement(
+          "div",
+          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+          "لم يتم وضع أسئلة كويز لهذه المحاضرة بعد.",
+          currentUser.role === "admin" && React.createElement(
+            "p",
+            { className: "text-[11px] text-slate-400 mt-2" },
+            "يمكنك إضافة أسئلة الكويز بسهولة عبر زر 'تعديل المادة'."
           )
         )
       )
@@ -2141,6 +2273,51 @@ window.LecturesPage = function(props) {
           ),
           React.createElement(
             "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رابط ملف الملخص الصوتي (MP3 أو رابط Google Drive المباشر)"),
+            React.createElement("input", {
+              type: "url",
+              value: editingLecture.audioSummaryUrl || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { audioSummaryUrl: val }); });
+              },
+              placeholder: "https://drive.google.com/file/d/... أو رابط ملف mp3",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "الملخص المكتوب (لصق من NotebookLM)"),
+            React.createElement("textarea", {
+              rows: 4,
+              value: editingLecture.writtenSummary || "",
+              onChange: function(e) {
+                var val = e.target.value;
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { writtenSummary: val }); });
+              },
+              placeholder: "الصق هنا الملخص المكتوب الذي استخرجته من NotebookLM...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "أسئلة الكويز (بصيغة JSON أو سؤال وخيارات)"),
+            React.createElement("textarea", {
+              rows: 3,
+              value: typeof editingLecture.quizQuestions === "string" ? editingLecture.quizQuestions : JSON.stringify(editingLecture.quizQuestions || [], null, 2),
+              onChange: function(e) {
+                var val = e.target.value;
+                var parsed = null;
+                try { parsed = JSON.parse(val); } catch (err) {}
+                setEditingLecture(function(prev) { return Object.assign({}, prev, { quizQuestions: parsed || val }); });
+              },
+              placeholder: '[{"question":"السؤال الأول؟","options":["أ","ب","ج"],"correct":0}]',
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs font-mono"
+            })
+          ),
             { className: "flex justify-end gap-2 pt-2" },
             React.createElement("button", { type: "button", onClick: function() { setEditingLecture(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
             React.createElement("button", {
@@ -2170,24 +2347,31 @@ window.BooksPage = function(props) {
   var [activeBook, setActiveBook] = React.useState(null);
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
-  var [isAiGenerating, setIsAiGenerating] = React.useState(false);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
-  var [speakingChapterIdx, setSpeakingChapterIdx] = React.useState(null);
-  var [isAudioPaused, setIsAudioPaused] = React.useState(false);
-  var [audioProgress, setAudioProgress] = React.useState({ current: 0, total: 0 });
-  var [audioPlaybackRate, setAudioPlaybackRate] = React.useState(1.0); // 0.85x, 1.0x, 1.25x, 1.5x
-  var [availableVoices, setAvailableVoices] = React.useState([]);
-  var [selectedVoiceUri, setSelectedVoiceUri] = React.useState("");
-  var [audioDurationSec, setAudioDurationSec] = React.useState(0);
-  var [audioElapsedSec, setAudioElapsedSec] = React.useState(0);
+  var [activeChapterAudioIdx, setActiveChapterAudioIdx] = React.useState(null); // idx of playing track
+  
+  // حالات عارض الـ PDF بدون إنترنت وحفظ الصفحة
+  var [pdfDoc, setPdfDoc] = React.useState(null);
+  var [pdfCurrentPage, setPdfCurrentPage] = React.useState(1);
+  var [pdfTotalPages, setPdfTotalPages] = React.useState(1);
+  var [isPdfLoading, setIsPdfLoading] = React.useState(false);
+  var [isSavedOffline, setIsSavedOffline] = React.useState(false);
+  var [isSavingOffline, setIsSavingOffline] = React.useState(false);
+  var [offlineSaveMsg, setOfflineSaveMsg] = React.useState("");
+  var pdfCanvasRef = React.useRef(null);
 
-  // حقول الإضافة
+  // حقول تعديل الفصل (إدخال ملخص مكتوب أو رابط صوت التراك من NotebookLM)
+  var [editingChapterIdx, setEditingChapterIdx] = React.useState(null);
+  var [editChapterTitle, setEditChapterTitle] = React.useState("");
+  var [editChapterSummary, setEditChapterSummary] = React.useState("");
+  var [editChapterAudioUrl, setEditChapterAudioUrl] = React.useState("");
+
+  // حقول الإضافة للكتاب الجديد
   var [selectedFile, setSelectedFile] = React.useState(null);
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
 
-  var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
   var [newCoverUrl, setNewCoverUrl] = React.useState("");
@@ -2203,7 +2387,6 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, cloudList);
         if (cloudList.length > 0) {
           setActiveBook(function(prev) {
-            // إذا كان المستخدم فاتح كتاب بالفعل، نحدث بياناته، وإلا يبقى في صفحة المعرض الرئيسية
             return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || null) : null;
           });
         } else {
@@ -2216,472 +2399,145 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // مرجع إدارة تشغيل الصوت المباشر
-  var audioPlayerRef = React.useRef({
-    utterance: null,
-    chunks: [],
-    chunkIdx: 0,
-    isPlaying: false,
-    isPaused: false,
-    playbackRate: 1.0,
-    chapterIdx: null,
-    keepAliveTimer: null
-  });
-
-  // تنظيف وإيقاف الصوت
-  var stopAudioPlayback = function() {
-    var p = audioPlayerRef.current;
-    if (p.keepAliveTimer) {
-      clearInterval(p.keepAliveTimer);
-      p.keepAliveTimer = null;
+  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت
+  React.useEffect(function() {
+    if (!activeBook) {
+      setIsSavedOffline(false);
+      setPdfDoc(null);
+      return;
     }
-    p.isPlaying = false;
-    p.isPaused = false;
-    p.chapterIdx = null;
-    p.chunks = [];
-    p.chunkIdx = 0;
-    p.utterance = null;
+    setPdfCurrentPage(activeBook.currentPage || 1);
+    utils.getOfflinePdf(activeBook.id).then(function(data) {
+      setIsSavedOffline(!!data);
+      if (data) {
+        loadPdfFromData(data);
+      } else if (activeBook.driveUrl) {
+        // محاولة تحميل من الرابط إن توفر
+        loadPdfFromUrl(activeBook.driveUrl);
+      }
+    });
+  }, [activeBook && activeBook.id]);
 
-    if (window.speechSynthesis) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) {}
-    }
-    setSpeakingChapterIdx(null);
-    setIsAudioPaused(false);
-    setAudioProgress({ current: 0, total: 0 });
+  // تحميل ومعالجة مستند الـ PDF عبر PDF.js
+  var loadPdfFromData = function(dataArrayBuffer) {
+    if (!window.pdfjsLib) return;
+    setIsPdfLoading(true);
+    window.pdfjsLib.getDocument({ data: dataArrayBuffer }).promise.then(function(loadedDoc) {
+      setPdfDoc(loadedDoc);
+      setPdfTotalPages(loadedDoc.numPages);
+      setIsPdfLoading(false);
+      renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+    }).catch(function(err) {
+      console.warn("PDF load error:", err);
+      setIsPdfLoading(false);
+    });
   };
 
-  React.useEffect(function() {
-    return function() {
-      stopAudioPlayback();
-    };
-  }, []);
+  var loadPdfFromUrl = function(url) {
+    if (!window.pdfjsLib) return;
+    var streamUrl = utils.getAudioStreamUrl(url); // رابط التنزيل المباشر
+    setIsPdfLoading(true);
+    window.pdfjsLib.getDocument({ url: streamUrl }).promise.then(function(loadedDoc) {
+      setPdfDoc(loadedDoc);
+      setPdfTotalPages(loadedDoc.numPages);
+      setIsPdfLoading(false);
+      renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+    }).catch(function() {
+      setIsPdfLoading(false);
+    });
+  };
 
+  var renderPdfPage = function(doc, pageNum) {
+    if (!doc || !pdfCanvasRef.current) return;
+    var num = Math.max(1, Math.min(pageNum, doc.numPages));
+    doc.getPage(num).then(function(page) {
+      var canvas = pdfCanvasRef.current;
+      if (!canvas) return;
+      var context = canvas.getContext("2d");
+      var viewport = page.getViewport({ scale: 1.3 });
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      var renderContext = {
+        canvasContext: context,
+        viewport: viewport
+      };
+      page.render(renderContext);
+      setPdfCurrentPage(num);
+    });
+  };
+
+  // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً
   var handlePageChange = function(newPage) {
     if (!activeBook) return;
-    var validPage = Math.max(1, Math.min(newPage, activeBook.totalPages || 500));
+    var total = pdfTotalPages || activeBook.totalPages || 500;
+    var validPage = Math.max(1, Math.min(newPage, total));
+    setPdfCurrentPage(validPage);
+    if (pdfDoc) {
+      renderPdfPage(pdfDoc, validPage);
+    }
     setActiveBook(Object.assign({}, activeBook, { currentPage: validPage }));
     cloud.updateBookPage(activeBook.id, validPage);
   };
 
-  // تنظيف النص المقروء من أي تحيات مصطنعة أو عبارات قيادة أو ماركداون
-  var cleanSpokenText = function(text) {
-    if (!text) return "";
-    return text
-      .replace(/[#*`_~]/g, "")
-      .replace(/\(.*?\)/g, "")
-      .replace(/\[.*?\]/g, "")
-      .replace(/أهلاً بك( أيها الزميل الدارس)?( في رحلة هادئة ومغذية للروح والوجدان)?[،.]?/g, "")
-      .replace(/أهلاً بك عزيزي (المستمع|الدارس|القارئ)[،.]?/g, "")
-      .replace(/مرحباً بك( عزيزي)?[،.]?/g, "")
-      .replace(/بصفتي (الذكاء الاصطناعي|مساعدك الذكي)[،.]?/g, "")
-      .replace(/بينما تقود سيارتك( الآن)?[،.]?/g, "")
-      .replace(/أثناء القيادة( بالسيارة)?[،.]?/g, "")
-      .replace(/في سيارتك[،.]?/g, "")
-      .replace(/أثناء قيادتك للسيارة[،.]?/g, "")
-      .replace(/أثناء قيادة السيارة[،.]?/g, "")
-      .replace(/للاستماع أثناء القيادة[،.]?/g, "")
-      .replace(/في طريقك[،.]?/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
-  // تقسيم النص إلى جمل متوسطة مريحة للأذن ولا تقطع في أي متصفح
-  var splitIntoSpokenChunks = function(text) {
-    if (!text) return [];
-    var rawParts = text.split(/([.\n،؛!؟]+)/);
-    var chunks = [];
-    var cur = "";
-    for (var i = 0; i < rawParts.length; i++) {
-      var part = rawParts[i].trim();
-      if (!part) continue;
-      if ((cur + " " + part).length <= 110) {
-        cur = cur ? (cur + " " + part) : part;
-      } else {
-        if (cur) chunks.push(cur);
-        if (part.length > 110) {
-          var words = part.split(/\s+/);
-          var subCur = "";
-          for (var w = 0; w < words.length; w++) {
-            if ((subCur + " " + words[w]).length <= 110) {
-              subCur = subCur ? (subCur + " " + words[w]) : words[w];
-            } else {
-              if (subCur) chunks.push(subCur);
-              subCur = words[w];
-            }
-          }
-          if (subCur) cur = subCur;
-          else cur = "";
-        } else {
-          cur = part;
-        }
-      }
-    }
-    if (cur) chunks.push(cur);
-    return chunks.length > 0 ? chunks : [text];
-  };
-
-  // تحميل قائمة الأصوات المتاحة بالجهاز فور توفرها
-  React.useEffect(function() {
-    var updateVoicesList = function() {
-      if (!("speechSynthesis" in window)) return;
-      var voices = window.speechSynthesis.getVoices() || [];
-      var ar = voices.filter(function(v) {
-        var l = (v.lang || "").toLowerCase();
-        return l.startsWith("ar") || l.indexOf("arabic") !== -1;
-      });
-      // إذا لم يكن هناك أصوات عربية، نعرض كل الأصوات
-      var list = ar.length > 0 ? ar : voices;
-      setAvailableVoices(list);
-      if (list.length > 0 && !selectedVoiceUri) {
-        setSelectedVoiceUri(list[0].voiceURI || list[0].name);
-      }
-    };
-
-    updateVoicesList();
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.onvoiceschanged = updateVoicesList;
-    }
-  }, []);
-
-  // عداد الوقت المنقضي أثناء تشغيل الصوت
-  React.useEffect(function() {
-    var timer = null;
-    if (speakingChapterIdx !== null && !isAudioPaused) {
-      timer = setInterval(function() {
-        setAudioElapsedSec(function(prev) { return prev + 1; });
-      }, 1000);
-    }
-    return function() {
-      if (timer) clearInterval(timer);
-    };
-  }, [speakingChapterIdx, isAudioPaused]);
-
-  // دالة لاختيار أفضل صوت أنثوي مصري أو عربي متاح (منع الأصوات الإنجليزية تماماً)
-  var getBestEgyptianFemaleVoice = function() {
-    if (!("speechSynthesis" in window)) return null;
-    var voices = window.speechSynthesis.getVoices() || [];
-    if (!voices || voices.length === 0) return null;
-
-    // فلترة الأصوات العربية فقط واستبعاد أي لغة أخرى
-    var arVoices = voices.filter(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      return l.startsWith("ar") || l.indexOf("arabic") !== -1;
-    });
-
-    if (arVoices.length === 0) {
-      // لا يوجد صوت عربي مثبت بنظام الجهاز، لا نستخدم صوتاً إنجليزياً أبداً
-      return null;
-    }
-
-    // إذا كان المستخدم اختار صوتاً محدداً وهو عربي
-    if (selectedVoiceUri) {
-      var userV = arVoices.find(function(v) { return (v.voiceURI || v.name) === selectedVoiceUri; });
-      if (userV) return userV;
-    }
-
-    // 1. صوت مصري أنثوي صريح (ar-EG + female/salma/laila/mariam/hoda)
-    var egFemale = arVoices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      var n = (v.name || "").toLowerCase();
-      var isEg = l.indexOf("eg") !== -1 || n.indexOf("egypt") !== -1 || n.indexOf("مصر") !== -1;
-      var isFem = n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1;
-      return isEg && isFem;
-    });
-    if (egFemale) return egFemale;
-
-    // 2. أي صوت أنثوي عربي عام (سلمى، ليلى، زينة، مريم، فاطمة)
-    var arFemale = arVoices.find(function(v) {
-      var n = (v.name || "").toLowerCase();
-      return n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1 || n.indexOf("zari") !== -1 || n.indexOf("fatima") !== -1;
-    });
-    if (arFemale) return arFemale;
-
-    // 3. أي صوت مصري متاح
-    var egGen = arVoices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      var n = (v.name || "").toLowerCase();
-      return l.indexOf("eg") !== -1 || n.indexOf("egypt") !== -1;
-    });
-    if (egGen) return egGen;
-
-    // 4. أول صوت عربي متاح
-    return arVoices[0];
-  };
-
-  // تشغيل الجملة المحددة بمحرك الكلام الصوتي
-  var speakChunkAtIndex = function(idx) {
-    var p = audioPlayerRef.current;
-    if (!p.isPlaying || p.isPaused) return;
-
-    if (idx < 0 || idx >= p.chunks.length) {
-      stopAudioPlayback();
-      return;
-    }
-
-    p.chunkIdx = idx;
-    setAudioProgress({ current: idx + 1, total: p.chunks.length });
-
-    // تحديث موضع الوقت التقديري بناءً على الجملة
-    if (audioDurationSec > 0 && p.chunks.length > 0) {
-      var estSec = Math.floor((idx / p.chunks.length) * audioDurationSec);
-      setAudioElapsedSec(estSec);
-    }
-
-    if (!("speechSynthesis" in window)) {
-      alert("خاصية الصوت غير مدعومة في هذا المتصفح.");
-      stopAudioPlayback();
-      return;
-    }
-
-    var chunk = p.chunks[idx];
-    if (!chunk || !chunk.trim()) {
-      if (idx + 1 < p.chunks.length) {
-        speakChunkAtIndex(idx + 1);
-      } else {
-        stopAudioPlayback();
-      }
-      return;
-    }
-
-    var utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.rate = p.playbackRate || 0.95; // سرعة هادئة وطبيعية
-    utterance.pitch = 1.15; // نبرة صوت أنثوية ناعمة
-
-    var voice = getBestEgyptianFemaleVoice();
-    if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang || "ar-EG";
-    } else {
-      // إجبار المتصفح على قراءة النص بالعربية المصرية حصراً، وعدم استخدام الصوت الافتراضي الإنجليزي للجهاز
-      utterance.lang = "ar-EG";
-    }
-
-    // حفظ المرجع عالمياً لمنع V8 Garbage Collection من قطع الصوت فوراً
-    window._activeTtsUtterance = utterance;
-    p.utterance = utterance;
-
-    // علم لمنع التكرار المزدوج
-    var hasHandledCompletion = false;
-
-    utterance.onend = function(e) {
-      if (hasHandledCompletion) return;
-      hasHandledCompletion = true;
-      window._activeTtsUtterance = null;
-      if (!p.isPlaying || p.isPaused) return;
-
-      if (p.chunkIdx + 1 < p.chunks.length) {
-        speakChunkAtIndex(p.chunkIdx + 1);
-      } else {
-        stopAudioPlayback();
-      }
-    };
-
-    utterance.onerror = function(err) {
-      if (hasHandledCompletion) return;
-      window._activeTtsUtterance = null;
-      if (!p.isPlaying || p.isPaused) return;
-
-      console.warn("TTS Error Notice:", err && err.error);
-
-      // في حالة وجود خطأ في المحرك أو عدم توفر الصوت، أوقف المحاولة التلقائية المتكررة حتى لا يجري في ثانيتين
-      hasHandledCompletion = true;
-      stopAudioPlayback();
-      if (err && err.error !== "canceled" && err.error !== "interrupted") {
-        alert("تنبيه: محرك الصوت في جهازك/متصفحك يواجه صعوبة في تشغيل الصوت العربي. يرجى التأكد من تفعيل صوت عربي أو استخدام متصفح كروم / إيدج.");
-      }
-    };
-
-    // استئناف محرك الصوت وإلغاء أي تعليق
+  // حفظ الكتاب للقراءة أوفلاين (بدون إنترنت) داخل ذاكرة الجهاز
+  var handleSaveOffline = async function() {
+    if (!activeBook) return;
     try {
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
+      setIsSavingOffline(true);
+      setOfflineSaveMsg("جاري تحميل وحفظ ملف الكتاب للقراءة بدون إنترنت...");
+      var downloadUrl = utils.getAudioStreamUrl(activeBook.driveUrl);
+      var resp = await fetch(downloadUrl);
+      if (!resp.ok) throw new Error("تعذر جلب ملف الكتاب");
+      var arrayBuffer = await resp.arrayBuffer();
+      var saved = await utils.saveOfflinePdf(activeBook.id, arrayBuffer);
+      if (saved) {
+        setIsSavedOffline(true);
+        setOfflineSaveMsg("تم حفظ الكتاب بنجاح! متاح للقراءة أوفلاين في أي وقت بدون إنترنت ✓");
+        loadPdfFromData(arrayBuffer);
+      } else {
+        throw new Error("تعذر حفظ الملف محلياً");
       }
-      window.speechSynthesis.speak(utterance);
     } catch (e) {
-      console.error("speechSynthesis.speak failed:", e);
-      stopAudioPlayback();
-    }
-  };
-
-  // تشغيل / إيقاف المشغل الصوتي
-  var handleToggleSpeech = function(chapterIndex, textToRead) {
-    var p = audioPlayerRef.current;
-
-    if (speakingChapterIdx === chapterIndex) {
-      if (isAudioPaused) {
-        // استئناف
-        p.isPaused = false;
-        setIsAudioPaused(false);
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        } else {
-          speakChunkAtIndex(p.chunkIdx);
-        }
-      } else {
-        // إيقاف مؤقت
-        p.isPaused = true;
-        setIsAudioPaused(true);
-        if (window.speechSynthesis) {
-          window.speechSynthesis.pause();
-        }
-      }
-      return;
-    }
-
-    // إيقاف المشغل السابق بهدوء بدون إفساد المحرك
-    p.isPlaying = false;
-    p.isPaused = false;
-    window._activeTtsUtterance = null;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
-    var cleanText = cleanSpokenText(textToRead);
-    if (!cleanText) {
-      alert("لا يوجد نص متاح للقراءة في هذا الملخص.");
-      return;
-    }
-
-    var chunks = splitIntoSpokenChunks(cleanText);
-    if (chunks.length === 0) return;
-
-    // حساب المدة التقديرية بالثواني بناءً على عدد الكلمات (معدل 130 كلمة بالدقيقة)
-    var wordCount = cleanText.split(/\s+/).filter(Boolean).length;
-    var estTotalSeconds = Math.max(30, Math.round((wordCount / 130) * 60));
-    setAudioDurationSec(estTotalSeconds);
-    setAudioElapsedSec(0);
-
-    p.isPlaying = true;
-    p.isPaused = false;
-    p.chapterIdx = chapterIndex;
-    p.chunks = chunks;
-    p.chunkIdx = 0;
-    p.playbackRate = audioPlaybackRate;
-
-    setSpeakingChapterIdx(chapterIndex);
-    setIsAudioPaused(false);
-
-    // تأخير طفيف (100ms) بعد cancel() لضمان أن Web Speech API أفرغ الطابور ولا يلغي الـ utterance الجديدة
-    setTimeout(function() {
-      if (audioPlayerRef.current.isPlaying) {
-        speakChunkAtIndex(0);
-      }
-    }, 100);
-  };
-
-  // تقديم 10 ثوانٍ (جملة للأمام)
-  var handleAudioSeekForward = function() {
-    var p = audioPlayerRef.current;
-    if (!p.isPlaying) return;
-    var nextIdx = Math.min(p.chunks.length - 1, p.chunkIdx + 1);
-    p.isPaused = false;
-    setIsAudioPaused(false);
-    speakChunkAtIndex(nextIdx);
-  };
-
-  // ترجيع 10 ثوانٍ (جملة للخلف)
-  var handleAudioSeekBackward = function() {
-    var p = audioPlayerRef.current;
-    if (!p.isPlaying) return;
-    var prevIdx = Math.max(0, p.chunkIdx - 1);
-    p.isPaused = false;
-    setIsAudioPaused(false);
-    speakChunkAtIndex(prevIdx);
-  };
-
-  // القفز إلى موضع محدد عبر شريط التقدم التفاعلي (Slider)
-  var handleAudioProgressSeek = function(e) {
-    var p = audioPlayerRef.current;
-    if (!p.isPlaying || p.chunks.length === 0) return;
-    var targetFraction = parseFloat(e.target.value);
-    var targetIdx = Math.min(p.chunks.length - 1, Math.floor(targetFraction * p.chunks.length));
-    var newElapsed = Math.floor(targetFraction * audioDurationSec);
-    setAudioElapsedSec(newElapsed);
-    p.isPaused = false;
-    setIsAudioPaused(false);
-    speakChunkAtIndex(targetIdx);
-  };
-
-  // تغيير سرعة القراءة (1x, 1.25x, 1.5x, 0.85x)
-  var handleAudioSpeedChange = function(newRate) {
-    setAudioPlaybackRate(newRate);
-    var p = audioPlayerRef.current;
-    p.playbackRate = newRate;
-    if (p.isPlaying && !p.isPaused) {
-      speakChunkAtIndex(p.chunkIdx);
-    }
-  };
-
-  // تغيير صوت القارئ (ذكر / أنثى) فوراً
-  var handleVoiceChange = function(voiceUri) {
-    setSelectedVoiceUri(voiceUri);
-    var p = audioPlayerRef.current;
-    if (p.isPlaying && !p.isPaused) {
-      speakChunkAtIndex(p.chunkIdx);
-    }
-  };
-
-  // توليد ملخص صوتي ومكتوب احترافي بدون عبارات نمطية
-  var handleGenerateChapterSummary = async function(chapterIndex) {
-    if (!activeBook || currentUser.role !== "admin") return;
-
-    var existingKey = await ai.getApiKey();
-    if (!existingKey) {
-      var entered = window.prompt("يرجى إدخال مفتاح Gemini API لتفعيل التلخيص الذكي وحفظه سحابياً ومحلياً:");
-      if (!entered || !entered.trim()) {
-        return;
-      }
-      await ai.saveApiKey(entered.trim());
-      utils.setLocal(cfg.storageKeys.apiKey, entered.trim());
-    }
-
-    setIsAiGenerating(true);
-    try {
-      var ch = (activeBook.chapters || [])[chapterIndex];
-      var chName = ch.title || ("الفصل " + chapterIndex);
-      var prompt = "أنت أستاذة وباحثة مصرية متخصصة في علوم المشورة المسيحية والنمو النفسي الإنساني.\n" +
-        "المطلوب إعداد تلخيص ودراسة لـ: '" + chName + "' من كتاب: '" + activeBook.title + "' للمؤلف '" + (activeBook.author || "") + "'.\n\n" +
-        "تعليمات صارمة بخصوص اللغة:\n" +
-        "1. ممنوع منعاً باتاً كتابة أي حرف أو كلمة باللغة الإنجليزية. النص بأكمله يجب أن يكون بحروف وكلمات عربية فقط 100%.\n" +
-        "2. الملخص المكتوب (writtenSummary): لغة عربية فصحى سلسة وواضحة جداً للقراءة والمذاكرة، تركز على المفاهيم الجوهرية والتحليل النفسي بدون حشو.\n" +
-        "3. السيناريو الصوتي (audioScript): مكتوب بحروف عربية بلهجة عامية مصرية ودودة وراقية وهادئة، كأنك آنسة مصرية تشرح لصديق بصوت دافئ ومريح، بدون أي مقدمات أو ترحيبات مصطنعة وبدون أي كلمات أجنبية.\n\n" +
-        "المطلوب إرجاع صيغة JSON نظيفة تحتوي على الحقلين بالعربي فقط:\n" +
-        "{\n" +
-        '  "writtenSummary": "نص التلخيص المكتوب باللغة العربية الفصحى السلسة",\n' +
-        '  "audioScript": "نص التلخيص الصوتي بالعامية المصرية الدافئة والمريحة المكتوب بالحروف العربية فقط"\n' +
-        "}\n" +
-        "أرجع الـ JSON فقط بدون علامات ماركداون إضافية.";
-      
-      var res = await ai.callGemini(prompt, "أنت متحدثة مصرية تشرح دروس المشورة. تحدثي واكتبي باللغة العربية فقط وبالعامية المصرية في الصوت، وممنوع استخدام أي كلمة إنجليزية نهائياً.");
-      var cleanJson = res.replace(/```json/gi, "").replace(/```/g, "").trim();
-      var parsed;
-      try {
-        parsed = JSON.parse(cleanJson);
-      } catch (e) {
-        parsed = {
-          writtenSummary: res,
-          audioScript: res
-        };
-      }
-      
-      var updatedChapters = (activeBook.chapters || []).slice();
-      updatedChapters[chapterIndex] = Object.assign({}, updatedChapters[chapterIndex], {
-        summaryText: parsed.writtenSummary || res,
-        audioScript: parsed.audioScript || parsed.writtenSummary || res,
-        hasAudio: true,
-        lastAudioPosition: 0
-      });
-
-      var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
-      cloud.saveBook(updatedBook);
-      setActiveBook(updatedBook);
-    } catch (err) {
-      alert("حدث خطأ أثناء التوليد: " + err.message);
+      setOfflineSaveMsg("تنبيه: " + (e.message || "فشل التحميل للقراءة بدون إنترنت"));
     } finally {
-      setIsAiGenerating(false);
+      setIsSavingOffline(false);
+      setTimeout(function() { setOfflineSaveMsg(""); }, 4000);
     }
+  };
+
+  // حذف الكتاب من الذاكرة المحلية لتوفير المساحة
+  var handleRemoveOffline = async function() {
+    if (!activeBook) return;
+    await utils.removeOfflinePdf(activeBook.id);
+    setIsSavedOffline(false);
+    alert("تم إزالة النسخة المحفوظة أوفلاين من هذا الجهاز بنجاح.");
+  };
+
+  // فتح نافذة تعديل بيانات الفصل (الملخص والرابط الصوتي المستخرج من NotebookLM)
+  var openEditChapterModal = function(idx, ch) {
+    setEditingChapterIdx(idx);
+    setEditChapterTitle(ch.title || ("الفصل " + (idx + 1)));
+    setEditChapterSummary(ch.summaryText || "");
+    setEditChapterAudioUrl(ch.audioScript || ch.audioUrl || "");
+  };
+
+  // حفظ التعديلات على الفصل في السحابة ومحلياً
+  var handleSaveChapterEdit = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!activeBook || editingChapterIdx === null) return;
+    var updatedChapters = (activeBook.chapters || []).slice();
+    updatedChapters[editingChapterIdx] = Object.assign({}, updatedChapters[editingChapterIdx], {
+      title: editChapterTitle.trim(),
+      summaryText: editChapterSummary.trim(),
+      audioUrl: editChapterAudioUrl.trim(),
+      audioScript: editChapterAudioUrl.trim(), // للتوافق
+      hasAudio: !!editChapterAudioUrl.trim()
+    });
+    var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    setEditingChapterIdx(null);
   };
 
   // حفظ موضع استماع الملخص الصوتي للفصل
@@ -2957,26 +2813,95 @@ window.BooksPage = function(props) {
         )
       ),
 
-      // عارض الـ PDF
-      activeBook.driveUrl && React.createElement(
+      // عارض الـ PDF التفاعلي المدمج (Native PDF Reader) الداعم للقراءة بدون إنترنت
+      (activeBook.driveUrl || isSavedOffline) && React.createElement(
         "div",
-        { className: "w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-200 h-[500px] relative" },
-        React.createElement("iframe", {
-          src: utils.getDrivePreviewUrl(activeBook.driveUrl),
-          className: "w-full h-full border-0",
-          title: activeBook.title
-        })
+        { className: "w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2 p-3" },
+        
+        // شريط أدوات قارئ الكتاب وحالة الأوفلاين
+        React.createElement(
+          "div",
+          { className: "flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-white border-b border-slate-800 pb-2.5 text-xs" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-base" }, "📖"),
+            React.createElement("span", { className: "font-bold text-xs" }, "قارئ الكتاب المدمج"),
+            isSavedOffline ? React.createElement(
+              "span",
+              { className: "bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full" },
+              "✓ متاح للقراءة أوفلاين بدون نت"
+            ) : React.createElement(
+              "span",
+              { className: "bg-amber-950 text-amber-300 border border-amber-800 text-[10px] font-medium px-2 py-0.5 rounded-full" },
+              "سحابي (يحتاج إنترنت)"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 mr-auto" },
+            // زر حفظ الكتاب للقراءة أوفلاين
+            !isSavedOffline ? React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleSaveOffline,
+                disabled: isSavingOffline,
+                className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              },
+              React.createElement("span", null, "📥"),
+              React.createElement("span", null, isSavingOffline ? "جاري الحفظ..." : "تحميل للقراءة بدون نت")
+            ) : React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleRemoveOffline,
+                className: "px-2.5 py-1 text-[11px] text-slate-400 hover:text-rose-400"
+              },
+              "إلغاء الحفظ المحلي"
+            )
+          )
+        ),
+
+        offlineSaveMsg && React.createElement(
+          "div",
+          { className: "p-2 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-center text-xs font-semibold" },
+          offlineSaveMsg
+        ),
+
+        // لوحة عرض الصفحة (PDF Canvas Viewer)
+        React.createElement(
+          "div",
+          { className: "relative min-h-[420px] max-h-[650px] overflow-auto flex items-center justify-center bg-slate-950 rounded-xl p-2" },
+          isPdfLoading && React.createElement(
+            "div",
+            { className: "absolute inset-0 flex items-center justify-center bg-slate-950/80 z-10 text-white text-xs font-bold gap-2" },
+            React.createElement("span", { className: "animate-spin text-lg" }, "⏳"),
+            React.createElement("span", null, "جاري فتح صفحات الكتاب وحفظ موضع القراءة...")
+          ),
+          pdfDoc ? React.createElement("canvas", {
+            ref: pdfCanvasRef,
+            className: "max-w-full shadow-2xl rounded-lg bg-white"
+          }) : React.createElement(
+            "iframe",
+            {
+              src: utils.getDrivePreviewUrl(activeBook.driveUrl),
+              className: "w-full h-[480px] border-0 rounded-lg",
+              title: activeBook.title
+            }
+          )
+        )
       ),
 
-      // قسم فصول الكتاب والملخصات الصوتية والنصية (Chapter Audio & Summary)
+      // قسم فصول الكتاب وتراكات الصوت والملخصات (Chapter Tracks & Audio)
       React.createElement(
         "div",
         { className: "space-y-3 pt-2" },
         React.createElement(
           "div",
           { className: "flex items-center justify-between" },
-          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "فصول الكتاب والملخصات الصوتية والنصية"),
-          !(activeBook.chapters || []).some(function(c) { return c.title && c.title.includes("المقدمة"); }) && React.createElement(
+          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تراكات الفصول والملخصات الصوتية (NotebookLM)"),
+          !(activeBook.chapters || []).some(function(c) { return c.title && c.title.includes("المقدمة"); }) && currentUser.role === "admin" && React.createElement(
             "button",
             {
               type: "button",
@@ -2985,9 +2910,8 @@ window.BooksPage = function(props) {
                   number: 0,
                   title: "المقدمة والمدخل",
                   summaryText: "",
-                  audioScript: "",
-                  hasAudio: false,
-                  lastAudioPosition: 0
+                  audioUrl: "",
+                  hasAudio: false
                 }].concat(activeBook.chapters || []);
                 var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
                 cloud.saveBook(updatedBook);
@@ -2995,16 +2919,17 @@ window.BooksPage = function(props) {
               },
               className: "text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 transition-all shadow-xs"
             },
-            "➕ إضافة ملخص المقدمة لهذا الكتاب"
+            "➕ إضافة تراك المقدمة"
           )
         ),
+
+        // قائمة تراكات الفصول
         React.createElement(
           "div",
           { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
           (activeBook.chapters || []).map(function(ch, idx) {
-            var currentTab = activeTabByChapter[idx] || "written"; // 'written' or 'audio'
-            var isSpeaking = speakingChapterIdx === idx;
-            var hasSummary = !!(ch.summaryText || ch.audioScript);
+            var currentTab = activeTabByChapter[idx] || (ch.audioUrl || ch.audioScript ? "audio" : "written");
+            var hasAudioTrack = !!(ch.audioUrl || ch.audioScript);
 
             return React.createElement(
               "div",
@@ -3012,25 +2937,46 @@ window.BooksPage = function(props) {
                 key: idx,
                 className: "p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3 shadow-xs"
               },
-              // عنوان الفصل والشارات
+              // عنوان الفصل ورقم التراك
               React.createElement(
                 "div",
                 { className: "flex items-center justify-between" },
                 React.createElement(
                   "div",
                   { className: "flex items-center gap-2" },
-                  React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, ch.title || ("الفصل " + (idx + 1))),
-                  ch.number === 0 && React.createElement("span", { className: "text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md font-bold" }, "تمهيدي")
+                  React.createElement("span", { className: "text-xs font-mono bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md font-bold" }, "Track " + (idx + 1)),
+                  React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, ch.title || ("الفصل " + (idx + 1)))
                 ),
-                ch.hasAudio && React.createElement("span", { className: "text-[11px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-lg font-bold" },
-                  "جاهز بالذكاء ✨"
+                currentUser.role === "admin" && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { openEditChapterModal(idx, ch); },
+                    className: "text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs"
+                  },
+                  "✏️ تعديل التراك"
                 )
               ),
 
               // أزرار الاختيار: مكتوب أو صوتي
-              hasSummary && React.createElement(
+              React.createElement(
                 "div",
                 { className: "flex items-center p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "audio" }));
+                    },
+                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
+                      (currentTab === "audio"
+                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
+                  },
+                  React.createElement("span", null, "🎙️"),
+                  React.createElement("span", null, "ملخص مسموع (MP3)")
+                ),
                 React.createElement(
                   "button",
                   {
@@ -3045,218 +2991,60 @@ window.BooksPage = function(props) {
                   },
                   React.createElement("span", null, "📖"),
                   React.createElement("span", null, "ملخص مكتوب")
-                ),
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: function() {
-                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "audio" }));
-                    },
-                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
-                      (currentTab === "audio"
-                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
-                  },
-                  React.createElement("span", null, "🎙️"),
-                  React.createElement("span", null, "ملخص صوتي مسموع")
                 )
               ),
 
-              // نصوص الملخص أو زر التوليد
-              hasSummary ? React.createElement(
+              // محتوى التراك
+              currentTab === "audio" ? React.createElement(
                 "div",
-                { className: "space-y-3" },
-                currentTab === "written" ? React.createElement(
+                { className: "space-y-2" },
+                hasAudioTrack ? React.createElement(
                   "div",
-                  { className: "text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
-                  ch.summaryText || "لا يوجد نص ملخص مكتوب متاح"
+                  { className: "p-3 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl shadow-md space-y-2" },
+                  React.createElement("div", { className: "flex items-center justify-between text-xs" },
+                    React.createElement("span", { className: "font-bold flex items-center gap-1.5" },
+                      React.createElement("span", null, "🎧"),
+                      React.createElement("span", null, "صوت استوديو نقي (NotebookLM)")
+                    ),
+                    React.createElement("span", { className: "text-[10px] text-emerald-400 font-mono" }, "تراك مستقل")
+                  ),
+                  React.createElement("audio", {
+                    controls: true,
+                    src: utils.getAudioStreamUrl(ch.audioUrl || ch.audioScript),
+                    className: "w-full rounded-lg accent-emerald-500"
+                  })
                 ) : React.createElement(
                   "div",
-                  { className: "space-y-2.5" },
-                  React.createElement(
-                    "div",
-                    { className: "text-xs text-slate-600 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
-                    cleanSpokenText(ch.audioScript || ch.summaryText)
-                  ),
-                  // مشغل صوتي تفاعلي متكامل (شريط تشغيل + أوقات + اختيار الصوت + سرعات)
-                  React.createElement(
-                    "div",
-                    { className: "p-3.5 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/70 rounded-2xl border border-slate-700/60 dark:border-emerald-800/40 shadow-md space-y-3 text-xs" },
-                    
-                    // شريط العنوان وحالة التشغيل واختيار الصوت
-                    React.createElement(
-                      "div",
-                      { className: "flex flex-wrap items-center justify-between gap-2" },
-                      React.createElement(
-                        "div",
-                        { className: "flex items-center gap-1.5" },
-                        React.createElement("span", { className: "text-base" }, isSpeaking ? (isAudioPaused ? "⏸️" : "🔊") : "🎧"),
-                        React.createElement("span", { className: "font-bold text-xs" }, isSpeaking ? (isAudioPaused ? "متوقف مؤقتاً" : "جاري الاستماع الآن") : "مشغل الملخص الصوتي"),
-                        isSpeaking && audioProgress.total > 0 && React.createElement(
-                          "span",
-                          { className: "text-[11px] bg-slate-800/90 text-emerald-400 px-2 py-0.5 rounded-full font-mono border border-slate-700" },
-                          audioProgress.current + " / " + audioProgress.total
-                        )
-                      ),
-
-                      // أدوات الجانب الأيسر: زر الإنهاء
-                      React.createElement(
-                        "div",
-                        { className: "flex items-center gap-2 mr-auto" },
-                        // زر إنهاء الاستماع
-                        isSpeaking && React.createElement(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: stopAudioPlayback,
-                            className: "text-[11px] text-rose-300 hover:text-white font-medium px-2 py-1 rounded-lg bg-rose-950/60 border border-rose-800/60 transition-all active:scale-95"
-                          },
-                          "⏹️ إنهاء"
-                        )
-                      )
-                    ),
-
-                    // شريط التراك التفاعلي (Track Progress Bar + أوقات المنقضي والمتبقي)
-                    React.createElement(
-                      "div",
-                      { className: "space-y-1 pt-1" },
-                      React.createElement(
-                        "div",
-                        { className: "relative flex items-center" },
-                        React.createElement("input", {
-                          type: "range",
-                          min: "0",
-                          max: "1",
-                          step: "0.01",
-                          value: (audioProgress.total > 0 ? (audioProgress.current / audioProgress.total) : 0),
-                          onChange: handleAudioProgressSeek,
-                          disabled: !isSpeaking,
-                          className: "w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500 hover:h-2 transition-all disabled:opacity-40"
-                        })
-                      ),
-                      // عرض: الوقت المنقضي - مدة التراك - الوقت المتبقي
-                      React.createElement(
-                        "div",
-                        { className: "flex items-center justify-between text-[11px] font-mono text-slate-400 px-0.5" },
-                        React.createElement(
-                          "span",
-                          { className: "text-emerald-400 font-semibold" },
-                          "مضى: " + utils.formatDuration(audioElapsedSec)
-                        ),
-                        React.createElement(
-                          "span",
-                          { className: "text-slate-300" },
-                          "مدة الملخص: " + utils.formatDuration(audioDurationSec)
-                        ),
-                        React.createElement(
-                          "span",
-                          { className: "text-amber-400 font-semibold" },
-                          "متبقي: " + utils.formatDuration(Math.max(0, audioDurationSec - audioElapsedSec))
-                        )
-                      )
-                    ),
-
-                    // شريط أزرار التحكم (ترجيع، تشغيل/إيقاف، تقديم، تسريع)
-                    React.createElement(
-                      "div",
-                      { className: "flex flex-wrap items-center justify-between pt-2 gap-2 border-t border-slate-700/60" },
-                      
-                      // مجموعة أزرار المشغل
-                      React.createElement(
-                        "div",
-                        { className: "flex items-center gap-1.5" },
-                        // زر ترجيع 10 ثوانٍ (جملة للخلف)
-                        React.createElement(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: handleAudioSeekBackward,
-                            disabled: !isSpeaking,
-                            title: "تخطي جملة للخلف",
-                            className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-all active:scale-95 flex items-center gap-1"
-                          },
-                          React.createElement("span", null, "⏪"),
-                          React.createElement("span", { className: "text-[11px] font-mono" }, "10ث")
-                        ),
-
-                        // زر تشغيل / إيقاف مؤقت الرئيسي
-                        React.createElement(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: function() { handleToggleSpeech(idx, ch.audioScript || ch.summaryText); },
-                            className: "px-4 py-2 rounded-xl font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 " +
-                              (isSpeaking
-                                ? (isAudioPaused ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse")
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white")
-                          },
-                          React.createElement("span", null, isSpeaking ? (isAudioPaused ? "▶️ استئناف" : "⏸️ إيقاف مؤقت") : "▶️ بدء الاستماع")
-                        ),
-
-                        // زر تقديم 10 ثوانٍ (جملة للأمام)
-                        React.createElement(
-                          "button",
-                          {
-                            type: "button",
-                            onClick: handleAudioSeekForward,
-                            disabled: !isSpeaking,
-                            title: "تخطي جملة للأمام",
-                            className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 transition-all active:scale-95 flex items-center gap-1"
-                          },
-                          React.createElement("span", { className: "text-[11px] font-mono" }, "10ث"),
-                          React.createElement("span", null, "⏩")
-                        )
-                      ),
-
-                      // خيارات السرعة (0.85x, 1x, 1.25x, 1.5x)
-                      React.createElement(
-                        "div",
-                        { className: "flex items-center gap-1 bg-slate-800/90 p-1 rounded-xl border border-slate-700/60" },
-                        [0.85, 1.0, 1.25, 1.5].map(function(speed) {
-                          var isActive = audioPlaybackRate === speed;
-                          return React.createElement(
-                            "button",
-                            {
-                              key: speed,
-                              type: "button",
-                              onClick: function() { handleAudioSpeedChange(speed); },
-                              className: "px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all " +
-                                (isActive
-                                  ? "bg-emerald-500 text-slate-950 shadow-xs"
-                                  : "text-slate-400 hover:text-white")
-                            },
-                            speed + "x"
-                          );
-                        })
-                      )
-                    )
-                  )
-                ),
-                currentUser.role === "admin" && React.createElement(
-                  "div",
-                  { className: "flex justify-end pt-1" },
-                  React.createElement(
+                  { className: "p-4 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+                  "لم يتم إضافة ملف الصوت (MP3) لهذا التراك بعد.",
+                  currentUser.role === "admin" && React.createElement(
                     "button",
                     {
-                      onClick: function() { handleGenerateChapterSummary(idx); },
-                      disabled: isAiGenerating,
-                      className: "text-[11px] text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 underline font-medium"
+                      onClick: function() { openEditChapterModal(idx, ch); },
+                      className: "block mx-auto mt-2 text-emerald-600 dark:text-emerald-400 underline font-semibold text-xs"
                     },
-                    "إعادة توليد وتحديث الملخص"
+                    "إضافة رابط الصوت من NotebookLM"
                   )
                 )
               ) : React.createElement(
                 "div",
-                { className: "text-xs text-slate-400 py-3 flex items-center justify-between" },
-                React.createElement("span", null, "لم يتم إعداد ملخص هذا الجزء بعد"),
-                currentUser.role === "admin" && React.createElement("button", {
-                  onClick: function() { handleGenerateChapterSummary(idx); },
-                  disabled: isAiGenerating,
-                  className: "text-xs px-3.5 py-1.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-                },
-                React.createElement("span", null, isAiGenerating ? "⏳" : "✨"),
-                React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "توليد الملخص (صوتي ومكتوب)")
+                { className: "space-y-2" },
+                ch.summaryText ? React.createElement(
+                  "div",
+                  { className: "text-xs text-slate-600 dark:text-slate-300 max-h-48 overflow-y-auto whitespace-pre-wrap p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
+                  ch.summaryText
+                ) : React.createElement(
+                  "div",
+                  { className: "p-4 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs" },
+                  "لا يوجد ملخص مكتوب لهذا الفصل بعد.",
+                  currentUser.role === "admin" && React.createElement(
+                    "button",
+                    {
+                      onClick: function() { openEditChapterModal(idx, ch); },
+                      className: "block mx-auto mt-2 text-emerald-600 dark:text-emerald-400 underline font-semibold text-xs"
+                    },
+                    "لصق الملخص المكتوب من NotebookLM"
+                  )
                 )
               )
             );
@@ -3539,6 +3327,72 @@ window.BooksPage = function(props) {
               disabled: isUploading,
               className: "px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white"
             }, isUploading ? "جاري الرفع..." : "حفظ المرجع وتجهيز الفصول")
+          )
+        )
+      )
+    ),
+
+    // نافذة تعديل التراك / الفصل (لصق ملخص NotebookLM ورابط الصوت MP3)
+    editingChapterIdx !== null && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "✏️ تعديل تراك الفصل (NotebookLM)"),
+          React.createElement("button", { onClick: function() { setEditingChapterIdx(null); }, className: "text-slate-400" }, "✕")
+        ),
+        React.createElement(
+          "form",
+          { onSubmit: handleSaveChapterEdit, className: "space-y-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "عنوان الفصل / التراك"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: editChapterTitle,
+              onChange: function(e) { setEditChapterTitle(e.target.value); },
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رابط ملف الصوت للتراك (MP3 أو Google Drive)"),
+            React.createElement("input", {
+              type: "url",
+              value: editChapterAudioUrl,
+              onChange: function(e) { setEditChapterAudioUrl(e.target.value); },
+              placeholder: "رابط ملف الصوت الذي نزلته من NotebookLM ورفعته على درايف...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            }),
+            React.createElement("p", { className: "text-[10px] text-slate-400 mt-1" }, "💡 ارفع ملف الـ MP3 الذي استخرجته من NotebookLM على جوجل درايف وضع رابطه هنا.")
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الملخص المكتوب للفصل"),
+            React.createElement("textarea", {
+              rows: 5,
+              value: editChapterSummary,
+              onChange: function(e) { setEditChapterSummary(e.target.value); },
+              placeholder: "الصق هنا الملخص المكتوب المستخرج من NotebookLM...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2" },
+            React.createElement("button", { type: "button", onClick: function() { setEditingChapterIdx(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
+            React.createElement("button", {
+              type: "submit",
+              className: "px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm"
+            }, "حفظ التراك والملخص ✓")
           )
         )
       )
