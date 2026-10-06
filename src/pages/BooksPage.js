@@ -380,14 +380,34 @@ window.BooksPage = function(props) {
     return p;
   };
 
-  // تشغيل القراءة عبر واجهة Google Translate السحابية
+  // تشغيل النطق الصوتي العربي بدقة عالية ودون الاعتماد على روابط خارجية محظورة
   var playCloudTtsAudio = function(text, onFinished) {
     if (!text || !text.trim()) {
       if (typeof onFinished === "function") onFinished();
       return;
     }
 
-    // تقسيم النص لجمل قصيرة بحد أقصى 180 حرف لأن Google Translate لا يقبل نصوص طويلة جداً
+    if (!window.speechSynthesis) {
+      alert("المتصفح لا يدعم تشغيل الصوت.");
+      if (typeof onFinished === "function") onFinished();
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    // استخراج أفضل صوت عربي متاح في المتصفح أو الجهاز (مثل صوت هدى، نايف، سلمى أو أي صوت عربي)
+    var voices = window.speechSynthesis.getVoices() || [];
+    var arVoice = voices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      return l.startsWith("ar-eg") || l.includes("egypt") || n.includes("salma") || n.includes("shakir");
+    }) || voices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      return l.startsWith("ar") || n.includes("arabic") || n.includes("عربي") || n.includes("hoda") || n.includes("naayf") || n.includes("tarik");
+    });
+
+    // تقسيم النص لجمل واضحة لضمان عدم توقف المتصفح
     var sentences = text.match(/[^.،؟!\n]+[.،؟!\n]?/g) || [text];
     var chunks = [];
     var current = "";
@@ -395,7 +415,7 @@ window.BooksPage = function(props) {
     sentences.forEach(function(s) {
       var trimmed = s.trim();
       if (!trimmed) return;
-      if ((current + " " + trimmed).length <= 180) {
+      if ((current + " " + trimmed).length <= 150) {
         current = current ? (current + " " + trimmed) : trimmed;
       } else {
         if (current) chunks.push(current);
@@ -410,7 +430,7 @@ window.BooksPage = function(props) {
     }
 
     var chunkIdx = 0;
-    var playNextChunk = function() {
+    var speakNextChunk = function() {
       if (!isTtsActiveRef.current || chunkIdx >= chunks.length) {
         if (isTtsActiveRef.current && typeof onFinished === "function") {
           onFinished();
@@ -418,46 +438,40 @@ window.BooksPage = function(props) {
         return;
       }
 
+      if (isTtsPaused) {
+        setTimeout(speakNextChunk, 400);
+        return;
+      }
+
       var textChunk = chunks[chunkIdx];
       chunkIdx++;
 
-      var url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=" + encodeURIComponent(textChunk);
-      
-      var audio = new Audio(url);
-      ttsAudioObjRef.current = audio;
-      audio.playbackRate = ttsSpeed; // تطبيق سرعة القراءة
-      
-      audio.onended = function() {
+      var utterance = new SpeechSynthesisUtterance(textChunk);
+      utterance.rate = ttsSpeed || 1.0;
+      utterance.lang = arVoice ? arVoice.lang : "ar-EG";
+      if (arVoice) utterance.voice = arVoice;
+
+      utterance.onend = function() {
         if (isTtsActiveRef.current && !isTtsPaused) {
-          playNextChunk();
+          speakNextChunk();
         }
       };
 
-      audio.onerror = function(err) {
-        console.warn("TTS Audio error, skipping chunk:", err);
+      utterance.onerror = function(err) {
+        console.warn("Speech utterance error, moving to next:", err);
         if (isTtsActiveRef.current && !isTtsPaused) {
-          playNextChunk();
+          speakNextChunk();
         }
       };
 
-      // إذا كان القارئ في وضع الإيقاف المؤقت، ننتظر
-      var tryPlay = function() {
-        if (!isTtsActiveRef.current) return;
-        if (isTtsPaused) {
-          setTimeout(tryPlay, 500);
-          return;
-        }
-        audio.play().catch(function(e) {
-          console.warn("Autoplay blocked for chunk", e);
-          // في حالة الحظر، ننتقل للقطعة التالية (لا يمكن حل Autoplay برمجياً إذا لم يتفاعل المستخدم)
-          if (isTtsActiveRef.current) playNextChunk();
-        });
-      };
-      
-      tryPlay();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      window.speechSynthesis.speak(utterance);
     };
 
-    playNextChunk();
+    speakNextChunk();
   };
 
   // استخراج النص الهجين السريع (الكاش السحابي أولاً، ثم نص الـ PDF المباشر 0.01s، ثم Gemini للصور فقط)
@@ -607,24 +621,24 @@ window.BooksPage = function(props) {
   var toggleTtsAutoReader = function() {
     if (isTtsReading) {
       if (isTtsPaused) {
-        if (ttsAudioObjRef.current) {
-          ttsAudioObjRef.current.play().catch(function() {});
+        if (window.speechSynthesis) {
+          window.speechSynthesis.resume();
         }
         setIsTtsPaused(false);
-        setTtsStatusMsg("تم استئناف القراءة الذكية");
+        setTtsStatusMsg("تم استئناف القراءة");
       } else {
-        if (ttsAudioObjRef.current) {
-          try { ttsAudioObjRef.current.pause(); } catch (e) {}
+        if (window.speechSynthesis) {
+          window.speechSynthesis.pause();
         }
         setIsTtsPaused(true);
-        setTtsStatusMsg("تم الإيقاف المؤقت للقارئ الذكي");
+        setTtsStatusMsg("تم الإيقاف المؤقت للقارئ");
       }
     } else {
       if (!pdfDoc) {
         if (activeBook && activeBook.driveUrl) {
           setTtsStatusMsg("جاري تحميل ملف الكتاب للبدء في القراءة الصوتية... ⏳");
           loadPdfFromUrl(activeBook.driveUrl);
-          alert("جاري جلب صفحات الكتاب الآن، بمجرد ظهورها اضغط على 'القراءة بالذكاء الاصطناعي' لتبدأ ✓");
+          alert("جاري جلب صفحات الكتاب الآن، بمجرد ظهورها اضغط على 'اقرأ لي الكتاب مسموعاً' لتبدأ ✓");
         } else {
           alert("يرجى التأكد من إضافة رابط الـ PDF للكتاب أولاً.");
         }
@@ -645,9 +659,8 @@ window.BooksPage = function(props) {
   // إيقاف القارئ الصوتي الذكي تماماً
   var stopTtsReaderCompletely = function() {
     isTtsActiveRef.current = false;
-    if (ttsAudioObjRef.current) {
-      try { ttsAudioObjRef.current.pause(); } catch (e) {}
-      ttsAudioObjRef.current = null;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     setIsTtsReading(false);
     setIsTtsPaused(false);
