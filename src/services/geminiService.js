@@ -110,7 +110,10 @@ window.GeminiAIService = {
       try {
         var response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": key
+          },
           body: JSON.stringify(body)
         });
 
@@ -121,9 +124,15 @@ window.GeminiAIService = {
           }
         } else {
           var errData = await response.json().catch(function() { return {}; });
-          lastErrorMessage = (errData.error && errData.error.message) || ("فشل الاستدعاء للنموذج " + modelName);
+          var msg = (errData.error && errData.error.message) || "";
+          var reason = (errData.error && errData.error.details && errData.error.details[0] && errData.error.details[0].reason) || "";
+          if (response.status === 401 || response.status === 403 || reason === "API_KEY_SERVICE_BLOCKED" || msg.includes("API key not valid") || msg.includes("credentials")) {
+            throw new Error("مفتاح الـ API غير مفعّل لخدمة Gemini في حساب جوجل (السبب: " + (reason || "غير مصرح") + "). يرجى إنشاء مفتاح مجاني جديد من Google AI Studio (aistudio.google.com).");
+          }
+          lastErrorMessage = msg || ("فشل الاستدعاء للنموذج " + modelName);
         }
       } catch (networkErr) {
+        if (networkErr.message && networkErr.message.includes("مفتاح الـ API")) throw networkErr;
         lastErrorMessage = networkErr.message;
       }
     }
@@ -203,7 +212,10 @@ window.GeminiAIService = {
       try {
         var response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": key
+          },
           body: JSON.stringify(body)
         });
         
@@ -214,9 +226,15 @@ window.GeminiAIService = {
           }
         } else {
           var errData = await response.json().catch(function() { return {}; });
-          lastError = (errData.error && errData.error.message) || ("خطأ في نموذج " + modelName);
+          var msg = (errData.error && errData.error.message) || "";
+          var reason = (errData.error && errData.error.details && errData.error.details[0] && errData.error.details[0].reason) || "";
+          if (response.status === 401 || response.status === 403 || reason === "API_KEY_SERVICE_BLOCKED" || msg.includes("API key not valid") || msg.includes("credentials")) {
+            throw new Error("مفتاح الـ API غير مفعّل لخدمة Gemini في حساب جوجل (السبب: " + (reason || "غير مصرح") + "). يرجى إنشاء مفتاح مجاني جديد من Google AI Studio (aistudio.google.com).");
+          }
+          lastError = msg || ("خطأ في نموذج " + modelName);
         }
       } catch (e) {
+        if (e.message && e.message.includes("مفتاح الـ API")) throw e;
         lastError = e.message;
       }
     }
