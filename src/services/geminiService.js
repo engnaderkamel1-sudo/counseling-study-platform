@@ -27,8 +27,13 @@ window.GeminiAIService = {
     window.APP_UTILS.setLocal(window.GeminiAIService.storageKey, key.trim());
   },
 
+  _cachedModels: null,
+
   // جلب النماذج المدعومة تلقائياً ومباشرة من حساب المستخدم (Auto Model Discovery)
   fetchSupportedModels: async function(key) {
+    if (window.GeminiAIService._cachedModels && window.GeminiAIService._cachedModels.length > 0) {
+      return window.GeminiAIService._cachedModels;
+    }
     try {
       var listResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + key);
       if (listResp.ok) {
@@ -49,6 +54,7 @@ window.GeminiAIService = {
               var bScore = (b.includes("2.0") ? 10 : 0) + (b.includes("flash") ? 5 : 0);
               return bScore - aScore;
             });
+            window.GeminiAIService._cachedModels = models;
             return models;
           }
         }

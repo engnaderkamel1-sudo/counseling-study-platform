@@ -89,6 +89,8 @@ window.BooksPage = function(props) {
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
   var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
+  var [isBatchConverting, setIsBatchConverting] = React.useState(false);
+  var [batchConvertProgress, setBatchConvertProgress] = React.useState({ current: 0, total: 0, msg: "" });
 
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
@@ -458,7 +460,84 @@ window.BooksPage = function(props) {
     playNextChunk();
   };
 
-  // القراءة الذكية باستخدام Gemini AI لقراءة صور الـ PDF
+  // استخراج النص الهجين السريع (الكاش السحابي أولاً، ثم نص الـ PDF المباشر 0.01s، ثم Gemini للصور فقط)
+  var extractPageTextHybrid = async function(doc, bookId, pageNum) {
+    // 1. فحص الكاش السحابي أولاً (Zero Quota - فوري 0 ثانية)
+    if (bookId && cloud.getCachedPageText) {
+      var cached = await cloud.getCachedPageText(bookId, pageNum);
+      if (cached && cached.trim()) return { text: cached.trim(), source: "cloud" };
+    }
+
+    try {
+      var page = await doc.getPage(pageNum);
+      // 2. محاولة استخراج النص المباشر من ملف الـ PDF (سرعة فائقة جداً في أجزاء من الثانية)
+      try {
+        var content = await page.getTextContent();
+        var rawStr = (content.items || []).map(function(item) { return item.str; }).join(" ").trim();
+        var cleanAr = rawStr.replace(/[^\u0600-\u06FF0-9\s.,?!،؛:\-]/g, " ").replace(/\s+/g, " ").trim();
+        if (cleanAr.length >= 35) {
+          if (bookId && cloud.saveCachedPageText) {
+            cloud.saveCachedPageText(bookId, pageNum, cleanAr).catch(function() {});
+          }
+          return { text: cleanAr, source: "direct" };
+        }
+      } catch (eText) {}
+
+      // 3. إذا كانت الصفحة صورة سكانر بدون نص، نلجأ إلى Gemini Vision
+      var viewport = page.getViewport({ scale: 1.0 });
+      var tempCanvas = document.createElement("canvas");
+      tempCanvas.width = viewport.width;
+      tempCanvas.height = viewport.height;
+      var ctx = tempCanvas.getContext("2d");
+      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+      var base64Img = tempCanvas.toDataURL("image/jpeg", 0.6);
+
+      var aiText = await ai.extractTextFromImage(base64Img);
+      if (aiText && aiText.trim()) {
+        var resText = aiText.trim();
+        if (bookId && cloud.saveCachedPageText) {
+          cloud.saveCachedPageText(bookId, pageNum, resText).catch(function() {});
+        }
+        return { text: resText, source: "ai" };
+      }
+    } catch (err) {
+      console.warn("extractPageTextHybrid error on p " + pageNum, err);
+      throw err;
+    }
+    return { text: "", source: "empty" };
+  };
+
+  // التحويل والتجهيز التلقائي لجميع صفحات الكتاب مسبقاً في الخلفية
+  var startAutoPreConvertBook = async function(loadedDoc, bookObj) {
+    if (!loadedDoc || !bookObj) return;
+    var total = Math.min(loadedDoc.numPages || (bookObj.totalPages || 10), 100);
+    setIsBatchConverting(true);
+    setBatchConvertProgress({ current: 0, total: total, msg: "بدء تجهيز صفحات الكتاب صوتياً..." });
+
+    for (var p = 1; p <= total; p++) {
+      try {
+        setBatchConvertProgress({
+          current: p,
+          total: total,
+          msg: "جاري تجهيز وتحويل صفحة " + p + " من " + total + "..."
+        });
+        await extractPageTextHybrid(loadedDoc, bookObj.id, p);
+      } catch (e) {
+        console.warn("Batch page " + p + " notice:", e);
+      }
+    }
+
+    setBatchConvertProgress({
+      current: total,
+      total: total,
+      msg: "تم تجهيز جميع صفحات الكتاب صوتياً بنجاح! جاهز للاستماع الفوري الآن 🎧"
+    });
+    setTimeout(function() {
+      setIsBatchConverting(false);
+    }, 4000);
+  };
+
+  // القراءة الذكية الفائقة لصفحة الـ PDF
   var readPageTextWithTts = async function(doc, pageNum) {
     if (!doc) {
       alert("يرجى الانتظار حتى اكتمال تحميل ملف الكتاب.");
@@ -472,90 +551,56 @@ window.BooksPage = function(props) {
       return;
     }
 
-    // 1. فحص هل تم استخراج نص هذه الصفحة وحفظه سحابياً من قبل؟ (Zero Quota)
     var bookId = activeBook && activeBook.id;
-    var cachedText = null;
-    if (bookId && cloud.getCachedPageText) {
-      setTtsStatusMsg("جاري فحص الذاكرة السحابية لصفحة " + pageNum + "... ⚡");
-      cachedText = await cloud.getCachedPageText(bookId, pageNum);
+    setTtsStatusMsg("جاري جلب نص صفحة " + pageNum + "... ⚡");
+
+    if (pdfCurrentPage !== pageNum) {
+      await handlePageChange(pageNum);
     }
 
-    var textToRead = cachedText;
-
-    // 2. إذا لم يكن محفوظاً سحابياً، نستخدم الذكاء الاصطناعي لاستخراجه مرة واحدة فقط
-    if (!textToRead) {
-      setTtsStatusMsg("جاري تصوير صفحة " + pageNum + " لـ Gemini الذكي... 📸");
-      
-      // الانتظار حتى يتم رسم الصفحة بشكل كامل على الكانفاس
-      if (pdfCurrentPage !== pageNum) {
-        await handlePageChange(pageNum);
-      }
-      
-      // الانتظار نصف ثانية إضافية للتأكد من الريندر
-      await new Promise(function(r) { setTimeout(r, 500); });
-      
+    try {
+      var result = await extractPageTextHybrid(doc, bookId, pageNum);
       if (!isTtsActiveRef.current) return;
 
-      var canvas = pdfCanvasRef.current;
-      if (!canvas) {
-         setTtsStatusMsg("عطل في قراءة الشاشة، جاري المحاولة...");
-         return;
-      }
-
-      // استخراج الصورة من الكانفاس بجودة متوسطة لتخفيف الحمل على الإنترنت
-      var base64Image = canvas.toDataURL("image/jpeg", 0.6);
-      
-      setTtsStatusMsg("جاري استخراج النص بالذكاء الاصطناعي (صفحة " + pageNum + ")... 🧠");
-
-      try {
-        var aiText = await ai.extractTextFromImage(base64Image);
-        if (!isTtsActiveRef.current) return;
-        
-        if (aiText && aiText.trim()) {
-          textToRead = aiText.trim();
-          // حفظ النص سحابياً فوراً للمستقبل حتى لا يستهلك Quota مرة أخرى لأي مستخدم
-          if (bookId && cloud.saveCachedPageText) {
-            cloud.saveCachedPageText(bookId, pageNum, textToRead).catch(function() {});
-          }
-        }
-      } catch (err) {
-        console.warn("AI extraction error:", err);
-        var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
-        setTtsStatusMsg("فشل القارئ الذكي: " + msg);
-        setIsTtsReading(false);
-        isTtsActiveRef.current = false;
-        alert("تنبيه القارئ الذكي:\n" + msg);
-        return;
-      }
-    }
-
-    if (!textToRead || textToRead.length < 5) {
-       setTtsStatusMsg("الصفحة " + pageNum + " لا تحتوي على نصوص، جاري تخطيها...");
-       setTimeout(function() {
+      var textToRead = result.text;
+      if (!textToRead || textToRead.length < 5) {
+        setTtsStatusMsg("الصفحة " + pageNum + " لا تحتوي على نصوص، جاري تخطيها...");
+        setTimeout(function() {
           if (isTtsActiveRef.current) {
             readPageTextWithTts(doc, pageNum + 1);
           }
-       }, 1000);
-       return;
-    }
-
-    // إظهار تنبيه يوضح ما إذا كانت القراءة فورية ومجانية من الكاش أو تم استخراجها الآن
-    var statusTitle = cachedText ? "⚡ قراءة فورية من السحابة (بدون استهلاك)" : "🔊 قراءة طبيعية سحابية";
-    setTtsStatusMsg(statusTitle + " (صفحة " + pageNum + " من " + maxP + ")");
-    setIsTtsReading(true);
-    setIsTtsPaused(false);
-    
-    playCloudTtsAudio(textToRead, function() {
-      if (!isTtsActiveRef.current) return;
-      var nextP = pageNum + 1;
-      if (nextP <= maxP) {
-        setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
-        readPageTextWithTts(doc, nextP);
-      } else {
-        setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
-        stopTtsReaderCompletely();
+        }, 1000);
+        return;
       }
-    });
+
+      var statusBadge = result.source === "cloud"
+        ? "⚡ قراءة فورية من السحابة"
+        : (result.source === "direct" ? "📖 قراءة مباشرة فائقة السرعة" : "🧠 قراءة ذكية (Gemini)");
+      
+      setTtsStatusMsg(statusBadge + " (صفحة " + pageNum + " من " + maxP + ") 🔊");
+      setIsTtsReading(true);
+      setIsTtsPaused(false);
+
+      playCloudTtsAudio(textToRead, function() {
+        if (!isTtsActiveRef.current) return;
+        var nextP = pageNum + 1;
+        if (nextP <= maxP) {
+          setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
+          readPageTextWithTts(doc, nextP);
+        } else {
+          setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
+          stopTtsReaderCompletely();
+        }
+      });
+
+    } catch (err) {
+      console.warn("Hybrid read error:", err);
+      var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
+      setTtsStatusMsg("فشل القارئ: " + msg);
+      setIsTtsReading(false);
+      isTtsActiveRef.current = false;
+      alert("تنبيه القارئ الذكي:\n" + msg);
+    }
   };
 
   // زر بدء / إيقاف القراءة الصوتية بالذكاء الاصطناعي
@@ -1051,11 +1096,22 @@ window.BooksPage = function(props) {
     };
 
     cloud.saveBook(newB);
+    setActiveBook(newB);
     if (selectedFile) {
       try {
         var fileBuf = await selectedFile.arrayBuffer();
         await utils.saveOfflinePdf(newB.id, fileBuf);
+        // بدء التجهيز والتحويل الصوتي التلقائي فوراً لجميع صفحات الكتاب
+        if (window.pdfjsLib) {
+          window.pdfjsLib.getDocument({ data: fileBuf }).promise.then(function(loadedDoc) {
+            setPdfDoc(loadedDoc);
+            setPdfTotalPages(loadedDoc.numPages);
+            startAutoPreConvertBook(loadedDoc, newB);
+          }).catch(function() {});
+        }
       } catch (eBuf) {}
+    } else if (newB.driveUrl) {
+      loadPdfFromUrl(newB.driveUrl);
     }
 
     setShowAddModal(false);
@@ -1318,6 +1374,20 @@ window.BooksPage = function(props) {
               ) : null
             ),
 
+            // زر التجهيز الصوتي المسبق لجميع صفحات الكتاب دفعة واحدة
+            currentUser.role === "admin" && pdfDoc && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { startAutoPreConvertBook(pdfDoc, activeBook); },
+                disabled: isBatchConverting,
+                title: "تجهيز وتحويل جميع صفحات الكتاب صوتياً مسبقاً للاستماع الفوري دون أي انتظار",
+                className: "px-2.5 py-1.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-200 font-bold text-xs flex items-center gap-1.5 border border-teal-700 shadow-sm active:scale-95 transition-all disabled:opacity-50"
+              },
+              React.createElement("span", null, isBatchConverting ? "⏳" : "⚡"),
+              React.createElement("span", { className: "hidden sm:inline" }, isBatchConverting ? "جاري التجهيز..." : "تجهيز الصوت للكل")
+            ),
+
             // أزرار التنقل السريع بين الصفحات أثناء وضع ملء الشاشة
             isFullScreen && React.createElement(
               "div",
@@ -1432,6 +1502,31 @@ window.BooksPage = function(props) {
               },
               "إلغاء الحفظ"
             )
+          )
+        ),
+
+        // شريط تقدم التحويل والتجهيز الصوتي التلقائي المسبق لصفحات الكتاب
+        isBatchConverting && React.createElement(
+          "div",
+          { className: "p-3 rounded-2xl bg-slate-950 border border-teal-500/60 text-white space-y-2 shadow-xl shrink-0 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs font-bold" },
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-base animate-pulse" }, "🎧"),
+              React.createElement("span", { className: "text-teal-300" }, batchConvertProgress.msg || "جاري تجهيز صفحات الكتاب صوتياً...")
+            ),
+            React.createElement("span", { className: "font-mono text-teal-400 bg-teal-950 px-2 py-0.5 rounded-md border border-teal-800" },
+              batchConvertProgress.total > 0 ? (Math.round((batchConvertProgress.current / batchConvertProgress.total) * 100) + "%") : ""
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700" },
+            React.createElement("div", {
+              className: "bg-gradient-to-r from-teal-500 via-emerald-400 to-teal-400 h-full rounded-full transition-all duration-300",
+              style: { width: (batchConvertProgress.total > 0 ? Math.round((batchConvertProgress.current / batchConvertProgress.total) * 100) : 0) + "%" }
+            })
           )
         ),
 
