@@ -381,7 +381,8 @@ window.BooksPage = function(props) {
   // تغيير غلاف الكتاب الحالي وحفظه
   var handleSaveCurrentBookCover = async function(coverUrlToSave) {
     if (!activeBook) return;
-    var updated = Object.assign({}, activeBook, { coverUrl: coverUrlToSave });
+    var finalCover = utils.getDriveImageUrl(coverUrlToSave);
+    var updated = Object.assign({}, activeBook, { coverUrl: finalCover });
     cloud.saveBook(updated);
     setActiveBook(updated);
     setShowCoverEditModal(false);
@@ -589,7 +590,7 @@ window.BooksPage = function(props) {
         lastAudioPosition: 0
       });
     }
-    var finalCoverUrl = (newCoverUrl || "").trim();
+    var finalCoverUrl = utils.getDriveImageUrl((newCoverUrl || "").trim());
 
     if (selectedCoverFile) {
       try {
@@ -597,7 +598,7 @@ window.BooksPage = function(props) {
         setUploadStatusText("جاري رفع صورة غلاف الكتاب...");
         var uploadedCover = await uploadCoverImage(selectedCoverFile);
         if (uploadedCover) {
-          finalCoverUrl = uploadedCover;
+          finalCoverUrl = utils.getDriveImageUrl(uploadedCover);
         }
       } catch (errCover) {
         console.warn("Cover upload warning:", errCover);
@@ -713,9 +714,16 @@ window.BooksPage = function(props) {
             "div",
             { className: "relative group w-12 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-800 shrink-0 shadow-sm" },
             activeBook.coverUrl ? React.createElement("img", {
-              src: activeBook.coverUrl,
+              src: utils.getDriveImageUrl(activeBook.coverUrl),
               alt: activeBook.title,
-              className: "w-full h-full object-cover"
+              className: "w-full h-full object-cover",
+              onError: function(e) {
+                var rawId = utils.extractDriveId(activeBook.coverUrl);
+                if (rawId && !e.target._triedLh3) {
+                  e.target._triedLh3 = true;
+                  e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                }
+              }
             }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕"),
             currentUser.role === "admin" && React.createElement(
               "button",
@@ -1340,9 +1348,16 @@ window.BooksPage = function(props) {
                 className: "w-full aspect-[3/4] rounded-xl overflow-hidden relative shadow-md mb-3 flex flex-col justify-between p-3.5 bg-gradient-to-br " + palette
               },
               b.coverUrl ? React.createElement("img", {
-                src: b.coverUrl,
+                src: utils.getDriveImageUrl(b.coverUrl),
                 alt: b.title,
-                className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+                onError: function(e) {
+                  var rawId = utils.extractDriveId(b.coverUrl);
+                  if (rawId && !e.target._triedLh3) {
+                    e.target._triedLh3 = true;
+                    e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                  }
+                }
               }) : [
                 // تصميم كتاب فخم في حال عدم وجود صورة غلاف خارجية
                 React.createElement(
@@ -1520,9 +1535,16 @@ window.BooksPage = function(props) {
                   "div",
                   { className: "w-12 h-16 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-900 shrink-0 shadow-xs" },
                   React.createElement("img", {
-                    src: selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : newCoverUrl,
+                    src: selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : utils.getDriveImageUrl(newCoverUrl),
                     alt: "Cover Preview",
-                    className: "w-full h-full object-cover"
+                    className: "w-full h-full object-cover",
+                    onError: function(e) {
+                      var rawId = utils.extractDriveId(newCoverUrl);
+                      if (rawId && !e.target._triedLh3) {
+                        e.target._triedLh3 = true;
+                        e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                      }
+                    }
                   })
                 ) : React.createElement(
                   "div",
@@ -1561,7 +1583,13 @@ window.BooksPage = function(props) {
                     type: "url",
                     value: newCoverUrl,
                     onChange: function(e) { setNewCoverUrl(e.target.value); },
-                    placeholder: "أو الصق رابط صورة الغلاف هنا (https://...)",
+                    onBlur: function(e) {
+                      if (e.target.value) {
+                        var c = utils.getDriveImageUrl(e.target.value);
+                        if (c !== e.target.value) setNewCoverUrl(c);
+                      }
+                    },
+                    placeholder: "أو الصق رابط صورة الغلاف هنا (يدعم جوجل درايف والروابط المباشرة)",
                     className: "w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] text-slate-900 dark:text-white"
                   })
                 )
@@ -1720,9 +1748,16 @@ window.BooksPage = function(props) {
             "div",
             { className: "w-32 h-44 mx-auto rounded-2xl overflow-hidden border-2 border-slate-300 dark:border-slate-700 bg-slate-900 shadow-md flex items-center justify-center" },
             (selectedCoverFile || editingCoverUrl) ? React.createElement("img", {
-              src: selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : editingCoverUrl,
+              src: selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : utils.getDriveImageUrl(editingCoverUrl),
               alt: "Cover",
-              className: "w-full h-full object-cover"
+              className: "w-full h-full object-cover",
+              onError: function(e) {
+                var rawId = utils.extractDriveId(editingCoverUrl);
+                if (rawId && !e.target._triedLh3) {
+                  e.target._triedLh3 = true;
+                  e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                }
+              }
             }) : React.createElement("div", { className: "text-4xl text-slate-500" }, "📖")
           ),
           // زر رفع ملف صورة من الجهاز
@@ -1759,12 +1794,18 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             null,
-            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "أو ضع رابط صورة الغلاف مباشرة (URL)"),
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "أو ضع رابط صورة الغلاف مباشرة (يدعم Google Drive والروابط المباشرة)"),
             React.createElement("input", {
               type: "url",
               value: editingCoverUrl,
               onChange: function(e) { setEditingCoverUrl(e.target.value); },
-              placeholder: "https://...",
+              onBlur: function(e) {
+                if (e.target.value) {
+                  var c = utils.getDriveImageUrl(e.target.value);
+                  if (c !== e.target.value) setEditingCoverUrl(c);
+                }
+              },
+              placeholder: "الصق رابط صورة من جوجل درايف أو أي موقع (https://...)",
               className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           ),
@@ -1783,10 +1824,10 @@ window.BooksPage = function(props) {
               disabled: isUploadingCover,
               onClick: async function() {
                 setIsUploadingCover(true);
-                var finalUrl = editingCoverUrl.trim();
+                var finalUrl = utils.getDriveImageUrl(editingCoverUrl.trim());
                 if (selectedCoverFile) {
                   var up = await uploadCoverImage(selectedCoverFile);
-                  if (up) finalUrl = up;
+                  if (up) finalUrl = utils.getDriveImageUrl(up);
                 }
                 await handleSaveCurrentBookCover(finalUrl);
                 setIsUploadingCover(false);
