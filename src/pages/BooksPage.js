@@ -201,44 +201,56 @@ window.BooksPage = function(props) {
     };
   }, [speakingChapterIdx, isAudioPaused]);
 
-  // دالة لاختيار أفضل صوت أنثوي مصري أو عربي متاح
+  // دالة لاختيار أفضل صوت أنثوي مصري أو عربي متاح (منع الأصوات الإنجليزية تماماً)
   var getBestEgyptianFemaleVoice = function() {
     if (!("speechSynthesis" in window)) return null;
     var voices = window.speechSynthesis.getVoices() || [];
     if (!voices || voices.length === 0) return null;
 
-    // 1. صوت مصري أنثوي صريح
-    var egFemale = voices.find(function(v) {
+    // فلترة الأصوات العربية فقط واستبعاد أي لغة أخرى
+    var arVoices = voices.filter(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      return l.startsWith("ar") || l.indexOf("arabic") !== -1;
+    });
+
+    if (arVoices.length === 0) {
+      // لا يوجد صوت عربي مثبت بنظام الجهاز، لا نستخدم صوتاً إنجليزياً أبداً
+      return null;
+    }
+
+    // إذا كان المستخدم اختار صوتاً محدداً وهو عربي
+    if (selectedVoiceUri) {
+      var userV = arVoices.find(function(v) { return (v.voiceURI || v.name) === selectedVoiceUri; });
+      if (userV) return userV;
+    }
+
+    // 1. صوت مصري أنثوي صريح (ar-EG + female/salma/laila/mariam/hoda)
+    var egFemale = arVoices.find(function(v) {
       var l = (v.lang || "").toLowerCase();
       var n = (v.name || "").toLowerCase();
-      var isEg = l.indexOf("eg") !== -1;
+      var isEg = l.indexOf("eg") !== -1 || n.indexOf("egypt") !== -1 || n.indexOf("مصر") !== -1;
       var isFem = n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1;
       return isEg && isFem;
     });
     if (egFemale) return egFemale;
 
-    // 2. أي صوت أنثوي عربي
-    var arFemale = voices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
+    // 2. أي صوت أنثوي عربي عام (سلمى، ليلى، زينة، مريم، فاطمة)
+    var arFemale = arVoices.find(function(v) {
       var n = (v.name || "").toLowerCase();
-      var isAr = l.startsWith("ar") || l.indexOf("arabic") !== -1;
-      var isFem = n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1 || n.indexOf("zari") !== -1 || n.indexOf("fatima") !== -1;
-      return isAr && isFem;
+      return n.indexOf("female") !== -1 || n.indexOf("salma") !== -1 || n.indexOf("hoda") !== -1 || n.indexOf("laila") !== -1 || n.indexOf("mariam") !== -1 || n.indexOf("zeina") !== -1 || n.indexOf("zari") !== -1 || n.indexOf("fatima") !== -1;
     });
     if (arFemale) return arFemale;
 
-    // 3. أي صوت مصري عام
-    var egGen = voices.find(function(v) {
-      return (v.lang || "").toLowerCase().indexOf("eg") !== -1;
+    // 3. أي صوت مصري متاح
+    var egGen = arVoices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      return l.indexOf("eg") !== -1 || n.indexOf("egypt") !== -1;
     });
     if (egGen) return egGen;
 
-    // 4. أي صوت عربي متاح في النظام
-    var arGen = voices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      return l.startsWith("ar") || l.indexOf("arabic") !== -1;
-    });
-    return arGen || null;
+    // 4. أول صوت عربي متاح
+    return arVoices[0];
   };
 
   // تشغيل الجملة المحددة بمحرك الكلام الصوتي
@@ -277,15 +289,16 @@ window.BooksPage = function(props) {
     }
 
     var utterance = new SpeechSynthesisUtterance(chunk);
-    utterance.rate = p.playbackRate || 1.0;
-    utterance.pitch = 1.15; // نبرة هادئة ودافئة وأنثوية
+    utterance.rate = p.playbackRate || 0.95; // سرعة هادئة وطبيعية
+    utterance.pitch = 1.15; // نبرة صوت أنثوية ناعمة
 
     var voice = getBestEgyptianFemaleVoice();
     if (voice) {
       utterance.voice = voice;
-      utterance.lang = voice.lang || "ar-SA";
+      utterance.lang = voice.lang || "ar-EG";
     } else {
-      utterance.lang = "ar-SA";
+      // إجبار المتصفح على قراءة النص بالعربية المصرية حصراً، وعدم استخدام الصوت الافتراضي الإنجليزي للجهاز
+      utterance.lang = "ar-EG";
     }
 
     // حفظ المرجع عالمياً لمنع V8 Garbage Collection من قطع الصوت فوراً
@@ -931,10 +944,23 @@ window.BooksPage = function(props) {
                         )
                       ),
 
-                      // أدوات الجانب الأيسر: زر الإنهاء
+                      // أدوات الجانب الأيسر: اختيار الصوت وزر الإنهاء
                       React.createElement(
                         "div",
                         { className: "flex items-center gap-2 mr-auto" },
+                        // قائمة اختيار الصوت إذا توفر أكثر من صوت عربي
+                        availableVoices.length > 1 && React.createElement(
+                          "select",
+                          {
+                            value: selectedVoiceUri,
+                            onChange: function(e) { handleVoiceChange(e.target.value); },
+                            className: "bg-slate-800 text-[11px] text-slate-200 border border-slate-700 rounded-lg px-2 py-1 outline-hidden"
+                          },
+                          availableVoices.map(function(v) {
+                            var uri = v.voiceURI || v.name;
+                            return React.createElement("option", { key: uri, value: uri }, v.name);
+                          })
+                        ),
                         // زر إنهاء الاستماع
                         isSpeaking && React.createElement(
                           "button",
