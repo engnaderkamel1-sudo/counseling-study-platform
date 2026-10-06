@@ -1,4 +1,4 @@
-// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -30,19 +30,26 @@ window.BooksPage = function(props) {
   var pdfViewerContainerRef = React.useRef(null);
   var pdfRenderTaskRef = React.useRef(null);
 
-  // حقول تعديل الفصل (إدخال ملخص مكتوب أو رابط صوت التراك من NotebookLM)
-  var [editingChapterIdx, setEditingChapterIdx] = React.useState(null);
-  var [editChapterTitle, setEditChapterTitle] = React.useState("");
-  var [editChapterSummary, setEditChapterSummary] = React.useState("");
-  var [editChapterAudioUrl, setEditChapterAudioUrl] = React.useState("");
+  // التبويب النشط لمحتوى الكتاب الدراسي (تراك 1 الشامل أو ملخص الكتاب)
+  var [bookStudyTab, setBookStudyTab] = React.useState("track1"); // "track1" | "summary"
 
-  // مشغل المكتبة الصوتية المتتالية (Audiobook Playlist Player)
-  var [audiobookTrackIdx, setAudiobookTrackIdx] = React.useState(0);
-  var [isAudiobookPlaying, setIsAudiobookPlaying] = React.useState(false);
-  var [audiobookPlaybackRate, setAudiobookPlaybackRate] = React.useState(1.0);
-  var [audiobookCurrentTime, setAudiobookCurrentTime] = React.useState(0);
-  var [audiobookDuration, setAudiobookDuration] = React.useState(0);
-  var audiobookRef = React.useRef(null);
+  // مشغل تراك 1 الشامل (Master NotebookLM Podcast Track) واستئناف التشغيل التلقائي
+  var [isTrack1Playing, setIsTrack1Playing] = React.useState(false);
+  var [track1PlaybackRate, setTrack1PlaybackRate] = React.useState(1.0);
+  var [track1CurrentTime, setTrack1CurrentTime] = React.useState(0);
+  var [track1Duration, setTrack1Duration] = React.useState(0);
+  var [resumedNotice, setResumedNotice] = React.useState("");
+  var track1AudioRef = React.useRef(null);
+
+  // نوافذ تعديل التراك، الملخص، والعلامات الزمنية (Bookmarks)
+  var [showTrackModal, setShowTrackModal] = React.useState(false);
+  var [editTrackUrl, setEditTrackUrl] = React.useState("");
+  var [showSummaryModal, setShowSummaryModal] = React.useState(false);
+  var [editSummaryContent, setEditSummaryContent] = React.useState("");
+  var [showBookmarkModal, setShowBookmarkModal] = React.useState(false);
+  var [editingBookmarkIdx, setEditingBookmarkIdx] = React.useState(null);
+  var [bookmarkTitle, setBookmarkTitle] = React.useState("");
+  var [bookmarkTimeStr, setBookmarkTimeStr] = React.useState("00:00");
 
   // حقل تعديل غلاف الكتاب للكتاب الحالي
   var [showCoverEditModal, setShowCoverEditModal] = React.useState(false);
@@ -51,13 +58,12 @@ window.BooksPage = function(props) {
 
   var stopAudioPlayback = function() {
     try {
-      if (audiobookRef.current) {
-        audiobookRef.current.pause();
+      if (track1AudioRef.current) {
+        track1AudioRef.current.pause();
       }
-      setIsAudiobookPlaying(false);
+      setIsTrack1Playing(false);
       var allAudios = document.querySelectorAll("audio");
       allAudios.forEach(function(a) { a.pause(); });
-      setActiveChapterAudioIdx(null);
     } catch (e) {}
   };
 
@@ -73,8 +79,36 @@ window.BooksPage = function(props) {
   var [newCoverUrl, setNewCoverUrl] = React.useState("");
   var [newTotalPages, setNewTotalPages] = React.useState(350);
   var [newDriveUrl, setNewDriveUrl] = React.useState("");
+  var [newAudioUrl, setNewAudioUrl] = React.useState("");
+  var [newSummaryText, setNewSummaryText] = React.useState("");
   var [newChaptersCount, setNewChaptersCount] = React.useState(8);
   var [includeIntro, setIncludeIntro] = React.useState(true);
+
+  // دوال مساعدة لحساب وتحويل وتنسيق أوقات الصوت والعلامات الزمنية
+  var formatAudioTime = function(sec) {
+    if (!sec || isNaN(sec)) return "00:00";
+    var s = Math.floor(sec);
+    var m = Math.floor(s / 60);
+    var remS = s % 60;
+    var h = Math.floor(m / 60);
+    var remM = m % 60;
+    if (h > 0) {
+      return h + ":" + (remM < 10 ? "0" + remM : remM) + ":" + (remS < 10 ? "0" + remS : remS);
+    }
+    return (m < 10 ? "0" + m : m) + ":" + (remS < 10 ? "0" + remS : remS);
+  };
+
+  var parseTimeToSeconds = function(timeInput) {
+    if (typeof timeInput === "number") return timeInput;
+    if (!timeInput) return 0;
+    var parts = String(timeInput).trim().split(":").map(function(p) { return parseInt(p) || 0; });
+    if (parts.length === 3) {
+      return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+    } else if (parts.length === 2) {
+      return (parts[0] * 60) + parts[1];
+    }
+    return parseInt(timeInput) || 0;
+  };
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
@@ -95,16 +129,30 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت
+  // فحص تخزين الكتاب أوفلاين واستعادة موضع الاستماع الصوتي المحفوظ تلقائياً
   React.useEffect(function() {
     if (!activeBook) {
       setIsSavedOffline(false);
       setPdfDoc(null);
       setPdfTotalPages(0);
+      setIsTrack1Playing(false);
+      setTrack1CurrentTime(0);
+      setResumedNotice("");
       return;
     }
     setPdfCurrentPage(activeBook.currentPage || 1);
     setPdfTotalPages(0);
+
+    // استعادة موضع الاستماع الصوتي السابق لهذا الكتاب تلقائياً (Resume Playback)
+    var savedPos = utils.getLocal("counsel_audio_pos_" + activeBook.id, 0);
+    setTrack1CurrentTime(savedPos);
+    if (savedPos > 0) {
+      setResumedNotice("موضعك السابق: " + formatAudioTime(savedPos));
+      setTimeout(function() { setResumedNotice(""); }, 6000);
+    } else {
+      setResumedNotice("");
+    }
+
     utils.getOfflinePdf(activeBook.id).then(function(data) {
       setIsSavedOffline(!!data);
       if (data) {
@@ -388,69 +436,135 @@ window.BooksPage = function(props) {
     setShowCoverEditModal(false);
   };
 
-  // دوال مشغل المكتبة الصوتية المتتالية (Audiobook Master Player)
-  var playAudiobookTrack = function(trackIndex) {
-    if (!activeBook || !activeBook.chapters || trackIndex < 0 || trackIndex >= activeBook.chapters.length) return;
-    setAudiobookTrackIdx(trackIndex);
-    setIsAudiobookPlaying(true);
-    setTimeout(function() {
-      if (audiobookRef.current) {
-        audiobookRef.current.playbackRate = audiobookPlaybackRate;
-        audiobookRef.current.play().catch(function() {});
+  // دوال مشغل تراك 1 الشامل واستئناف التشغيل التلقائي (Track 1 Master Player)
+  var toggleTrack1Play = function() {
+    if (!track1AudioRef.current) return;
+    if (isTrack1Playing) {
+      track1AudioRef.current.pause();
+      setIsTrack1Playing(false);
+      if (activeBook) {
+        utils.setLocal("counsel_audio_pos_" + activeBook.id, Math.floor(track1AudioRef.current.currentTime));
       }
-    }, 100);
+    } else {
+      var savedPos = utils.getLocal("counsel_audio_pos_" + (activeBook ? activeBook.id : ""), 0);
+      if (savedPos > 0 && Math.abs(track1AudioRef.current.currentTime - savedPos) > 2) {
+        track1AudioRef.current.currentTime = savedPos;
+      }
+      track1AudioRef.current.playbackRate = track1PlaybackRate;
+      track1AudioRef.current.play().then(function() {
+        setIsTrack1Playing(true);
+      }).catch(function(err) {
+        console.warn("Audio play error:", err);
+      });
+    }
   };
 
-  var toggleAudiobookPlay = function() {
-    if (!audiobookRef.current) return;
-    if (isAudiobookPlaying) {
-      audiobookRef.current.pause();
-      setIsAudiobookPlaying(false);
-    } else {
-      audiobookRef.current.playbackRate = audiobookPlaybackRate;
-      audiobookRef.current.play().then(function() {
-        setIsAudiobookPlaying(true);
+  var handleTrack1Seek = function(deltaSeconds) {
+    if (!track1AudioRef.current) return;
+    var newTime = Math.max(0, Math.min(track1AudioRef.current.currentTime + deltaSeconds, track1Duration || 99999));
+    track1AudioRef.current.currentTime = newTime;
+    setTrack1CurrentTime(newTime);
+    if (activeBook) {
+      utils.setLocal("counsel_audio_pos_" + activeBook.id, Math.floor(newTime));
+    }
+  };
+
+  var handleChangeSpeed = function(newRate) {
+    setTrack1PlaybackRate(newRate);
+    if (track1AudioRef.current) {
+      track1AudioRef.current.playbackRate = newRate;
+    }
+  };
+
+  // القفز المباشر إلى علامة زمنية / فصل في تراك 1
+  var seekToBookmark = function(sec) {
+    var targetSec = Math.max(0, Math.min(sec, track1Duration || 99999));
+    setTrack1CurrentTime(targetSec);
+    if (activeBook) {
+      utils.setLocal("counsel_audio_pos_" + activeBook.id, Math.floor(targetSec));
+    }
+    if (track1AudioRef.current) {
+      track1AudioRef.current.currentTime = targetSec;
+      track1AudioRef.current.playbackRate = track1PlaybackRate;
+      track1AudioRef.current.play().then(function() {
+        setIsTrack1Playing(true);
       }).catch(function() {});
     }
   };
 
-  var handleAudiobookNext = function() {
-    if (!activeBook || !activeBook.chapters) return;
-    var nextIdx = audiobookTrackIdx + 1;
-    // البحث عن التراك التالي الذي يحتوي على صوت
-    while (nextIdx < activeBook.chapters.length && !activeBook.chapters[nextIdx].audioUrl && !activeBook.chapters[nextIdx].audioScript) {
-      nextIdx++;
-    }
-    if (nextIdx < activeBook.chapters.length) {
-      playAudiobookTrack(nextIdx);
+  // إدارة العلامات الزمنية والفصول (Bookmarks)
+  var openAddBookmarkModal = function() {
+    setEditingBookmarkIdx(null);
+    setBookmarkTitle("");
+    setBookmarkTimeStr(formatAudioTime(track1CurrentTime));
+    setShowBookmarkModal(true);
+  };
+
+  var openEditBookmarkModal = function(idx, bm) {
+    setEditingBookmarkIdx(idx);
+    setBookmarkTitle(bm.title || "");
+    setBookmarkTimeStr(formatAudioTime(bm.time || 0));
+    setShowBookmarkModal(true);
+  };
+
+  var handleSaveBookmark = function(e) {
+    e.preventDefault();
+    if (!activeBook) return;
+    var title = bookmarkTitle.trim();
+    if (!title) return;
+    var sec = parseTimeToSeconds(bookmarkTimeStr);
+
+    var currentBookmarks = (activeBook.bookmarks || []).slice();
+    if (editingBookmarkIdx !== null && editingBookmarkIdx >= 0) {
+      currentBookmarks[editingBookmarkIdx] = {
+        id: currentBookmarks[editingBookmarkIdx].id || ("bm-" + Date.now()),
+        title: title,
+        time: sec
+      };
     } else {
-      setIsAudiobookPlaying(false);
+      currentBookmarks.push({
+        id: "bm-" + Date.now(),
+        title: title,
+        time: sec
+      });
     }
+    currentBookmarks.sort(function(a, b) { return a.time - b.time; });
+
+    var updatedBook = Object.assign({}, activeBook, { bookmarks: currentBookmarks });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    setShowBookmarkModal(false);
   };
 
-  var handleAudiobookPrev = function() {
-    if (!activeBook || !activeBook.chapters) return;
-    var prevIdx = audiobookTrackIdx - 1;
-    while (prevIdx >= 0 && !activeBook.chapters[prevIdx].audioUrl && !activeBook.chapters[prevIdx].audioScript) {
-      prevIdx--;
-    }
-    if (prevIdx >= 0) {
-      playAudiobookTrack(prevIdx);
-    }
+  var handleDeleteBookmark = function(idx) {
+    if (!activeBook) return;
+    if (!confirm("هل أنت متأكد من حذف هذه العلامة الزمنية؟")) return;
+    var currentBookmarks = (activeBook.bookmarks || []).slice();
+    currentBookmarks.splice(idx, 1);
+    var updatedBook = Object.assign({}, activeBook, { bookmarks: currentBookmarks });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
   };
 
-  var handleAudiobookSeek = function(deltaSeconds) {
-    if (!audiobookRef.current) return;
-    var newTime = Math.max(0, Math.min(audiobookRef.current.currentTime + deltaSeconds, audiobookDuration || 9999));
-    audiobookRef.current.currentTime = newTime;
-    setAudiobookCurrentTime(newTime);
+  // حفظ رابط تراك 1
+  var handleSaveTrackAudio = function(e) {
+    e.preventDefault();
+    if (!activeBook) return;
+    var url = editTrackUrl.trim();
+    var updatedBook = Object.assign({}, activeBook, { audioUrl: url });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    setShowTrackModal(false);
   };
 
-  var handleChangeSpeed = function(newRate) {
-    setAudiobookPlaybackRate(newRate);
-    if (audiobookRef.current) {
-      audiobookRef.current.playbackRate = newRate;
-    }
+  // حفظ الملخص الشامل للكتاب
+  var handleSaveSummary = function(e) {
+    e.preventDefault();
+    if (!activeBook) return;
+    var updatedBook = Object.assign({}, activeBook, { summaryText: editSummaryContent.trim() });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    setShowSummaryModal(false);
   };
 
   var handleAutoFillWithAi = async function() {
@@ -613,6 +727,11 @@ window.BooksPage = function(props) {
       totalPages: parseInt(newTotalPages) || 300,
       currentPage: 1,
       driveUrl: finalDriveUrl,
+      audioUrl: (newAudioUrl || "").trim(),
+      summaryText: (newSummaryText || "").trim(),
+      bookmarks: [
+        { id: "bm-0", title: "مقدمة ومدخل الكتاب", time: 0 }
+      ],
       chapters: chapters
     };
 
@@ -631,6 +750,8 @@ window.BooksPage = function(props) {
     setNewAuthor("");
     setNewCoverUrl("");
     setNewDriveUrl("");
+    setNewAudioUrl("");
+    setNewSummaryText("");
   };
 
   return React.createElement(
@@ -953,354 +1074,387 @@ window.BooksPage = function(props) {
         )
       ),
 
-      // قسم فصول الكتاب وتراكات الصوت والملخصات (Chapter Tracks & Audio)
+const studySection = `      // قسم دراسة ومراجعة الكتاب (زرارين رئيسيين: تراك 1 والملخص)
       React.createElement(
         "div",
-        { className: "space-y-4 pt-2" },
+        { className: "space-y-4 pt-3 border-t border-slate-200 dark:border-slate-800" },
 
-        // مشغل المكتبة الصوتية المتتالية (Master Audiobook Continuous Player)
-        (function() {
-          var chaptersWithAudio = (activeBook.chapters || []).map(function(ch, idx) {
-            return { ch: ch, idx: idx, hasAudio: !!(ch.audioUrl || ch.audioScript) };
-          }).filter(function(item) { return item.hasAudio; });
+        // شريط التبديل بين الزرارين الرئيسيين
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 max-w-md mx-auto shadow-inner border border-slate-200/60 dark:border-slate-700/60" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setBookStudyTab("track1"); },
+              className: "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all " +
+                (bookStudyTab === "track1"
+                  ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-md font-black scale-[1.02]"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
+            },
+            React.createElement("span", { className: "text-base" }, "🎙️"),
+            React.createElement("span", null, "تراك 1 (البودكاست الشامل)"),
+            activeBook.audioUrl ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }) : null
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setBookStudyTab("summary"); },
+              className: "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all " +
+                (bookStudyTab === "summary"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md font-black scale-[1.02]"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
+            },
+            React.createElement("span", { className: "text-base" }, "📖"),
+            React.createElement("span", null, "ملخص الكتاب")
+          )
+        ),
 
-          var currentTrack = (activeBook.chapters || [])[audiobookTrackIdx];
-          var currentAudioSrc = currentTrack ? utils.getAudioStreamUrl(currentTrack.audioUrl || currentTrack.audioScript) : "";
-
-          var formatTime = function(sec) {
-            if (!sec || isNaN(sec)) return "00:00";
-            var m = Math.floor(sec / 60);
-            var s = Math.floor(sec % 60);
-            return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
-          };
+        // محتوى تبويب: تراك 1 (البودكاست المتواصل مع استئناف الاستماع والعلامات المرجعية)
+        bookStudyTab === "track1" ? (function() {
+          var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
+          var bookmarks = activeBook.bookmarks || [];
 
           return React.createElement(
             "div",
-            { className: "p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl border border-slate-800 space-y-4" },
+            { className: "space-y-4" },
 
-            // عنصر الصوت الخفي / المحرك
-            React.createElement("audio", {
-              ref: audiobookRef,
-              src: currentAudioSrc,
-              onTimeUpdate: function(e) {
-                setAudiobookCurrentTime(e.target.currentTime);
-              },
-              onLoadedMetadata: function(e) {
-                setAudiobookDuration(e.target.duration);
-                if (audiobookRef.current) audiobookRef.current.playbackRate = audiobookPlaybackRate;
-              },
-              onEnded: handleAudiobookNext
-            }),
-
-            // رأس المشغل
+            // كارت مشغل تراك 1
             React.createElement(
               "div",
-              { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3" },
+              { className: "p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl border border-slate-800 space-y-4" },
+
+              // عنصر الصوت الخفي
+              React.createElement("audio", {
+                ref: track1AudioRef,
+                src: audioSrc,
+                preload: "metadata",
+                onTimeUpdate: function(e) {
+                  var ct = e.target.currentTime;
+                  setTrack1CurrentTime(ct);
+                  if (activeBook && activeBook.id && Math.floor(ct) % 2 === 0) {
+                    try {
+                      localStorage.setItem("counsel_audio_pos_" + activeBook.id, ct.toString());
+                    } catch (err) {}
+                  }
+                },
+                onLoadedMetadata: function(e) {
+                  setTrack1Duration(e.target.duration);
+                  if (track1AudioRef.current) {
+                    track1AudioRef.current.playbackRate = track1PlaybackRate;
+                    try {
+                      var saved = localStorage.getItem("counsel_audio_pos_" + activeBook.id);
+                      if (saved && !isNaN(parseFloat(saved))) {
+                        var pos = parseFloat(saved);
+                        if (pos > 0 && pos < e.target.duration) {
+                          track1AudioRef.current.currentTime = pos;
+                          setTrack1CurrentTime(pos);
+                          setResumedNotice("تم استئناف الموضع تلقائياً عند " + formatAudioTime(pos));
+                          setTimeout(function() { setResumedNotice(""); }, 4000);
+                        }
+                      }
+                    } catch (err) {}
+                  }
+                },
+                onEnded: function() {
+                  setIsTrack1Playing(false);
+                  try { localStorage.removeItem("counsel_audio_pos_" + activeBook.id); } catch (err) {}
+                }
+              }),
+
+              // رأس المشغل
               React.createElement(
                 "div",
-                { className: "flex items-center gap-3" },
+                { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3" },
                 React.createElement(
                   "div",
-                  { className: "w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-xl shrink-0 animate-pulse" },
-                  "🎧"
-                ),
-                React.createElement(
-                  "div",
-                  null,
+                  { className: "flex items-center gap-3" },
                   React.createElement(
                     "div",
-                    { className: "flex items-center gap-2" },
-                    React.createElement("h4", { className: "text-sm font-black text-white" }, "المشغل الصوتي المتتالي (Audiobook)"),
-                    React.createElement("span", { className: "text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30" }, "تشغيل تلقائي متصل")
+                    { className: "w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-xl shadow-lg shadow-teal-950/50" },
+                    "🎙️"
                   ),
                   React.createElement(
-                    "p",
-                    { className: "text-xs text-slate-400 mt-0.5" },
-                    currentTrack ? ("يعمل الآن: " + (currentTrack.title || ("الفصل " + (audiobookTrackIdx + 1))) + " (تراك " + (audiobookTrackIdx + 1) + " من " + (activeBook.chapters || []).length + ")") : "اختر أي تراك للبدء، وسيتنقل المشغل للفصل التالي تلقائياً"
+                    "div",
+                    null,
+                    React.createElement(
+                      "div",
+                      { className: "flex items-center gap-2" },
+                      React.createElement("h4", { className: "font-black text-sm sm:text-base text-white tracking-wide" }, "تراك 1 — الشامل من NotebookLM"),
+                      React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30" }, "حفظ موضع الاستماع ✓")
+                    ),
+                    React.createElement(
+                      "p",
+                      { className: "text-xs text-slate-400 mt-0.5" },
+                      audioSrc ? "استمع للمناقشة التفاعلية الشاملة، ويتم تذكر آخر ثانية توقفت عندها تلقائياً" : "لم يتم ربط ملف صوتي للتراك بعد — اضغط زر الإعدادات بالأسفل"
+                    )
                   )
+                ),
+                // أزرار التحكم الرأسية
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2 self-end sm:self-auto" },
+                  resumedNotice ? React.createElement(
+                    "div",
+                    { className: "text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2.5 py-1 rounded-xl animate-fade-in" },
+                    "⚡ " + resumedNotice
+                  ) : null,
+                  user && user.role === "admin" ? React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() {
+                        setEditTrackUrl(activeBook.audioUrl || "");
+                        setShowTrackModal(true);
+                      },
+                      className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-teal-300 border border-slate-700 flex items-center gap-1.5 transition-all shadow-sm"
+                    },
+                    "⚙️ رابط التراك"
+                  ) : null
                 )
               ),
+
+              // شريط تقدم الصوت الزمني
               React.createElement(
                 "div",
-                { className: "flex items-center gap-2 self-end sm:self-auto" },
-                // زر سرعة القراءة الصوتية
+                { className: "space-y-1.5 pt-1" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between text-xs font-mono text-slate-400 px-0.5" },
+                  React.createElement("span", { className: "text-teal-400 font-bold" }, formatAudioTime(track1CurrentTime)),
+                  React.createElement(
+                    "span",
+                    { className: "text-[11px] text-slate-500" },
+                    track1Duration > 0 ? "المتبقي: -" + formatAudioTime(track1Duration - track1CurrentTime) : ""
+                  ),
+                  React.createElement("span", null, formatAudioTime(track1Duration))
+                ),
+                React.createElement("input", {
+                  type: "range",
+                  min: 0,
+                  max: track1Duration || 100,
+                  value: track1CurrentTime || 0,
+                  disabled: !audioSrc,
+                  onChange: function(e) {
+                    var newTime = parseFloat(e.target.value);
+                    setTrack1CurrentTime(newTime);
+                    if (track1AudioRef.current) track1AudioRef.current.currentTime = newTime;
+                    try { localStorage.setItem("counsel_audio_pos_" + activeBook.id, newTime.toString()); } catch (err) {}
+                  },
+                  className: "w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400 disabled:opacity-40"
+                })
+              ),
+
+              // أزرار التحكم في المشغل (سرعة، -15ث، تشغيل، +15ث، علامة جديدة)
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between pt-2 gap-2" },
+                // زر السرعة
                 React.createElement(
                   "button",
                   {
                     type: "button",
-                    onClick: function() {
-                      var rates = [1, 1.25, 1.5, 1.75, 2];
-                      var nextRate = rates[(rates.indexOf(audiobookPlaybackRate) + 1) % rates.length];
-                      handleChangeSpeed(nextRate);
-                    },
+                    onClick: handleChangeSpeed,
                     title: "تغيير سرعة الصوت",
-                    className: "px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs font-bold border border-slate-700 transition-all active:scale-95"
+                    className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 active:scale-95"
                   },
-                  audiobookPlaybackRate + "x"
+                  track1PlaybackRate + "x"
                 ),
+
+                // مجموعة التحكم الأساسية في المنتصف
                 React.createElement(
-                  "span",
-                  { className: "text-xs text-slate-400 font-mono" },
-                  chaptersWithAudio.length + " تراك متاح"
-                )
+                  "div",
+                  { className: "flex items-center gap-3" },
+                  // تأخير 15 ثانية
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() { handleTrack1Seek(-15); },
+                      disabled: !audioSrc,
+                      title: "تأخير 15 ثانية",
+                      className: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 flex items-center gap-1 text-xs font-mono font-bold transition-all active:scale-95 border border-slate-700"
+                    },
+                    "↺ 15s"
+                  ),
+                  // زر التشغيل والإيقاف الكبير
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: toggleTrack1Play,
+                      disabled: !audioSrc,
+                      title: isTrack1Playing ? "إيقاف مؤقت" : "تشغيل الاستماع",
+                      className: "w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 hover:from-teal-400 hover:to-emerald-300 disabled:opacity-40 text-slate-950 flex items-center justify-center text-2xl font-black shadow-lg shadow-teal-950/60 transition-all active:scale-95"
+                    },
+                    isTrack1Playing ? "⏸" : "▶"
+                  ),
+                  // تقديم 15 ثانية
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() { handleTrack1Seek(15); },
+                      disabled: !audioSrc,
+                      title: "تقديم 15 ثانية",
+                      className: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 flex items-center gap-1 text-xs font-mono font-bold transition-all active:scale-95 border border-slate-700"
+                    },
+                    "15s ↻"
+                  )
+                ),
+
+                // زر إضافة علامة فصل / Bookmark عند الموضع الحالي
+                user && user.role === "admin" ? React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: openAddBookmarkModal,
+                    title: "إضافة علامة فصل في التراك",
+                    className: "px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold transition-all border border-teal-500/30 flex items-center gap-1 active:scale-95"
+                  },
+                  React.createElement("span", null, "🔖"),
+                  React.createElement("span", { className: "hidden sm:inline" }, "علامة فصل")
+                ) : React.createElement("div", { className: "w-10" })
               )
             ),
 
-            // شريط التقدم والوقت
+            // قائمة علامات الفصول (Bookmarks) داخل التراك
             React.createElement(
               "div",
-              { className: "space-y-1.5" },
-              React.createElement(
-                "div",
-                { className: "flex items-center justify-between text-[11px] font-mono text-slate-400" },
-                React.createElement("span", null, formatTime(audiobookCurrentTime)),
-                React.createElement("span", null, formatTime(audiobookDuration))
-              ),
-              React.createElement("input", {
-                type: "range",
-                min: 0,
-                max: audiobookDuration || 100,
-                step: 0.5,
-                value: audiobookCurrentTime,
-                onChange: function(e) {
-                  var t = parseFloat(e.target.value);
-                  setAudiobookCurrentTime(t);
-                  if (audiobookRef.current) audiobookRef.current.currentTime = t;
-                },
-                className: "w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-              })
-            ),
-
-            // أزرار التحكم بالمشغل (Next, Prev, Seek -15, Seek +15, Play/Pause)
-            React.createElement(
-              "div",
-              { className: "flex items-center justify-center gap-3 sm:gap-4 pt-1" },
-              // التراك السابق
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleAudiobookPrev,
-                  disabled: audiobookTrackIdx <= 0,
-                  title: "التراك السابق",
-                  className: "w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white flex items-center justify-center text-sm font-bold transition-all active:scale-95"
-                },
-                "⏮"
-              ),
-              // تقديم 15 ثانية للخلف
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() { handleAudiobookSeek(-15); },
-                  title: "تأخير 15 ثانية",
-                  className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 text-xs font-mono font-bold transition-all active:scale-95"
-                },
-                "↺ 15s"
-              ),
-              // زر التشغيل والإيقاف الكبير
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: toggleAudiobookPlay,
-                  title: isAudiobookPlaying ? "إيقاف مؤقت" : "تشغيل الاستماع",
-                  className: "w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white flex items-center justify-center text-xl shadow-lg shadow-emerald-900/40 transition-all active:scale-95"
-                },
-                isAudiobookPlaying ? "⏸" : "▶"
-              ),
-              // تقديم 15 ثانية للأمام
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() { handleAudiobookSeek(15); },
-                  title: "تقديم 15 ثانية",
-                  className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 text-xs font-mono font-bold transition-all active:scale-95"
-                },
-                "15s ↻"
-              ),
-              // التراك التالي
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleAudiobookNext,
-                  disabled: !activeBook.chapters || audiobookTrackIdx >= activeBook.chapters.length - 1,
-                  title: "التراك التالي",
-                  className: "w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white flex items-center justify-center text-sm font-bold transition-all active:scale-95"
-                },
-                "⏭"
-              )
-            )
-          );
-        })(),
-
-        React.createElement(
-          "div",
-          { className: "flex items-center justify-between" },
-          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تراكات الفصول والملخصات الصوتية (NotebookLM)"),
-          !(activeBook.chapters || []).some(function(c) { return c.title && c.title.includes("المقدمة"); }) && currentUser.role === "admin" && React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: function() {
-                var updatedChapters = [{
-                  number: 0,
-                  title: "المقدمة والمدخل",
-                  summaryText: "",
-                  audioUrl: "",
-                  hasAudio: false
-                }].concat(activeBook.chapters || []);
-                var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
-                cloud.saveBook(updatedBook);
-                setActiveBook(updatedBook);
-              },
-              className: "text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 transition-all shadow-xs"
-            },
-            "➕ إضافة تراك المقدمة"
-          )
-        ),
-
-        // قائمة تراكات الفصول
-        React.createElement(
-          "div",
-          { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-          (activeBook.chapters || []).map(function(ch, idx) {
-            var currentTab = activeTabByChapter[idx] || (ch.audioUrl || ch.audioScript ? "audio" : "written");
-            var hasAudioTrack = !!(ch.audioUrl || ch.audioScript);
-
-            return React.createElement(
-              "div",
-              {
-                key: idx,
-                className: "p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-3 shadow-xs"
-              },
-              // عنوان الفصل ورقم التراك
+              { className: "p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3" },
               React.createElement(
                 "div",
                 { className: "flex items-center justify-between" },
                 React.createElement(
-                  "div",
-                  { className: "flex items-center gap-2" },
-                  React.createElement("span", { className: "text-xs font-mono bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-md font-bold" }, "Track " + (idx + 1)),
-                  React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, ch.title || ("الفصل " + (idx + 1)))
+                  "h5",
+                  { className: "font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2" },
+                  React.createElement("span", null, "📑"),
+                  React.createElement("span", null, "فصول وعلامات التراك (Bookmarks)"),
+                  React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold" }, bookmarks.length)
                 ),
-                currentUser.role === "admin" && React.createElement(
+                user && user.role === "admin" ? React.createElement(
                   "button",
                   {
                     type: "button",
-                    onClick: function() { openEditChapterModal(idx, ch); },
-                    className: "text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs"
+                    onClick: openAddBookmarkModal,
+                    className: "text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
                   },
-                  "✏️ تعديل التراك"
-                )
+                  "+ إضافة علامة"
+                ) : null
               ),
 
-              // أزرار الاختيار: مكتوب أو صوتي
-              React.createElement(
+              bookmarks.length === 0 ? React.createElement(
                 "div",
-                { className: "flex items-center p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold" },
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: function() {
-                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "audio" }));
-                    },
-                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
-                      (currentTab === "audio"
-                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
-                  },
-                  React.createElement("span", null, "🎙️"),
-                  React.createElement("span", null, "ملخص مسموع (MP3)")
-                ),
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: function() {
-                      setActiveTabByChapter(Object.assign({}, activeTabByChapter, { [idx]: "written" }));
-                    },
-                    className: "flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 " +
-                      (currentTab === "written"
-                        ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
-                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900")
-                  },
-                  React.createElement("span", null, "📖"),
-                  React.createElement("span", null, "ملخص مكتوب")
-                )
-              ),
-
-              // محتوى التراك
-              currentTab === "audio" ? React.createElement(
+                { className: "py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800" },
+                React.createElement("p", null, "لا توجد علامات فصول مضافة بعد لهذا التراك."),
+                user && user.role === "admin" ? React.createElement(
+                  "p",
+                  { className: "mt-1 text-[11px] text-teal-600 dark:text-teal-400" },
+                  "يمكنك الضغط على زر (إضافة علامة) لتقسيم التراك إلى الشابتر الأول، الثاني، الخ بالدقائق."
+                ) : null
+              ) : React.createElement(
                 "div",
-                { className: "space-y-2" },
-                hasAudioTrack ? React.createElement(
-                  "div",
-                  { className: "p-3 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl shadow-md space-y-2.5 " + (audiobookTrackIdx === idx && isAudiobookPlaying ? "ring-2 ring-emerald-500" : "") },
-                  React.createElement("div", { className: "flex items-center justify-between text-xs" },
-                    React.createElement("span", { className: "font-bold flex items-center gap-1.5" },
-                      React.createElement("span", null, "🎧"),
-                      React.createElement("span", null, "صوت استوديو نقي (NotebookLM)")
-                    ),
+                { className: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2" },
+                bookmarks.map(function(bm, bIdx) {
+                  var isCurrent = track1CurrentTime >= (bm.time || 0) && (
+                    bIdx === bookmarks.length - 1 || track1CurrentTime < (bookmarks[bIdx + 1].time || Infinity)
+                  );
+                  return React.createElement(
+                    "div",
+                    {
+                      key: bIdx,
+                      className: "group relative flex items-center justify-between p-2.5 rounded-xl border transition-all text-xs " +
+                        (isCurrent
+                          ? "bg-teal-50 dark:bg-teal-950/40 border-teal-500/50 text-teal-900 dark:text-teal-100 font-bold shadow-sm"
+                          : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-teal-400 dark:hover:border-teal-600")
+                    },
                     React.createElement(
                       "button",
                       {
                         type: "button",
-                        onClick: function() { playAudiobookTrack(idx); },
-                        className: "text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all active:scale-95 flex items-center gap-1 " +
-                          (audiobookTrackIdx === idx && isAudiobookPlaying
-                            ? "bg-emerald-500 text-slate-950 font-black animate-pulse"
-                            : "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/30")
+                        onClick: function() { seekToBookmark(bm.time); },
+                        className: "flex-1 flex items-center gap-2 text-right overflow-hidden"
                       },
-                      React.createElement("span", null, audiobookTrackIdx === idx && isAudiobookPlaying ? "▶ يعمل بالمشغل" : "▶ تشغيل في المتتالي")
-                    )
-                  ),
-                  React.createElement("audio", {
-                    controls: true,
-                    src: utils.getAudioStreamUrl(ch.audioUrl || ch.audioScript),
-                    className: "w-full rounded-lg accent-emerald-500"
-                  })
-                ) : React.createElement(
-                  "div",
-                  { className: "p-4 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-                  "لم يتم إضافة ملف الصوت (MP3) لهذا التراك بعد.",
-                  currentUser.role === "admin" && React.createElement(
-                    "button",
-                    {
-                      onClick: function() { openEditChapterModal(idx, ch); },
-                      className: "block mx-auto mt-2 text-emerald-600 dark:text-emerald-400 underline font-semibold text-xs"
-                    },
-                    "إضافة رابط الصوت من NotebookLM"
-                  )
-                )
-              ) : React.createElement(
-                "div",
-                { className: "space-y-2" },
-                ch.summaryText ? React.createElement(
-                  "div",
-                  { className: "text-xs text-slate-600 dark:text-slate-300 max-h-48 overflow-y-auto whitespace-pre-wrap p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 leading-relaxed font-normal" },
-                  ch.summaryText
-                ) : React.createElement(
-                  "div",
-                  { className: "p-4 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 text-slate-400 text-xs" },
-                  "لا يوجد ملخص مكتوب لهذا الفصل بعد.",
-                  currentUser.role === "admin" && React.createElement(
-                    "button",
-                    {
-                      onClick: function() { openEditChapterModal(idx, ch); },
-                      className: "block mx-auto mt-2 text-emerald-600 dark:text-emerald-400 underline font-semibold text-xs"
-                    },
-                    "لصق الملخص المكتوب من NotebookLM"
-                  )
-                )
+                      React.createElement(
+                        "span",
+                        { className: "px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 font-mono text-[11px] font-bold shrink-0" },
+                        formatAudioTime(bm.time)
+                      ),
+                      React.createElement(
+                        "span",
+                        { className: "truncate" },
+                        bm.title || ("فصل " + (bIdx + 1))
+                      ),
+                      isCurrent ? React.createElement("span", { className: "text-emerald-500 text-xs shrink-0", title: "جاري الاستماع الآن" }, "🔊") : null
+                    ),
+                    user && user.role === "admin" ? React.createElement(
+                      "div",
+                      { className: "flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-1" },
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: function(e) { e.stopPropagation(); openEditBookmarkModal(bIdx); },
+                          className: "p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px]"
+                        },
+                        "✏️"
+                      ),
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: function(e) { e.stopPropagation(); handleDeleteBookmark(bIdx); },
+                          className: "p-1 rounded hover:bg-rose-100 dark:hover:bg-rose-950/40 text-[11px] text-rose-500"
+                        },
+                        "🗑️"
+                      )
+                    ) : null
+                  );
+                })
               )
-            );
-          })
-        )
-      )
+            )
+          );
+        })() : (
+          // محتوى تبويب: ملخص الكتاب المكتوب
+          React.createElement(
+            "div",
+            { className: "p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5" },
+                React.createElement("div", { className: "w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-lg" }, "📖"),
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("h4", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white" }, "ملخص الكتاب"),
+                  React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "أهم الأفكار، المفاهيم المحورية، والنتائج المستفادة من الكتاب")
+                )
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2" },
+                activeBook.summaryText ? React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      navigator.clipboard.writeText(activeBook.summaryText || "");
+                      alert("تم نسخ ملخص الكتاب إلى الحافظة ✓");
+                    },
+                    className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 transition-all flex items-center gap-1"
+                  },
+                  "📋 نسخ"
+                ) : null,
+                user && user.role === "admin" ? React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
     ) : books.length > 0 ? React.createElement(
       "div",
       { className: "space-y-4" },
@@ -1837,6 +1991,171 @@ window.BooksPage = function(props) {
           )
         )
       )
+                    className: "px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-xs font-bold text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 transition-all flex items-center gap-1"
+                  },
+                  "✏️ تعديل الملخص"
+                ) : null
+              )
+            ),
+
+            // نص الملخص
+            React.createElement(
+              "div",
+              { className: "prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-200 leading-relaxed text-sm whitespace-pre-wrap bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 min-h-[140px]" },
+              activeBook.summaryText ? activeBook.summaryText : (
+                React.createElement(
+                  "div",
+                  { className: "py-8 text-center text-slate-400 space-y-2" },
+                  React.createElement("p", null, "لم يتم كتابة ملخص لهذا الكتاب حتى الآن."),
+                  user && user.role === "admin" ? React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() {
+                        setEditSummaryContent("");
+                        setShowSummaryModal(true);
+                      },
+                      className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md active:scale-95 inline-flex items-center gap-1.5"
+                    },
+                    "✍️ إضافة ملخص الآن"
+                  ) : null
+                )
+              )
+            )
+          )
+        )
+      )
+`;
+
+// Also append the 3 modals right before the closing tag of BooksPage
+const modalModalsCode = `
+      // Modal 1: تعديل رابط تراك 1
+      showTrackModal ? React.createElement(
+        "div",
+        { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setShowTrackModal(false); } },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4", onClick: function(e) { e.stopPropagation(); } },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
+            React.createElement("h3", { className: "font-black text-base text-slate-800 dark:text-white flex items-center gap-2" }, "🎙️ رابط تراك 1 (NotebookLM)"),
+            React.createElement("button", { type: "button", onClick: function() { setShowTrackModal(false); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕")
+          ),
+          React.createElement(
+            "div",
+            { className: "space-y-2" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-600 dark:text-slate-300" }, "رابط ملف الصوت (Google Drive أو MP3 مباشر):"),
+            React.createElement("input", {
+              type: "url",
+              value: editTrackUrl,
+              onChange: function(e) { setEditTrackUrl(e.target.value); },
+              placeholder: "https://drive.google.com/file/d/... أو رابط صوت مباشر",
+              className: "w-full px-3 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
+            }),
+            React.createElement("p", { className: "text-[11px] text-slate-400" }, "💡 يدعم روابط Google Drive تلقائياً، والملفات المباشرة على الاستضافة أو السيرفر.")
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+            React.createElement("button", { type: "button", onClick: function() { setShowTrackModal(false); }, className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" }, "إلغاء"),
+            React.createElement("button", { type: "button", onClick: handleSaveTrackAudio, className: "px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95" }, "حفظ الرابط ✓")
+          )
+        )
+      ) : null,
+
+      // Modal 2: إضافة / تعديل Bookmark
+      showBookmarkModal ? React.createElement(
+        "div",
+        { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setShowBookmarkModal(false); } },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4", onClick: function(e) { e.stopPropagation(); } },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
+            React.createElement("h3", { className: "font-black text-base text-slate-800 dark:text-white flex items-center gap-2" },
+              editingBookmarkIdx !== null ? "✏️ تعديل علامة الفصل" : "🔖 إضافة علامة فصل جديدة"
+            ),
+            React.createElement("button", { type: "button", onClick: function() { setShowBookmarkModal(false); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕")
+          ),
+          React.createElement(
+            "div",
+            { className: "space-y-3 text-xs" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block font-bold text-slate-600 dark:text-slate-300 mb-1" }, "عنوان الفصل / الجزء:"),
+              React.createElement("input", {
+                type: "text",
+                value: bookmarkTitle,
+                onChange: function(e) { setBookmarkTitle(e.target.value); },
+                placeholder: "مثال: الشابتر الأول - المقدمة والأفكار الرئيسية",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("div", { className: "flex items-center justify-between mb-1" },
+                React.createElement("label", { className: "font-bold text-slate-600 dark:text-slate-300" }, "التوقيت الزمني (MM:SS):"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { setBookmarkTimeStr(formatAudioTime(track1CurrentTime)); },
+                  className: "text-[11px] text-teal-600 dark:text-teal-400 font-bold hover:underline"
+                }, "⏱️ وقت المشغل الحالي (" + formatAudioTime(track1CurrentTime) + ")")
+              ),
+              React.createElement("input", {
+                type: "text",
+                value: bookmarkTimeStr,
+                onChange: function(e) { setBookmarkTimeStr(e.target.value); },
+                placeholder: "04:15",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono text-center text-sm font-bold"
+              })
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+            React.createElement("button", { type: "button", onClick: function() { setShowBookmarkModal(false); }, className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" }, "إلغاء"),
+            React.createElement("button", { type: "button", onClick: handleSaveBookmark, className: "px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95" }, "حفظ العلامة ✓")
+          )
+        )
+      ) : null,
+
+      // Modal 3: تعديل ملخص الكتاب المكتوب
+      showSummaryModal ? React.createElement(
+        "div",
+        { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setShowSummaryModal(false); } },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] flex flex-col", onClick: function(e) { e.stopPropagation(); } },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
+            React.createElement("h3", { className: "font-black text-base text-slate-800 dark:text-white flex items-center gap-2" }, "📖 تحرير ملخص الكتاب"),
+            React.createElement("button", { type: "button", onClick: function() { setShowSummaryModal(false); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕")
+          ),
+          React.createElement(
+            "div",
+            { className: "flex-1 overflow-y-auto space-y-2 text-xs" },
+            React.createElement("label", { className: "block font-bold text-slate-600 dark:text-slate-300" }, "نص ملخص الكتاب الكامل (المقدمة، الفصول، الأفكار الجوهرية):"),
+            React.createElement("textarea", {
+              rows: 14,
+              value: editSummaryContent,
+              onChange: function(e) { setEditSummaryContent(e.target.value); },
+              placeholder: "اكتب أو الصق ملخص الكتاب هنا...",
+              className: "w-full p-3.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-sans"
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 shrink-0" },
+            React.createElement("button", { type: "button", onClick: function() { setShowSummaryModal(false); }, className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" }, "إلغاء"),
+            React.createElement("button", { type: "button", onClick: handleSaveSummary, className: "px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md active:scale-95" }, "حفظ الملخص ✓")
+          )
+        )
+      ) : null
     )
   );
 };
