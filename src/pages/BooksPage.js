@@ -1208,7 +1208,7 @@ window.BooksPage = function(props) {
           })
         )
       )
-    ) : (books.length > 0 ? React.createElement(
+    ) : books.length > 0 ? React.createElement(
       "div",
       { className: "space-y-4" },
       // ترويسة رف الكتب
