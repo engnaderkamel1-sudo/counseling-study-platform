@@ -88,6 +88,7 @@ window.BooksPage = function(props) {
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
+  var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
 
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
@@ -847,38 +848,115 @@ window.BooksPage = function(props) {
     setShowSummaryModal(false);
   };
 
-  var handleAutoFillWithAi = async function() {
-    var query = (newTitle || (selectedFile ? selectedFile.name : "")).trim();
-    if (!query) {
-      alert("يرجى اختيار ملف أو كتابة اسم تقريبي للكتاب أولاً لكي يستطيع الذكاء الاصطناعي تحليله.");
+  var handleAutoDetectBookWithAi = async function() {
+    var hasFile = !!selectedFile;
+    var hasUrl = !!newDriveUrl.trim();
+    if (!hasFile && !hasUrl && !newTitle.trim()) {
+      alert("يرجى اختيار ملف PDF للكتاب أو وضع رابط Google Drive أولاً ليقوم الذكاء الاصطناعي باستخراج الغلاف والبيانات تلقائياً.");
       return;
     }
 
     setIsAiAnalyzingBook(true);
+    setUploadStatusText("جاري استخراج الغلاف وبيانات الكتاب بالذكاء الاصطناعي... ⏳");
+
     try {
-      var prompt = "أنت خبير في مراجع وكتب المشورة والتربية والنمو النفسي والروحي (مثل كتب بيتر سكزيرو، أوسم وصفي، هنري كلاود، جون تاونسند، إميل جورج، عادل حليم وغيرهم).\n" +
-        "بناءً على هذا الاسم أو اسم الملف: '" + query + "':\n" +
-        "المطلوب تحديد بدقة بيانات الكتاب وإرجاعها فقط بصيغة JSON نظيفة:\n" +
-        "{\n" +
-        '  "title": "اسم الكتاب الدقيق بالعربية",\n' +
-        '  "author": "اسم الكاتب / المؤلف بالعربية",\n' +
-        '  "totalPages": عدد الصفحات التقريبي المعتاد لهذا الكتاب (رقم صحيح),\n' +
-        '  "chaptersCount": عدد فصول الكتاب المعتادة (رقم صحيح)\n' +
-        "}\n" +
-        "أرجع الـ JSON فقط بدون أي نصوص قبلية أو بعدية وبدون ماركداون.";
+      var doc = null;
+      if (selectedFile) {
+        var buffer = await selectedFile.arrayBuffer();
+        doc = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+      } else if (newDriveUrl.trim()) {
+        var driveId = utils.extractDriveId(newDriveUrl.trim());
+        if (driveId) {
+          try {
+            var cdnUrl = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download";
+            var resp = await fetch(cdnUrl);
+            if (resp.ok) {
+              var buf = await resp.arrayBuffer();
+              doc = await window.pdfjsLib.getDocument({ data: buf }).promise;
+            }
+          } catch (eCdn) {}
+        }
+      }
 
-      var res = await ai.callGemini(prompt);
-      var cleanJson = res.replace(/```json/gi, "").replace(/```/g, "").trim();
-      var parsed = JSON.parse(cleanJson);
+      var coverDataUrl = "";
+      if (doc) {
+        setNewTotalPages(doc.numPages || 300);
+        // استخراج الصفحة الأولى كصورة غلاف تلقائية
+        var page1 = await doc.getPage(1);
+        var viewport = page1.getViewport({ scale: 1.2 });
+        var tempCanvas = document.createElement("canvas");
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        var ctx = tempCanvas.getContext("2d");
+        await page1.render({ canvasContext: ctx, viewport: viewport }).promise;
+        coverDataUrl = tempCanvas.toDataURL("image/jpeg", 0.75);
+        setNewCoverUrl(coverDataUrl);
+      }
 
-      if (parsed.title) setNewTitle(parsed.title);
-      if (parsed.author) setNewAuthor(parsed.author);
-      if (parsed.totalPages && Number(parsed.totalPages) > 0) setNewTotalPages(Number(parsed.totalPages));
-      if (parsed.chaptersCount && Number(parsed.chaptersCount) > 0) setNewChaptersCount(Number(parsed.chaptersCount));
+      var key = await window.GeminiAIService.getApiKey();
+      if (!key) {
+        if (selectedFile && !newTitle.trim()) {
+          processSelectedFile(selectedFile);
+        }
+        alert("تم استخراج صورة الغلاف وعدد الصفحات بنجاح! يمكنك إضافة مفتاح Gemini في الإعدادات لاستخراج اسم الكتاب والكاتب بدقة أيضاً.");
+        return;
+      }
+
+      // إذا كان لدينا صورة الغلاف، نرسلها للـ Vision AI لاستخراج اسم الكتاب واسم الكاتب بدقة
+      if (coverDataUrl) {
+        var cleanBase64 = coverDataUrl.split("base64,")[1];
+        var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+        var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
+        var promptVision = "هذه صورة غلاف كتاب أو صفحته الأولى. استخرج بدقة شديدة: 1. اسم الكتاب (title) 2. اسم المؤلف/الكاتب (author). أجب بصيغة JSON فقط كالتالي بدون أي ماركداون أو نصوص خارجية: {\"title\": \"اسم الكتاب بالعربية\", \"author\": \"اسم المؤلف بالعربية\"}";
+        var body = {
+          contents: [{
+            role: "user",
+            parts: [
+              { text: promptVision },
+              { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
+            ]
+          }],
+          generationConfig: { temperature: 0.1 }
+        };
+
+        for (var i = 0; i < candidateModels.length; i++) {
+          try {
+            var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            });
+            if (res.ok) {
+              var d = await res.json();
+              if (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts[0]) {
+                var txt = d.candidates[0].content.parts[0].text;
+                var parsed = JSON.parse(txt.replace(/```json/gi, "").replace(/```/g, "").trim());
+                if (parsed.title) setNewTitle(parsed.title);
+                if (parsed.author) setNewAuthor(parsed.author);
+                break;
+              }
+            }
+          } catch (eVis) {}
+        }
+      } else {
+        // استنتاج عبر النص فقط إذا لم يتوفر ملف PDF مباشر
+        var query = (newTitle || (selectedFile ? selectedFile.name : "")).trim();
+        if (query) {
+          var promptText = "بناءً على اسم الملف أو الكتاب: '" + query + "'، استخرج بصيغة JSON فقط: {\"title\": \"اسم الكتاب بالعربية\", \"author\": \"اسم المؤلف بالعربية\"}";
+          var resTxt = await ai.callGemini(promptText);
+          var parsed2 = JSON.parse(resTxt.replace(/```json/gi, "").replace(/```/g, "").trim());
+          if (parsed2.title) setNewTitle(parsed2.title);
+          if (parsed2.author) setNewAuthor(parsed2.author);
+        }
+      }
     } catch (err) {
-      alert("تنبيه: تعذر إكمال التحليل التلقائي: " + err.message + " (تأكد من إدخال مفتاح الذكاء في الإعدادات أو كتابة اسم أوضح).");
+      console.warn("AI Detect Book error:", err);
+      if (selectedFile && !newTitle.trim()) {
+        processSelectedFile(selectedFile);
+      }
     } finally {
       setIsAiAnalyzingBook(false);
+      setUploadStatusText("");
     }
   };
 
@@ -921,7 +999,7 @@ window.BooksPage = function(props) {
     if (selectedFile) {
       try {
         setIsUploading(true);
-        setUploadStatusText("جاري قراءة ملف الكتاب...");
+        setUploadStatusText("جاري حفظ ورفع ملف الكتاب...");
 
         var base64Data = await new Promise(function(resolve, reject) {
           var reader = new FileReader();
@@ -933,8 +1011,6 @@ window.BooksPage = function(props) {
           reader.onerror = reject;
           reader.readAsDataURL(selectedFile);
         });
-
-        setUploadStatusText("جاري رفع الكتاب إلى التخزين السحابي...");
 
         var response = await fetch(cfg.driveUploadEndpoint, {
           method: "POST",
@@ -949,54 +1025,18 @@ window.BooksPage = function(props) {
         var resData = await response.json();
         if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
           finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
-        } else {
-          throw new Error(resData.message || "تعذر إكمال رفع الكتاب");
         }
       } catch (err) {
-        alert("تنبيه: حدث خطأ أثناء رفع الكتاب: " + err.message);
-        setIsUploading(false);
-        setUploadStatusText("");
-        return;
+        console.warn("Drive upload notice:", err);
       }
     }
 
-    // تجهيز مصفوفة الفصول الافتراضية مع تضمين المقدمة
-    var chapters = [];
-    if (includeIntro) {
-      chapters.push({
-        number: 0,
-        title: "المقدمة والمدخل",
-        summaryText: "",
-        audioScript: "",
-        hasAudio: false,
-        lastAudioPosition: 0
-      });
-    }
-
-    var count = parseInt(newChaptersCount) || 5;
-    for (var i = 1; i <= count; i++) {
-      chapters.push({
-        number: i,
-        title: "الفصل " + i,
-        summaryText: "",
-        audioScript: "",
-        hasAudio: false,
-        lastAudioPosition: 0
-      });
-    }
     var finalCoverUrl = utils.getDriveImageUrl((newCoverUrl || "").trim());
-
     if (selectedCoverFile) {
       try {
-        setIsUploading(true);
-        setUploadStatusText("جاري رفع صورة غلاف الكتاب...");
         var uploadedCover = await uploadCoverImage(selectedCoverFile);
-        if (uploadedCover) {
-          finalCoverUrl = utils.getDriveImageUrl(uploadedCover);
-        }
-      } catch (errCover) {
-        console.warn("Cover upload warning:", errCover);
-      }
+        if (uploadedCover) finalCoverUrl = utils.getDriveImageUrl(uploadedCover);
+      } catch (errCover) {}
     }
 
     var newB = {
@@ -1007,7 +1047,7 @@ window.BooksPage = function(props) {
       totalPages: parseInt(newTotalPages) || 300,
       currentPage: 1,
       driveUrl: finalDriveUrl,
-      chapters: chapters
+      chapters: []
     };
 
     cloud.saveBook(newB);
@@ -1017,6 +1057,7 @@ window.BooksPage = function(props) {
         await utils.saveOfflinePdf(newB.id, fileBuf);
       } catch (eBuf) {}
     }
+
     setShowAddModal(false);
     setIsUploading(false);
     setSelectedFile(null);
@@ -2190,29 +2231,31 @@ window.BooksPage = function(props) {
           ),
           isUploading && React.createElement("div", { className: "p-2.5 bg-slate-900 text-white text-center text-xs rounded-xl animate-pulse" }, uploadStatusText),
 
-          // اسم الكتاب والمؤلف / الكاتب
+          // زر التحليل والاستخراج التلقائي بالذكاء الاصطناعي
+          React.createElement(
+            "div",
+            { className: "pt-1" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleAutoDetectBookWithAi,
+                disabled: isAiAnalyzingBook || isUploading,
+                className: "w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-500 hover:to-emerald-500 text-white shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+              },
+              React.createElement("span", { className: "text-base" }, isAiAnalyzingBook ? "⏳" : "✨"),
+              React.createElement("span", null, isAiAnalyzingBook ? "جاري استخراج الغلاف والبيانات بالذكاء..." : "استخراج الغلاف والاسم والكاتب تلقائياً بالـ AI")
+            )
+          ),
+
+          // بيانات الكتاب الأساسية (العنوان والمؤلف والغلاف فقط)
           React.createElement(
             "div",
             { className: "space-y-3 pt-1" },
             React.createElement(
               "div",
               null,
-              React.createElement(
-                "div",
-                { className: "flex items-center justify-between mb-1" },
-                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم الكتاب / المرجع"),
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: handleAutoFillWithAi,
-                    disabled: isAiAnalyzingBook || isUploading,
-                    className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xs transition-all active:scale-95 disabled:opacity-50"
-                  },
-                  React.createElement("span", null, isAiAnalyzingBook ? "⏳" : "✨"),
-                  React.createElement("span", null, isAiAnalyzingBook ? "جاري الاستنتاج بالذكاء..." : "استكمال البيانات بالـ AI")
-                )
-              ),
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "اسم الكتاب / المرجع"),
               React.createElement("input", {
                 type: "text",
                 required: true,
@@ -2220,8 +2263,7 @@ window.BooksPage = function(props) {
                 onChange: function(e) { setNewTitle(e.target.value); },
                 placeholder: "مثال: الروحانية الناضجة وجدانياً، فخاخ العلاقات...",
                 className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium"
-              }),
-              React.createElement("p", { className: "text-[10px] text-slate-400 mt-1" }, "💡 اكتب الاسم أو اختر ملفاً ثم اضغط 'استكمال البيانات بالـ AI' ليقوم باستخراج الكاتب، عدد الصفحات، وعدد الفصول تلقائياً.")
+              })
             ),
             React.createElement(
               "div",
@@ -2232,14 +2274,14 @@ window.BooksPage = function(props) {
                 required: true,
                 value: newAuthor,
                 onChange: function(e) { setNewAuthor(e.target.value); },
-                placeholder: "مثال: د. أوسم وصفي، د. إميل جورج، د. عادل حليم...",
+                placeholder: "مثال: د. أوسم وصفي، د. إميل جورج...",
                 className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
               })
             ),
             React.createElement(
               "div",
               { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 space-y-2" },
-              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "🖼️ صورة غلاف الكتاب (اختياري)"),
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "🖼️ صورة غلاف الكتاب (يتم استخراجها تلقائياً بالـ AI أو يمكنك رفعها)"),
               React.createElement(
                 "div",
                 { className: "flex items-center gap-3" },
@@ -2271,7 +2313,7 @@ window.BooksPage = function(props) {
                     "label",
                     { className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold cursor-pointer transition-all active:scale-95" },
                     React.createElement("span", null, "📁"),
-                    React.createElement("span", null, selectedCoverFile ? ("تم اختيار: " + selectedCoverFile.name) : "رفع صورة الغلاف من جهازك"),
+                    React.createElement("span", null, selectedCoverFile ? ("تم اختيار: " + selectedCoverFile.name) : (newCoverUrl ? "تم استخراج الغلاف تلقائياً ✓" : "رفع صورة غلاف خاصة")),
                     React.createElement("input", {
                       type: "file",
                       accept: "image/*",
@@ -2296,13 +2338,7 @@ window.BooksPage = function(props) {
                     type: "url",
                     value: newCoverUrl,
                     onChange: function(e) { setNewCoverUrl(e.target.value); },
-                    onBlur: function(e) {
-                      if (e.target.value) {
-                        var c = utils.getDriveImageUrl(e.target.value);
-                        if (c !== e.target.value) setNewCoverUrl(c);
-                      }
-                    },
-                    placeholder: "أو الصق رابط صورة الغلاف هنا (يدعم جوجل درايف والروابط المباشرة)",
+                    placeholder: "أو رابط صورة الغلاف المباشر...",
                     className: "w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] text-slate-900 dark:text-white"
                   })
                 )
@@ -2311,64 +2347,26 @@ window.BooksPage = function(props) {
             React.createElement(
               "div",
               null,
-              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رابط ملف الـ PDF على Google Drive (بديل في حال عدم اختيار ملف من الجهاز)"),
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رابط ملف الـ PDF على Google Drive (بديل في حال عدم رفع ملف من الجهاز)"),
               React.createElement("input", {
                 type: "url",
                 value: newDriveUrl,
                 onChange: function(e) { setNewDriveUrl(e.target.value); },
-                placeholder: "https://drive.google.com/file/d/... رابط ملف الـ PDF المباشر",
-                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                placeholder: "https://drive.google.com/file/d/... رابط ملف الـ PDF",
+                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
               })
             )
           ),
 
-          // إجمالي الصفحات وعدد الفصول
           React.createElement(
             "div",
-            { className: "grid grid-cols-2 gap-3" },
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "إجمالي الصفحات التقريبي"),
-              React.createElement("input", {
-                type: "number",
-                value: newTotalPages,
-                onChange: function(e) { setNewTotalPages(e.target.value); },
-                className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
-              })
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "عدد الفصول للتقسيم"),
-              React.createElement("input", {
-                type: "number",
-                value: newChaptersCount,
-                onChange: function(e) { setNewChaptersCount(e.target.value); },
-                className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
-              })
-            )
-          ),
-          React.createElement(
-            "label",
-            { className: "flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl cursor-pointer text-xs text-slate-700 dark:text-slate-300" },
-            React.createElement("input", {
-              type: "checkbox",
-              checked: includeIntro,
-              onChange: function(e) { setIncludeIntro(e.target.checked); },
-              className: "rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-            }),
-            React.createElement("span", { className: "font-medium" }, "تضمين قسم تمهيدي لـ 'المقدمة والمدخل' قبل الفصول")
-          ),
-          React.createElement(
-            "div",
-            { className: "flex justify-end gap-2 pt-2" },
-            !isUploading && React.createElement("button", { type: "button", onClick: function() { setShowAddModal(false); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
+            { className: "flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
+            !isUploading && React.createElement("button", { type: "button", onClick: function() { setShowAddModal(false); }, className: "px-4 py-2 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl" }, "إلغاء"),
             React.createElement("button", {
               type: "submit",
               disabled: isUploading,
-              className: "px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white"
-            }, isUploading ? "جاري الرفع..." : "حفظ المرجع وتجهيز الفصول")
+              className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95"
+            }, isUploading ? (uploadStatusText || "جاري الحفظ...") : "حفظ الكتاب في المكتبة ✓")
           )
         )
       )
