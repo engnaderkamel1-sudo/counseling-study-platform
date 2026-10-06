@@ -1310,7 +1310,7 @@ window.BooksPage = function(props) {
       React.createElement("div", { className: "text-3xl" }, "📚"),
       React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "المكتبة جاهزة لاستقبال الكتب والمراجع"),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "اضغط على زر 'إضافة مرجع جديد' لرفع كتابك الأول بصيغة PDF وتجهيز فصوله.")
-    )),
+    ),
 
     // نافذة إضافة مرجع جديد
     showAddModal && React.createElement(
