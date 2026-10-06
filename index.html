@@ -107,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791311848",
-  buildTime: "2026-10-06T18:37:28",
+  version: "1.2.1791312063",
+  buildTime: "2026-10-06T18:41:03",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -3244,32 +3244,6 @@ window.BooksPage = function(props) {
     alert("تم إزالة النسخة المحفوظة أوفلاين من هذا الجهاز بنجاح.");
   };
 
-  // فتح نافذة تعديل بيانات الفصل (الملخص والرابط الصوتي المستخرج من NotebookLM)
-  var openEditChapterModal = function(idx, ch) {
-    setEditingChapterIdx(idx);
-    setEditChapterTitle(ch.title || ("الفصل " + (idx + 1)));
-    setEditChapterSummary(ch.summaryText || "");
-    setEditChapterAudioUrl(ch.audioScript || ch.audioUrl || "");
-  };
-
-  // حفظ التعديلات على الفصل في السحابة ومحلياً
-  var handleSaveChapterEdit = function(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!activeBook || editingChapterIdx === null) return;
-    var updatedChapters = (activeBook.chapters || []).slice();
-    updatedChapters[editingChapterIdx] = Object.assign({}, updatedChapters[editingChapterIdx], {
-      title: editChapterTitle.trim(),
-      summaryText: editChapterSummary.trim(),
-      audioUrl: editChapterAudioUrl.trim(),
-      audioScript: editChapterAudioUrl.trim(), // للتوافق
-      hasAudio: !!editChapterAudioUrl.trim()
-    });
-    var updatedBook = Object.assign({}, activeBook, { chapters: updatedChapters });
-    cloud.saveBook(updatedBook);
-    setActiveBook(updatedBook);
-    setEditingChapterIdx(null);
-  };
-
   // رفع صورة غلاف الكتاب إلى درايف أو تحويلها
   var uploadCoverImage = async function(file) {
     if (!file) return null;
@@ -4780,72 +4754,6 @@ window.BooksPage = function(props) {
               disabled: isUploading,
               className: "px-5 py-2.5 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white"
             }, isUploading ? "جاري الرفع..." : "حفظ المرجع وتجهيز الفصول")
-          )
-        )
-      )
-    ),
-
-    // نافذة تعديل التراك / الفصل (لصق ملخص NotebookLM ورابط الصوت MP3)
-    editingChapterIdx !== null && React.createElement(
-      "div",
-      { className: "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" },
-      React.createElement(
-        "div",
-        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto" },
-        React.createElement(
-          "div",
-          { className: "flex items-center justify-between border-b pb-3" },
-          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "✏️ تعديل تراك الفصل (NotebookLM)"),
-          React.createElement("button", { onClick: function() { setEditingChapterIdx(null); }, className: "text-slate-400" }, "✕")
-        ),
-        React.createElement(
-          "form",
-          { onSubmit: handleSaveChapterEdit, className: "space-y-3" },
-          React.createElement(
-            "div",
-            null,
-            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "عنوان الفصل / التراك"),
-            React.createElement("input", {
-              type: "text",
-              required: true,
-              value: editChapterTitle,
-              onChange: function(e) { setEditChapterTitle(e.target.value); },
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-            })
-          ),
-          React.createElement(
-            "div",
-            null,
-            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رابط ملف الصوت للتراك (MP3 أو Google Drive)"),
-            React.createElement("input", {
-              type: "url",
-              value: editChapterAudioUrl,
-              onChange: function(e) { setEditChapterAudioUrl(e.target.value); },
-              placeholder: "رابط ملف الصوت الذي نزلته من NotebookLM ورفعته على درايف...",
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-            }),
-            React.createElement("p", { className: "text-[10px] text-slate-400 mt-1" }, "💡 ارفع ملف الـ MP3 الذي استخرجته من NotebookLM على جوجل درايف وضع رابطه هنا.")
-          ),
-          React.createElement(
-            "div",
-            null,
-            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الملخص المكتوب للفصل"),
-            React.createElement("textarea", {
-              rows: 5,
-              value: editChapterSummary,
-              onChange: function(e) { setEditChapterSummary(e.target.value); },
-              placeholder: "الصق هنا الملخص المكتوب المستخرج من NotebookLM...",
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-            })
-          ),
-          React.createElement(
-            "div",
-            { className: "flex justify-end gap-2 pt-2" },
-            React.createElement("button", { type: "button", onClick: function() { setEditingChapterIdx(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
-            React.createElement("button", {
-              type: "submit",
-              className: "px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm"
-            }, "حفظ التراك والملخص ✓")
           )
         )
       )
