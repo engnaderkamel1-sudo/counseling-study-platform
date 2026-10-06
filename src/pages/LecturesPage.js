@@ -1314,6 +1314,7 @@ window.LecturesPage = function(props) {
             }, "حفظ التعديلات ✓")
           )
         )
+      )
     )
   );
 };
