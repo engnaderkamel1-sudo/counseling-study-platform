@@ -486,8 +486,22 @@ window.BooksPage = function(props) {
         var text = (textContent.items || []).map(function(item) { return item.str; }).join(" ").trim();
         text = text.replace(/\s+/g, " ");
 
-        if (!text || text.length < 5) {
-          setTtsStatusMsg("صفحة " + pageNum + " صورة/خالية، جاري الانتقال للصفحة التالية...");
+        // استخراج النص العربي فقط لتجنب قراءة الرموز الغريبة (Gibberish)
+        var cleanArabicText = text.replace(/[^\u0600-\u06FF0-9\s.,?!،؛:\-]/g, " ").replace(/\s+/g, " ").trim();
+        
+        // إذا كان النص الأصلي كبيراً ولكن لا يحتوي على نص عربي يُذكر، فهذا يعني أن الخط مشفر أو الملف صور
+        if (text.length > 30 && cleanArabicText.length < 15) {
+          setIsTtsReading(false);
+          setIsTtsPaused(false);
+          isTtsActiveRef.current = false;
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+          setTtsStatusMsg("عفواً، خطوط هذا الكتاب غير مدعومة للقراءة.");
+          alert("عفواً، خطوط هذا الكتاب غير مدعومة للتعرف الآلي (تُستخرج كرموز غريبة) أو أن الكتاب عبارة عن صور (Scanned). يرجى استخدام ملف PDF بنص عربي قياسي لكي تعمل القراءة الصوتية.");
+          return;
+        }
+
+        if (!cleanArabicText || cleanArabicText.length < 5) {
+          setTtsStatusMsg("صفحة " + pageNum + " لا تحتوي نص مقروء، جاري الانتقال...");
           setTimeout(function() {
             if (isTtsActiveRef.current) {
               var nextP = pageNum + 1;
@@ -509,7 +523,7 @@ window.BooksPage = function(props) {
         setTtsStatusMsg("جاري القراءة بالعربية الفصحى (صفحة " + pageNum + " من " + maxP + ") 🔊");
 
         // تشغيل النص العربي بالكامل بصوت عربي 100%
-        speakArabicTextChunks(text, function() {
+        speakArabicTextChunks(cleanArabicText, function() {
           if (!isTtsActiveRef.current) return;
           var nextP = pageNum + 1;
           if (nextP <= maxP) {
