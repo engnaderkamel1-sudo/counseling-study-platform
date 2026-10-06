@@ -150,16 +150,61 @@ window.BooksPage = function(props) {
     });
   };
 
-  var loadPdfFromUrl = function(url) {
+  var loadPdfFromUrl = async function(url) {
     if (!window.pdfjsLib) return;
     setIsPdfLoading(true);
 
     var driveId = utils.extractDriveId(url);
+
+    // 1. الحل الأول (المعتمد في تطبيق إعداد الخدام): جلب ملف الدرايف عبر Google Apps Script بتنسيق Base64
+    // هذا السكربت يفك قيود CORS و CORP للمتصفح بالكامل وبشكل رسمي
+    if (driveId) {
+      try {
+        var scriptEndpoint = "https://script.google.com/macros/s/AKfycbxhdl_hk5vB7NLLL7zdPmVXlwvAOiZYVLsrk5T73UdJpJJM9JpU74p0DexpSch7gI4I/exec?action=getFile&fileId=" + driveId;
+        var scriptRes = await fetch(scriptEndpoint);
+        if (scriptRes.ok) {
+          var scriptData = await scriptRes.json();
+          if (scriptData.status === "success" && scriptData.base64) {
+            // تحويل Base64 إلى ArrayBuffer لقارئ PDF.js
+            var binaryStr = atob(scriptData.base64);
+            var len = binaryStr.length;
+            var bytes = new Uint8Array(len);
+            for (var i = 0; i < len; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+            loadPdfFromData(bytes.buffer);
+            if (activeBook && activeBook.id) {
+              utils.saveOfflinePdf(activeBook.id, bytes.buffer).catch(function() {});
+            }
+            return;
+          }
+        }
+      } catch (errScript) {
+        console.warn("Apps Script getFile failed, trying Drive CDN:", errScript);
+      }
+
+      // 2. الحل الثاني (من تطبيق إعداد الخدام أيضاً): السحب المباشر من Google Drive CDN
+      try {
+        var cdnUrl = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download";
+        var cdnRes = await fetch(cdnUrl);
+        if (cdnRes.ok) {
+          var cdnBuffer = await cdnRes.arrayBuffer();
+          loadPdfFromData(cdnBuffer);
+          if (activeBook && activeBook.id) {
+            utils.saveOfflinePdf(activeBook.id, cdnBuffer).catch(function() {});
+          }
+          return;
+        }
+      } catch (errCdn) {
+        console.warn("Drive CDN fetch failed, trying fallbacks:", errCdn);
+      }
+    }
+
+    // 3. الحلول الاحتياطية (قائمة البروكسيات)
     var downloadUrl = driveId
       ? ("https://docs.google.com/uc?export=download&id=" + driveId)
       : utils.getAudioStreamUrl(url);
 
-    // قائمة محاولات البروكسي بالترتيب
     var proxyUrls = [
       "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(downloadUrl),
       "https://api.allorigins.win/raw?url=" + encodeURIComponent(downloadUrl),
@@ -168,7 +213,6 @@ window.BooksPage = function(props) {
 
     var tryFetchChain = function(index) {
       if (index >= proxyUrls.length) {
-        // جميع محاولات البروكسي لم تنجح، تجربة التحميل المباشر كحل أخير
         var directUrl = utils.getAudioStreamUrl(url);
         window.pdfjsLib.getDocument({ url: directUrl }).promise.then(function(loadedDoc) {
           setPdfDoc(loadedDoc);
@@ -178,7 +222,7 @@ window.BooksPage = function(props) {
         }).catch(function(e) {
           console.warn("Direct PDF.js load error:", e);
           setIsPdfLoading(false);
-          setTtsStatusMsg("تنبيه: قفل حماية درايف يمنع المتصفح من استخراج النص تلقائياً. يمكنك اختيار ملف الـ PDF من جهازك بضغطة زر لحفظه وقراءته صوتياً فوراً ✓");
+          setTtsStatusMsg("تنبيه: تعذر سحب النص تلقائياً من درايف، يمكنك اختيار ملف الـ PDF من جهازك لحفظه وقراءته صوتياً فوراً ✓");
         });
         return;
       }
@@ -190,7 +234,6 @@ window.BooksPage = function(props) {
         })
         .then(function(buffer) {
           loadPdfFromData(buffer);
-          // حفظ نسخة في IndexedDB لتسريع الفتح لاحقاً بدون الحاجة لأي إنترنت
           if (activeBook && activeBook.id) {
             utils.saveOfflinePdf(activeBook.id, buffer).catch(function() {});
           }
