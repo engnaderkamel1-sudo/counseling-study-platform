@@ -192,24 +192,38 @@ window.GeminiAIService = {
       }
     };
     
-    var modelName = "gemini-1.5-flash-latest"; // Vision model
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+    var candidateModels = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash"
+    ];
     
-    var response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    
-    if (response.ok) {
-      var data = await response.json();
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-        return data.candidates[0].content.parts[0].text.trim();
+    var lastError = "";
+    for (var i = 0; i < candidateModels.length; i++) {
+      var modelName = candidateModels[i];
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+      try {
+        var response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        
+        if (response.ok) {
+          var data = await response.json();
+          if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            return data.candidates[0].content.parts[0].text.trim();
+          }
+        } else {
+          var errData = await response.json().catch(function() { return {}; });
+          lastError = (errData.error && errData.error.message) || ("خطأ في نموذج " + modelName);
+        }
+      } catch (e) {
+        lastError = e.message;
       }
-    } else {
-      var errData = await response.json().catch(function() { return {}; });
-      throw new Error((errData.error && errData.error.message) || "فشل قراءة الصورة بالذكاء الاصطناعي");
     }
-    return "";
+    
+    throw new Error(lastError || "فشل قراءة الصورة بجميع نماذج الذكاء الاصطناعي");
   }
 };

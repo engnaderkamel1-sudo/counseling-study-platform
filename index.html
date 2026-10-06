@@ -107,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791315021",
-  buildTime: "2026-10-06T19:30:21",
+  version: "1.2.1791315172",
+  buildTime: "2026-10-06T19:32:52",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -441,25 +441,39 @@ window.GeminiAIService = {
       }
     };
     
-    var modelName = "gemini-1.5-flash-latest"; // Vision model
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+    var candidateModels = [
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash"
+    ];
     
-    var response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    
-    if (response.ok) {
-      var data = await response.json();
-      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-        return data.candidates[0].content.parts[0].text.trim();
+    var lastError = "";
+    for (var i = 0; i < candidateModels.length; i++) {
+      var modelName = candidateModels[i];
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+      try {
+        var response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        
+        if (response.ok) {
+          var data = await response.json();
+          if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            return data.candidates[0].content.parts[0].text.trim();
+          }
+        } else {
+          var errData = await response.json().catch(function() { return {}; });
+          lastError = (errData.error && errData.error.message) || ("خطأ في نموذج " + modelName);
+        }
+      } catch (e) {
+        lastError = e.message;
       }
-    } else {
-      var errData = await response.json().catch(function() { return {}; });
-      throw new Error((errData.error && errData.error.message) || "فشل قراءة الصورة بالذكاء الاصطناعي");
     }
-    return "";
+    
+    throw new Error(lastError || "فشل قراءة الصورة بجميع نماذج الذكاء الاصطناعي");
   }
 };
 
@@ -3340,10 +3354,11 @@ window.BooksPage = function(props) {
       
     } catch (err) {
       console.warn("AI extraction error:", err);
-      setTtsStatusMsg("فشل القارئ الذكي: " + err.message);
+      var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
+      setTtsStatusMsg("فشل القارئ الذكي: " + msg);
       setIsTtsReading(false);
       isTtsActiveRef.current = false;
-      alert("تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.");
+      alert("تنبيه القارئ الذكي:\n" + msg);
     }
   };
 

@@ -526,10 +526,11 @@ window.BooksPage = function(props) {
       
     } catch (err) {
       console.warn("AI extraction error:", err);
-      setTtsStatusMsg("فشل القارئ الذكي: " + err.message);
+      var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
+      setTtsStatusMsg("فشل القارئ الذكي: " + msg);
       setIsTtsReading(false);
       isTtsActiveRef.current = false;
-      alert("تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.");
+      alert("تنبيه القارئ الذكي:\n" + msg);
     }
   };
 
