@@ -24,7 +24,10 @@ window.BooksPage = function(props) {
   var [isSavedOffline, setIsSavedOffline] = React.useState(false);
   var [isSavingOffline, setIsSavingOffline] = React.useState(false);
   var [offlineSaveMsg, setOfflineSaveMsg] = React.useState("");
+  var [pdfRotation, setPdfRotation] = React.useState(0); // 0, 90, 180, 270
+  var [isFullScreen, setIsFullScreen] = React.useState(false);
   var pdfCanvasRef = React.useRef(null);
+  var pdfViewerContainerRef = React.useRef(null);
 
   // حقول تعديل الفصل (إدخال ملخص مكتوب أو رابط صوت التراك من NotebookLM)
   var [editingChapterIdx, setEditingChapterIdx] = React.useState(null);
@@ -139,14 +142,15 @@ window.BooksPage = function(props) {
     });
   };
 
-  var renderPdfPage = function(doc, pageNum) {
+  var renderPdfPage = function(doc, pageNum, rotationAngle) {
     if (!doc || !pdfCanvasRef.current) return;
     var num = Math.max(1, Math.min(pageNum, doc.numPages));
+    var rot = typeof rotationAngle === "number" ? rotationAngle : pdfRotation;
     doc.getPage(num).then(function(page) {
       var canvas = pdfCanvasRef.current;
       if (!canvas) return;
       var context = canvas.getContext("2d");
-      var viewport = page.getViewport({ scale: 1.3 });
+      var viewport = page.getViewport({ scale: 1.35, rotation: rot });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
@@ -159,6 +163,69 @@ window.BooksPage = function(props) {
     });
   };
 
+  // تدوير صفحة القارئ 90 درجة
+  var handleRotatePage = function() {
+    var nextRot = (pdfRotation + 90) % 360;
+    setPdfRotation(nextRot);
+    if (pdfDoc) {
+      renderPdfPage(pdfDoc, pdfCurrentPage, nextRot);
+    }
+  };
+
+  // تبديل وضع ملء الشاشة (Full Screen)
+  var toggleFullScreen = function() {
+    var container = pdfViewerContainerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch(function() {});
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      }
+      setIsFullScreen(true);
+      // محاولة قلب الشاشة لوضع العرض الأفقي (Landscape) على الهواتف والأجهزة الذكية
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock("landscape").catch(function() {});
+        }
+      } catch (e) {}
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(function() {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+      setIsFullScreen(false);
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch (e) {}
+    }
+  };
+
+  // الاستماع لحدث الخروج من ملء الشاشة عبر زر ESC أو المتصفح
+  React.useEffect(function() {
+    var handleFsChange = function() {
+      var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      setIsFullScreen(isFs);
+      if (!isFs) {
+        try {
+          if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+        } catch (e) {}
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return function() {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
+
   // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً
   var handlePageChange = function(newPage) {
     if (!activeBook) return;
@@ -166,7 +233,7 @@ window.BooksPage = function(props) {
     var validPage = Math.max(1, Math.min(newPage, total));
     setPdfCurrentPage(validPage);
     if (pdfDoc) {
-      renderPdfPage(pdfDoc, validPage);
+      renderPdfPage(pdfDoc, validPage, pdfRotation);
     }
     setActiveBook(Object.assign({}, activeBook, { currentPage: validPage }));
     cloud.updateBookPage(activeBook.id, validPage);
@@ -660,15 +727,21 @@ window.BooksPage = function(props) {
         )
       ),
 
-      // عارض الـ PDF التفاعلي المدمج (Native PDF Reader) الداعم للقراءة بدون إنترنت
+      // عارض الـ PDF التفاعلي المدمج (Native PDF Reader) الداعم للقراءة بدون إنترنت ووضع ملء الشاشة والتدوير
       (activeBook.driveUrl || isSavedOffline) && React.createElement(
         "div",
-        { className: "w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2 p-3" },
+        {
+          ref: pdfViewerContainerRef,
+          className: "w-full overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2 transition-all " +
+            (isFullScreen
+              ? "fixed inset-0 z-[9999] rounded-0 p-3 h-screen w-screen flex flex-col justify-between bg-slate-950"
+              : "rounded-2xl p-3")
+        },
         
-        // شريط أدوات قارئ الكتاب وحالة الأوفلاين
+        // شريط أدوات قارئ الكتاب وحالة الأوفلاين وأزرار ملء الشاشة والتدوير
         React.createElement(
           "div",
-          { className: "flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-white border-b border-slate-800 pb-2.5 text-xs" },
+          { className: "flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-white border-b border-slate-800 pb-2.5 text-xs shrink-0" },
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
@@ -687,6 +760,50 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center gap-2 mr-auto" },
+
+            // أزرار التنقل السريع بين الصفحات أثناء وضع ملء الشاشة
+            isFullScreen && React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 bg-slate-800 px-2 py-1 rounded-xl text-xs" },
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { handlePageChange((activeBook.currentPage || 1) - 1); },
+                className: "px-2 py-0.5 rounded-lg bg-slate-700 text-white font-bold hover:bg-slate-600 active:scale-95"
+              }, "◀"),
+              React.createElement("span", { className: "px-1.5 font-bold text-emerald-400 font-mono" }, (activeBook.currentPage || 1) + " / " + (pdfTotalPages || activeBook.totalPages || 1)),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { handlePageChange((activeBook.currentPage || 1) + 1); },
+                className: "px-2 py-0.5 rounded-lg bg-slate-700 text-white font-bold hover:bg-slate-600 active:scale-95"
+              }, "▶")
+            ),
+
+            // زر تدوير الصفحة 90 درجة (Rotate)
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleRotatePage,
+                title: "تدوير الصفحة 90 درجة",
+                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-sm active:scale-95 transition-all"
+              },
+              React.createElement("span", { className: "text-sm" }, "🔄"),
+              React.createElement("span", { className: "hidden sm:inline font-mono" }, pdfRotation + "°")
+            ),
+
+            // زر وضع ملء الشاشة (Full Screen)
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: toggleFullScreen,
+                title: isFullScreen ? "الخروج من ملء الشاشة" : "وضع ملء الشاشة للقراءة",
+                className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              },
+              React.createElement("span", null, isFullScreen ? "🗗" : "⛶"),
+              React.createElement("span", null, isFullScreen ? "خروج من الشاشة" : "شاشة كاملة")
+            ),
+
             // زر حفظ الكتاب للقراءة أوفلاين
             !isSavedOffline ? React.createElement(
               "button",
@@ -694,10 +811,10 @@ window.BooksPage = function(props) {
                 type: "button",
                 onClick: handleSaveOffline,
                 disabled: isSavingOffline,
-                className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm active:scale-95 transition-all"
               },
               React.createElement("span", null, "📥"),
-              React.createElement("span", null, isSavingOffline ? "جاري الحفظ..." : "تحميل للقراءة بدون نت")
+              React.createElement("span", { className: "hidden md:inline" }, isSavingOffline ? "جاري الحفظ..." : "تحميل بدون نت")
             ) : React.createElement(
               "button",
               {
@@ -705,21 +822,24 @@ window.BooksPage = function(props) {
                 onClick: handleRemoveOffline,
                 className: "px-2.5 py-1 text-[11px] text-slate-400 hover:text-rose-400"
               },
-              "إلغاء الحفظ المحلي"
+              "إلغاء الحفظ"
             )
           )
         ),
 
         offlineSaveMsg && React.createElement(
           "div",
-          { className: "p-2 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-center text-xs font-semibold" },
+          { className: "p-2 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-center text-xs font-semibold shrink-0" },
           offlineSaveMsg
         ),
 
         // لوحة عرض الصفحة (PDF Canvas Viewer)
         React.createElement(
           "div",
-          { className: "relative min-h-[420px] max-h-[650px] overflow-auto flex items-center justify-center bg-slate-950 rounded-xl p-2" },
+          {
+            className: "relative overflow-auto flex items-center justify-center bg-slate-950 rounded-xl p-2 transition-all " +
+              (isFullScreen ? "flex-1 w-full h-[calc(100vh-80px)] min-h-0 max-h-none" : "min-h-[420px] max-h-[650px]")
+          },
           isPdfLoading && React.createElement(
             "div",
             { className: "absolute inset-0 flex items-center justify-center bg-slate-950/80 z-10 text-white text-xs font-bold gap-2" },
@@ -728,12 +848,12 @@ window.BooksPage = function(props) {
           ),
           pdfDoc ? React.createElement("canvas", {
             ref: pdfCanvasRef,
-            className: "max-w-full shadow-2xl rounded-lg bg-white"
+            className: "max-w-full shadow-2xl rounded-lg bg-white transition-transform duration-300"
           }) : React.createElement(
             "iframe",
             {
               src: utils.getDrivePreviewUrl(activeBook.driveUrl),
-              className: "w-full h-[480px] border-0 rounded-lg",
+              className: "w-full h-full min-h-[480px] border-0 rounded-lg",
               title: activeBook.title
             }
           )
