@@ -549,6 +549,7 @@ window.BooksPage = function(props) {
         hasAudio: false,
         lastAudioPosition: 0
       });
+    }
     var finalCoverUrl = (newCoverUrl || "").trim();
 
     if (selectedCoverFile) {
