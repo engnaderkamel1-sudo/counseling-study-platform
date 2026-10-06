@@ -156,5 +156,60 @@ window.GeminiAIService = {
       "3. أسئلة متوقعة وأجوبتها النموذجية المختصرة.";
     
     return await window.GeminiAIService.callGemini(prompt);
+  },
+
+  // استخراج النص من صورة (لتحليل الـ PDF)
+  extractTextFromImage: async function(base64Image) {
+    var key = await window.GeminiAIService.getApiKey();
+    if (!key) {
+      throw new Error("يرجى إدخال مفتاح واجهة برمجة التطبيقات في الإعدادات لتفعيل القارئ الذكي.");
+    }
+    
+    // إزالة البادئة إذا وجدت (data:image/jpeg;base64,)
+    var cleanBase64 = base64Image;
+    if (cleanBase64.indexOf("base64,") !== -1) {
+      cleanBase64 = cleanBase64.split("base64,")[1];
+    }
+    
+    var body = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: "قم باستخراج جميع النصوص العربية من هذه الصورة بدقة شديدة كما هي مكتوبة تماماً. قم بإرجاع النص المكتوب فقط بدون أي مقدمات أو تعليقات خارجية." },
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: cleanBase64
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1, // نحتاج لدقة الاستخراج وليس الإبداع
+        maxOutputTokens: 2048
+      }
+    };
+    
+    var modelName = "gemini-1.5-flash-latest"; // Vision model
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
+    
+    var response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    
+    if (response.ok) {
+      var data = await response.json();
+      if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+        return data.candidates[0].content.parts[0].text.trim();
+      }
+    } else {
+      var errData = await response.json().catch(function() { return {}; });
+      throw new Error((errData.error && errData.error.message) || "فشل قراءة الصورة بالذكاء الاصطناعي");
+    }
+    return "";
   }
 };
