@@ -107,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791310571",
-  buildTime: "2026-10-06T18:16:11",
+  version: "1.2.1791311339",
+  buildTime: "2026-10-06T18:28:59",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2815,6 +2815,13 @@ window.BooksPage = function(props) {
   var [editingCoverUrl, setEditingCoverUrl] = React.useState("");
   var [isUploadingCover, setIsUploadingCover] = React.useState(false);
 
+  // مشغل القراءة الصوتية الآلية المباشرة لصفحات الكتاب (Hands-Free Smart Auto Reader)
+  var [isTtsReading, setIsTtsReading] = React.useState(false);
+  var [isTtsPaused, setIsTtsPaused] = React.useState(false);
+  var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
+  var [ttsStatusMsg, setTtsStatusMsg] = React.useState("");
+  var isTtsActiveRef = React.useRef(false);
+
   var stopAudioPlayback = function() {
     try {
       if (track1AudioRef.current) {
@@ -2823,6 +2830,13 @@ window.BooksPage = function(props) {
       setIsTrack1Playing(false);
       var allAudios = document.querySelectorAll("audio");
       allAudios.forEach(function(a) { a.pause(); });
+      // إيقاف القارئ الصوتي الآلي أيضاً
+      if (window.speechSynthesis) {
+        isTtsActiveRef.current = false;
+        window.speechSynthesis.cancel();
+        setIsTtsReading(false);
+        setIsTtsPaused(false);
+      }
     } catch (e) {}
   };
 
@@ -3071,6 +3085,166 @@ window.BooksPage = function(props) {
     var updated = Object.assign({}, activeBook, { currentPage: validPage });
     setActiveBook(updated);
     cloud.updateBookPage(activeBook.id, validPage);
+  };
+
+  // استخراج النص من صفحة الـ PDF وقراءته آلياً مع الانتقال التلقائي للصفحة التالية
+  var readPageTextWithTts = function(doc, pageNum) {
+    if (!window.speechSynthesis) {
+      alert("متصفحك الحالي لا يدعم ميزة تحويل النص إلى كلام (Web Speech API). يرجى استخدام متصفح حديث مثل Chrome أو Edge أو Safari.");
+      return;
+    }
+    if (!doc) {
+      alert("يرجى الانتظار حتى اكتمال تحميل ملف الكتاب.");
+      return;
+    }
+
+    var maxP = getMaxPages();
+    if (pageNum > maxP) {
+      setTtsStatusMsg("تم الوصول لنهاية الكتاب بنجاح ✓");
+      setIsTtsReading(false);
+      setIsTtsPaused(false);
+      isTtsActiveRef.current = false;
+      return;
+    }
+
+    setTtsStatusMsg("جاري استخراج النص وقراءة صفحة " + pageNum + "...");
+    doc.getPage(pageNum).then(function(page) {
+      page.getTextContent().then(function(textContent) {
+        if (!isTtsActiveRef.current) return;
+
+        var text = (textContent.items || []).map(function(item) { return item.str; }).join(" ").trim();
+        // إزالة الفراغات الزائدة
+        text = text.replace(/\s+/g, " ");
+
+        if (!text || text.length < 5) {
+          // الصفحة عبارة عن صورة أو خالية من النصوص، ننتقل تلقائياً للصفحة التالية بعد ثانية
+          setTtsStatusMsg("صفحة " + pageNum + " صورة/خالية، جاري الانتقال للصفحة التالية...");
+          setTimeout(function() {
+            if (isTtsActiveRef.current) {
+              var nextP = pageNum + 1;
+              handlePageChange(nextP);
+              readPageTextWithTts(doc, nextP);
+            }
+          }, 1500);
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = ttsSpeed;
+
+        // اختيار أفضل صوت عربي متاح على الجهاز
+        var voices = window.speechSynthesis.getVoices() || [];
+        var arabicVoice = voices.find(function(v) { return v.lang && v.lang.startsWith("ar"); });
+        if (arabicVoice) {
+          utterance.voice = arabicVoice;
+          utterance.lang = arabicVoice.lang;
+        } else {
+          utterance.lang = "ar-SA";
+        }
+
+        utterance.onstart = function() {
+          setIsTtsReading(true);
+          setIsTtsPaused(false);
+          setTtsStatusMsg("جاري القراءة بصوت مسموع (صفحة " + pageNum + " من " + maxP + ") 🔊");
+        };
+
+        utterance.onend = function() {
+          if (!isTtsActiveRef.current) return;
+          // انتهاء قراءة الصفحة الحالية: الانتقال للصفحة التالية وقراءتها تلقائياً (Hands-Free)
+          var nextP = pageNum + 1;
+          if (nextP <= maxP) {
+            handlePageChange(nextP);
+            setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
+            setTimeout(function() {
+              if (isTtsActiveRef.current) {
+                readPageTextWithTts(doc, nextP);
+              }
+            }, 600);
+          } else {
+            setIsTtsReading(false);
+            setIsTtsPaused(false);
+            isTtsActiveRef.current = false;
+            setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
+          }
+        };
+
+        utterance.onerror = function(err) {
+          console.warn("TTS utterance error:", err);
+          if (!isTtsActiveRef.current) return;
+          setIsTtsReading(false);
+          setIsTtsPaused(false);
+          isTtsActiveRef.current = false;
+          setTtsStatusMsg("توقفت القراءة الصوتية");
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }).catch(function(err) {
+        console.warn("getTextContent error:", err);
+        setTtsStatusMsg("تعذر استخراج نص الصفحة " + pageNum);
+      });
+    }).catch(function(err) {
+      console.warn("getPage error in TTS:", err);
+    });
+  };
+
+  // زر بدء / إيقاف القراءة الصوتية
+  var toggleTtsAutoReader = function() {
+    if (!window.speechSynthesis) {
+      alert("متصفحك لا يدعم القراءة الصوتية.");
+      return;
+    }
+
+    if (isTtsReading) {
+      if (isTtsPaused) {
+        window.speechSynthesis.resume();
+        setIsTtsPaused(false);
+        setTtsStatusMsg("تم استئناف القراءة الصوتية");
+      } else {
+        window.speechSynthesis.pause();
+        setIsTtsPaused(true);
+        setTtsStatusMsg("تم الإيقاف المؤقت للقراءة");
+      }
+    } else {
+      if (!pdfDoc) {
+        alert("يرجى الانتظار حتى يتم تحميل ملف الكتاب أولاً.");
+        return;
+      }
+      // إيقاف مشغل تراك 1 إذا كان يعمل لمنع تداخل الأصوات
+      if (track1AudioRef.current) {
+        track1AudioRef.current.pause();
+        setIsTrack1Playing(false);
+      }
+      isTtsActiveRef.current = true;
+      setIsTtsReading(true);
+      setIsTtsPaused(false);
+      var currentP = (activeBook && activeBook.currentPage) ? Number(activeBook.currentPage) : 1;
+      readPageTextWithTts(pdfDoc, currentP);
+    }
+  };
+
+  // إيقاف القارئ الصوتي تماماً
+  var stopTtsReaderCompletely = function() {
+    isTtsActiveRef.current = false;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsTtsReading(false);
+    setIsTtsPaused(false);
+    setTtsStatusMsg("");
+  };
+
+  // تغيير سرعة القراءة الصوتية الآلية
+  var handleChangeTtsSpeed = function() {
+    var speeds = [1.0, 1.25, 1.5, 0.9];
+    var nextIdx = (speeds.indexOf(ttsSpeed) + 1) % speeds.length;
+    var newSpeed = speeds[nextIdx];
+    setTtsSpeed(newSpeed);
+    if (isTtsReading && !isTtsPaused && pdfDoc) {
+      // إعادة تشغيل الصفحة الحالية بالسرعة الجديدة
+      var currentP = (activeBook && activeBook.currentPage) ? Number(activeBook.currentPage) : 1;
+      readPageTextWithTts(pdfDoc, currentP);
+    }
   };
 
   // حفظ الكتاب للقراءة أوفلاين (بدون إنترنت) داخل ذاكرة الجهاز
@@ -3715,6 +3889,54 @@ window.BooksPage = function(props) {
             "div",
             { className: "flex items-center gap-2 mr-auto" },
 
+            // كبسولة القارئ الصوتي الآلي التلقائي لصفحات الكتاب (Hands-Free Smart Auto Reader)
+            React.createElement(
+              "div",
+              {
+                className: "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs transition-all " +
+                  (isTtsReading
+                    ? "bg-teal-950/80 border-teal-500/70 text-teal-200 shadow-lg shadow-teal-950/50"
+                    : "bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600")
+              },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: toggleTtsAutoReader,
+                  title: isTtsReading ? (isTtsPaused ? "استئناف القراءة الصوتية" : "إيقاف مؤقت للقراءة الصوتية") : "بدء قراءة الكتاب بصوت مسموع تلقائياً مع تقليب الصفحات",
+                  className: "flex items-center gap-1.5 font-bold active:scale-95 transition-all text-xs"
+                },
+                React.createElement("span", { className: isTtsReading && !isTtsPaused ? "animate-pulse text-sm" : "text-sm" }, isTtsReading ? (isTtsPaused ? "▶" : "⏸") : "🔊"),
+                React.createElement("span", null, isTtsReading ? (isTtsPaused ? "استئناف" : "إيقاف مؤقت") : "اقرأ لي الكتاب مسموعاً")
+              ),
+              isTtsReading ? React.createElement(
+                "div",
+                { className: "flex items-center gap-1 border-r border-teal-800 pr-1 mr-1" },
+                // زر تغيير السرعة
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleChangeTtsSpeed,
+                    title: "تغيير سرعة القراءة",
+                    className: "px-1.5 py-0.5 rounded bg-teal-900 hover:bg-teal-800 text-[11px] font-mono font-bold text-teal-300 transition-all"
+                  },
+                  ttsSpeed + "x"
+                ),
+                // زر إيقاف القارئ تماماً
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: stopTtsReaderCompletely,
+                    title: "إيقاف القارئ الآلي تماماً",
+                    className: "px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 text-[11px] font-bold transition-all"
+                  },
+                  "✕"
+                )
+              ) : null
+            ),
+
             // أزرار التنقل السريع بين الصفحات أثناء وضع ملء الشاشة
             isFullScreen && React.createElement(
               "div",
@@ -3803,6 +4025,13 @@ window.BooksPage = function(props) {
           "div",
           { className: "p-2 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-center text-xs font-semibold shrink-0" },
           offlineSaveMsg
+        ),
+
+        ttsStatusMsg && React.createElement(
+          "div",
+          { className: "p-2 rounded-xl bg-teal-950/80 text-teal-300 border border-teal-800/80 text-center text-xs font-bold flex items-center justify-center gap-2 shrink-0 animate-fade-in" },
+          React.createElement("span", { className: isTtsReading && !isTtsPaused ? "animate-pulse" : "" }, "🎙️"),
+          React.createElement("span", null, ttsStatusMsg)
         ),
 
         // لوحة عرض الصفحة (PDF Canvas Viewer)
