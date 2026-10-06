@@ -27,7 +27,39 @@ window.GeminiAIService = {
     window.APP_UTILS.setLocal(window.GeminiAIService.storageKey, key.trim());
   },
 
-  // دالة الاستدعاء المباشر لنماذج جيميني مع التبديل التلقائي للنماذج المتاحة
+  // جلب النماذج المدعومة تلقائياً ومباشرة من حساب المستخدم (Auto Model Discovery)
+  fetchSupportedModels: async function(key) {
+    try {
+      var listResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + key);
+      if (listResp.ok) {
+        var listData = await listResp.json();
+        if (listData.models && Array.isArray(listData.models)) {
+          var models = listData.models
+            .filter(function(m) {
+              return m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent");
+            })
+            .map(function(m) {
+              return m.name.replace(/^models\//, "");
+            });
+          
+          if (models.length > 0) {
+            // تفضيل نماذج flash الخفيفة والسريعة أولاً
+            models.sort(function(a, b) {
+              var aScore = (a.includes("2.0") ? 10 : 0) + (a.includes("flash") ? 5 : 0);
+              var bScore = (b.includes("2.0") ? 10 : 0) + (b.includes("flash") ? 5 : 0);
+              return bScore - aScore;
+            });
+            return models;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("fetchSupportedModels error:", e);
+    }
+    return [];
+  },
+
+  // دالة الاستدعاء المباشر لنماذج جيميني مع الاكتشاف التلقائي الكامل (Auto)
   callGemini: async function(prompt, systemInstruction) {
     var key = await window.GeminiAIService.getApiKey();
     if (!key) {
@@ -36,14 +68,6 @@ window.GeminiAIService = {
 
     var defaultInstruction = "أنت مساعد دراسي متخصص في دراسة ومناهج المشورة الإنسانية والنفسية. لغتك عربية نقية وواضحة، تقدم تحليلات عميقة وشروحات دقيقة تخدم الدارس وتساعده على الاستيعاب.";
     var instruction = systemInstruction || defaultInstruction;
-
-    var candidateModels = [
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash-8b",
-      "gemini-pro"
-    ];
 
     var body = {
       systemInstruction: {
@@ -61,51 +85,15 @@ window.GeminiAIService = {
       }
     };
 
-    // 1. الاستعلام التلقائي من حساب المستخدم عن النماذج المتاحة والمدعومة
-    var availableModels = [];
-    try {
-      var listResp = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + key);
-      if (listResp.ok) {
-        var listData = await listResp.json();
-        if (listData.models && Array.isArray(listData.models)) {
-          availableModels = listData.models
-            .filter(function(m) {
-              return m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent");
-            })
-            .map(function(m) {
-              return m.name.replace(/^models\//, "");
-            });
-        }
-      }
-    } catch (e) {}
-
-    // ترتيب النماذج بحيث يتم تفضيل النماذج السريعة مثل 2.5 أو 2.0 أو flash أو أي نموذج متاح
-    var priorityList = [
-      "gemini-2.5-flash",
+    // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
+    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+    var candidateModels = autoModels.length > 0 ? autoModels : [
       "gemini-2.0-flash",
-      "gemini-2.0-flash-exp",
       "gemini-1.5-flash-latest",
-      "gemini-1.5-flash",
-      "gemini-1.5-pro-latest",
-      "gemini-1.5-pro"
+      "gemini-1.5-flash-8b",
+      "gemini-1.5-pro",
+      "gemini-pro"
     ];
-
-    var candidateModels = [];
-    // إضافة النماذج ذات الأولوية إذا كانت متاحة أو افتراضياً
-    for (var p = 0; p < priorityList.length; p++) {
-      if (availableModels.length === 0 || availableModels.includes(priorityList[p])) {
-        candidateModels.push(priorityList[p]);
-      }
-    }
-    // إضافة بقية النماذج المتاحة من حساب المستخدم
-    for (var a = 0; a < availableModels.length; a++) {
-      if (!candidateModels.includes(availableModels[a])) {
-        candidateModels.push(availableModels[a]);
-      }
-    }
-    if (candidateModels.length === 0) {
-      candidateModels = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash-latest"];
-    }
 
     var lastErrorMessage = "";
 
@@ -192,11 +180,14 @@ window.GeminiAIService = {
       }
     };
     
-    var candidateModels = [
-      "gemini-2.5-flash",
+    // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
+    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+    var candidateModels = autoModels.length > 0 ? autoModels : [
       "gemini-2.0-flash",
       "gemini-1.5-flash-latest",
-      "gemini-1.5-flash"
+      "gemini-1.5-flash-8b",
+      "gemini-1.5-pro",
+      "gemini-pro"
     ];
     
     var lastError = "";
