@@ -471,67 +471,90 @@ window.BooksPage = function(props) {
       return;
     }
 
-    setTtsStatusMsg("جاري تصوير صفحة " + pageNum + " لـ Gemini الذكي... 📸");
-    
-    // الانتظار حتى يتم رسم الصفحة بشكل كامل على الكانفاس
-    if (pdfCurrentPage !== pageNum) {
-      await handlePageChange(pageNum);
+    // 1. فحص هل تم استخراج نص هذه الصفحة وحفظه سحابياً من قبل؟ (Zero Quota)
+    var bookId = activeBook && activeBook.id;
+    var cachedText = null;
+    if (bookId && cloud.getCachedPageText) {
+      setTtsStatusMsg("جاري فحص الذاكرة السحابية لصفحة " + pageNum + "... ⚡");
+      cachedText = await cloud.getCachedPageText(bookId, pageNum);
     }
-    
-    // الانتظار نصف ثانية إضافية للتأكد من الريندر
-    await new Promise(function(r) { setTimeout(r, 500); });
-    
-    if (!isTtsActiveRef.current) return;
 
-    var canvas = pdfCanvasRef.current;
-    if (!canvas) {
-       setTtsStatusMsg("عطل في قراءة الشاشة، جاري المحاولة...");
+    var textToRead = cachedText;
+
+    // 2. إذا لم يكن محفوظاً سحابياً، نستخدم الذكاء الاصطناعي لاستخراجه مرة واحدة فقط
+    if (!textToRead) {
+      setTtsStatusMsg("جاري تصوير صفحة " + pageNum + " لـ Gemini الذكي... 📸");
+      
+      // الانتظار حتى يتم رسم الصفحة بشكل كامل على الكانفاس
+      if (pdfCurrentPage !== pageNum) {
+        await handlePageChange(pageNum);
+      }
+      
+      // الانتظار نصف ثانية إضافية للتأكد من الريندر
+      await new Promise(function(r) { setTimeout(r, 500); });
+      
+      if (!isTtsActiveRef.current) return;
+
+      var canvas = pdfCanvasRef.current;
+      if (!canvas) {
+         setTtsStatusMsg("عطل في قراءة الشاشة، جاري المحاولة...");
+         return;
+      }
+
+      // استخراج الصورة من الكانفاس بجودة متوسطة لتخفيف الحمل على الإنترنت
+      var base64Image = canvas.toDataURL("image/jpeg", 0.6);
+      
+      setTtsStatusMsg("جاري استخراج النص بالذكاء الاصطناعي (صفحة " + pageNum + ")... 🧠");
+
+      try {
+        var aiText = await ai.extractTextFromImage(base64Image);
+        if (!isTtsActiveRef.current) return;
+        
+        if (aiText && aiText.trim()) {
+          textToRead = aiText.trim();
+          // حفظ النص سحابياً فوراً للمستقبل حتى لا يستهلك Quota مرة أخرى لأي مستخدم
+          if (bookId && cloud.saveCachedPageText) {
+            cloud.saveCachedPageText(bookId, pageNum, textToRead).catch(function() {});
+          }
+        }
+      } catch (err) {
+        console.warn("AI extraction error:", err);
+        var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
+        setTtsStatusMsg("فشل القارئ الذكي: " + msg);
+        setIsTtsReading(false);
+        isTtsActiveRef.current = false;
+        alert("تنبيه القارئ الذكي:\n" + msg);
+        return;
+      }
+    }
+
+    if (!textToRead || textToRead.length < 5) {
+       setTtsStatusMsg("الصفحة " + pageNum + " لا تحتوي على نصوص، جاري تخطيها...");
+       setTimeout(function() {
+          if (isTtsActiveRef.current) {
+            readPageTextWithTts(doc, pageNum + 1);
+          }
+       }, 1000);
        return;
     }
 
-    // استخراج الصورة من الكانفاس بجودة متوسطة لتخفيف الحمل على الإنترنت
-    var base64Image = canvas.toDataURL("image/jpeg", 0.6);
+    // إظهار تنبيه يوضح ما إذا كانت القراءة فورية ومجانية من الكاش أو تم استخراجها الآن
+    var statusTitle = cachedText ? "⚡ قراءة فورية من السحابة (بدون استهلاك)" : "🔊 قراءة طبيعية سحابية";
+    setTtsStatusMsg(statusTitle + " (صفحة " + pageNum + " من " + maxP + ")");
+    setIsTtsReading(true);
+    setIsTtsPaused(false);
     
-    setTtsStatusMsg("جاري استخراج النص بالذكاء الاصطناعي (صفحة " + pageNum + ")... 🧠");
-
-    try {
-      var aiText = await ai.extractTextFromImage(base64Image);
+    playCloudTtsAudio(textToRead, function() {
       if (!isTtsActiveRef.current) return;
-      
-      if (!aiText || aiText.length < 5) {
-         setTtsStatusMsg("الصفحة " + pageNum + " لا تحتوي على نصوص، جاري تخطيها...");
-         setTimeout(function() {
-            if (isTtsActiveRef.current) {
-              readPageTextWithTts(doc, pageNum + 1);
-            }
-         }, 1000);
-         return;
+      var nextP = pageNum + 1;
+      if (nextP <= maxP) {
+        setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
+        readPageTextWithTts(doc, nextP);
+      } else {
+        setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
+        stopTtsReaderCompletely();
       }
-      
-      setTtsStatusMsg("جاري القراءة الطبيعية السحابية (صفحة " + pageNum + " من " + maxP + ") 🔊");
-      setIsTtsReading(true);
-      setIsTtsPaused(false);
-      
-      playCloudTtsAudio(aiText, function() {
-        if (!isTtsActiveRef.current) return;
-        var nextP = pageNum + 1;
-        if (nextP <= maxP) {
-          setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
-          readPageTextWithTts(doc, nextP);
-        } else {
-          setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
-          stopTtsReaderCompletely();
-        }
-      });
-      
-    } catch (err) {
-      console.warn("AI extraction error:", err);
-      var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
-      setTtsStatusMsg("فشل القارئ الذكي: " + msg);
-      setIsTtsReading(false);
-      isTtsActiveRef.current = false;
-      alert("تنبيه القارئ الذكي:\n" + msg);
-    }
+    });
   };
 
   // زر بدء / إيقاف القراءة الصوتية بالذكاء الاصطناعي

@@ -68,6 +68,29 @@ window.CloudSyncService = {
     }, { merge: true });
   },
 
+  // حفظ واسترجاع نصوص الصفحات المستخرجة بالذكاء الاصطناعي (Cloud Cache لتوفير الـ Quota)
+  saveCachedPageText: function(bookId, pageNum, text) {
+    if (!window.db || !bookId || !pageNum || !text) return Promise.resolve();
+    return window.db.collection("books").doc(bookId).collection("cached_pages").doc("p_" + pageNum).set({
+      page: pageNum,
+      text: text,
+      cachedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  },
+
+  getCachedPageText: async function(bookId, pageNum) {
+    if (!window.db || !bookId || !pageNum) return null;
+    try {
+      var doc = await window.db.collection("books").doc(bookId).collection("cached_pages").doc("p_" + pageNum).get();
+      if (doc.exists && doc.data() && doc.data().text) {
+        return doc.data().text;
+      }
+    } catch (e) {
+      console.warn("getCachedPageText error:", e);
+    }
+    return null;
+  },
+
   // الاشتراك في الملاحظات الدراسية
   subscribeNotes: function(onUpdate) {
     if (!window.db) return function() {};
