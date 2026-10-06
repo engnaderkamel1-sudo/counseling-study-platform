@@ -32,6 +32,14 @@ window.BooksPage = function(props) {
   var [editChapterSummary, setEditChapterSummary] = React.useState("");
   var [editChapterAudioUrl, setEditChapterAudioUrl] = React.useState("");
 
+  var stopAudioPlayback = function() {
+    try {
+      var allAudios = document.querySelectorAll("audio");
+      allAudios.forEach(function(a) { a.pause(); });
+      setActiveChapterAudioIdx(null);
+    } catch (e) {}
+  };
+
   // حقول الإضافة للكتاب الجديد
   var [selectedFile, setSelectedFile] = React.useState(null);
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
