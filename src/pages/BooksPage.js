@@ -56,28 +56,9 @@ window.BooksPage = function(props) {
   var [isTtsPaused, setIsTtsPaused] = React.useState(false);
   var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
   var [ttsStatusMsg, setTtsStatusMsg] = React.useState("");
-  var [availableVoices, setAvailableVoices] = React.useState([]);
-  var [selectedVoiceName, setSelectedVoiceName] = React.useState("");
   var isTtsActiveRef = React.useRef(false);
+  var ttsAudioObjRef = React.useRef(null);
 
-  // تحميل الأصوات المدعومة في المتصفح وترتيب الأصوات العربية أولاً
-  React.useEffect(function() {
-    var updateVoicesList = function() {
-      if (!window.speechSynthesis) return;
-      var voices = window.speechSynthesis.getVoices() || [];
-      setAvailableVoices(voices);
-      if (voices.length > 0 && !selectedVoiceName) {
-        var arVoice = voices.find(function(v) { return v.lang && (v.lang.startsWith("ar") || v.lang.includes("Arabic")); });
-        if (arVoice) {
-          setSelectedVoiceName(arVoice.name);
-        }
-      }
-    };
-    updateVoicesList();
-    if (window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = updateVoicesList;
-    }
-  }, []);
 
   // حقل تعديل غلاف الكتاب للكتاب الحالي
   var [showCoverEditModal, setShowCoverEditModal] = React.useState(false);
@@ -389,12 +370,116 @@ window.BooksPage = function(props) {
     cloud.updateBookPage(activeBook.id, validPage);
   };
 
-  // استخراج النص من صفحة الـ PDF وقراءته آلياً مع الانتقال التلقائي للصفحة التالية
-  var readPageTextWithTts = function(doc, pageNum) {
-    if (!window.speechSynthesis) {
-      alert("متصفحك الحالي لا يدعم ميزة تحويل النص إلى كلام (Web Speech API). يرجى استخدام متصفح حديث مثل Chrome أو Edge أو Safari.");
+  // دالة تقسيم النص العربي لمقاطع وقراءته بالصوت العربي 100%
+  var speakArabicTextChunks = function(text, onFinished) {
+    if (!text || !text.trim()) {
+      if (typeof onFinished === "function") onFinished();
       return;
     }
+
+    // 1. أولاً: فحص إذا كان المتصفح يحتوي على صوت عربي مدمج (Chrome/Edge Natural Arabic)
+    var voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || [];
+    var arVoice = voices.find(function(v) {
+      var l = (v.lang || "").toLowerCase();
+      var n = (v.name || "").toLowerCase();
+      return l.startsWith("ar") || l.includes("arabic") || n.includes("arabic") || n.includes("عربي") || n.includes("shakir") || n.includes("salma") || n.includes("maged") || n.includes("tarik");
+    });
+
+    if (arVoice && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      var utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = arVoice;
+      utterance.lang = arVoice.lang || "ar-SA";
+      utterance.rate = ttsSpeed;
+      utterance.onend = function() {
+        if (isTtsActiveRef.current && typeof onFinished === "function") {
+          onFinished();
+        }
+      };
+      utterance.onerror = function(e) {
+        console.warn("SpeechSynthesis error, falling back to Arabic audio stream:", e);
+        playOnlineArabicChunks(text, onFinished);
+      };
+      window.speechSynthesis.speak(utterance);
+      return;
+    }
+
+    // 2. إذا لم يكن هناك صوت عربي في ويندوز/المتصفح: تشغيل صوت جوجل العربي الفصيح أونلاين 100%
+    playOnlineArabicChunks(text, onFinished);
+  };
+
+  // تشغيل مقاطع الصوت العربي المباشرة عبر خدمة النطق العربي
+  var playOnlineArabicChunks = function(fullText, onComplete) {
+    // تقطيع النص العربي لجمل أو مقاطع لا تتعدى 160 حرفاً
+    var sentences = fullText.match(/[^.،؟!\n]+[.،؟!\n]?/g) || [fullText];
+    var chunks = [];
+    var current = "";
+
+    sentences.forEach(function(s) {
+      var trimmed = s.trim();
+      if (!trimmed) return;
+      if ((current + " " + trimmed).length <= 160) {
+        current = current ? (current + " " + trimmed) : trimmed;
+      } else {
+        if (current) chunks.push(current);
+        if (trimmed.length > 160) {
+          var words = trimmed.split(" ");
+          var sub = "";
+          words.forEach(function(w) {
+            if ((sub + " " + w).length <= 160) {
+              sub = sub ? (sub + " " + w) : w;
+            } else {
+              if (sub) chunks.push(sub);
+              sub = w;
+            }
+          });
+          if (sub) current = sub;
+        } else {
+          current = trimmed;
+        }
+      }
+    });
+    if (current) chunks.push(current);
+
+    if (chunks.length === 0) {
+      if (typeof onComplete === "function") onComplete();
+      return;
+    }
+
+    var chunkIdx = 0;
+    var playNextChunk = function() {
+      if (!isTtsActiveRef.current || chunkIdx >= chunks.length) {
+        if (isTtsActiveRef.current && typeof onComplete === "function") onComplete();
+        return;
+      }
+
+      var textChunk = chunks[chunkIdx];
+      chunkIdx++;
+
+      var audioUrl = "https://translate.google.com/translate_tts?ie=UTF-8&q=" + encodeURIComponent(textChunk) + "&tl=ar&total=" + chunks.length + "&idx=" + (chunkIdx - 1) + "&textlen=" + textChunk.length + "&client=tw-ob";
+      var audio = new Audio(audioUrl);
+      audio.playbackRate = ttsSpeed;
+      ttsAudioObjRef.current = audio;
+
+      audio.onended = function() {
+        if (isTtsActiveRef.current) playNextChunk();
+      };
+      audio.onerror = function() {
+        // في حال حدوث خطأ في المقطع يتم تخطيه للمقطع التالي
+        if (isTtsActiveRef.current) playNextChunk();
+      };
+
+      audio.play().catch(function(e) {
+        console.warn("Audio chunk play error:", e);
+        if (isTtsActiveRef.current) playNextChunk();
+      });
+    };
+
+    playNextChunk();
+  };
+
+  // استخراج النص من صفحة الـ PDF وقراءته آلياً مع الانتقال التلقائي للصفحة التالية
+  var readPageTextWithTts = function(doc, pageNum) {
     if (!doc) {
       alert("يرجى الانتظار حتى اكتمال تحميل ملف الكتاب.");
       return;
@@ -409,7 +494,7 @@ window.BooksPage = function(props) {
       return;
     }
 
-    setTtsStatusMsg("جاري استخراج النص وقراءة صفحة " + pageNum + "...");
+    setTtsStatusMsg("جاري تجهيز النص العربي لصفحة " + pageNum + "...");
     doc.getPage(pageNum).then(function(page) {
       page.getTextContent().then(function(textContent) {
         if (!isTtsActiveRef.current) return;
@@ -429,36 +514,18 @@ window.BooksPage = function(props) {
           return;
         }
 
-        window.speechSynthesis.cancel();
-        var utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = ttsSpeed;
-
-        var voices = window.speechSynthesis.getVoices() || [];
-        var chosenVoice = null;
-        if (selectedVoiceName) {
-          chosenVoice = voices.find(function(v) { return v.name === selectedVoiceName; });
-        }
-        if (!chosenVoice) {
-          chosenVoice = voices.find(function(v) { return v.lang && (v.lang.toLowerCase().startsWith("ar") || v.lang.toLowerCase().includes("arabic")); });
-        }
-        if (!chosenVoice) {
-          chosenVoice = voices.find(function(v) { return (v.name && v.name.toLowerCase().includes("arabic")) || (v.lang && v.lang.includes("ar")); });
+        // إيقاف أي أصوات جارية حالياً
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (ttsAudioObjRef.current) {
+          try { ttsAudioObjRef.current.pause(); } catch (e) {}
         }
 
-        if (chosenVoice) {
-          utterance.voice = chosenVoice;
-          utterance.lang = chosenVoice.lang;
-        } else {
-          utterance.lang = "ar-SA";
-        }
+        setIsTtsReading(true);
+        setIsTtsPaused(false);
+        setTtsStatusMsg("جاري القراءة بالعربية الفصحى (صفحة " + pageNum + " من " + maxP + ") 🔊");
 
-        utterance.onstart = function() {
-          setIsTtsReading(true);
-          setIsTtsPaused(false);
-          setTtsStatusMsg("جاري القراءة بصوت مسموع (صفحة " + pageNum + " من " + maxP + ") 🔊");
-        };
-
-        utterance.onend = function() {
+        // تشغيل النص العربي بالكامل بصوت عربي 100%
+        speakArabicTextChunks(text, function() {
           if (!isTtsActiveRef.current) return;
           var nextP = pageNum + 1;
           if (nextP <= maxP) {
@@ -475,18 +542,7 @@ window.BooksPage = function(props) {
             isTtsActiveRef.current = false;
             setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
           }
-        };
-
-        utterance.onerror = function(err) {
-          console.warn("TTS utterance error:", err);
-          if (!isTtsActiveRef.current) return;
-          setIsTtsReading(false);
-          setIsTtsPaused(false);
-          isTtsActiveRef.current = false;
-          setTtsStatusMsg("توقفت القراءة الصوتية");
-        };
-
-        window.speechSynthesis.speak(utterance);
+        });
       }).catch(function(err) {
         console.warn("getTextContent error:", err);
         setTtsStatusMsg("تعذر استخراج نص الصفحة " + pageNum);
@@ -498,18 +554,22 @@ window.BooksPage = function(props) {
 
   // زر بدء / إيقاف القراءة الصوتية
   var toggleTtsAutoReader = function() {
-    if (!window.speechSynthesis) {
-      alert("متصفحك لا يدعم القراءة الصوتية.");
-      return;
-    }
-
     if (isTtsReading) {
       if (isTtsPaused) {
-        window.speechSynthesis.resume();
+        if (ttsAudioObjRef.current) {
+          ttsAudioObjRef.current.play().catch(function() {});
+        } else if (window.speechSynthesis) {
+          window.speechSynthesis.resume();
+        }
         setIsTtsPaused(false);
         setTtsStatusMsg("تم استئناف القراءة الصوتية");
       } else {
-        window.speechSynthesis.pause();
+        if (ttsAudioObjRef.current) {
+          try { ttsAudioObjRef.current.pause(); } catch (e) {}
+        }
+        if (window.speechSynthesis) {
+          window.speechSynthesis.pause();
+        }
         setIsTtsPaused(true);
         setTtsStatusMsg("تم الإيقاف المؤقت للقراءة");
       }
@@ -539,6 +599,10 @@ window.BooksPage = function(props) {
   // إيقاف القارئ الصوتي تماماً
   var stopTtsReaderCompletely = function() {
     isTtsActiveRef.current = false;
+    if (ttsAudioObjRef.current) {
+      try { ttsAudioObjRef.current.pause(); } catch (e) {}
+      ttsAudioObjRef.current = null;
+    }
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -553,6 +617,9 @@ window.BooksPage = function(props) {
     var nextIdx = (speeds.indexOf(ttsSpeed) + 1) % speeds.length;
     var newSpeed = speeds[nextIdx];
     setTtsSpeed(newSpeed);
+    if (ttsAudioObjRef.current) {
+      ttsAudioObjRef.current.playbackRate = newSpeed;
+    }
     if (isTtsReading && !isTtsPaused && pdfDoc) {
       var currentP = (activeBook && activeBook.currentPage) ? Number(activeBook.currentPage) : 1;
       readPageTextWithTts(pdfDoc, currentP);
@@ -1357,36 +1424,12 @@ window.BooksPage = function(props) {
                 ttsStatusMsg || ("قراءة صوتية لصفحة " + (activeBook.currentPage || 1))
               )
             ),
-            // قائمة اختيار الصوت العربي أو أصوات المتصفح
-            availableVoices.length > 0 ? React.createElement(
-              "div",
-              { className: "flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-xl text-xs" },
-              React.createElement("span", { className: "text-[11px] text-slate-400" }, "🗣️ الصوت:"),
-              React.createElement(
-                "select",
-                {
-                  value: selectedVoiceName,
-                  onChange: function(e) {
-                    var val = e.target.value;
-                    setSelectedVoiceName(val);
-                    if (isTtsReading && pdfDoc) {
-                      readPageTextWithTts(pdfDoc, activeBook.currentPage || 1);
-                    }
-                  },
-                  className: "bg-transparent text-teal-300 text-[11px] font-bold focus:outline-none cursor-pointer max-w-[150px] truncate"
-                },
-                availableVoices
-                  .filter(function(v) { return v.lang && (v.lang.toLowerCase().startsWith("ar") || v.lang.toLowerCase().includes("arabic")); })
-                  .map(function(v) {
-                    return React.createElement("option", { key: v.name, value: v.name, className: "bg-slate-900 text-white" }, v.name + " (" + v.lang + ")");
-                  }),
-                availableVoices
-                  .filter(function(v) { return !(v.lang && (v.lang.toLowerCase().startsWith("ar") || v.lang.toLowerCase().includes("arabic"))); })
-                  .map(function(v) {
-                    return React.createElement("option", { key: v.name, value: v.name, className: "bg-slate-900 text-slate-400" }, v.name + " (" + v.lang + ")");
-                  })
-              )
-            ) : null
+            React.createElement(
+              "span",
+              { className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800 flex items-center gap-1 shadow-sm" },
+              React.createElement("span", null, "🟢"),
+              React.createElement("span", null, "صوت عربي فصيح تلقائي")
+            )
           ),
 
           // شريط التنقل الزمني والصفحات (Seek Bar for Pages)
