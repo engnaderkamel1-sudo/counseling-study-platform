@@ -147,16 +147,16 @@ function App() {
       "div",
       { className: "flex-1 flex flex-col min-w-0 transition-all duration-300 w-full" },
 
-      // شريط الترويسة العلوية مع شريط التحديث معاً في رأس ثابت دائماً حتى عند النزول لأسفل
+      // شريط الترويسة العلوية مع شريط التحديث معاً في رأس ثابت مثبت في أعلى الشاشة دائماً (fixed)
       React.createElement(
         "div",
-        { className: "sticky top-0 z-40 flex flex-col w-full shadow-sm" },
+        { className: "fixed top-0 inset-x-0 z-50 flex flex-col w-full shadow-md bg-white dark:bg-slate-900" },
         
         // شريط التنبيه بوجود تحديث جديد
         hasUpdateAvailable && React.createElement(
           "div",
           {
-            className: "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md border-b border-orange-600/80 animate-pulse backdrop-blur-sm"
+            className: "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md border-b border-orange-600/80 animate-pulse"
           },
           React.createElement(
             "div",
@@ -197,7 +197,7 @@ function App() {
 
       React.createElement(
         "main",
-        { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8" },
+        { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (hasUpdateAvailable ? "pt-28 sm:pt-32" : "pt-20 sm:pt-22") },
         activeTab === "lectures" && React.createElement(window.LecturesPage, { currentUser: currentUser }),
         activeTab === "books" && React.createElement(window.BooksPage, { currentUser: currentUser }),
         activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
