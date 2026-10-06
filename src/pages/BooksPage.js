@@ -944,23 +944,10 @@ window.BooksPage = function(props) {
                         )
                       ),
 
-                      // أدوات الجانب الأيسر: اختيار الصوت وزر الإنهاء
+                      // أدوات الجانب الأيسر: زر الإنهاء
                       React.createElement(
                         "div",
                         { className: "flex items-center gap-2 mr-auto" },
-                        // قائمة اختيار الصوت إذا توفر أكثر من صوت عربي
-                        availableVoices.length > 1 && React.createElement(
-                          "select",
-                          {
-                            value: selectedVoiceUri,
-                            onChange: function(e) { handleVoiceChange(e.target.value); },
-                            className: "bg-slate-800 text-[11px] text-slate-200 border border-slate-700 rounded-lg px-2 py-1 outline-hidden"
-                          },
-                          availableVoices.map(function(v) {
-                            var uri = v.voiceURI || v.name;
-                            return React.createElement("option", { key: uri, value: uri }, v.name);
-                          })
-                        ),
                         // زر إنهاء الاستماع
                         isSpeaking && React.createElement(
                           "button",
