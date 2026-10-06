@@ -155,20 +155,20 @@ window.BooksPage = function(props) {
     setIsPdfLoading(true);
 
     var driveId = utils.extractDriveId(url);
-    var targetUrl = driveId
-      ? ("https://corsproxy.io/?" + encodeURIComponent("https://docs.google.com/uc?export=download&id=" + driveId))
+    var downloadUrl = driveId
+      ? ("https://docs.google.com/uc?export=download&id=" + driveId)
       : utils.getAudioStreamUrl(url);
 
-    fetch(targetUrl)
-      .then(function(res) {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.arrayBuffer();
-      })
-      .then(function(buffer) {
-        loadPdfFromData(buffer);
-      })
-      .catch(function(err) {
-        console.warn("Proxy load failed, trying direct streamUrl:", err);
+    // قائمة محاولات البروكسي بالترتيب
+    var proxyUrls = [
+      "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(downloadUrl),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(downloadUrl),
+      "https://corsproxy.io/?" + encodeURIComponent(downloadUrl)
+    ];
+
+    var tryFetchChain = function(index) {
+      if (index >= proxyUrls.length) {
+        // جميع محاولات البروكسي لم تنجح، تجربة التحميل المباشر كحل أخير
         var directUrl = utils.getAudioStreamUrl(url);
         window.pdfjsLib.getDocument({ url: directUrl }).promise.then(function(loadedDoc) {
           setPdfDoc(loadedDoc);
@@ -178,8 +178,30 @@ window.BooksPage = function(props) {
         }).catch(function(e) {
           console.warn("Direct PDF.js load error:", e);
           setIsPdfLoading(false);
+          setTtsStatusMsg("تنبيه: قفل حماية درايف يمنع المتصفح من استخراج النص تلقائياً. يمكنك اختيار ملف الـ PDF من جهازك بضغطة زر لحفظه وقراءته صوتياً فوراً ✓");
         });
-      });
+        return;
+      }
+
+      fetch(proxyUrls[index])
+        .then(function(res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.arrayBuffer();
+        })
+        .then(function(buffer) {
+          loadPdfFromData(buffer);
+          // حفظ نسخة في IndexedDB لتسريع الفتح لاحقاً بدون الحاجة لأي إنترنت
+          if (activeBook && activeBook.id) {
+            utils.saveOfflinePdf(activeBook.id, buffer).catch(function() {});
+          }
+        })
+        .catch(function(err) {
+          console.warn("Proxy " + index + " failed:", err);
+          tryFetchChain(index + 1);
+        });
+    };
+
+    tryFetchChain(0);
   };
 
   var getMaxPages = function() {
@@ -1180,6 +1202,39 @@ window.BooksPage = function(props) {
               },
               React.createElement("span", null, isFullScreen ? "🗗" : "⛶"),
               React.createElement("span", null, isFullScreen ? "خروج من الشاشة" : "شاشة كاملة")
+            ),
+
+            // زر فتح ملف PDF من الجهاز مباشرة لتخطي أي قيود سحابية وللقراءة الصوتية فوراً
+            React.createElement(
+              "label",
+              {
+                title: "اختر ملف الكتاب من جهازك للقراءة الصوتية التلقائية وحفظه بدون نت",
+                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm cursor-pointer active:scale-95 transition-all"
+              },
+              React.createElement("span", null, "📂"),
+              React.createElement("span", { className: "hidden md:inline" }, "فتح ملف PDF"),
+              React.createElement("input", {
+                type: "file",
+                accept: "application/pdf",
+                className: "hidden",
+                onChange: function(e) {
+                  var file = e.target.files && e.target.files[0];
+                  if (!file) return;
+                  var reader = new FileReader();
+                  reader.onload = function(evt) {
+                    var buffer = evt.target.result;
+                    loadPdfFromData(buffer);
+                    if (activeBook && activeBook.id) {
+                      utils.saveOfflinePdf(activeBook.id, buffer).then(function() {
+                        setIsSavedOffline(true);
+                        setOfflineSaveMsg("تم حفظ الكتاب في جهازك بنجاح! متاح للقراءة والاستماع دائماً بدون إنترنت ✓");
+                        setTimeout(function() { setOfflineSaveMsg(""); }, 4000);
+                      }).catch(function() {});
+                    }
+                  };
+                  reader.readAsArrayBuffer(file);
+                }
+              })
             ),
 
             // زر حفظ الكتاب للقراءة أوفلاين
