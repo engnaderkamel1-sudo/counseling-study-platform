@@ -152,16 +152,34 @@ window.BooksPage = function(props) {
 
   var loadPdfFromUrl = function(url) {
     if (!window.pdfjsLib) return;
-    var streamUrl = utils.getAudioStreamUrl(url); // رابط التنزيل المباشر
     setIsPdfLoading(true);
-    window.pdfjsLib.getDocument({ url: streamUrl }).promise.then(function(loadedDoc) {
-      setPdfDoc(loadedDoc);
-      setPdfTotalPages(loadedDoc.numPages);
-      setIsPdfLoading(false);
-      renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
-    }).catch(function() {
-      setIsPdfLoading(false);
-    });
+
+    var driveId = utils.extractDriveId(url);
+    var targetUrl = driveId
+      ? ("https://corsproxy.io/?" + encodeURIComponent("https://docs.google.com/uc?export=download&id=" + driveId))
+      : utils.getAudioStreamUrl(url);
+
+    fetch(targetUrl)
+      .then(function(res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.arrayBuffer();
+      })
+      .then(function(buffer) {
+        loadPdfFromData(buffer);
+      })
+      .catch(function(err) {
+        console.warn("Proxy load failed, trying direct streamUrl:", err);
+        var directUrl = utils.getAudioStreamUrl(url);
+        window.pdfjsLib.getDocument({ url: directUrl }).promise.then(function(loadedDoc) {
+          setPdfDoc(loadedDoc);
+          setPdfTotalPages(loadedDoc.numPages);
+          setIsPdfLoading(false);
+          renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+        }).catch(function(e) {
+          console.warn("Direct PDF.js load error:", e);
+          setIsPdfLoading(false);
+        });
+      });
   };
 
   var getMaxPages = function() {
@@ -401,7 +419,13 @@ window.BooksPage = function(props) {
       }
     } else {
       if (!pdfDoc) {
-        alert("يرجى الانتظار حتى يتم تحميل ملف الكتاب أولاً.");
+        if (activeBook && activeBook.driveUrl) {
+          setTtsStatusMsg("جاري تحميل ملف الكتاب للبدء في القراءة الصوتية... ⏳");
+          loadPdfFromUrl(activeBook.driveUrl);
+          alert("جاري جلب صفحات الكتاب الآن، بمجرد ظهورها اضغط على 'اقرأ لي الكتاب' لتبدأ القراءة الصوتية مباشرة ✓");
+        } else {
+          alert("يرجى التأكد من إضافة رابط الـ PDF للكتاب أولاً.");
+        }
         return;
       }
       if (track1AudioRef.current) {
