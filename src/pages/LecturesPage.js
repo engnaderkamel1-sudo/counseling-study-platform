@@ -893,6 +893,8 @@ window.LecturesPage = function(props) {
               className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs font-mono"
             })
           ),
+          React.createElement(
+            "div",
             { className: "flex justify-end gap-2 pt-2" },
             React.createElement("button", { type: "button", onClick: function() { setEditingLecture(null); }, className: "px-4 py-2 text-xs" }, "إلغاء"),
             React.createElement("button", {
