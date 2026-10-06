@@ -147,39 +147,41 @@ function App() {
       "div",
       { className: "flex-1 flex flex-col min-w-0 transition-all duration-300 w-full" },
 
-      // شريط إشعار بوجود تحديث جديد يظل معلقاً وثابتاً في أعلى الشاشة دائماً حتى عند النزول لأسفل
-      hasUpdateAvailable && React.createElement(
-        "div",
-        {
-          className: "fixed top-0 inset-x-0 z-50 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-3 sm:px-6 py-2.5 text-xs sm:text-sm font-bold flex items-center justify-between shadow-xl border-b-2 border-orange-600/80 animate-pulse backdrop-blur-sm"
-        },
-        React.createElement(
-          "div",
-          { className: "flex items-center gap-2 min-w-0" },
-          React.createElement("span", { className: "text-base sm:text-lg shrink-0 animate-bounce" }, "🚀"),
-          React.createElement("span", { className: "truncate sm:whitespace-normal font-bold drop-shadow-xs" }, "يتوفر تحديث جديد للمنصة الآن! اضغط لتطبيقه فوراً.")
-        ),
-        React.createElement(
-          "button",
-          {
-            onClick: function() {
-              if ("caches" in window) {
-                caches.keys().then(function(names) {
-                  for (var i = 0; i < names.length; i++) caches.delete(names[i]);
-                });
-              }
-              window.location.reload(true);
-            },
-            className: "bg-white text-orange-600 hover:text-orange-700 px-3.5 py-1.5 rounded-xl text-xs font-black hover:bg-orange-50 shadow-md transition-all active:scale-95 whitespace-nowrap shrink-0 border border-orange-200"
-          },
-          "اضغط هنا للتحديث 🔄"
-        )
-      ),
-
-      // الترويسة العلوية الثابتة دائماً أثناء التمرير
+      // شريط الترويسة العلوية مع شريط التحديث معاً في رأس ثابت دائماً حتى عند النزول لأسفل
       React.createElement(
         "div",
-        { className: "sticky top-0 z-30 flex flex-col shadow-sm" + (hasUpdateAvailable ? " pt-11 sm:pt-12" : "") },
+        { className: "sticky top-0 z-40 flex flex-col w-full shadow-sm" },
+        
+        // شريط التنبيه بوجود تحديث جديد
+        hasUpdateAvailable && React.createElement(
+          "div",
+          {
+            className: "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md border-b border-orange-600/80 animate-pulse backdrop-blur-sm"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 min-w-0" },
+            React.createElement("span", { className: "text-base sm:text-lg shrink-0 animate-bounce" }, "🚀"),
+            React.createElement("span", { className: "truncate sm:whitespace-normal font-bold drop-shadow-xs" }, "يتوفر تحديث جديد للمنصة الآن! اضغط لتطبيقه فوراً.")
+          ),
+          React.createElement(
+            "button",
+            {
+              onClick: function() {
+                if ("caches" in window) {
+                  caches.keys().then(function(names) {
+                    for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+                  });
+                }
+                window.location.reload(true);
+              },
+              className: "bg-white text-orange-600 hover:text-orange-700 px-3.5 py-1.5 rounded-xl text-xs font-black hover:bg-orange-50 shadow-md transition-all active:scale-95 whitespace-nowrap shrink-0 border border-orange-200"
+            },
+            "اضغط هنا للتحديث 🔄"
+          )
+        ),
+
+        // ترويسة التطبيق الرئيسية
         React.createElement(window.Header, {
           isSidebarOpen: isSidebarOpen,
           onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
