@@ -1268,9 +1268,39 @@ window.BooksPage = function(props) {
 
         ttsStatusMsg && React.createElement(
           "div",
-          { className: "p-2 rounded-xl bg-teal-950/80 text-teal-300 border border-teal-800/80 text-center text-xs font-bold flex items-center justify-center gap-2 shrink-0 animate-fade-in" },
+          { className: "p-2.5 rounded-xl bg-teal-950/90 text-teal-200 border border-teal-700/80 text-center text-xs font-bold flex flex-wrap items-center justify-center gap-2 shrink-0 animate-fade-in shadow-md" },
           React.createElement("span", { className: isTtsReading && !isTtsPaused ? "animate-pulse" : "" }, "🎙️"),
-          React.createElement("span", null, ttsStatusMsg)
+          React.createElement("span", null, ttsStatusMsg),
+          !pdfDoc ? React.createElement(
+            "label",
+            {
+              className: "inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded-lg cursor-pointer text-xs font-extrabold shadow active:scale-95 transition-all ml-1"
+            },
+            React.createElement("span", null, "📂"),
+            React.createElement("span", null, "اختر ملف الـ PDF الآن"),
+            React.createElement("input", {
+              type: "file",
+              accept: "application/pdf",
+              className: "hidden",
+              onChange: function(e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function(evt) {
+                  var buffer = evt.target.result;
+                  loadPdfFromData(buffer);
+                  if (activeBook && activeBook.id) {
+                    utils.saveOfflinePdf(activeBook.id, buffer).then(function() {
+                      setIsSavedOffline(true);
+                      setOfflineSaveMsg("تم حفظ الكتاب في جهازك بنجاح! متاح للقراءة والاستماع دائماً بدون إنترنت ✓");
+                      setTimeout(function() { setOfflineSaveMsg(""); }, 4000);
+                    }).catch(function() {});
+                  }
+                };
+                reader.readAsArrayBuffer(file);
+              }
+            })
+          ) : null
         ),
 
         // لوحة عرض الصفحة (PDF Canvas Viewer)
