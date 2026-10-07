@@ -10,7 +10,19 @@ window.BooksPage = function(props) {
     return utils.getLocal(cfg.storageKeys.books, []);
   });
 
-  var [activeBook, setActiveBook] = React.useState(null);
+  var [activeBook, setActiveBook] = React.useState(function() {
+    var localList = utils.getLocal(cfg.storageKeys.books, []);
+    var savedId = utils.getLocal("counsel_active_book_id");
+    if (savedId && localList && localList.length > 0) {
+      var found = localList.find(function(b) { return b.id === savedId; });
+      if (found) {
+        var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+        var page = savedPage ? Number(savedPage) : (found.currentPage || 1);
+        return Object.assign({}, found, { currentPage: page });
+      }
+    }
+    return null;
+  });
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
@@ -18,7 +30,14 @@ window.BooksPage = function(props) {
   
   // حالات عارض الـ PDF بدون إنترنت وحفظ الصفحة
   var [pdfDoc, setPdfDoc] = React.useState(null);
-  var [pdfCurrentPage, setPdfCurrentPage] = React.useState(1);
+  var [pdfCurrentPage, setPdfCurrentPage] = React.useState(function() {
+    var savedId = utils.getLocal("counsel_active_book_id");
+    if (savedId) {
+      var savedPage = utils.getLocal("counsel_book_page_" + savedId);
+      if (savedPage) return Number(savedPage);
+    }
+    return 1;
+  });
   var [pdfTotalPages, setPdfTotalPages] = React.useState(0);
   var [isPdfLoading, setIsPdfLoading] = React.useState(false);
   var [isSavedOffline, setIsSavedOffline] = React.useState(false);
@@ -123,7 +142,13 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, cloudList);
         if (cloudList.length > 0) {
           setActiveBook(function(prev) {
-            return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || null) : null;
+            var targetId = prev ? prev.id : utils.getLocal("counsel_active_book_id");
+            if (!targetId) return null;
+            var found = cloudList.find(function(b) { return b.id === targetId; });
+            if (!found) return null;
+            var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+            var page = savedPage ? Number(savedPage) : (found.currentPage || (prev ? prev.currentPage : 1));
+            return Object.assign({}, found, { currentPage: page });
           });
         } else {
           setActiveBook(null);
@@ -135,7 +160,7 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت
+  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت واسترجاع الصفحة المحفوظة
   React.useEffect(function() {
     if (!activeBook) {
       setIsSavedOffline(false);
@@ -143,7 +168,9 @@ window.BooksPage = function(props) {
       setPdfTotalPages(0);
       return;
     }
-    setPdfCurrentPage(activeBook.currentPage || 1);
+    var savedPage = utils.getLocal("counsel_book_page_" + activeBook.id);
+    var pageToOpen = savedPage ? Number(savedPage) : (activeBook.currentPage || 1);
+    setPdfCurrentPage(pageToOpen);
     setPdfTotalPages(0);
     utils.getOfflinePdf(activeBook.id).then(function(data) {
       setIsSavedOffline(!!data);
@@ -164,7 +191,10 @@ window.BooksPage = function(props) {
       setPdfDoc(loadedDoc);
       setPdfTotalPages(loadedDoc.numPages);
       setIsPdfLoading(false);
-      renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+      var targetPage = (activeBook && activeBook.id)
+        ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
+        : 1;
+      renderPdfPage(loadedDoc, targetPage);
     }).catch(function(err) {
       console.warn("PDF load error:", err);
       setIsPdfLoading(false);
@@ -239,7 +269,10 @@ window.BooksPage = function(props) {
           setPdfDoc(loadedDoc);
           setPdfTotalPages(loadedDoc.numPages);
           setIsPdfLoading(false);
-          renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+          var targetPage = (activeBook && activeBook.id)
+            ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
+            : 1;
+          renderPdfPage(loadedDoc, targetPage);
         }).catch(function(e) {
           console.warn("Direct PDF.js load error:", e);
           setIsPdfLoading(false);
@@ -386,6 +419,10 @@ window.BooksPage = function(props) {
     var maxPages = getMaxPages();
     var validPage = Math.max(1, Math.min(Number(newPage) || 1, maxPages));
     setPdfCurrentPage(validPage);
+    if (activeBook && activeBook.id) {
+      utils.setLocal("counsel_book_page_" + activeBook.id, validPage);
+      utils.setLocal("counsel_active_book_id", activeBook.id);
+    }
     var p = Promise.resolve(true);
     if (pdfDoc) {
       p = renderPdfPage(pdfDoc, validPage, pdfRotation);
@@ -1342,7 +1379,10 @@ window.BooksPage = function(props) {
             key: b.id,
             onClick: function() {
               stopAudioPlayback();
-              setActiveBook(b);
+              var savedPage = utils.getLocal("counsel_book_page_" + b.id);
+              var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
+              utils.setLocal("counsel_active_book_id", b.id);
+              setActiveBook(targetBook);
             },
             className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
               (isSelected
@@ -1374,6 +1414,7 @@ window.BooksPage = function(props) {
               type: "button",
               onClick: function() {
                 stopAudioPlayback();
+                utils.setLocal("counsel_active_book_id", null);
                 setActiveBook(null);
               },
               title: "الرجوع لقائمة الكتب والمراجع",
@@ -2361,7 +2402,10 @@ window.BooksPage = function(props) {
               key: b.id,
               onClick: function() {
                 stopAudioPlayback();
-                setActiveBook(b);
+                var savedPage = utils.getLocal("counsel_book_page_" + b.id);
+                var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
+                utils.setLocal("counsel_active_book_id", b.id);
+                setActiveBook(targetBook);
               },
               className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs hover:shadow-xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between"
             },
