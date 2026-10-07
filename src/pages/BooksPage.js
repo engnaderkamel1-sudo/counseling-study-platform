@@ -1496,7 +1496,21 @@ window.BooksPage = function(props) {
                 )
               )
             ),
-            React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة")
+            React.createElement("div", { className: "flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5" },
+              React.createElement("span", null, "المؤلف: " + (activeBook.author || "غير محدد")),
+              React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
+              React.createElement("span", null, (activeBook.totalPages || 0) + " صفحة"),
+              (activeBook.uploadedAt || activeBook.createdAt) ? React.createElement(
+                "span",
+                { className: "flex items-center gap-1 text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md" },
+                React.createElement("span", null, "📅 تم الرفع:"),
+                React.createElement("span", null, (function() {
+                  try {
+                    return new Date(activeBook.uploadedAt || activeBook.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+                  } catch(e) { return ""; }
+                })())
+              ) : null
+            )
           )
         ),
         React.createElement(
