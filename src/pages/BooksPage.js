@@ -820,23 +820,37 @@ window.BooksPage = function(props) {
             "المطلوب: استخرج واكتب النص العربي الكامل المطبوع في هذه الصفحة بدقة 100% وبدون أي تلخيص أو اختصار أو زيادة.\n" +
             "تجاهل فقط رقم الصفحة أو الترويسة المكررة بأعلى الصفحة إذا كانت مجرد عنوان متكرر.";
 
-          var ocrRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ role: "user", parts: [{ text: ocrPrompt }, { inlineData: { mimeType: "image/jpeg", data: b64 } }] }],
-              generationConfig: { temperature: 0.1 }
-            })
-          });
+          var ocrModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3-flash-preview"];
+          var pageText = "";
 
-          if (ocrRes.ok) {
-            var dataOcr = await ocrRes.json();
-            if (dataOcr.candidates && dataOcr.candidates[0] && dataOcr.candidates[0].content && dataOcr.candidates[0].content.parts[0]) {
-              var pageText = dataOcr.candidates[0].content.parts[0].text.trim();
-              if (pageText) {
-                accumulated += (accumulated ? "\n\n" : "") + pageText;
+          for (var mi = 0; mi < ocrModels.length; mi++) {
+            try {
+              var ocrRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + ocrModels[mi] + ":generateContent?key=" + key, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [
+                      { text: ocrPrompt },
+                      { inline_data: { mime_type: "image/jpeg", data: b64 } }
+                    ]
+                  }],
+                  generationConfig: { temperature: 0.1 }
+                })
+              });
+
+              if (ocrRes.ok) {
+                var dataOcr = await ocrRes.json();
+                if (dataOcr.candidates && dataOcr.candidates[0] && dataOcr.candidates[0].content && dataOcr.candidates[0].content.parts[0]) {
+                  pageText = (dataOcr.candidates[0].content.parts[0].text || "").trim();
+                  if (pageText) break;
+                }
               }
-            }
+            } catch (mErr) {}
+          }
+
+          if (pageText) {
+            accumulated += (accumulated ? "\n\n" : "") + pageText;
           }
         } catch (pageErr) {
           console.warn("OCR error on page " + p, pageErr);
