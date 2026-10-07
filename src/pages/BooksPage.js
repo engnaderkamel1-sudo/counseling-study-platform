@@ -720,9 +720,9 @@ window.BooksPage = function(props) {
         scanParts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
       }
 
-      var promptVision = "أنت خبير فحص وفهرسة كتب. أمامك أول صفحات من هذا الكتاب (تشمل الغلاف والفهرس/المحتويات). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
-        "المهمة: استخرج جدول الفصول من الفهرس بصيغة JSON فقط:\n" +
-        "{\"chapters\": [{\"title\": \"اسم الفصل\", \"pdfStartPage\": رقم البداية بالـ PDF, \"pdfEndPage\": رقم النهاية بالـ PDF}]}";
+      var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك أول صفحات من هذا الكتاب (تشمل الغلاف وصفحة المحتويات/الفهرس). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
+        "المهمة الإلزامية: استخرج جدول الفصول بالكامل بصيغة JSON فقط، وتأكد من تضمين المقدمة أو التمهيد (Preface / Introduction) كأول عنصر مع صفحة بدايتها ونهايتها، ثم باقي الفصول تباعاً:\n" +
+        "{\"chapters\": [{\"title\": \"المقدمة: ...\", \"pdfStartPage\": رقم بداية المقدمة, \"pdfEndPage\": رقم نهاية المقدمة}, {\"title\": \"اسم الفصل الأول\", \"pdfStartPage\": رقم البداية بالـ PDF, \"pdfEndPage\": رقم النهاية بالـ PDF}]}";
 
       var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
       var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
@@ -753,7 +753,7 @@ window.BooksPage = function(props) {
                     id: "chap_" + Date.now() + "_" + cIdx,
                     title: c.title || ("فصل " + (cIdx + 1)),
                     startPage: Number(c.pdfStartPage) || 1,
-                    endPage: Number(c.pdfEndPage) || 1,
+                    endPage: Number(c.pdfEndPage) || (Number(c.pdfStartPage) || 1),
                     audioUrl: "",
                     text: ""
                   };
@@ -761,7 +761,7 @@ window.BooksPage = function(props) {
                 var updatedBook = Object.assign({}, activeBook, { audioChapters: newChaps });
                 cloud.saveBook(updatedBook);
                 setActiveBook(updatedBook);
-                alert("✨ تم فحص الفهرس بنجاح وتمت إضافة " + newChaps.length + " فصول للقائمة!");
+                alert("✨ تم فحص الفهرس بنجاح وتمت إضافة " + newChaps.length + " فصول للقائمة (بما فيها المقدمة)!");
                 break;
               }
             }
@@ -772,6 +772,96 @@ window.BooksPage = function(props) {
       alert("حدث خطأ أثناء فحص الفهرس: " + (errAll.message || errAll));
     } finally {
       setIsAiAnalyzingBook(false);
+    }
+  };
+
+  // وظيفة استخراج النص الكامل للفصل بالذكاء الاصطناعي (OCR) من صفحات الـ PDF
+  var [extractingChapterId, setExtractingChapterId] = React.useState(null);
+  var [extractStatusText, setExtractStatusText] = React.useState("");
+
+  var handleExtractChapterText = async function(chap) {
+    if (!activeBook || !pdfDoc) return alert("يرجى فتح ملف الـ PDF أولاً");
+    var key = await window.GeminiAIService.getApiKey();
+    if (!key) return alert("يرجى إدخال مفتاح Gemini في الإعدادات أولاً");
+
+    var sPage = Number(chap.startPage) || 1;
+    // تحديد نهاية الفصل: إما endPage المحفوظ أو بداية الفصل التالي - 1
+    var ePage = Number(chap.endPage) || sPage;
+    if (ePage < sPage) {
+      var allChaps = (activeBook.audioChapters || []);
+      var curIdx = allChaps.findIndex(function(c) { return c.id === chap.id; });
+      if (curIdx >= 0 && curIdx < allChaps.length - 1 && allChaps[curIdx + 1].startPage) {
+        ePage = Math.max(sPage, Number(allChaps[curIdx + 1].startPage) - 1);
+      } else {
+        ePage = Math.min(sPage + 15, pdfDoc.numPages || sPage);
+      }
+    }
+
+    if (!window.confirm("هل تريد استخراج النص الكامل لـ (" + chap.title + ") من صفحة " + sPage + " إلى صفحة " + ePage + "؟\nسيتم قراءة النص العربي كاملاً 100% لتتمكن من نسخه واستخدامه لتحويله إلى صوت.")) return;
+
+    setExtractingChapterId(chap.id);
+    setExtractStatusText("جاري استخراج النص...");
+
+    try {
+      var accumulated = "";
+      for (var p = sPage; p <= ePage; p++) {
+        setExtractStatusText("جاري قراءة صفحة " + p + " من " + ePage + "...");
+        try {
+          var pageObj = await pdfDoc.getPage(p);
+          var vp = pageObj.getViewport({ scale: 1.5 });
+          var c = document.createElement("canvas");
+          c.width = vp.width;
+          c.height = vp.height;
+          var cx = c.getContext("2d");
+          await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
+          var b64 = c.toDataURL("image/jpeg", 0.85).split("base64,")[1];
+
+          var ocrPrompt = "أنت خبير استخراج نصوص كتب محترف (OCR). أمامك صورة صفحة من كتاب رقم " + p + ".\n" +
+            "المطلوب: استخرج واكتب النص العربي الكامل المطبوع في هذه الصفحة بدقة 100% وبدون أي تلخيص أو اختصار أو زيادة.\n" +
+            "تجاهل فقط رقم الصفحة أو الترويسة المكررة بأعلى الصفحة إذا كانت مجرد عنوان متكرر.";
+
+          var ocrRes = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + key, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: ocrPrompt }, { inlineData: { mimeType: "image/jpeg", data: b64 } }] }],
+              generationConfig: { temperature: 0.1 }
+            })
+          });
+
+          if (ocrRes.ok) {
+            var dataOcr = await ocrRes.json();
+            if (dataOcr.candidates && dataOcr.candidates[0] && dataOcr.candidates[0].content && dataOcr.candidates[0].content.parts[0]) {
+              var pageText = dataOcr.candidates[0].content.parts[0].text.trim();
+              if (pageText) {
+                accumulated += (accumulated ? "\n\n" : "") + pageText;
+              }
+            }
+          }
+        } catch (pageErr) {
+          console.warn("OCR error on page " + p, pageErr);
+        }
+      }
+
+      if (accumulated.trim()) {
+        var currentChaps = (activeBook.audioChapters || []).slice();
+        var chapIdx = currentChaps.findIndex(function(c) { return c.id === chap.id; });
+        if (chapIdx >= 0) {
+          currentChaps[chapIdx] = Object.assign({}, currentChaps[chapIdx], { text: accumulated.trim() });
+          var updatedBook2 = Object.assign({}, activeBook, { audioChapters: currentChaps });
+          await cloud.saveBook(updatedBook2);
+          setActiveBook(updatedBook2);
+          setViewingChapterText(currentChaps[chapIdx]);
+          alert("✨ تم استخراج النص الكامل للفصل بنجاح! (" + accumulated.length + " حرف). تم فتح النص ويمكنك نسخه الآن.");
+        }
+      } else {
+        alert("تعذر استخراج النص من صفحات هذا الفصل. تأكد من جودة صفحات الكتاب أو مفتاح الذكاء الاصطناعي.");
+      }
+    } catch (errOcrAll) {
+      alert("حدث خطأ أثناء استخراج النص: " + (errOcrAll.message || errOcrAll));
+    } finally {
+      setExtractingChapterId(null);
+      setExtractStatusText("");
     }
   };
 
@@ -1561,7 +1651,10 @@ window.BooksPage = function(props) {
           handleOpenEditChapter: handleOpenEditChapter,
           handleDeleteChapter: handleDeleteChapter,
           setViewingChapterText: setViewingChapterText,
-          isAiAnalyzingBook: isAiAnalyzingBook
+          isAiAnalyzingBook: isAiAnalyzingBook,
+          handleExtractChapterText: handleExtractChapterText,
+          extractingChapterId: extractingChapterId,
+          extractStatusText: extractStatusText
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
