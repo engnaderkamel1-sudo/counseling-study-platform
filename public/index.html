@@ -107,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791370721",
-  buildTime: "2026-10-07T10:58:41",
+  version: "1.2.1791374284",
+  buildTime: "2026-10-07T11:58:04",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2987,6 +2987,7 @@ window.BooksPage = function(props) {
   var [newDriveUrl, setNewDriveUrl] = React.useState("");
   var [newChaptersCount, setNewChaptersCount] = React.useState(8);
   var [newTrack1Url, setNewTrack1Url] = React.useState("");
+  var [detectedChaptersList, setDetectedChaptersList] = React.useState([]);
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
@@ -3565,6 +3566,83 @@ window.BooksPage = function(props) {
     }
   };
 
+  var handleAutoScanActiveBookChapters = async function() {
+    if (!activeBook || !pdfDoc) return alert("يرجى فتح ملف الـ PDF للكتاب أولاً");
+    var key = await window.GeminiAIService.getApiKey();
+    if (!key) return alert("يرجى إدخال مفتاح Gemini في الإعدادات أولاً");
+    if (!window.confirm("هل تريد فحص أول 12 صفحة من هذا الكتاب لقراءة الفهرس وتوليد قائمة الفصول تلقائياً؟")) return;
+
+    setIsAiAnalyzingBook(true);
+    try {
+      var maxInspect = Math.min(pdfDoc.numPages || 1, 12);
+      var scanParts = [];
+      for (var p = 1; p <= maxInspect; p++) {
+        var pageObj = await pdfDoc.getPage(p);
+        var vp = pageObj.getViewport({ scale: 0.9 });
+        var c = document.createElement("canvas");
+        c.width = vp.width;
+        c.height = vp.height;
+        var cx = c.getContext("2d");
+        await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
+        var b64 = c.toDataURL("image/jpeg", 0.6).split("base64,")[1];
+        scanParts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
+      }
+
+      var promptVision = "أنت خبير فحص وفهرسة كتب. أمامك أول صفحات من هذا الكتاب (تشمل الغلاف والفهرس/المحتويات). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
+        "المهمة: استخرج جدول الفصول من الفهرس بصيغة JSON فقط:\n" +
+        "{\"chapters\": [{\"title\": \"اسم الفصل\", \"pdfStartPage\": رقم البداية بالـ PDF, \"pdfEndPage\": رقم النهاية بالـ PDF}]}";
+
+      var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+      var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
+
+      for (var i = 0; i < candidateModels.length; i++) {
+        try {
+          var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: promptVision }].concat(scanParts) }],
+              generationConfig: { temperature: 0.1 }
+            })
+          });
+          if (res.ok) {
+            var d = await res.json();
+            if (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts[0]) {
+              var txt = d.candidates[0].content.parts[0].text;
+              var clean = txt.replace(/```json/gi, "").replace(/```/g, "").trim();
+              var fIdx = clean.indexOf("{");
+              var lIdx = clean.lastIndexOf("}");
+              if (fIdx !== -1 && lIdx !== -1) clean = clean.substring(fIdx, lIdx + 1);
+              var parsed = JSON.parse(clean);
+
+              if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
+                var newChaps = parsed.chapters.map(function(c, cIdx) {
+                  return {
+                    id: "chap_" + Date.now() + "_" + cIdx,
+                    title: c.title || ("فصل " + (cIdx + 1)),
+                    startPage: Number(c.pdfStartPage) || 1,
+                    endPage: Number(c.pdfEndPage) || 1,
+                    audioUrl: "",
+                    text: ""
+                  };
+                });
+                var updatedBook = Object.assign({}, activeBook, { audioChapters: newChaps });
+                cloud.saveBook(updatedBook);
+                setActiveBook(updatedBook);
+                alert("✨ تم فحص الفهرس بنجاح وتمت إضافة " + newChaps.length + " فصول للقائمة!");
+                break;
+              }
+            }
+          }
+        } catch (eScan) {}
+      }
+    } catch (errAll) {
+      alert("حدث خطأ أثناء فحص الفهرس: " + (errAll.message || errAll));
+    } finally {
+      setIsAiAnalyzingBook(false);
+    }
+  };
+
   var handleChapterTextFileChange = function(e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -3684,18 +3762,28 @@ window.BooksPage = function(props) {
       }
 
       var coverDataUrl = "";
+      var scanParts = [];
       if (doc) {
         setNewTotalPages(doc.numPages || 300);
-        // استخراج الصفحة الأولى كصورة غلاف تلقائية
-        var page1 = await doc.getPage(1);
-        var viewport = page1.getViewport({ scale: 1.2 });
-        var tempCanvas = document.createElement("canvas");
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
-        var ctx = tempCanvas.getContext("2d");
-        await page1.render({ canvasContext: ctx, viewport: viewport }).promise;
-        coverDataUrl = tempCanvas.toDataURL("image/jpeg", 0.75);
-        setNewCoverUrl(coverDataUrl);
+        var maxInspect = Math.min(doc.numPages || 1, 12);
+        for (var p = 1; p <= maxInspect; p++) {
+          try {
+            var pageObj = await doc.getPage(p);
+            var vp = pageObj.getViewport({ scale: p === 1 ? 1.2 : 0.9 });
+            var tempCanvas = document.createElement("canvas");
+            tempCanvas.width = vp.width;
+            tempCanvas.height = vp.height;
+            var ctx = tempCanvas.getContext("2d");
+            await pageObj.render({ canvasContext: ctx, viewport: vp }).promise;
+            var dataUrl = tempCanvas.toDataURL("image/jpeg", p === 1 ? 0.75 : 0.6);
+            if (p === 1) {
+              coverDataUrl = dataUrl;
+              setNewCoverUrl(dataUrl);
+            }
+            var b64 = dataUrl.split("base64,")[1];
+            scanParts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
+          } catch (ePage) {}
+        }
       }
 
       var key = await window.GeminiAIService.getApiKey();
@@ -3703,23 +3791,25 @@ window.BooksPage = function(props) {
         if (selectedFile && !newTitle.trim()) {
           processSelectedFile(selectedFile);
         }
-        alert("تم استخراج صورة الغلاف وعدد الصفحات بنجاح! يمكنك إضافة مفتاح Gemini في الإعدادات لاستخراج اسم الكتاب والكاتب بدقة أيضاً.");
+        alert("تم استخراج صورة الغلاف وعدد الصفحات بنجاح! يمكنك إضافة مفتاح Gemini في الإعدادات لاستخراج اسم الكتاب والكاتب وفهرس الفصول تلقائياً.");
         return;
       }
 
-      // إذا كان لدينا صورة الغلاف، نرسلها للـ Vision AI لاستخراج اسم الكتاب واسم الكاتب بدقة
-      if (coverDataUrl) {
-        var cleanBase64 = coverDataUrl.split("base64,")[1];
+      if (scanParts.length > 0) {
         var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-        var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
-        var promptVision = "هذه صورة غلاف كتاب أو صفحته الأولى. استخرج بدقة شديدة: 1. اسم الكتاب (title) 2. اسم المؤلف/الكاتب (author). أجب بصيغة JSON فقط كالتالي بدون أي ماركداون أو نصوص خارجية: {\"title\": \"اسم الكتاب بالعربية\", \"author\": \"اسم المؤلف بالعربية\"}";
-        var body = {
+        var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
+        var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول صفحات كتاب (تشمل الغلاف وصفحة العنوان وصفحات الفهرس/المحتويات). إجمالي صفحات الـ PDF: " + (doc ? doc.numPages : 300) + ".\n" +
+          "استخرج بدقة شديدة بصيغة JSON فقط بدون ماركداون:\n" +
+          "1. title: اسم الكتاب الدقيق.\n" +
+          "2. author: اسم المؤلف / الكاتب الرئيسي.\n" +
+          "3. translator: اسم المترجم أو المعرب إن وجد وإلا \"\".\n" +
+          "4. chapters: مصفوفة بجميع فصول وأقسام الفهرس، كل عنصر: {\"title\": \"اسم الفصل\", \"pdfStartPage\": رقم بداية الفصل بالـ PDF, \"pdfEndPage\": رقم نهاية الفصل بالـ PDF}.\n" +
+          "أجب بصيغة JSON صريحة فقط: {\"title\": \"...\", \"author\": \"...\", \"translator\": \"...\", \"chapters\": [{\"title\": \"المقدمة\", \"pdfStartPage\": 7, \"pdfEndPage\": 12}]}";
+
+        var requestBody = {
           contents: [{
             role: "user",
-            parts: [
-              { text: promptVision },
-              { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
-            ]
+            parts: [{ text: promptVision }].concat(scanParts)
           }],
           generationConfig: { temperature: 0.1 }
         };
@@ -3729,22 +3819,50 @@ window.BooksPage = function(props) {
             var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body)
+              body: JSON.stringify(requestBody)
             });
             if (res.ok) {
               var d = await res.json();
               if (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts[0]) {
                 var txt = d.candidates[0].content.parts[0].text;
-                var parsed = JSON.parse(txt.replace(/```json/gi, "").replace(/```/g, "").trim());
+                var clean = txt.replace(/```json/gi, "").replace(/```/g, "").trim();
+                var fIdx = clean.indexOf("{");
+                var lIdx = clean.lastIndexOf("}");
+                if (fIdx !== -1 && lIdx !== -1) clean = clean.substring(fIdx, lIdx + 1);
+                var parsed = JSON.parse(clean);
+
                 if (parsed.title) setNewTitle(parsed.title);
-                if (parsed.author) setNewAuthor(parsed.author);
+                var fullAuthor = (parsed.author || "").trim();
+                if (parsed.translator && parsed.translator.trim()) {
+                  fullAuthor += " (ترجمة: " + parsed.translator.trim() + ")";
+                }
+                if (fullAuthor) setNewAuthor(fullAuthor);
+
+                if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
+                  var formattedChaps = parsed.chapters.map(function(c, cIdx) {
+                    return {
+                      id: "chap_" + Date.now() + "_" + cIdx,
+                      title: c.title || ("فصل " + (cIdx + 1)),
+                      startPage: Number(c.pdfStartPage) || 1,
+                      endPage: Number(c.pdfEndPage) || 1,
+                      audioUrl: "",
+                      text: ""
+                    };
+                  });
+                  setDetectedChaptersList(formattedChaps);
+                  setNewChaptersCount(formattedChaps.length);
+                  alert("✨ نجح الفحص التلقائي للغلاف والفهرس!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + fullAuthor + "\n📄 إجمالي الصفحات: " + (doc ? doc.numPages : "") + "\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
+                } else {
+                  alert("✨ تم استخراج اسم الكتاب والمؤلف بنجاح!\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + fullAuthor);
+                }
                 break;
               }
             }
-          } catch (eVis) {}
+          } catch (eVis) {
+            console.warn("AI inspect model error:", eVis);
+          }
         }
       } else {
-        // استنتاج عبر النص فقط إذا لم يتوفر ملف PDF مباشر
         var query = (newTitle || (selectedFile ? selectedFile.name : "")).trim();
         if (query) {
           var promptText = "بناءً على اسم الملف أو الكتاب: '" + query + "'، استخرج بصيغة JSON فقط: {\"title\": \"اسم الكتاب بالعربية\", \"author\": \"اسم المؤلف بالعربية\"}";
@@ -3887,6 +4005,7 @@ window.BooksPage = function(props) {
       currentPage: 1,
       driveUrl: finalDriveUrl,
       chapters: Array.from({ length: parseInt(newChaptersCount) || 1 }, function(_, i) { return { title: 'فصل ' + (i + 1), time: 0, page: 1 }; }),
+      audioChapters: (detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : [],
       audioUrl: finalAudioUrl
     };
 
@@ -3917,6 +4036,7 @@ window.BooksPage = function(props) {
     setNewAuthor("");
     setNewCoverUrl("");
     setNewDriveUrl("");
+    setDetectedChaptersList([]);
   };
 
   return React.createElement(
@@ -4376,13 +4496,27 @@ window.BooksPage = function(props) {
                 )
               ),
               currentUser.role === "admin" ? React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleOpenAddChapter,
-                  className: "inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all self-start sm:self-auto"
-                },
-                "âž• Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ ØµÙˆØªÙŠ Ø¬Ø¯ÙŠØ¯"
+                "div",
+                { className: "flex items-center gap-2 self-start sm:self-auto flex-wrap" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleAutoScanActiveBookChapters,
+                    disabled: isAiAnalyzingBook,
+                    className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
+                  },
+                  isAiAnalyzingBook ? "â³ Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ø§Ù„ÙÙ‡Ø±Ø³..." : "ðŸª„ ÙØ­Øµ Ø§Ù„ÙÙ‡Ø±Ø³ Ø¨Ø§Ù„Ù€ AI"
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleOpenAddChapter,
+                    className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+                  },
+                  "âž• Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ ÙŠØ¯ÙˆÙŠ"
+                )
               ) : null
             ),
 

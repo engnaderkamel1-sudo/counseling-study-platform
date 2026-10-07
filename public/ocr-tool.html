@@ -77,6 +77,59 @@
     <label for="pdfFile">اختر ملف الكتاب (PDF):</label>
     <input type="file" id="pdfFile" accept="application/pdf" />
 
+    <!-- كارت الفحص الذكي وتقسيم الفصول بالذكاء الاصطناعي -->
+    <div id="aiPlannerCard" style="display: none; background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%); border: 1.5px solid #0284c7; border-radius: 16px; padding: 14px; margin-top: 10px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="font-weight: bold; font-size: 0.95rem; color: #0369a1; display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 1.2rem;">🪄</span> <span>المساعد الذكي: فحص الفهرس وتقسيم فصول الكتاب تلقائياً</span>
+            </div>
+            <button id="scanIndexAiBtn" type="button" style="background: #0284c7; color: white; padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3); transition: all 0.2s;">
+                <span>✨ فحص الفهرس وتقسيم الكتاب</span>
+            </button>
+        </div>
+        <p style="font-size: 0.8rem; color: #475569; margin-top: 6px; margin-bottom: 0; line-height: 1.5;">
+            يقوم بفحص أول صفحات الكتاب وقراءة الفهرس (Table of Contents) لاستخراج: <b>اسم الكتاب، المؤلف، المترجم، وخريطة الفصول بنطاق صفحاتها</b> تلقائياً دون الحاجة لتحديدها يدوياً!
+        </p>
+
+        <!-- حالة الفحص أثناء التحميل -->
+        <div id="aiPlannerStatus" style="display: none; margin-top: 10px; font-size: 0.85rem; color: #0369a1; font-weight: bold; background: white; padding: 10px; border-radius: 8px; border: 1px solid #bae6fd;"></div>
+
+        <!-- نتائج الفحص وجدول الفصول المقترحة -->
+        <div id="aiPlannerResults" style="display: none; margin-top: 14px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+            <!-- بيانات الكتاب المستخرجة -->
+            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                <div>
+                    <label style="font-size: 0.75rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 3px;">📖 اسم الكتاب المستخرج:</label>
+                    <input type="text" id="detectedBookTitle" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 0.85rem; font-weight: bold; box-sizing: border-box;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 3px;">✍️ المؤلف:</label>
+                    <input type="text" id="detectedAuthor" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 0.85rem; box-sizing: border-box;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; color: #64748b; font-weight: bold; display: block; margin-bottom: 3px;">🌐 المترجم (إن وجد):</label>
+                    <input type="text" id="detectedTranslator" placeholder="غير مذكور" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 8px; font-size: 0.85rem; box-sizing: border-box;" />
+                </div>
+            </div>
+
+            <!-- شريط خريطة الفصول وأزرار التحكم -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                <h4 style="margin: 0; font-size: 0.9rem; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                    <span>📋</span> <span>خريطة فصول الكتاب المستخرجة من الفهرس:</span>
+                    <span id="chaptersCountBadge" style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">0 فصول</span>
+                </h4>
+                <div style="display: flex; gap: 6px;">
+                    <button id="batchExtractAllBtn" type="button" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                        <span>📦</span> <span>استخراج كل الفصول تلقائياً دفعة واحدة</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- قائمة كروت الفصول التفاعلية -->
+            <div id="chaptersListContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto; padding: 2px;"></div>
+        </div>
+    </div>
+
     <div style="margin-bottom: 12px;">
         <label for="chapterName">🔖 اسم الفصل أو الجزء (مثال: المقدمة، الفصل الأول - لتسمية الملف وتنظيمه):</label>
         <input type="text" id="chapterName" placeholder="مثال: المقدمة، أو الفصل الأول: الشخصية الناضجة" style="direction: rtl; text-align: right;" />
@@ -402,9 +455,25 @@
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
+    let currentParsedChapters = [];
+
+    const aiPlannerCard = document.getElementById('aiPlannerCard');
+    const scanIndexAiBtn = document.getElementById('scanIndexAiBtn');
+    const aiPlannerStatus = document.getElementById('aiPlannerStatus');
+    const aiPlannerResults = document.getElementById('aiPlannerResults');
+    const chaptersListContainer = document.getElementById('chaptersListContainer');
+    const chaptersCountBadge = document.getElementById('chaptersCountBadge');
+    const detectedBookTitle = document.getElementById('detectedBookTitle');
+    const detectedAuthor = document.getElementById('detectedAuthor');
+    const detectedTranslator = document.getElementById('detectedTranslator');
+    const batchExtractAllBtn = document.getElementById('batchExtractAllBtn');
+
     document.getElementById('pdfFile').addEventListener('change', async (e) => {
         const file = e.target.files && e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            if (aiPlannerCard) aiPlannerCard.style.display = 'none';
+            return;
+        }
         try {
             log('جاري فحص ملف الكتاب لحساب الصفحات والوقت التقديري...');
             const arrayBuffer = await file.arrayBuffer();
@@ -418,11 +487,208 @@
             log(`⏱️ الوقت التقديري المتوقع للكتاب بالكامل: حوالي ${formatReadableTime(estSec)} (بمعدل ~7 ثواني للصفحة).`);
             
             previewBox.style.display = 'block';
-            previewBox.innerHTML = `📚 <b>تم فحص الكتاب بنجاح:</b> يتكون من <b>${total} صفحة</b>.<br>⏱️ <b>الوقت التقديري المتوقع للكتاب كاملاً:</b> حوالي <b style="color:#0284c7;">${formatReadableTime(estSec)}</b> (بمعدل ~7 ثواني للصفحة شاملاً وقت الاستخراج وفترات الأمان).`;
+            previewBox.innerHTML = `📚 <b>تم فحص الكتاب بنجاح:</b> يتكون من <b>${total} صفحة</b>.<br>⏱️ <b>الوقت التقديري المتوقع للكتاب كاملاً:</b> حوالي <b style="color:#0284c7;">${formatReadableTime(estSec)}</b> (بمعدل ~7 ثواني للصفحة).<br>💡 <b>نصيحة:</b> اضغط على زر <b>"✨ فحص الفهرس وتقسيم الكتاب"</b> بالأعلى لتقسيم فصول الكتاب تلقائياً بالذكاء الاصطناعي دون عناء!`;
+
+            if (aiPlannerCard) {
+                aiPlannerCard.style.display = 'block';
+            }
         } catch(err) {
             log('تنبيه أثناء قراءة صفحات الكتاب: ' + err.message);
         }
     });
+
+    scanIndexAiBtn.addEventListener('click', async () => {
+        const file = document.getElementById('pdfFile').files[0];
+        const apiKey = document.getElementById('apiKey').value.trim();
+        if (!file) return alert('الرجاء اختيار ملف الـ PDF أولاً');
+        if (!apiKey) return alert('الرجاء وضع مفتاح جوجل في الأعلى');
+
+        scanIndexAiBtn.disabled = true;
+        aiPlannerStatus.style.display = 'block';
+        aiPlannerResults.style.display = 'none';
+        aiPlannerStatus.innerHTML = '⏳ <b>جاري تجهيز وقراءة أول 12 صفحة من الكتاب لاستخراج الفهرس والبيانات...</b>';
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const maxPages = Math.min(pdfDoc.numPages, 12);
+
+            aiPlannerStatus.innerHTML = `📄 جاري تحويل صفحات الفهرس (1 إلى ${maxPages}) لصور سريعة للذكاء الاصطناعي...`;
+
+            const parts = [];
+            for (let p = 1; p <= maxPages; p++) {
+                const page = await pdfDoc.getPage(p);
+                const viewport = page.getViewport({ scale: 1.0 });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                const b64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+                parts.push({ inline_data: { mime_type: "image/jpeg", data: b64 } });
+            }
+
+            aiPlannerStatus.innerHTML = '✨ <b>جاري فحص الفهرس والمحتويات بواسطة الذكاء الاصطناعي وتقسيم الفصول...</b>';
+
+            const promptText = `أنت خبير فحص وفهرسة كتب محترف ومساعد متخصص للكتب الصوتية.
+أمامك صور أول ${maxPages} صفحات من كتاب (تشمل الغلاف وصفحة العنوان وصفحات الفهرس/المحتويات). إجمالي صفحات ملف الـ PDF هو ${pdfDoc.numPages}.
+
+المهمة المطلوبة:
+استخرج بدقة فائقة البيانات التالية بصيغة JSON فقط:
+1. "title": اسم الكتاب الدقيق بدون أي زيادات.
+2. "author": اسم المؤلف / الكاتب الرئيسي.
+3. "translator": اسم المترجم أو المعرب إن وُجد (أو "" إذا كان مؤلفاً عربياً أو غير مذكور).
+4. "chapters": مصفوفة بجميع الفصول والأقسام الموجودة في الفهرس ومحتويات الكتاب، بحيث يحتوي كل عنصر على:
+   - "title": اسم الفصل أو الجزء (مثال: "المقدمة"، "الفصل الأول: الشخصية الناضجة"، إلخ).
+   - "pdfStartPage": رقم صفحة بداية هذا الفصل في ملف الـ PDF (احسب فرق الإزاحة بين الرقم المطبوع في الفهرس ورقم الصفحة الفعلية في ملف الـ PDF).
+   - "pdfEndPage": رقم صفحة نهاية الفصل في ملف الـ PDF (الصفحة التي تسبق الفصل التالي مباشرة، أو ${pdfDoc.numPages} لآخر فصل).
+   - "excludePages": أرقام أي صفحات مقترحة للاستبعاد داخل هذا الفصل إن وجدت (مثل صفحة عنوان فارغة أو غلاف داخلي)، وإلا اتركه فارغاً "".
+
+مهم جداً: أرجع فقط كود JSON صالح (Valid JSON) بدون أي شروحات أو مقدمات أو كود markdown:
+{
+  "title": "اسم الكتاب",
+  "author": "اسم المؤلف",
+  "translator": "",
+  "chapters": [
+    { "title": "المقدمة", "pdfStartPage": 7, "pdfEndPage": 12, "excludePages": "" },
+    { "title": "الفصل الأول: ...", "pdfStartPage": 13, "pdfEndPage": 35, "excludePages": "" }
+  ]
+}`;
+
+            parts.unshift({ text: promptText });
+
+            const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
+            let rawResult = null;
+            let lastErr = null;
+
+            for (const model of candidateModels) {
+                try {
+                    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + apiKey;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: parts }],
+                            generationConfig: { temperature: 0.1 }
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+                            rawResult = data.candidates[0].content.parts[0].text;
+                            break;
+                        }
+                    }
+                } catch (errM) {
+                    lastErr = errM;
+                }
+            }
+
+            if (!rawResult) {
+                throw lastErr || new Error("تعذر الحصول على استجابة من الذكاء الاصطناعي");
+            }
+
+            // Parse JSON response safely
+            let cleanJsonStr = rawResult.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+            const firstBrace = cleanJsonStr.indexOf('{');
+            const lastBrace = cleanJsonStr.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1) {
+                cleanJsonStr = cleanJsonStr.substring(firstBrace, lastBrace + 1);
+            }
+
+            const parsed = JSON.parse(cleanJsonStr);
+
+            // Populate metadata
+            if (parsed.title) detectedBookTitle.value = parsed.title;
+            if (parsed.author) detectedAuthor.value = parsed.author;
+            if (parsed.translator) detectedTranslator.value = parsed.translator;
+
+            currentParsedChapters = Array.isArray(parsed.chapters) ? parsed.chapters : [];
+            renderChaptersPlan(currentParsedChapters, pdfDoc.numPages);
+
+            aiPlannerStatus.style.display = 'none';
+            aiPlannerResults.style.display = 'block';
+            log(`✓ نجح فحص الفهرس! تم استخراج بيانات الكتاب وتقسيم ${currentParsedChapters.length} فصول تلقائياً.`);
+        } catch (err) {
+            console.error('Scan index error:', err);
+            aiPlannerStatus.innerHTML = `<span style="color:#ef4444;">❌ حدث خطأ أثناء فحص الفهرس: ${err.message}</span>`;
+        } finally {
+            scanIndexAiBtn.disabled = false;
+        }
+    });
+
+    function renderChaptersPlan(chapters, totalPdfPages) {
+        chaptersListContainer.innerHTML = '';
+        chaptersCountBadge.textContent = `${chapters.length} فصول مقسمة`;
+
+        if (chapters.length === 0) {
+            chaptersListContainer.innerHTML = '<div style="text-align: center; color: #64748b; padding: 15px; font-size: 0.85rem;">لم يتم العثور على فصول واضحة في الفهرس. يمكنك إدخال النطاق يدوياً.</div>';
+            return;
+        }
+
+        chapters.forEach((chap, idx) => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background: white; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);';
+
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
+                        <span style="background: #0284c7; color: white; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">${idx + 1}</span>
+                        <input type="text" class="chap-title-input" value="${chap.title || ''}" placeholder="اسم الفصل" style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; font-size: 0.85rem; font-weight: bold; color: #1e293b;" />
+                    </div>
+                    <button type="button" class="extract-single-chap-btn" style="background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                        🚀 استخراج هذا الفصل الآن
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.8rem; color: #475569;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span>من صفحة:</span>
+                        <input type="number" class="chap-start-input" value="${chap.pdfStartPage || 1}" min="1" max="${totalPdfPages || 9999}" style="width: 60px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; text-align: center;" />
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <span>إلى صفحة:</span>
+                        <input type="number" class="chap-end-input" value="${chap.pdfEndPage || chap.pdfStartPage || 1}" min="1" max="${totalPdfPages || 9999}" style="width: 60px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; text-align: center;" />
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 140px;">
+                        <span>🚫 استبعاد:</span>
+                        <input type="text" class="chap-exclude-input" value="${chap.excludePages || ''}" placeholder="مثال: 4, 8-10" style="flex: 1; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; direction: ltr;" />
+                    </div>
+                </div>
+            `;
+
+            // Quick Extract button for this chapter
+            const extractBtn = card.querySelector('.extract-single-chap-btn');
+            extractBtn.addEventListener('click', () => {
+                const titleVal = card.querySelector('.chap-title-input').value.trim();
+                const startVal = card.querySelector('.chap-start-input').value;
+                const endVal = card.querySelector('.chap-end-input').value;
+                const excludeVal = card.querySelector('.chap-exclude-input').value.trim();
+
+                document.getElementById('chapterName').value = titleVal;
+                document.getElementById('startPage').value = startVal;
+                document.getElementById('endPage').value = endVal;
+                document.getElementById('excludePages').value = excludeVal;
+
+                startBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                startBtn.style.boxShadow = '0 0 0 4px #38bdf8';
+                setTimeout(() => { startBtn.style.boxShadow = ''; }, 2000);
+                startBtn.click();
+            });
+
+            chaptersListContainer.appendChild(card);
+        });
+    }
+
+    if (batchExtractAllBtn) {
+        batchExtractAllBtn.addEventListener('click', async () => {
+            const cards = chaptersListContainer.querySelectorAll('div > div');
+            if (currentParsedChapters.length === 0) return alert('يرجى فحص الفهرس أولاً لتقسيم الفصول');
+            alert('💡 سيبدأ الآن استخراج الفصول فصلاً فصلاً؛ بعد انتهاء كل فصل سيتم حفظ ملفه فوراً. اضغط موافق للبدء بالفصل الأول.');
+            // Start chapter 1
+            const firstBtn = chaptersListContainer.querySelector('.extract-single-chap-btn');
+            if (firstBtn) firstBtn.click();
+        });
+    }
 
     const logEl = document.getElementById('log');
     const startBtn = document.getElementById('startBtn');
