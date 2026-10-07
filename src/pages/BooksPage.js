@@ -1689,8 +1689,8 @@ window.BooksPage = function(props) {
                   ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md font-black scale-[1.02]"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
             },
-            React.createElement("span", { className: "text-base" }, "ðŸŽ§"),
-            React.createElement("span", null, "ÙØµÙˆÙ„ ÙˆØªØ±Ø§ÙƒØ§Øª Ø§Ù„ÙƒØªØ§Ø¨"),
+            React.createElement("span", { className: "text-base" }, "🎧"),
+            React.createElement("span", null, "فصول وتراكات الكتاب"),
             (activeBook.audioChapters || []).length > 0 ? React.createElement("span", { className: "px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300" }, (activeBook.audioChapters || []).length) : null
           ),
           false ? React.createElement(
@@ -1703,8 +1703,8 @@ window.BooksPage = function(props) {
                   ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-md font-black scale-[1.02]"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
             },
-            React.createElement("span", { className: "text-base" }, "ðŸŽ™ï¸"),
-            React.createElement("span", null, "ØªØ±Ø§Ùƒ 1 (Ø§Ù„Ø¨ÙˆØ¯ÙƒØ§Ø³Øª)"),
+            React.createElement("span", { className: "text-base" }, "🎙️"),
+            React.createElement("span", null, "تراك 1 (البودكاست)"),
             activeBook.audioUrl ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }) : null
           ) : null,
           React.createElement(
@@ -1717,8 +1717,8 @@ window.BooksPage = function(props) {
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md font-black scale-[1.02]"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
             },
-            React.createElement("span", { className: "text-base" }, "ðŸ“–"),
-            React.createElement("span", null, "Ù…Ù„Ø®Øµ Ø§Ù„ÙƒØªØ§Ø¨")
+            React.createElement("span", { className: "text-base" }, "📖"),
+            React.createElement("span", null, "ملخص الكتاب")
           )
         ),
 
@@ -1728,7 +1728,7 @@ window.BooksPage = function(props) {
             "div",
             { className: "space-y-4" },
 
-            // ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ÙØµÙˆÙ„
+            // ترويسة الفصول
             React.createElement(
               "div",
               { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm" },
@@ -1736,13 +1736,13 @@ window.BooksPage = function(props) {
                 "div",
                 null,
                 React.createElement("h4", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2" },
-                  "ðŸŽ§ ÙØµÙˆÙ„ Ø§Ù„ÙƒØªØ§Ø¨ Ø§Ù„ØµÙˆØªÙŠØ© ÙˆØ§Ù„Ù†ØµÙˆØµ Ø§Ù„Ù…ÙØ±ØºØ©",
+                  "🎧 فصول الكتاب الصوتية والنصوص المفرغة",
                   React.createElement("span", { className: "text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300" },
-                    chaps.length + " ÙØµÙˆÙ„ Ù…Ø¶Ø§ÙØ©"
+                    chaps.length + " فصول مضافة"
                   )
                 ),
                 React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" },
-                  "Ø§Ø³ØªÙ…Ø¹ Ù„Ù„Ù…Ù‚Ø¯Ù…Ø© ÙˆÙ„ÙƒÙ„ ÙØµÙ„ Ø¨Ø´ÙƒÙ„ Ù…Ø³ØªÙ‚Ù„ Ø¨ØµÙˆØª Ù†Ù‚ÙŠØŒ ÙˆØ§Ù‚Ø±Ø£ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ø£Ùˆ Ø§Ù†ØªÙ‚Ù„ Ù„ØµÙØ­ØªÙ‡ ÙÙŠ Ø§Ù„ÙƒØªØ§Ø¨ Ø¨Ø¶ØºØ·Ø© Ø²Ø±."
+                  "استمع للمقدمة ولكل فصل بشكل مستقل بصوت نقي، واقرأ النص المفرغ أو انتقل لصفحته في الكتاب بضغطة زر."
                 )
               ),
               currentUser.role === "admin" ? React.createElement(
@@ -1756,7 +1756,7 @@ window.BooksPage = function(props) {
                     disabled: isAiAnalyzingBook,
                     className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
                   },
-                  isAiAnalyzingBook ? "â³ Ø¬Ø§Ø±ÙŠ ÙØ­Øµ Ø§Ù„ÙÙ‡Ø±Ø³..." : "ðŸª„ ÙØ­Øµ Ø§Ù„ÙÙ‡Ø±Ø³ Ø¨Ø§Ù„Ù€ AI"
+                  isAiAnalyzingBook ? "⏳ جاري فحص الفهرس..." : "🪄 فحص الفهرس بالـ AI"
                 ),
                 React.createElement(
                   "button",
@@ -1765,7 +1765,7 @@ window.BooksPage = function(props) {
                     onClick: handleOpenAddChapter,
                     className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
                   },
-                  "âž• Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ ÙŠØ¯ÙˆÙŠ"
+                  "➕ إضافة فصل يدوي"
                 )
               ) : null
             ),
@@ -1815,14 +1815,14 @@ window.BooksPage = function(props) {
               );
             })(),
 
-            // Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ÙØµÙˆÙ„
+            // قائمة الفصول
             chaps.length === 0 ? React.createElement(
               "div",
               { className: "text-center py-10 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
-              React.createElement("span", { className: "text-4xl block" }, "ðŸ“‚"),
-              React.createElement("h5", { className: "font-bold text-slate-700 dark:text-slate-200 text-sm" }, "Ù„Ù… ÙŠØªÙ… Ø¥Ø¶Ø§ÙØ© ÙØµÙˆÙ„ ØµÙˆØªÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„ÙƒØªØ§Ø¨ Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†"),
+              React.createElement(" span\, { className: \text-4xl block\ }, \📁\),
+              React.createElement("h5", { className: "font-bold text-slate-700 dark:text-slate-200 text-sm" }, "لم يتم إضافة فصول صوتية لهذا الكتاب حتى الآن"),
               React.createElement("p", { className: "text-xs text-slate-500 max-w-md mx-auto" },
-                "ÙŠÙ…ÙƒÙ† Ù„Ù„Ù…Ø³Ø¤ÙˆÙ„ Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ù†Øµ Ø§Ù„Ù…Ù‚Ø¯Ù…Ø© Ø£Ùˆ Ø£ÙŠ ÙØµÙ„ Ø¹Ø¨Ø± Ø§Ù„Ø£Ø¯Ø§Ø©ØŒ ÙˆØªØ­ÙˆÙŠÙ„Ù‡ Ù„ØµÙˆØª Ø«Ù… Ø±ÙØ¹Ù‡ Ù‡Ù†Ø§ Ù„ÙŠØ¸Ù‡Ø± Ù„Ù„Ø¯Ø§Ø±Ø³ÙŠÙ† ÙƒÙ‚Ø§Ø¦Ù…Ø© Ù…ØªØ³Ù„Ø³Ù„Ø©."
+                "يمكن للمسؤول استخراج نص المقدمة أو أي فصل عبر الأداة، وتحويله لصوت ثم رفعه هنا ليظهر للدارسين كقائمة متسلسلة."
               ),
               currentUser.role === "admin" ? React.createElement(
                 "button",
@@ -1831,7 +1831,7 @@ window.BooksPage = function(props) {
                   onClick: handleOpenAddChapter,
                   className: "mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
                 },
-                "âž• Ø¥Ø¶Ø§ÙØ© Ø£ÙˆÙ„ ÙØµÙ„ (Ù…Ø«Ù„Ø§Ù‹: Ø§Ù„Ù…Ù‚Ø¯Ù…Ø©)"
+                "➕ إضافة أول فصل (مثلاً: المقدمة)"
               ) : null
             ) : React.createElement(
               "div",
@@ -1862,9 +1862,9 @@ window.BooksPage = function(props) {
                           type: "button",
                           onClick: function() { handlePageChange(chap.startPage || 1); },
                           className: "hover:text-blue-600 font-bold underline flex items-center gap-1"
-                        }, "ðŸ“– ØµÙØ­Ø© PDF Ø±Ù‚Ù… " + (chap.startPage || 1)),
-                        chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "â€¢ Ø£ÙˆØ¯ÙŠÙˆ MP3 Ù…ØªØ§Ø­ âœ“") : null,
-                        chap.text ? React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" }, "â€¢ Ù†Øµ Ù…ÙØ±Øº Ù…ØªØ§Ø­ (" + (chap.text.length) + " Ø­Ø±Ù) âœ“") : null
+                        }, "📖 صفحة PDF رقم " + (chap.startPage || 1)),
+                        chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "• أوديو MP3 متاح ✓") : null,
+                        chap.text ? React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" }, "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓") : null
                       )
                     )
                   ),
@@ -1875,7 +1875,7 @@ window.BooksPage = function(props) {
                       type: "button",
                       onClick: function() { setViewingChapterText(chap); },
                       className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1"
-                    }, "ðŸ“„ Ø¹Ø±Ø¶ Ø§Ù„Ù†Øµ") : null,
+                    }, "📄 عرض النص") : null,
                     chap.audioUrl ? React.createElement("button", {
                       type: "button",
                       onClick: function() {
@@ -1888,17 +1888,17 @@ window.BooksPage = function(props) {
                       },
                       className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
                         (isThisPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20")
-                    }, isThisPlaying ? "â¸ï¸ Ø¥ÙŠÙ‚Ø§Ù" : "â–¶ï¸ Ø§Ø³ØªÙ…Ø§Ø¹") : null,
+                    }, isThisPlaying ? "⏸️ إيقاف" : "▶️ استماع") : null,
                     currentUser.role === "admin" ? React.createElement("button", {
                       type: "button",
                       onClick: function() { handleOpenEditChapter(chap); },
                       className: "p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
-                    }, "âœï¸") : null,
+ }, \✏️\) : null,
                     currentUser.role === "admin" ? React.createElement("button", {
                       type: "button",
                       onClick: function() { handleDeleteChapter(chap.id); },
                       className: "p-1.5 text-rose-400 hover:text-rose-600 text-xs"
-                    }, "ðŸ—‘ï¸") : null
+ }, \🗑️\) : null
                   )
                 );
               })
@@ -2480,7 +2480,7 @@ window.BooksPage = function(props) {
       onSave: handleSaveSummary
     }),
 
-      // Modal: Ø¥Ø¶Ø§ÙØ© Ø£Ùˆ ØªØ¹Ø¯ÙŠÙ„ ÙØµÙ„ ØµÙˆØªÙŠ
+ // Modal: إضافة أو تعديل فصل صوتي
     // نافذة إضافة أو تعديل فصل صوتي (مكون مستقل)
     React.createElement(window.ChapterEditModal, {
       isOpen: showChapterModal,
