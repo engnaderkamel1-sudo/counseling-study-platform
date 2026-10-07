@@ -36,6 +36,7 @@ function Build-App {
         "components/books/BookSummaryModal.js",
         "components/books/ChapterEditModal.js",
         "components/books/ChapterTextViewerModal.js",
+        "components/books/ChapterExtractConfigModal.js",
         "components/books/PdfReaderView.js",
         "components/books/AudioChaptersView.js",
         "pages/LecturesPage.js",
