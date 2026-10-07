@@ -122,5 +122,15 @@ window.APP_UTILS = {
     } catch (e) {
       return false;
     }
+  },
+
+  // التحقق مما إذا كان الفصل مكتملاً استخراجه بالكامل
+  isChapterComplete: function(c) {
+    if (!c || !c.text || c.text.trim().length < 30) return false;
+    var sP = Number(c.startPage) || 1;
+    var eP = Number(c.endPage) || sP;
+    var lastP = Number(c.lastExtractedPage);
+    if (lastP && eP && lastP < eP) return false;
+    return true;
   }
 };

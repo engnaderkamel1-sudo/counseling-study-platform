@@ -107,7 +107,7 @@ window.AudioChaptersView = function(props) {
           isAiAnalyzingBook ? "⏳ جاري فحص الفهرس..." : "🪄 فحص الفهرس بالـ AI"
         ),
         chaps.length > 0 && typeof handleBatchExtractAllChapters === "function" ? (function() {
-          var unextractedCount = chaps.filter(function(c) { return !c.text || c.text.trim().length < 30; }).length;
+          var unextractedCount = chaps.filter(function(c) { return !utils.isChapterComplete(c); }).length;
           var btnLabel = batchProgress ? "⏳ جاري الاستخراج الجماعي..."
             : (unextractedCount < chaps.length && unextractedCount > 0)
               ? ("📦 استئناف استخراج باقي الفصول (" + unextractedCount + " متبقية)")
@@ -450,7 +450,13 @@ window.AudioChaptersView = function(props) {
                   className: "hover:text-blue-600 font-bold underline flex items-center gap-1"
                 }, "📖 صفحة PDF رقم " + (chap.startPage || 1)),
                 chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "• أوديو MP3 متاح ✓") : null,
-                chap.text ? React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" }, "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓") : null
+                chap.text ? (
+                  !utils.isChapterComplete(chap) ? React.createElement("span", { className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800" },
+                    "• استخراج جزئي (صفحة " + (chap.lastExtractedPage || chap.startPage) + " من " + (chap.endPage || chap.startPage) + ") ⚠️"
+                  ) : React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" },
+                    "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓"
+                  )
+                ) : null
               ),
 
               // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية
@@ -495,20 +501,32 @@ window.AudioChaptersView = function(props) {
             "div",
             { className: "flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0" },
 
-            // 1. زر استخراج النص الكامل بالذكاء الاصطناعي (OCR) للأدمن
-            currentUser && currentUser.role === "admin" && React.createElement("button", {
-              type: "button",
-              onClick: function() { handleExtractChapterText && handleExtractChapterText(chap); },
-              disabled: isExtractingThis,
-              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs " +
-                (chap.text
-                  ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 active:scale-95"),
-              title: "استخراج وقراءة نص صفحات هذا الفصل بالكامل من الكتاب لنسخه"
-            },
-            React.createElement("span", null, isExtractingThis ? "⏳" : "⚡"),
-            React.createElement("span", null, isExtractingThis ? (currentChapProgress ? ("جاري الاستخراج: " + currentChapProgress.percent + "%") : (extractStatusText || "جاري الاستخراج...")) : (chap.text ? "إعادة استخراج النص" : "استخراج نص الفصل بالـ AI"))
-            ),
+            // 1. زر استخراج أو استئناف النص بالذكاء الاصطناعي للأدمن
+            currentUser && currentUser.role === "admin" && (function() {
+              var isComplete = utils.isChapterComplete(chap);
+              var isPartial = !isComplete && chap.lastExtractedPage && chap.lastExtractedPage >= (chap.startPage || 1);
+              var btnTitle = isPartial
+                ? ("▶️ استئناف من صفحة " + (chap.lastExtractedPage + 1))
+                : (chap.text ? "إعادة استخراج النص" : "استخراج نص الفصل بالـ AI");
+              var btnBg = isExtractingThis
+                ? "bg-emerald-600 text-white shadow-emerald-500/20"
+                : (isPartial
+                    ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-md shadow-amber-500/25 active:scale-95"
+                    : (chap.text
+                        ? "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                        : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 active:scale-95"));
+
+              return React.createElement("button", {
+                type: "button",
+                onClick: function() { handleExtractChapterText && handleExtractChapterText(chap); },
+                disabled: isExtractingThis,
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs " + btnBg,
+                title: isPartial ? "استئناف استخراج باقي صفحات هذا الفصل بدءاً من صفحة " + (chap.lastExtractedPage + 1) : "استخراج وقراءة نص صفحات هذا الفصل بالكامل من الكتاب لنسخه"
+              },
+              React.createElement("span", null, isExtractingThis ? "⏳" : (isPartial ? "▶️" : "⚡")),
+              React.createElement("span", null, isExtractingThis ? (currentChapProgress ? ("جاري الاستخراج: " + currentChapProgress.percent + "%") : (extractStatusText || "جاري الاستخراج...")) : btnTitle)
+              );
+            })(),
 
             // 2. زر عرض ونسخ النص المفرغ
             chap.text ? React.createElement("button", {

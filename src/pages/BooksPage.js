@@ -135,7 +135,11 @@ window.BooksPage = function(props) {
             var mergedChaps = (cb.audioChapters || []).map(function(ch) {
               var cachedCh = cached.audioChapters.find(function(cc) { return cc.id === ch.id; });
               if (cachedCh && cachedCh.text && (!ch.text || ch.text.length < cachedCh.text.length)) {
-                return Object.assign({}, ch, { text: cachedCh.text });
+                return Object.assign({}, ch, {
+                  text: cachedCh.text,
+                  lastExtractedPage: cachedCh.lastExtractedPage !== undefined ? cachedCh.lastExtractedPage : ch.lastExtractedPage,
+                  isComplete: cachedCh.isComplete !== undefined ? cachedCh.isComplete : ch.isComplete
+                });
               }
               return ch;
             });
@@ -1006,16 +1010,27 @@ window.BooksPage = function(props) {
       if (!excludedSet[p]) pagesToExtract.push(p);
     }
 
+    // التحقق من وجود استخراج جزئي سابق لهذا الفصل لإتاحة خيار الاستئناف
+    var initialAccumulated = "";
+    var isResume = false;
+    if (chap.lastExtractedPage && chap.lastExtractedPage >= sPage && chap.lastExtractedPage < ePage && chap.text && chap.text.trim().length > 30) {
+      if (window.confirm("📦 هذا الفصل تم استخراج أجزاء منه مسبقاً حتى صفحة " + chap.lastExtractedPage + " (من أصل " + ePage + ").\n\nهل تريد استئناف الاستخراج بدءاً من صفحة " + (chap.lastExtractedPage + 1) + "؟\n\n• موافق (OK): استئناف من صفحة " + (chap.lastExtractedPage + 1) + "\n• إلغاء (Cancel): إعادة الاستخراج بالكامل من البداية")) {
+        pagesToExtract = pagesToExtract.filter(function(p) { return p > chap.lastExtractedPage; });
+        initialAccumulated = chap.text;
+        isResume = true;
+      }
+    }
+
     if (pagesToExtract.length === 0) {
-      return alert("تنبيه: جميع الصفحات في النطاق المحدد تم استثناؤها!");
+      return alert("تنبيه: جميع الصفحات في النطاق المحدد تم استخراجها مسبقاً أو استثناؤها!");
     }
 
     setExtractingChapterId(chapId);
     setExtractStatusText("جاري استخراج النص...");
 
     try {
-      var accumulated = "";
-    var lastOcrError = null;
+      var accumulated = initialAccumulated;
+      var lastOcrError = null;
       for (var pi = 0; pi < pagesToExtract.length; pi++) {
         var pageNum = pagesToExtract[pi];
         var chapPct = Math.round((pi / Math.max(1, pagesToExtract.length)) * 100);
@@ -1050,6 +1065,32 @@ window.BooksPage = function(props) {
         } catch (pageErr) {
           console.warn("OCR error on page " + pageNum, pageErr);
         }
+
+        // حفظ محلي فوري بعد كل صفحة لضمان عدم ضياع أي صفحة عند الإغلاق
+        if (accumulated.trim()) {
+          var chapsNow = (activeBook.audioChapters || []).slice();
+          var cIdxNow = chapsNow.findIndex(function(c) { return c.id === chapId; });
+          if (cIdxNow >= 0) {
+            var isThisDone = (pi === pagesToExtract.length - 1);
+            chapsNow[cIdxNow] = Object.assign({}, chapsNow[cIdxNow], {
+              text: accumulated.trim(),
+              startPage: sPage,
+              endPage: ePage,
+              lastExtractedPage: pageNum,
+              isComplete: isThisDone,
+              excludePages: excludeStr
+            });
+            var updatedBookMid = Object.assign({}, activeBook, { audioChapters: chapsNow });
+            var allBooksMid = utils.getLocal(cfg.storageKeys.books, []) || [];
+            var bIdxMid = allBooksMid.findIndex(function(b) { return b.id === updatedBookMid.id; });
+            if (bIdxMid >= 0) allBooksMid[bIdxMid] = updatedBookMid;
+            else allBooksMid.push(updatedBookMid);
+            utils.setLocal(cfg.storageKeys.books, allBooksMid);
+            utils.setLocal("counsel_book_data_" + updatedBookMid.id, updatedBookMid);
+            setActiveBook(updatedBookMid);
+            setBooks(allBooksMid);
+          }
+        }
       }
 
       if (accumulated.trim()) {
@@ -1060,6 +1101,8 @@ window.BooksPage = function(props) {
             text: accumulated.trim(),
             startPage: sPage,
             endPage: ePage,
+            lastExtractedPage: ePage,
+            isComplete: true,
             excludePages: excludeStr
           });
           var updatedBook2 = Object.assign({}, activeBook, { audioChapters: currentChaps });
@@ -1103,13 +1146,13 @@ window.BooksPage = function(props) {
     if (startFromChapId) {
       startIdx = Math.max(0, chaps.findIndex(function(c) { return c.id === startFromChapId; }));
     } else {
-      var firstUnfinishedIdx = chaps.findIndex(function(c) { return !c.text || c.text.trim().length < 30; });
+      var firstUnfinishedIdx = chaps.findIndex(function(c) { return !utils.isChapterComplete(c); });
       if (firstUnfinishedIdx >= 0) {
         startIdx = firstUnfinishedIdx;
       }
     }
 
-    var pendingChaps = chaps.slice(startIdx).filter(function(c) { return !c.text || c.text.trim().length < 30; });
+    var pendingChaps = chaps.slice(startIdx).filter(function(c) { return !utils.isChapterComplete(c); });
     var isFullRestart = false;
 
     if (pendingChaps.length === 0) {
@@ -1123,8 +1166,8 @@ window.BooksPage = function(props) {
 
     var startChapTitle = chaps[startIdx] ? chaps[startIdx].title : "";
     var confirmMsg = (!isFullRestart && startIdx > 0)
-      ? "📦 استئناف الاستخراج التلقائي:\n\n✓ تم الحفاظ على " + startIdx + " فصول مستخرجة سابقاً وسيتم تخطيها.\n⚡ سيتم استئناف قراءة الـ " + pendingChaps.length + " فصول المتبقية بدءاً من:\n« " + startChapTitle + " »\n\nهل تريد المتابعة؟"
-      : "📦 هل تريد بدء استخراج نصوص فصول هذا الكتاب (" + chaps.length + " فصول) دفعة واحدة تلقائياً؟\nسيتم حفظ كل فصل تلقائياً فور انتهائه.";
+      ? "📦 استئناف الاستخراج التلقائي:\n\n✓ تم الحفاظ على الفصول المكتملة سابقاً وسيتم تخطيها.\n⚡ سيتم استئناف قراءة الـ " + pendingChaps.length + " فصول المتبقية بدءاً من:\n« " + startChapTitle + " »\n\nهل تريد المتابعة؟"
+      : "📦 هل تريد بدء استخراج نصوص فصول هذا الكتاب (" + chaps.length + " فصول) دفعة واحدة تلقائياً؟\nسيتم حفظ كل صفحة وكل فصل تلقائياً لمنع أي ضياع.";
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -1135,14 +1178,18 @@ window.BooksPage = function(props) {
     var totalPagesToProcess = 0;
     for (var k = startIdx; k < chaps.length; k++) {
       var curC = chaps[k];
-      if (!isFullRestart && curC.text && curC.text.trim().length > 30) continue;
+      if (!isFullRestart && utils.isChapterComplete(curC)) continue;
       var sP = Number(curC.startPage) || 1;
       var eP = Number(curC.endPage) || sP;
       if (eP <= sP) {
         if (k < chaps.length - 1 && chaps[k + 1].startPage) eP = Math.max(sP, Number(chaps[k + 1].startPage) - 1);
         else eP = Math.min(sP + 15, pdfDoc.numPages || sP);
       }
-      totalPagesToProcess += Math.max(1, (eP - sP + 1));
+      var fromP = sP;
+      if (!isFullRestart && curC.lastExtractedPage && curC.lastExtractedPage >= sP && curC.lastExtractedPage < eP && curC.text) {
+        fromP = curC.lastExtractedPage + 1;
+      }
+      totalPagesToProcess += Math.max(1, (eP - fromP + 1));
     }
     totalPagesToProcess = Math.max(1, totalPagesToProcess);
 
@@ -1163,16 +1210,22 @@ window.BooksPage = function(props) {
         }
       }
 
-      // تخطي الفصول المستخرجة مسبقاً إذا لم يكن إعادة تشغيل كامل
-      if (!isFullRestart && currentChap.text && currentChap.text.trim().length > 30) {
+      // تخطي الفصول المستخرجة بالكامل مسبقاً إذا لم يكن إعادة تشغيل كامل
+      if (!isFullRestart && utils.isChapterComplete(currentChap)) {
         continue;
       }
 
-      setExtractingChapterId(currentChap.id);
+      var fromPage = sPage;
       var accumulated = "";
+      if (!isFullRestart && currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage < ePage && currentChap.text) {
+        fromPage = currentChap.lastExtractedPage + 1;
+        accumulated = currentChap.text;
+      }
+
+      setExtractingChapterId(currentChap.id);
       var lastOcrError = null;
 
-      for (var p = sPage; p <= ePage; p++) {
+      for (var p = fromPage; p <= ePage; p++) {
         if (batchCancelledRef.current) break;
         var elapsedSec = (Date.now() - startTime) / 1000;
         var avgSec = processedPagesCount > 0 ? (elapsedSec / processedPagesCount) : 7.0;
@@ -1222,32 +1275,38 @@ window.BooksPage = function(props) {
           if (pageErr.message === "CANCELLED") break;
           console.warn("Batch OCR error on page " + p, pageErr);
         }
-        processedPagesCount++;
-      }
 
-      // حفظ الفصل المنجز فوراً سحابياً ومحلياً لمنع أي ضياع
-      if (accumulated.trim()) {
+        // حفظ محلي فوري وتحديث الحالة بعد كل صفحة بنجاح
+        var isThisChapComplete = (p === ePage);
         workingChaps[ci] = Object.assign({}, workingChaps[ci], {
           text: accumulated.trim(),
           startPage: sPage,
-          endPage: ePage
+          endPage: ePage,
+          lastExtractedPage: p,
+          isComplete: isThisChapComplete
         });
         latestBookData = Object.assign({}, latestBookData, { audioChapters: workingChaps.slice() });
-        
-        // 1. حفظ فوري متزامن محلياً
+
+        // حفظ محلي فوري متزامن
         var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
         var bIdx = allBooks.findIndex(function(b) { return b.id === latestBookData.id; });
         if (bIdx >= 0) allBooks[bIdx] = latestBookData;
         else allBooks.push(latestBookData);
         utils.setLocal(cfg.storageKeys.books, allBooks);
         utils.setLocal("counsel_book_data_" + latestBookData.id, latestBookData);
-
-        // 2. تحديث واجهة React الحية
         setActiveBook(latestBookData);
         setBooks(allBooks);
 
-        // 3. الحفظ السحابي
-        await cloud.saveBook(latestBookData);
+        processedPagesCount++;
+      }
+
+      // حفظ الفصل المنجز سحابياً فور اكتماله أو عند التوقف
+      if (accumulated.trim()) {
+        try {
+          await cloud.saveBook(latestBookData);
+        } catch (saveErr) {
+          console.warn("Cloud save error after chapter:", saveErr);
+        }
       }
     }
 
