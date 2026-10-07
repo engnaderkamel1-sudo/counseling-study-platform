@@ -736,10 +736,7 @@ window.BooksPage = function(props) {
         "  ]\n" +
         "}";
 
-      var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-      var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
-      var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
-      candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
+      var candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
 
       var scanSuccess = false;
       var lastScanError = "";
@@ -853,10 +850,7 @@ window.BooksPage = function(props) {
 
   // دالة مساعدة قوية لاستخراج نص صفحة مفردة مع معالجة الـ Rate Limit وإعادة المحاولة
   var extractTextFromPageBase64 = async function(base64Image, key, pageNum, isBatchCancelledRef) {
-    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-    var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
-    var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
-    candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
+    var candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"];
     var prompt = "أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).\n" +
       "المهمة: استخرج متن نص هذه الصفحة العربية رقم " + pageNum + " بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.\n\n" +
       "قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:\n" +
@@ -2616,6 +2610,7 @@ window.BooksPage = function(props) {
     })
   );
 };
+
 
 
 

@@ -23,6 +23,42 @@ window.AudioChaptersView = function(props) {
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
 
+  var [audioProgress, setAudioProgress] = React.useState(0);
+  var [audioDuration, setAudioDuration] = React.useState(0);
+  var [audioSpeed, setAudioSpeed] = React.useState(1);
+  var [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
+
+  React.useEffect(function() {
+    var audio = chapterAudioRef.current;
+    if (!audio) return;
+
+    var updateProgress = function() { setAudioProgress(audio.currentTime); };
+    var updateDuration = function() { setAudioDuration(audio.duration); };
+    var updatePlayState = function() { setIsAudioPlaying(!audio.paused); };
+    var updateSpeed = function() { setAudioSpeed(audio.playbackRate); };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadedmetadata", updateDuration);
+    audio.addEventListener("play", updatePlayState);
+    audio.addEventListener("pause", updatePlayState);
+    audio.addEventListener("ratechange", updateSpeed);
+
+    return function() {
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadedmetadata", updateDuration);
+      audio.removeEventListener("play", updatePlayState);
+      audio.removeEventListener("pause", updatePlayState);
+      audio.removeEventListener("ratechange", updateSpeed);
+    };
+  }, [playingChapterId, chapterAudioRef]);
+
+  var formatTime = function(sec) {
+    if (isNaN(sec)) return "00:00";
+    var m = Math.floor(sec / 60);
+    var s = Math.floor(sec % 60);
+    return (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+  };
+
   var formatSecs = function(sec) {
     if (!sec || isNaN(sec) || sec <= 0) return "0 ثانية";
     var s = Math.round(sec);
@@ -190,63 +226,82 @@ window.AudioChaptersView = function(props) {
           )
         ),
         React.createElement(
-          "div",
-          { className: "w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2 shrink-0" },
-          React.createElement("audio", {
-            ref: chapterAudioRef,
-            src: utils.getAudioStreamUrl(activeChap.audioUrl),
-            controls: false,
-            autoPlay: true,
-            className: "hidden"
-          }),
-          React.createElement("div", { className: "flex items-center justify-center gap-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 shadow-inner" },
-            // Speed Button
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { 
-                if (chapterAudioRef.current) {
-                  var currentSpeed = chapterAudioRef.current.playbackRate;
-                  chapterAudioRef.current.playbackRate = currentSpeed >= 2 ? 1 : currentSpeed + 0.5;
-                  // Trigger a re-render or just let it be silent (user hears it)
-                } 
-              },
-              className: "px-2.5 py-1.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-[10px] font-bold text-slate-300 hover:text-white transition-all",
-              title: "سرعة التشغيل"
-            }, "تسريع"),
+            "div",
+            { className: "w-full flex flex-col gap-2 mt-2 sm:mt-0 sm:flex-1 min-w-[200px]" },
             
-            // Rewind 10s
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
-              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
-              title: "تأخير 10 ثواني"
-            }, "⏪"),
+            // Audio element hidden
+            React.createElement("audio", {
+              ref: chapterAudioRef,
+              src: utils.getAudioStreamUrl(activeChap.audioUrl),
+              controls: false,
+              autoPlay: true,
+              className: "hidden"
+            }),
             
-            // Play/Pause (Using simple check or forcing native controls if state is too complex, but let's try direct play/pause)
-            React.createElement("button", {
-              type: "button",
-              onClick: function(e) { 
-                if (chapterAudioRef.current) {
-                  if (chapterAudioRef.current.paused) { 
-                    chapterAudioRef.current.play(); 
-                    e.currentTarget.textContent = "⏸️";
-                  } else { 
-                    chapterAudioRef.current.pause(); 
-                    e.currentTarget.textContent = "▶️";
+            // Progress Bar & Time
+            React.createElement("div", { className: "flex items-center gap-2 text-xs" },
+              React.createElement("span", { className: "text-blue-200 tabular-nums" }, formatTime(audioProgress)),
+              React.createElement("input", {
+                type: "range",
+                min: 0,
+                max: audioDuration || 100,
+                value: audioProgress || 0,
+                onChange: function(e) {
+                  if (chapterAudioRef.current) {
+                    chapterAudioRef.current.currentTime = parseFloat(e.target.value);
                   }
-                } 
-              },
-              className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md transition-all flex items-center justify-center w-8 h-8",
-              title: "تشغيل / إيقاف"
-            }, "⏸️"),
+                },
+                className: "flex-1 h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              }),
+              React.createElement("span", { className: "text-slate-400 tabular-nums" }, formatTime(audioDuration))
+            ),
             
-            // Forward 10s
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
-              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
-              title: "تقديم 10 ثواني"
-            }, "⏩")
+            // Controls
+            React.createElement("div", { className: "flex items-center justify-between gap-4" },
+              // Speed Slider
+              React.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-300 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50" },
+                React.createElement("span", { className: "font-bold w-6" }, audioSpeed.toFixed(1) + "x"),
+                React.createElement("input", {
+                  type: "range",
+                  min: 0.5,
+                  max: 2,
+                  step: 0.1,
+                  value: audioSpeed,
+                  onChange: function(e) {
+                    if (chapterAudioRef.current) {
+                      chapterAudioRef.current.playbackRate = parseFloat(e.target.value);
+                    }
+                  },
+                  className: "w-20 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                })
+              ),
+              
+              // Playback Buttons
+              React.createElement("div", { className: "flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-full border border-slate-700/50 shadow-inner" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
+                  className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
+                  title: "????? 10 ?????"
+                }, "?"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { 
+                    if (chapterAudioRef.current) {
+                      if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
+                      else chapterAudioRef.current.pause();
+                    }
+                  },
+                  className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all flex items-center justify-center w-10 h-10 text-lg"
+                }, isAudioPlaying ? "??" : "??"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
+                  className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
+                  title: "????? 10 ?????"
+                }, "?")
+              )
+            )
           ),
           // Close button
           React.createElement("button", {
@@ -255,7 +310,7 @@ window.AudioChaptersView = function(props) {
               if (chapterAudioRef.current) chapterAudioRef.current.pause();
               setPlayingChapterId(null);
             },
-            className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1"
+            className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1 self-start sm:self-center"
           }, "✕")
         )
       );
@@ -385,4 +440,6 @@ window.AudioChaptersView = function(props) {
     )
   );
 };
+
+
 
