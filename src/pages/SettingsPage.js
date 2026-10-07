@@ -7,6 +7,7 @@ window.SettingsPage = function() {
     return utils.getLocal(cfg.storageKeys.apiKey, "");
   });
   var [savedToast, setSavedToast] = React.useState(false);
+  var [copiedToast, setCopiedToast] = React.useState(false);
 
   React.useEffect(function() {
     var loadCloudKey = async function() {
@@ -20,6 +21,23 @@ window.SettingsPage = function() {
     loadCloudKey();
   }, []);
 
+  var handleCopyKey = function() {
+    if (!apiKey) return;
+    navigator.clipboard.writeText(apiKey).then(function() {
+      setCopiedToast(true);
+      setTimeout(function() { setCopiedToast(false); }, 2500);
+    }).catch(function() {
+      // Fallback
+      var ta = document.createElement("textarea");
+      ta.value = apiKey;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopiedToast(true);
+      setTimeout(function() { setCopiedToast(false); }, 2500);
+    });
+  };
   var handleSaveKey = async function(e) {
     e.preventDefault();
     if (window.GeminiAIService && window.GeminiAIService.saveApiKey) {
