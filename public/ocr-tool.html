@@ -52,6 +52,25 @@
     <h1>📚 أداة استخراج النصوص الذكية</h1>
     <p>تقرأ ملفات الكتب المصورة صفحة بصفحة وتستخرج النص العربي الأصلي بدقة 100% بدون أي تلخيص مع حساب الوقت وإمكانية الإيقاف والتحميل الفوري.</p>
 
+    <!-- لافتة استرجاع الجلسة عند انقطاع الكهرباء أو إغلاق الجهاز -->
+    <div id="resumeBanner" style="display: none; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 12px; padding: 14px; margin-bottom: 18px;">
+        <div style="font-weight: bold; color: #b45309; font-size: 0.95rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>🛡️</span> <span>تم العثور على جلسة سابقة محفوظة تلقائياً!</span>
+        </div>
+        <div id="resumeBannerText" style="font-size: 0.85rem; color: #78350f; margin-bottom: 12px; line-height: 1.5;"></div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button id="resumeDownloadBtn" type="button" style="background: #10b981; color: white; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; border: none; cursor: pointer;">
+                📥 تحميل ما تم استخراجه فوراً (.txt)
+            </button>
+            <button id="resumeContinueBtn" type="button" style="background: #0284c7; color: white; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; border: none; cursor: pointer;">
+                🔄 استئناف العمل وتكملة باقي الصفحات
+            </button>
+            <button id="resumeDiscardBtn" type="button" style="background: #e2e8f0; color: #475569; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; border: none; cursor: pointer;">
+                🗑️ مسح والبدء من جديد
+            </button>
+        </div>
+    </div>
+
     <label for="apiKey">مفتاح جوجل:</label>
     <input type="text" id="apiKey" placeholder="ضع المفتاح هنا..." />
 
@@ -177,12 +196,74 @@
         }
     }
     loadSavedKey();
+    checkPreviousSession();
 
     document.getElementById('apiKey').addEventListener('input', (e) => {
         const val = e.target.value.trim();
         if (val) {
             localStorage.setItem('counsel_ai_api_key', val);
             localStorage.setItem('COUNSEL_API_KEY', val);
+        }
+    });
+
+    function checkPreviousSession() {
+        const savedText = localStorage.getItem('counsel_ocr_backup_text');
+        const lastPage = localStorage.getItem('counsel_ocr_backup_last_page');
+        const bookName = localStorage.getItem('counsel_ocr_backup_book_name') || 'كتاب سابق';
+        const savedTime = localStorage.getItem('counsel_ocr_backup_timestamp');
+
+        if (savedText && savedText.trim().length > 0 && lastPage) {
+            const banner = document.getElementById('resumeBanner');
+            const bannerText = document.getElementById('resumeBannerText');
+            if (!banner || !bannerText) return;
+            banner.style.display = 'block';
+
+            let timeStr = '';
+            if (savedTime) {
+                const d = new Date(parseInt(savedTime));
+                timeStr = ` (تم الحفظ: ${d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})`;
+            }
+
+            bannerText.innerHTML = `تم حفظ العمل تلقائياً لكتاب <b>"${bookName}"</b> حتى <b>الصفحة ${lastPage}</b> بمجموع <b>${savedText.length.toLocaleString('ar-EG')} حرف</b>${timeStr}. لا داعي للقلق، عملك محفوظ بالكامل حتى لو أغلق المتصفح أو فصل الجهاز.`;
+
+            document.getElementById('resumeDownloadBtn').onclick = () => {
+                const blob = new Blob([savedText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `كتاب_مسترجع_${bookName.replace(/\.pdf$/i, '')}_حتى_صفحة_${lastPage}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            document.getElementById('resumeContinueBtn').onclick = () => {
+                accumulatedText = savedText;
+                document.getElementById('startPage').value = parseInt(lastPage) + 1;
+                downloadNowBtn.style.display = 'block';
+                banner.style.display = 'none';
+                previewBox.style.display = 'block';
+                previewBox.innerHTML = `🔄 <b>تم استئناف الجلسة بنجاح:</b> تم تحميل النص المحفوظ حتى صفحة ${lastPage}. تم ضبط "من صفحة" على <b>${parseInt(lastPage) + 1}</b> تلقائياً. اختر ملف الكتاب واضغط "بدء الاستخراج" للمتابعة.`;
+                log(`🔄 تم استرجاع ما تم استخراجه سابقاً حتى صفحة ${lastPage} (${savedText.length} حرف).`);
+                log(`اختر ملف الكتاب واضغط "بدء الاستخراج" للمتابعة من صفحة ${parseInt(lastPage) + 1}.`);
+            };
+
+            document.getElementById('resumeDiscardBtn').onclick = () => {
+                if (confirm('هل أنت متأكد من حذف الجلسة السابقة والبدء من الصفر؟')) {
+                    localStorage.removeItem('counsel_ocr_backup_text');
+                    localStorage.removeItem('counsel_ocr_backup_last_page');
+                    localStorage.removeItem('counsel_ocr_backup_book_name');
+                    localStorage.removeItem('counsel_ocr_backup_timestamp');
+                    banner.style.display = 'none';
+                    log('تم مسح النسخة الاحتياطية السابقة.');
+                }
+            };
+        }
+    }
+
+    window.addEventListener('beforeunload', (e) => {
+        if (!isStopped && startBtn.style.display === 'none') {
+            e.preventDefault();
+            e.returnValue = 'جاري استخراج الكتاب حالياً، تم حفظ كل صفحة تلقائياً.';
         }
     });
 
@@ -477,6 +558,16 @@
                     }
                     previewBox.style.display = 'block';
                     previewBox.textContent = `آخر نص تم استخراجه (صفحة ${pageNum}): ` + text.substring(0, 150) + '...';
+
+                    // Auto-save backup after EVERY single page to prevent data loss on crash/power cut
+                    try {
+                        localStorage.setItem('counsel_ocr_backup_text', accumulatedText);
+                        localStorage.setItem('counsel_ocr_backup_last_page', pageNum);
+                        localStorage.setItem('counsel_ocr_backup_book_name', file.name);
+                        localStorage.setItem('counsel_ocr_backup_timestamp', Date.now());
+                    } catch(err) {
+                        console.warn('Backup save error:', err);
+                    }
                 } else if (!isStopped) {
                     accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n(تعذر استخراج الصفحة)\n`;
                     log(`تجاوز الصفحة ${pageNum}.`);
