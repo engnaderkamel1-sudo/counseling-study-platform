@@ -911,19 +911,19 @@ window.BooksPage = function(props) {
       var pageThumbnails = {}; // p -> dataUrl
       if (doc) {
         setNewTotalPages(doc.numPages || 300);
-        // فحص أول 6 صفحات بدقة واضحة للقراءة
-        var maxInspect = Math.min(doc.numPages || 1, 6);
+        // فحص أول 3 صفحات فقط (الغلاف وصفحة العنوان) لسرعة استجابة فائقة وخفة تامة
+        var maxInspect = Math.min(doc.numPages || 1, 3);
         for (var p = 1; p <= maxInspect; p++) {
           try {
             var pageObj = await doc.getPage(p);
-            // مقياس مناسب جداً لقراءة النصوص العربية والعناوين بدقة بدون استهلاك ذاكرة
-            var vp = pageObj.getViewport({ scale: 1.2 });
+            // مقياس خفيف وسريع جداً لقراءة العناوين
+            var vp = pageObj.getViewport({ scale: 1.0 });
             var tempCanvas = document.createElement("canvas");
             tempCanvas.width = vp.width;
             tempCanvas.height = vp.height;
             var ctx = tempCanvas.getContext("2d");
             await pageObj.render({ canvasContext: ctx, viewport: vp }).promise;
-            var dataUrl = tempCanvas.toDataURL("image/jpeg", 0.85);
+            var dataUrl = tempCanvas.toDataURL("image/jpeg", 0.75);
             pageThumbnails[p] = dataUrl;
             if (p === 1) {
               coverDataUrl = dataUrl;
@@ -955,14 +955,13 @@ window.BooksPage = function(props) {
         // إزالة التكرار
         candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
 
-        var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول صفحات كتاب بترتيب الصفحات من 1 إلى " + scanParts.length + " (تشمل الغلاف وصفحة العنوان وصفحات الفهرس/المحتويات). إجمالي صفحات الـ PDF: " + (doc ? doc.numPages : 300) + ".\n" +
+        var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول " + scanParts.length + " صفحات من الكتاب (تشمل الغلاف وصفحة العنوان وبيانات النشر).\n" +
           "مطلوب منك بدقة شديدة الإجابة بصيغة JSON صريحة فقط بدون أي شرح أو كلام إضافي:\n" +
-          "1. coverPageNumber: رقم صفحة الغلاف الحقيقي الملون للكتاب (غالباً 1، أو 2 أو 3 إذا كانت الصفحة الأولى بيضاء أو فارغة).\n" +
+          "1. coverPageNumber: رقم صفحة الغلاف الحقيقي الملون للكتاب (1 أو 2 أو 3 إذا كانت الصفحة الأولى فارغة أو بيضاء).\n" +
           "2. title: اسم الكتاب الدقيق المكتوب على الغلاف أو صفحة العنوان (مثل: الروحانية الناضجة وجدانياً).\n" +
           "3. author: اسم المؤلف / الكاتب الأصلي (مثل: بيتر سكارزيرو أو Peter Scazzero).\n" +
           "4. translator: اسم المترجم أو المعرب إن وجد وإلا \"\" (مثل: د. أوسم وصفي).\n" +
-          "5. chapters: مصفوفة بجميع فصول وأقسام الفهرس، كل عنصر: {\"title\": \"اسم الفصل\", \"pdfStartPage\": رقم بداية الفصل بالـ PDF, \"pdfEndPage\": رقم نهاية الفصل بالـ PDF}.\n" +
-          "أجب بصيغة JSON صريحة فقط: {\"coverPageNumber\": 1, \"title\": \"...\", \"author\": \"...\", \"translator\": \"...\", \"chapters\": [{\"title\": \"المقدمة\", \"pdfStartPage\": 7, \"pdfEndPage\": 12}]}";
+          "أجب بصيغة JSON صريحة فقط: {\"coverPageNumber\": 1, \"title\": \"...\", \"author\": \"...\", \"translator\": \"...\"}";
 
         var requestBody = {
           contents: [{
