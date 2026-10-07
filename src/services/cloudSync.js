@@ -111,5 +111,22 @@ window.CloudSyncService = {
     if (!window.db) return Promise.resolve();
     var docId = note.id || ("note-" + Date.now());
     return window.db.collection("personal_notes").doc(docId).set(note, { merge: true });
+  },
+
+  // حذف مستند عام من أي مجموعة (Collection)
+  deleteDocument: async function(collectionName, docId) {
+    if (!window.db || !collectionName || !docId) return true;
+    try {
+      await window.db.collection(collectionName).doc(docId).delete();
+      return true;
+    } catch (e) {
+      console.error("Firestore deleteDocument error:", e);
+      throw e;
+    }
+  },
+
+  // حذف كتاب
+  deleteBook: async function(bookId) {
+    return this.deleteDocument("books", bookId);
   }
 };
