@@ -63,30 +63,42 @@
     }
 
     async function extractTextFromBase64(base64Image, apiKey) {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-        const payload = {
-            contents: [{
-                parts: [
-                    { text: "استخرج النص العربي من هذه الصفحة بدقة متناهية كما هو مكتوب حرفيا وبدون أي تلخيص." },
-                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
-                ]
-            }],
-            generationConfig: { temperature: 0.1 }
-        };
+        // Auto-select candidate models that exist on this account
+        const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.5-flash"];
+        let lastError = null;
+        for (const m of candidateModels) {
+            try {
+                const url = "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent?key=" + apiKey;
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: "استخرج النص العربي من هذه الصفحة بدقة متناهية كما هو مكتوب حرفيا وبدون أي تلخيص." },
+                            { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                        ]
+                    }],
+                    generationConfig: { temperature: 0.1 }
+                };
 
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-        if (!res.ok) {
-            if (res.status === 429) throw new Error('RATE_LIMIT');
-            throw new Error(`API Error: ${res.status}`);
+                if (res.status === 429) throw new Error('RATE_LIMIT');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                }
+                lastError = new Error("API Error: " + res.status);
+            } catch (err) {
+                if (err.message === 'RATE_LIMIT') throw err;
+                lastError = err;
+            }
         }
-
-        const data = await res.json();
-        return data.candidates[0].content.parts[0].text;
+        throw lastError || new Error("Failed to call API");
     }
 
     startBtn.addEventListener('click', async () => {
