@@ -15,6 +15,7 @@ window.AudioChaptersView = function(props) {
   var handleExtractChapterText = props.handleExtractChapterText;
   var extractingChapterId = props.extractingChapterId;
   var extractStatusText = props.extractStatusText;
+  var handleClearAllChapters = props.handleClearAllChapters;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -53,6 +54,15 @@ window.AudioChaptersView = function(props) {
           },
           isAiAnalyzingBook ? "⏳ جاري فحص الفهرس..." : "🪄 فحص الفهرس بالـ AI"
         ),
+        chaps.length > 0 && typeof handleClearAllChapters === "function" ? React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleClearAllChapters,
+            className: "inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800 transition-all active:scale-95"
+          },
+          "🗑️ مسح الفصول والبدء من جديد"
+        ) : null,
         React.createElement(
           "button",
           {

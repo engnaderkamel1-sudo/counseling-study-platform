@@ -706,7 +706,8 @@ window.BooksPage = function(props) {
 
     setIsAiAnalyzingBook(true);
     try {
-      var maxInspect = Math.min(pdfDoc.numPages || 1, 12);
+      // فحص أول 6 صفحات فقط (كافية تماماً للغلاف والفهرس والتمهيد/المقدمة وسريعة جداً)
+      var maxInspect = Math.min(pdfDoc.numPages || 1, 6);
       var scanParts = [];
       for (var p = 1; p <= maxInspect; p++) {
         var pageObj = await pdfDoc.getPage(p);
@@ -720,23 +721,31 @@ window.BooksPage = function(props) {
         scanParts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
       }
 
-      var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك أول صفحات من هذا الكتاب (تشمل الغلاف وصفحة المحتويات/الفهرس). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
+      var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول صفحات من هذا الكتاب (تشمل الغلاف وصفحة المحتويات/الفهرس). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
         "المهمة الإلزامية: استخرج جدول الفصول بالكامل بصيغة JSON فقط، وتأكد من تضمين المقدمة أو التمهيد (Preface / Introduction) كأول عنصر مع صفحة بدايتها ونهايتها، ثم باقي الفصول تباعاً:\n" +
         "{\"chapters\": [{\"title\": \"المقدمة: ...\", \"pdfStartPage\": رقم بداية المقدمة, \"pdfEndPage\": رقم نهاية المقدمة}, {\"title\": \"اسم الفصل الأول\", \"pdfStartPage\": رقم البداية بالـ PDF, \"pdfEndPage\": رقم النهاية بالـ PDF}]}";
 
       var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-      var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
+      var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3-flash-preview"];
+
+      var scanSuccess = false;
+      var lastScanError = "";
 
       for (var i = 0; i < candidateModels.length; i++) {
         try {
+          var controller = new AbortController();
+          var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
           var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{ role: "user", parts: [{ text: promptVision }].concat(scanParts) }],
               generationConfig: { temperature: 0.1 }
-            })
+            }),
+            signal: controller.signal
           });
+          clearTimeout(timeoutId);
+
           if (res.ok) {
             var d = await res.json();
             if (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts[0]) {
@@ -761,18 +770,42 @@ window.BooksPage = function(props) {
                 var updatedBook = Object.assign({}, activeBook, { audioChapters: newChaps });
                 cloud.saveBook(updatedBook);
                 setActiveBook(updatedBook);
-                alert("✨ تم فحص الفهرس بنجاح وتمت إضافة " + newChaps.length + " فصول للقائمة (بما فيها المقدمة)!");
+                scanSuccess = true;
+                setIsAiAnalyzingBook(false);
+                alert("✨ تم فحص الفهرس بنجاح وتم استخراج " + newChaps.length + " فصول (بما فيها المقدمة)!");
                 break;
               }
             }
+          } else {
+            var errD = await res.json().catch(function() { return {}; });
+            lastScanError = (errD.error && errD.error.message) || ("Error status " + res.status);
           }
-        } catch (eScan) {}
+        } catch (eScan) {
+          lastScanError = eScan.name === "AbortError" ? "استغرقت الاستجابة وقتاً طويلاً" : (eScan.message || String(eScan));
+        }
+      }
+
+      setIsAiAnalyzingBook(false);
+      if (!scanSuccess) {
+        alert("تنبيه: " + (lastScanError || "تعذر قراءة الفهرس بالذكاء الاصطناعي. يمكنك استخدام زر (+ إضافة فصل يدوي) لتحديد الفصول يدوياً."));
       }
     } catch (errAll) {
+      setIsAiAnalyzingBook(false);
       alert("حدث خطأ أثناء فحص الفهرس: " + (errAll.message || errAll));
     } finally {
       setIsAiAnalyzingBook(false);
     }
+  };
+
+  // وظيفة مسح قائمة الفصول الحالية للبدء من جديد
+  var handleClearAllChapters = async function() {
+    if (!activeBook) return;
+    if (!window.confirm("هل أنت متأكد من مسح جميع فصول هذا الكتاب وإعادة الفحص من البداية؟")) return;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: [] });
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    if (chapterAudioRef.current) chapterAudioRef.current.pause();
+    setPlayingChapterId(null);
   };
 
   // وظيفة استخراج النص الكامل للفصل بالذكاء الاصطناعي (OCR) من صفحات الـ PDF
@@ -1682,7 +1715,8 @@ window.BooksPage = function(props) {
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
           extractingChapterId: extractingChapterId,
-          extractStatusText: extractStatusText
+          extractStatusText: extractStatusText,
+          handleClearAllChapters: handleClearAllChapters
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
