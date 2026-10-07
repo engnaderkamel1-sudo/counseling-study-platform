@@ -105,17 +105,61 @@ window.SettingsPage = function() {
       )
     ),
 
-    // أداة استخراج النصوص المخفية
+    // دليل دورة تجهيز الكتب الصوتية المتكامل
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3" },
-      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "أداة استخراج النصوص من الكتب"),
-      React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4" }, "أداة خاصة ومخفية لرفع الكتاب واستخراج النص منه أوتوماتيكيا."),
-      React.createElement("a", {
-        href: "/ocr-tool.html",
-        target: "_blank",
-        className: "inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 text-center w-full sm:w-auto"
-      }, "فتح أداة الاستخراج الآلي")
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5" },
+      React.createElement("div", null,
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" }, "🎧 ستوديو تجهيز الكتب الصوتية المدمج"),
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "ثلاث خطوات عملية وبسيطة لتحويل أي كتاب مصور إلى تراك صوتي نقي يعمل مباشرة داخل التطبيق للدارسين:")
+      ),
+
+      // الخطوة 1
+      React.createElement(
+        "div",
+        { className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" },
+        React.createElement("div", { className: "text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5" },
+          React.createElement("span", { className: "w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]" }, "1"),
+          "الخطوة الأولى: استخراج النص العربي من الكتاب المصور"
+        ),
+        React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, "افتح أداة الاستخراج، اختر ملف الكتاب، وسيتم قراءة الصفحات واستخراج الكلمات العربية الأصلية بنسبة 100% بدون أي تلخيص."),
+        React.createElement("a", {
+          href: "/ocr-tool.html?key=" + encodeURIComponent(apiKey || ""),
+          target: "_blank",
+          className: "inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all mt-1"
+        }, "🚀 فتح أداة استخراج نصوص الكتاب")
+      ),
+
+      // الخطوة 2
+      React.createElement(
+        "div",
+        { className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2" },
+        React.createElement("div", { className: "text-xs font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1.5" },
+          React.createElement("span", { className: "w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px]" }, "2"),
+          "الخطوة الثانية: توليد ملف الصوت البشري (MP3) مجاناً"
+        ),
+        React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, "انسخ النص الناتج وافتحه في موقع الصوت المجاني، اختر صوت شاكر أو سلمى واضغط تحميل ملف الصوت:"),
+        React.createElement("a", {
+          href: "https://edge-tts.com",
+          target: "_blank",
+          className: "inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm active:scale-95 transition-all mt-1"
+        }, "🌐 فتح موقع تحويل النصوص لصوت (Edge-TTS)")
+      ),
+
+      // الخطوة 3
+      React.createElement(
+        "div",
+        { className: "p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 space-y-2" },
+        React.createElement("div", { className: "text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5" },
+          React.createElement("span", { className: "w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]" }, "3"),
+          "الخطوة الثالثة: ربط الكتاب والصوت بالتطبيق بضغطة زر"
+        ),
+        React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, "اذهب لقسم المراجع والكتب، واضغط إضافة كتاب جديد. اختر ملف الـ PDF للقراءة، واختر ملف الصوت الذي حملته للاستماع، والتطبيق سيتولى ربطهما تلقائياً للدارسين!"),
+        React.createElement("a", {
+          href: "/#books",
+          className: "inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all mt-1"
+        }, "📚 الذهاب لقسم الكتب لإضافة التراك")
+      )
     ),
     // إرشادات ربط جوجل درايف
     React.createElement(

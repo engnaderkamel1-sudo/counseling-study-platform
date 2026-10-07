@@ -139,6 +139,15 @@
 
 <script>
     function loadSavedKey() {
+        // 1. First check URL query parameter ?key=...
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlKey = urlParams.get('key');
+        if (urlKey && urlKey.trim()) {
+            document.getElementById('apiKey').value = urlKey.trim();
+            localStorage.setItem('counsel_ai_api_key', urlKey.trim());
+            localStorage.setItem('COUNSEL_API_KEY', urlKey.trim());
+            return;
+        }
         let k = '';
         for (let i = 0; i < localStorage.length; i++) {
             const keyName = localStorage.key(i);
