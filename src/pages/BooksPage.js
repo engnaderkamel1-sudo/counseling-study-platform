@@ -1,4 +1,4 @@
-﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -1457,7 +1457,7 @@ window.BooksPage = function(props) {
             React.createElement("span", null, "ÙØµÙˆÙ„ ÙˆØªØ±Ø§ÙƒØ§Øª Ø§Ù„ÙƒØªØ§Ø¨"),
             (activeBook.audioChapters || []).length > 0 ? React.createElement("span", { className: "px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300" }, (activeBook.audioChapters || []).length) : null
           ),
-          React.createElement(
+          false ? React.createElement(
             "button",
             {
               type: "button",
@@ -1470,7 +1470,7 @@ window.BooksPage = function(props) {
             React.createElement("span", { className: "text-base" }, "ðŸŽ™ï¸"),
             React.createElement("span", null, "ØªØ±Ø§Ùƒ 1 (Ø§Ù„Ø¨ÙˆØ¯ÙƒØ§Ø³Øª)"),
             activeBook.audioUrl ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }) : null
-          ),
+          ) : null,
           React.createElement(
             "button",
             {
