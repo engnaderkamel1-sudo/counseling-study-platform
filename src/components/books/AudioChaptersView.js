@@ -311,8 +311,7 @@ window.AudioChaptersView = function(props) {
               setPlayingChapterId(null);
             },
             className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1 self-start sm:self-center"
-          }, "✕")
-        )
+          }, "?")
       );
     })(),
 
@@ -440,6 +439,8 @@ window.AudioChaptersView = function(props) {
     )
   );
 };
+
+
 
 
 
