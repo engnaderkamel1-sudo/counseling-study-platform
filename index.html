@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791386675",
-  buildTime: "2026-10-07T15:24:35",
+  version: "1.2.1791386936",
+  buildTime: "2026-10-07T15:28:56",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -4812,31 +4812,43 @@ window.BooksPage = function(props) {
     if (!activeBook || !pdfDoc) return alert("يرجى فتح ملف الـ PDF للكتاب أولاً");
     var key = await window.GeminiAIService.getApiKey();
     if (!key) return alert("يرجى إدخال مفتاح Gemini في الإعدادات أولاً");
-    if (!window.confirm("هل تريد فحص أول 12 صفحة من هذا الكتاب لقراءة الفهرس وتوليد قائمة الفصول تلقائياً؟")) return;
+    if (!window.confirm("هل تريد فحص صفحات بداية الكتاب لقراءة الفهرس والمقدمة واستخراج قائمة الفصول بالكامل تلقائياً؟")) return;
 
     setIsAiAnalyzingBook(true);
     try {
-      // فحص أول 6 صفحات فقط (كافية تماماً للغلاف والفهرس والتمهيد/المقدمة وسريعة جداً)
-      var maxInspect = Math.min(pdfDoc.numPages || 1, 6);
+      // فحص أول 8 إلى 10 صفحات للبحث عن صفحة الفهرس والمحتويات والمقدمة بدقة
+      var maxInspect = Math.min(pdfDoc.numPages || 1, 10);
       var scanParts = [];
       for (var p = 1; p <= maxInspect; p++) {
         var pageObj = await pdfDoc.getPage(p);
-        var vp = pageObj.getViewport({ scale: 0.9 });
+        var vp = pageObj.getViewport({ scale: 1.0 });
         var c = document.createElement("canvas");
         c.width = vp.width;
         c.height = vp.height;
         var cx = c.getContext("2d");
         await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-        var b64 = c.toDataURL("image/jpeg", 0.6).split("base64,")[1];
-        scanParts.push({ inlineData: { mimeType: "image/jpeg", data: b64 } });
+        var b64 = c.toDataURL("image/jpeg", 0.7).split("base64,")[1];
+        scanParts.push({ inline_data: { mime_type: "image/jpeg", data: b64 } });
       }
 
-      var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول صفحات من هذا الكتاب (تشمل الغلاف وصفحة المحتويات/الفهرس). إجمالي صفحات الـ PDF هو " + pdfDoc.numPages + ".\n" +
-        "المهمة الإلزامية: استخرج جدول الفصول بالكامل بصيغة JSON فقط، وتأكد من تضمين المقدمة أو التمهيد (Preface / Introduction) كأول عنصر مع صفحة بدايتها ونهايتها، ثم باقي الفصول تباعاً:\n" +
-        "{\"chapters\": [{\"title\": \"المقدمة: ...\", \"pdfStartPage\": رقم بداية المقدمة, \"pdfEndPage\": رقم نهاية المقدمة}, {\"title\": \"اسم الفصل الأول\", \"pdfStartPage\": رقم البداية بالـ PDF, \"pdfEndPage\": رقم النهاية بالـ PDF}]}";
+      var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور صفحات البداية من الكتاب (تتضمن الغلاف وصفحة المحتويات / الفهرس كاملة).\n" +
+        "المطلوب بشكل حاسم: اقرأ صفحة (المحتويات / الفهرس / Table of Contents) واقرأ كل بند فيها بدقة شديدة.\n" +
+        "استخرج قائمة الفصول كاملة بصيغة JSON:\n" +
+        "1. ابدأ بـ 'المقدمة' أو 'التمهيد' مع رقم صفحتها الحقيقية في الـ PDF.\n" +
+        "2. استخرج جميع الفصول والأبواب المذكورة في الفهرس بدون استثناء (الفصل 1، الفصل 2، الفصل 3... إلخ) وعناوينها وأرقام صفحاتها.\n" +
+        "تنسيق الـ JSON المطلوب بدقة:\n" +
+        "{\n" +
+        "  \"chapters\": [\n" +
+        "    {\"title\": \"المقدمة\", \"pdfStartPage\": 5},\n" +
+        "    {\"title\": \"الفصل الأول: ...\", \"pdfStartPage\": 15},\n" +
+        "    {\"title\": \"الفصل الثاني: ...\", \"pdfStartPage\": 35}\n" +
+        "  ]\n" +
+        "}";
 
       var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-      var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3-flash-preview"];
+      var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+      var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
+      candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
 
       var scanSuccess = false;
       var lastScanError = "";
@@ -4844,7 +4856,7 @@ window.BooksPage = function(props) {
       for (var i = 0; i < candidateModels.length; i++) {
         try {
           var controller = new AbortController();
-          var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+          var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
           var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4867,12 +4879,19 @@ window.BooksPage = function(props) {
               var parsed = JSON.parse(clean);
 
               if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
-                var newChaps = parsed.chapters.map(function(c, cIdx) {
+                // ترتيب الفصول حسب رقم صفحة البداية وحساب صفحة النهاية بدقة
+                var rawList = parsed.chapters.filter(function(c) { return c && c.title; });
+                var totalDocPages = pdfDoc.numPages || 100;
+                var newChaps = rawList.map(function(c, cIdx) {
+                  var sPage = Math.max(1, Number(c.pdfStartPage) || 1);
+                  var nextItem = rawList[cIdx + 1];
+                  var nextStart = nextItem ? Math.max(1, Number(nextItem.pdfStartPage) || 1) : null;
+                  var calcEnd = nextStart && nextStart > sPage ? nextStart - 1 : (Number(c.pdfEndPage) || Math.min(sPage + 20, totalDocPages));
                   return {
                     id: "chap_" + Date.now() + "_" + cIdx,
-                    title: c.title || ("فصل " + (cIdx + 1)),
-                    startPage: Number(c.pdfStartPage) || 1,
-                    endPage: Number(c.pdfEndPage) || (Number(c.pdfStartPage) || 1),
+                    title: c.title.trim(),
+                    startPage: sPage,
+                    endPage: calcEnd,
                     audioUrl: "",
                     text: ""
                   };
@@ -4882,7 +4901,7 @@ window.BooksPage = function(props) {
                 setActiveBook(updatedBook);
                 scanSuccess = true;
                 setIsAiAnalyzingBook(false);
-                alert("✨ تم فحص الفهرس بنجاح وتم استخراج " + newChaps.length + " فصول (بما فيها المقدمة)!");
+                alert("✨ تم فحص الفهرس بنجاح!\n\nتم استخراج " + newChaps.length + " فصول (تشمل المقدمة وكافة فصول الكتاب).");
                 break;
               }
             }
