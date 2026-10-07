@@ -131,6 +131,7 @@ window.BooksPage = function(props) {
   var [newTrack1Url, setNewTrack1Url] = React.useState("");
   var [detectedChaptersList, setDetectedChaptersList] = React.useState([]);
   var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
+  var [editingBookId, setEditingBookId] = React.useState(null);
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
@@ -1056,6 +1057,39 @@ window.BooksPage = function(props) {
     }
   };
 
+  var handleDeleteBook = async function(e, bookId) {
+    e.stopPropagation();
+    if (!window.confirm("هل أنت متأكد من حذف هذا الكتاب نهائياً من المنصة؟")) return;
+    try {
+      var success = await cloud.deleteDocument("books", bookId);
+      if (success) {
+        setBooks(function(prev) { return prev.filter(function(b) { return b.id !== bookId; }); });
+        if (activeBook && activeBook.id === bookId) {
+            setActiveBook(null);
+            utils.removeLocal("counsel_active_book_id");
+        }
+      } else {
+        alert("فشل حذف الكتاب. تأكد من اتصالك بالإنترنت.");
+      }
+    } catch(err) {
+      alert("خطأ أثناء الحذف: " + err.message);
+    }
+  };
+
+  var handleEditBookClick = function(e, book) {
+    e.stopPropagation();
+    setEditingBookId(book.id);
+    setNewTitle(book.title || "");
+    setNewAuthor(book.author || "");
+    setNewCoverUrl(book.coverUrl || "");
+    setNewDriveUrl(book.driveUrl || "");
+    setNewTrack1Url(book.audioUrl || "");
+    setSelectedFile(null);
+    setSelectedCoverFile(null);
+    setSelectedAudioFile(null);
+    setShowAddModal(true);
+  };
+
   var handleAddBook = async function(e) {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -1139,18 +1173,22 @@ window.BooksPage = function(props) {
       } catch (errCover) {}
     }
 
-    var newB = {
-      id: "book-" + Date.now(),
+    var existingBook = editingBookId ? books.find(function(b) { return b.id === editingBookId; }) : null;
+    var newB = Object.assign({}, existingBook || {}, {
+      id: editingBookId || ("book-" + Date.now()),
       title: newTitle.trim(),
       author: newAuthor.trim() || "غير محدد",
-      coverUrl: finalCoverUrl,
-      totalPages: parseInt(newTotalPages) || 300,
-      currentPage: 1,
-      driveUrl: finalDriveUrl,
-      chapters: Array.from({ length: parseInt(newChaptersCount) || 1 }, function(_, i) { return { title: 'فصل ' + (i + 1), time: 0, page: 1 }; }),
-      audioChapters: (detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : [],
-      audioUrl: finalAudioUrl
-    };
+      coverUrl: finalCoverUrl || (existingBook ? existingBook.coverUrl : ""),
+      driveUrl: finalDriveUrl || (existingBook ? existingBook.driveUrl : ""),
+      audioUrl: finalAudioUrl || (existingBook ? existingBook.audioUrl : "")
+    });
+
+    if (!existingBook) {
+      newB.totalPages = parseInt(newTotalPages) || 300;
+      newB.currentPage = 1;
+      newB.chapters = Array.from({ length: parseInt(newChaptersCount) || 1 }, function(_, i) { return { title: 'فصل ' + (i + 1), time: 0, page: 1 }; });
+      newB.audioChapters = (detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : [];
+    }
 
     cloud.saveBook(newB);
     setActiveBook(newB);
@@ -1180,6 +1218,7 @@ window.BooksPage = function(props) {
     setNewCoverUrl("");
     setNewDriveUrl("");
     setDetectedChaptersList([]);
+    setEditingBookId(null);
   };
 
   return React.createElement(
@@ -2332,6 +2371,29 @@ window.BooksPage = function(props) {
                   className: "absolute top-2 left-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-700/50"
                 },
                 ((b.chapters || []).length) + " فصول"
+              ),
+              // أزرار التعديل والحذف للأدمن
+              isAdmin && React.createElement(
+                "div",
+                { className: "absolute top-2 right-2 flex flex-col gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity" },
+                React.createElement(
+                  "button",
+                  {
+                    onClick: function(e) { handleEditBookClick(e, b); },
+                    className: "bg-slate-900/80 hover:bg-emerald-600 text-white p-1.5 rounded-full backdrop-blur-xs transition-colors",
+                    title: "تعديل بيانات الكتاب"
+                  },
+                  "✏️"
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    onClick: function(e) { handleDeleteBook(e, b.id); },
+                    className: "bg-slate-900/80 hover:bg-rose-600 text-white p-1.5 rounded-full backdrop-blur-xs transition-colors",
+                    title: "حذف الكتاب نهائياً"
+                  },
+                  "🗑️"
+                )
               )
             ),
 
@@ -2362,7 +2424,8 @@ window.BooksPage = function(props) {
     // نافذة إضافة مرجع جديد (مكون مستقل)
     React.createElement(window.AddBookModal, {
       isOpen: showAddModal,
-      onClose: function() { setShowAddModal(false); },
+      isEditing: !!editingBookId,
+      onClose: function() { setShowAddModal(false); setEditingBookId(null); },
       isUploading: isUploading,
       uploadStatusText: uploadStatusText,
       isDraggingFile: isDraggingFile,

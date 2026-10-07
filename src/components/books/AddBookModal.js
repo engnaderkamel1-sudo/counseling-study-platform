@@ -27,6 +27,8 @@ window.AddBookModal = function(props) {
   var setNewTrack1Url = props.setNewTrack1Url;
   var onSubmit = props.onSubmit;
 
+  var isEditing = props.isEditing;
+
   var utils = window.APP_UTILS;
 
   if (!isOpen) return null;
@@ -40,7 +42,7 @@ window.AddBookModal = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "إضافة مرجع أو كتاب دراسي"),
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, isEditing ? "تعديل بيانات الكتاب" : "إضافة مرجع أو كتاب دراسي"),
         !isUploading && React.createElement("button", { onClick: onClose, className: "text-slate-400 hover:text-slate-600 dark:hover:text-white" }, "✕")
       ),
       React.createElement(
@@ -247,7 +249,7 @@ window.AddBookModal = function(props) {
             type: "submit",
             disabled: isUploading,
             className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95 disabled:opacity-50"
-          }, isUploading ? (uploadStatusText || "جاري الحفظ...") : "حفظ الكتاب في المكتبة ✓")
+          }, isUploading ? (uploadStatusText || "جاري الحفظ...") : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
         )
       )
     )
