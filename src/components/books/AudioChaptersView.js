@@ -1,4 +1,4 @@
-// مكون فصول الكتاب الصوتية والنصوص المفرغة ومشغل الصوت المستقل
+﻿// مكون فصول الكتاب الصوتية والنصوص المفرغة ومشغل الصوت المستقل
 window.AudioChaptersView = function(props) {
   var activeBook = props.activeBook;
   var currentUser = props.currentUser;
@@ -22,7 +22,6 @@ window.AudioChaptersView = function(props) {
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
-
   var [audioProgress, setAudioProgress] = React.useState(0);
   var [audioDuration, setAudioDuration] = React.useState(0);
   var [audioSpeed, setAudioSpeed] = React.useState(1);
@@ -235,7 +234,7 @@ window.AudioChaptersView = function(props) {
               src: utils.getAudioStreamUrl(activeChap.audioUrl),
               controls: false,
               autoPlay: true,
-              className: "hidden"
+              className: "hidden", onError: function(e) { alert("تعذر تشغيل الصوت. تأكد أن الملف المرفوع على Google Drive تمت مشاركته بصلاحية \"أي شخص لديه الرابط\" (Anyone with the link). وإذا كان الملف كبيراً قد تمنع جوجل تشغيله مباشرة."); }
             }),
             
             // Progress Bar & Time
@@ -282,8 +281,8 @@ window.AudioChaptersView = function(props) {
                   type: "button",
                   onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
                   className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
-                  title: "????? 10 ?????"
-                }, "?"),
+                  title: "تأخير 10 ثواني"
+                }, "⏪"),
                 React.createElement("button", {
                   type: "button",
                   onClick: function() { 
@@ -293,13 +292,13 @@ window.AudioChaptersView = function(props) {
                     }
                   },
                   className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all flex items-center justify-center w-10 h-10 text-lg"
-                }, isAudioPlaying ? "??" : "??"),
+                }, isAudioPlaying ? "⏸️" : "▶️"),
                 React.createElement("button", {
                   type: "button",
                   onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
                   className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
-                  title: "????? 10 ?????"
-                }, "?")
+                  title: "تقديم 10 ثواني"
+                }, "⏩")
               )
             )
           ),
@@ -311,7 +310,7 @@ window.AudioChaptersView = function(props) {
               setPlayingChapterId(null);
             },
             className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1 self-start sm:self-center"
-          }, "?")
+          }, "✕")
       );
     })(),
 
@@ -439,8 +438,4 @@ window.AudioChaptersView = function(props) {
     )
   );
 };
-
-
-
-
 
