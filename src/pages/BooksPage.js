@@ -1079,7 +1079,7 @@ window.BooksPage = function(props) {
     setExtractStatusText("جاري إيقاف الاستخراج الجماعي وحفظ ما تم إنجازه...");
   };
 
-  var handleBatchExtractAllChapters = async function() {
+  var handleBatchExtractAllChapters = async function(startFromChapId) {
     if (!activeBook || !pdfDoc) return alert("يرجى فتح ملف الـ PDF أولاً");
     var chaps = (activeBook.audioChapters || []);
     if (chaps.length === 0) return alert("يرجى فحص الفهرس أولاً لتقسيم الفصول");
@@ -1087,29 +1087,59 @@ window.BooksPage = function(props) {
     var key = await window.GeminiAIService.getApiKey();
     if (!key) return alert("يرجى إدخال مفتاح Gemini في الإعدادات أولاً");
 
-    if (!window.confirm("📦 هل تريد استخراج نصوص جميع فصول هذا الكتاب (" + chaps.length + " فصول) دفعة واحدة تلقائياً؟\nسيتم حفظ كل فصل تلقائياً فور انتهائه، مع شريط تقدم وحساب الوقت المتبقي.")) return;
+    // تحديد موضع الاستئناف الذكي تلقائياً
+    var startIdx = 0;
+    if (startFromChapId) {
+      startIdx = Math.max(0, chaps.findIndex(function(c) { return c.id === startFromChapId; }));
+    } else {
+      var firstUnfinishedIdx = chaps.findIndex(function(c) { return !c.text || c.text.trim().length < 30; });
+      if (firstUnfinishedIdx >= 0) {
+        startIdx = firstUnfinishedIdx;
+      }
+    }
+
+    var pendingChaps = chaps.slice(startIdx).filter(function(c) { return !c.text || c.text.trim().length < 30; });
+    var isFullRestart = false;
+
+    if (pendingChaps.length === 0) {
+      if (!window.confirm("✓ جميع فصول الكتاب مستخرجة بالفعل ومحفوظة بنجاح!\n\nهل تريد إعادة استخراج نصوص كافة الفصول من البداية وتحديثها؟")) {
+        return;
+      }
+      startIdx = 0;
+      isFullRestart = true;
+      pendingChaps = chaps;
+    }
+
+    var startChapTitle = chaps[startIdx] ? chaps[startIdx].title : "";
+    var confirmMsg = (!isFullRestart && startIdx > 0)
+      ? "📦 استئناف الاستخراج التلقائي:\n\n✓ تم الحفاظ على " + startIdx + " فصول مستخرجة سابقاً وسيتم تخطيها.\n⚡ سيتم استئناف قراءة الـ " + pendingChaps.length + " فصول المتبقية بدءاً من:\n« " + startChapTitle + " »\n\nهل تريد المتابعة؟"
+      : "📦 هل تريد بدء استخراج نصوص فصول هذا الكتاب (" + chaps.length + " فصول) دفعة واحدة تلقائياً؟\nسيتم حفظ كل فصل تلقائياً فور انتهائه.";
+
+    if (!window.confirm(confirmMsg)) return;
 
     batchCancelledRef.current = false;
     var startTime = Date.now();
-    var totalChaps = chaps.length;
 
-    // حساب إجمالي الصفحات المقدرة
+    // حساب إجمالي الصفحات المقدرة للفصول المتبقية فقط حتى تكون النسبة والوقت دقيقين
     var totalPagesToProcess = 0;
-    chaps.forEach(function(c, i) {
-      var sP = Number(c.startPage) || 1;
-      var eP = Number(c.endPage) || sP;
+    for (var k = startIdx; k < chaps.length; k++) {
+      var curC = chaps[k];
+      if (!isFullRestart && curC.text && curC.text.trim().length > 30) continue;
+      var sP = Number(curC.startPage) || 1;
+      var eP = Number(curC.endPage) || sP;
       if (eP <= sP) {
-        if (i < chaps.length - 1 && chaps[i + 1].startPage) eP = Math.max(sP, Number(chaps[i + 1].startPage) - 1);
+        if (k < chaps.length - 1 && chaps[k + 1].startPage) eP = Math.max(sP, Number(chaps[k + 1].startPage) - 1);
         else eP = Math.min(sP + 15, pdfDoc.numPages || sP);
       }
       totalPagesToProcess += Math.max(1, (eP - sP + 1));
-    });
+    }
+    totalPagesToProcess = Math.max(1, totalPagesToProcess);
 
     var processedPagesCount = 0;
     var workingChaps = chaps.slice();
     var latestBookData = Object.assign({}, activeBook);
 
-    for (var ci = 0; ci < workingChaps.length; ci++) {
+    for (var ci = startIdx; ci < workingChaps.length; ci++) {
       if (batchCancelledRef.current) break;
       var currentChap = workingChaps[ci];
       var sPage = Number(currentChap.startPage) || 1;
@@ -1122,9 +1152,8 @@ window.BooksPage = function(props) {
         }
       }
 
-      // تخطي الفصول المستخرجة مسبقاً لحفظ الوقت ومجهود المستخدم
-      if (currentChap.text && currentChap.text.trim().length > 30) {
-        processedPagesCount += Math.max(1, (ePage - sPage + 1));
+      // تخطي الفصول المستخرجة مسبقاً إذا لم يكن إعادة تشغيل كامل
+      if (!isFullRestart && currentChap.text && currentChap.text.trim().length > 30) {
         continue;
       }
 
@@ -1141,7 +1170,7 @@ window.BooksPage = function(props) {
 
         setBatchProgress({
           currentChapterIndex: ci + 1,
-          totalChapters: totalChaps,
+          totalChapters: chaps.length,
           currentChapterTitle: currentChap.title,
           currentPage: p,
           pagesDone: processedPagesCount,

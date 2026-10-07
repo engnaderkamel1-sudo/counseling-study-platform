@@ -105,16 +105,25 @@ window.AudioChaptersView = function(props) {
           },
           isAiAnalyzingBook ? "⏳ جاري فحص الفهرس..." : "🪄 فحص الفهرس بالـ AI"
         ),
-        chaps.length > 0 && typeof handleBatchExtractAllChapters === "function" ? React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleBatchExtractAllChapters,
-            disabled: isAiAnalyzingBook || !!batchProgress,
-            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition-all"
-          },
-          batchProgress ? "⏳ جاري الاستخراج الجماعي..." : "📦 استخراج كل الفصول دفعة واحدة"
-        ) : null,
+        chaps.length > 0 && typeof handleBatchExtractAllChapters === "function" ? (function() {
+          var unextractedCount = chaps.filter(function(c) { return !c.text || c.text.trim().length < 30; }).length;
+          var btnLabel = batchProgress ? "⏳ جاري الاستخراج الجماعي..."
+            : (unextractedCount < chaps.length && unextractedCount > 0)
+              ? ("📦 استئناف استخراج باقي الفصول (" + unextractedCount + " متبقية)")
+              : (unextractedCount === 0)
+                ? "✓ اكتمل استخراج جميع الفصول"
+                : "📦 استخراج كل الفصول دفعة واحدة";
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { handleBatchExtractAllChapters(); },
+              disabled: isAiAnalyzingBook || !!batchProgress,
+              className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition-all"
+            },
+            btnLabel
+          );
+        })() : null,
         chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress ? React.createElement(
           "button",
           {
