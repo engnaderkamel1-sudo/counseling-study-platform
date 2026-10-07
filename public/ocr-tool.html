@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -7,41 +7,88 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         body { font-family: Tahoma, Arial, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        h1 { font-size: 1.5rem; color: #1e293b; margin-top: 0; }
-        p { color: #64748b; font-size: 0.9rem; }
-        input[type="file"], input[type="text"], button { width: 100%; box-sizing: border-box; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+        .container { max-width: 650px; margin: 0 auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); }
+        h1 { font-size: 1.4rem; color: #1e293b; margin-top: 0; }
+        p { color: #64748b; font-size: 0.85rem; line-height: 1.5; }
+        label { display: block; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; color: #334155; }
+        input[type="file"], input[type="text"], input[type="number"] { width: 100%; box-sizing: border-box; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; }
         input[type="text"] { font-family: monospace; text-align: left; direction: ltr; }
-        button { background: #0ea5e9; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; padding: 15px; }
-        button:hover { background: #0284c7; }
+        .row { display: flex; gap: 10px; }
+        .row > div { flex: 1; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+        .btn-start { background: #0284c7; color: white; }
+        .btn-start:hover { background: #0369a1; }
+        .btn-stop { background: #ef4444; color: white; display: none; }
+        .btn-stop:hover { background: #dc2626; }
+        .btn-download { background: #10b981; color: white; display: none; width: 100%; margin-top: 12px; }
+        .btn-download:hover { background: #059669; }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
-        #progress-container { display: none; margin-top: 20px; }
-        .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        #progress-container { display: none; margin-top: 15px; padding: 15px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-top: 10px; }
+        .metric-card { background: white; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .metric-val { font-size: 1.1rem; font-weight: bold; color: #0284c7; }
+        .metric-lbl { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+        .progress-bar { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 10px; }
         .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.3s ease; }
-        #log { margin-top: 20px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 0.85rem; color: #475569; height: 150px; overflow-y: auto; white-space: pre-wrap; }
+        #status { font-weight: bold; font-size: 0.9rem; color: #1e293b; text-align: center; }
+        #log { margin-top: 15px; padding: 10px; background: #0f172a; border-radius: 10px; font-size: 0.8rem; color: #94a3b8; height: 140px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; }
+        .preview-box { margin-top: 15px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; font-size: 0.85rem; color: #92400e; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>أداة استخراج النصوص الآلية</h1>
-    <p>هذه الأداة صُممت خصيصاً لتقرأ ملفات الكتاب الممسوحة ضوئياً صفحة بصفحة وتحويلها إلى ملف نصي واحد، وتعمل بالكامل داخل جهازك لحفظ باقة الإنترنت الخاصة بك.</p>
+    <h1>📚 أداة استخراج النصوص الذكية</h1>
+    <p>تقرأ ملفات الكتب المصورة صفحة بصفحة وتستخرج النص العربي الأصلي بدقة 100% بدون أي تلخيص مع حساب الوقت وإمكانية الإيقاف والتحميل الفوري.</p>
 
     <label for="apiKey">مفتاح جوجل:</label>
     <input type="text" id="apiKey" placeholder="ضع المفتاح هنا..." />
 
-    <label for="pdfFile">اختر ملف الكتاب:</label>
+    <label for="pdfFile">اختر ملف الكتاب (PDF):</label>
     <input type="file" id="pdfFile" accept="application/pdf" />
 
-    <button id="startBtn">بدء الاستخراج الآلي</button>
+    <div class="row">
+        <div>
+            <label for="startPage">من صفحة:</label>
+            <input type="number" id="startPage" value="1" min="1" />
+        </div>
+        <div>
+            <label for="endPage">إلى صفحة (اختياري للتجربة):</label>
+            <input type="number" id="endPage" placeholder="اتركه فارغاً لكل الكتاب" min="1" />
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button id="startBtn" class="btn-start">🚀 بدء الاستخراج</button>
+        <button id="stopBtn" class="btn-stop">⏹️ إيقاف وحفظ ما تم إنجازه</button>
+    </div>
+
+    <button id="downloadNowBtn" class="btn-download">📥 تحميل ملف النص المستخرج الآن (.txt)</button>
 
     <div id="progress-container">
         <div id="status">جاري التجهيز...</div>
         <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
         </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-val" id="percentVal">0%</div>
+                <div class="metric-lbl">نسبة الإنجاز</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val" id="timeElapsedVal">00:00</div>
+                <div class="metric-lbl">الوقت المستغرق</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-val" id="timeRemainingVal">--:--</div>
+                <div class="metric-lbl">الوقت المتوقع المتبقي</div>
+            </div>
+        </div>
     </div>
 
+    <div id="previewBox" class="preview-box"></div>
     <div id="log"></div>
 </div>
 
@@ -53,17 +100,54 @@
 
     const logEl = document.getElementById('log');
     const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadNowBtn = document.getElementById('downloadNowBtn');
     const progressContainer = document.getElementById('progress-container');
     const progressFill = document.getElementById('progressFill');
     const statusEl = document.getElementById('status');
+    const percentVal = document.getElementById('percentVal');
+    const timeElapsedVal = document.getElementById('timeElapsedVal');
+    const timeRemainingVal = document.getElementById('timeRemainingVal');
+    const previewBox = document.getElementById('previewBox');
+
+    let isStopped = false;
+    let accumulatedText = '';
+    let timerInterval = null;
+    let startTime = null;
+
+    function formatTime(seconds) {
+        if (!seconds || isNaN(seconds) || seconds < 0) return '00:00';
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    }
 
     function log(msg) {
         logEl.textContent += msg + '\n';
         logEl.scrollTop = logEl.scrollHeight;
     }
 
+    function triggerDownload() {
+        if (!accumulatedText.trim()) return alert('لا يوجد نص مستخرج للتحميل بعد.');
+        const blob = new Blob([accumulatedText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `كتاب_مستخرج_${Date.now()}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    downloadNowBtn.addEventListener('click', triggerDownload);
+
+    stopBtn.addEventListener('click', () => {
+        isStopped = true;
+        stopBtn.disabled = true;
+        statusEl.textContent = 'جاري إيقاف العملية وحفظ ما تم استخراجه...';
+        log('تم طلب الإيقاف من المستخدم. سيتم إيقاف المعالجة فور انتهاء الصفحة الحالية.');
+    });
+
     async function extractTextFromBase64(base64Image, apiKey) {
-        // Auto-select candidate models that exist on this account
         const candidateModels = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.5-flash"];
         let lastError = null;
         for (const m of candidateModels) {
@@ -72,7 +156,7 @@
                 const payload = {
                     contents: [{
                         parts: [
-                            { text: "استخرج النص العربي من هذه الصفحة بدقة متناهية كما هو مكتوب حرفيا وبدون أي تلخيص." },
+                            { text: "استخرج جميع النصوص العربية من هذه الصفحة بدقة متناهية 100% كما هي مكتوبة حرفياً وبدون أي تلخيص. ارجع النص فقط." },
                             { inline_data: { mime_type: "image/jpeg", data: base64Image } }
                         ]
                     }],
@@ -105,25 +189,48 @@
         const file = document.getElementById('pdfFile').files[0];
         const apiKey = document.getElementById('apiKey').value.trim();
 
-        if (!file) return alert('الرجاء اختيار ملف الكتاب أولا');
+        if (!file) return alert('الرجاء اختيار ملف الكتاب أولاً');
         if (!apiKey) return alert('الرجاء وضع مفتاح جوجل');
 
+        isStopped = false;
+        accumulatedText = '';
         startBtn.disabled = true;
+        startBtn.style.display = 'none';
+        stopBtn.disabled = false;
+        stopBtn.style.display = 'block';
+        downloadNowBtn.style.display = 'none';
         progressContainer.style.display = 'block';
+        previewBox.style.display = 'none';
         logEl.textContent = '';
         
-        let fullText = '';
-        
         try {
-            log('جاري فتح ملف الكتاب...');
+            log('جاري فتح ملف الكتاب وقراءة الصفحات...');
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            const totalPages = pdf.numPages;
-            log(`تم فتح الكتاب بنجاح. عدد الصفحات هو ${totalPages}`);
+            const pdfTotal = pdf.numPages;
 
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                statusEl.textContent = `جاري قراءة الصفحة ${pageNum} من ${totalPages}...`;
-                progressFill.style.width = `${(pageNum / totalPages) * 100}%`;
+            const fromPage = Math.max(1, parseInt(document.getElementById('startPage').value) || 1);
+            let toPage = parseInt(document.getElementById('endPage').value) || pdfTotal;
+            toPage = Math.min(pdfTotal, Math.max(fromPage, toPage));
+
+            const totalToProcess = (toPage - fromPage) + 1;
+            log(`تم فتح الكتاب. سيتم استخراج الصفحات من ${fromPage} إلى ${toPage} (إجمالي: ${totalToProcess} صفحة).`);
+
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsedSec = (Date.now() - startTime) / 1000;
+                timeElapsedVal.textContent = formatTime(elapsedSec);
+            }, 1000);
+
+            let completedCount = 0;
+
+            for (let pageNum = fromPage; pageNum <= toPage; pageNum++) {
+                if (isStopped) {
+                    log('\nتم إيقاف المعالجة بناءً على طلبك.');
+                    break;
+                }
+
+                statusEl.textContent = `جاري استخراج الصفحة ${pageNum} من ${toPage}...`;
                 log(`\nمعالجة الصفحة ${pageNum}...`);
 
                 const page = await pdf.getPage(pageNum);
@@ -142,18 +249,18 @@
                 let success = false;
                 let retries = 3;
 
-                while (!success && retries > 0) {
+                while (!success && retries > 0 && !isStopped) {
                     try {
                         text = await extractTextFromBase64(base64Data, apiKey);
                         success = true;
-                        log(`تم الاستخراج بنجاح للصفحة ${pageNum}`);
+                        log(`✓ تم استخراج صفحة ${pageNum} بنجاح!`);
                     } catch (err) {
                         if (err.message === 'RATE_LIMIT') {
-                            log(`تم الوصول للحد الأقصى للطلبات. جاري الانتظار 15 ثانية...`);
+                            log(`تم الوصول للحد الأقصى مؤقتاً. انتظار 15 ثانية...`);
                             await new Promise(r => setTimeout(r, 15000));
                             retries--;
                         } else {
-                            log(`خطأ في الصفحة ${pageNum}: ${err.message}. جاري المحاولة مجددا...`);
+                            log(`خطأ في صفحة ${pageNum}: ${err.message}. إعادة المحاولة...`);
                             await new Promise(r => setTimeout(r, 5000));
                             retries--;
                         }
@@ -161,34 +268,54 @@
                 }
 
                 if (success) {
-                    fullText += `\n\n--- الصفحة ${pageNum} ---\n\n` + text;
-                } else {
-                    fullText += `\n\n--- الصفحة ${pageNum} ---\n\n(فشل استخراج نص هذه الصفحة)\n`;
-                    log(`تجاوز الصفحة ${pageNum} بسبب الأخطاء المتكررة.`);
+                    accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n` + text;
+                    previewBox.style.display = 'block';
+                    previewBox.textContent = `آخر نص تم استخراجه (صفحة ${pageNum}): ` + text.substring(0, 150) + '...';
+                } else if (!isStopped) {
+                    accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n(تعذر استخراج الصفحة)\n`;
+                    log(`تجاوز الصفحة ${pageNum}.`);
                 }
 
-                if (pageNum < totalPages) {
-                    log('انتظار 4 ثواني لحماية المفتاح من الحظر...');
-                    await new Promise(r => setTimeout(r, 4000));
+                completedCount++;
+                const pct = Math.round((completedCount / totalToProcess) * 100);
+                percentVal.textContent = pct + '%';
+                progressFill.style.width = pct + '%';
+
+                // Calculate estimated time remaining
+                const elapsedSec = (Date.now() - startTime) / 1000;
+                const avgSecPerPage = elapsedSec / completedCount;
+                const remainingPages = totalToProcess - completedCount;
+                const estRemainingSec = avgSecPerPage * remainingPages;
+                timeRemainingVal.textContent = formatTime(estRemainingSec);
+
+                // Show download button early if we have text
+                if (accumulatedText.length > 0) {
+                    downloadNowBtn.style.display = 'block';
+                }
+
+                if (pageNum < toPage && !isStopped) {
+                    log('انتظار 3 ثوان لحماية الاتصال...');
+                    await new Promise(r => setTimeout(r, 3000));
                 }
             }
 
-            statusEl.textContent = 'اكتمل الاستخراج بنجاح!';
-            log('\nتم الانتهاء من قراءة الكتاب بالكامل. جاري تحميل الملف...');
+            clearInterval(timerInterval);
+            statusEl.textContent = isStopped ? 'تم الإيقاف بنجاح!' : 'اكتمل الاستخراج بالكامل!';
+            log('\nانتهت العملية. يمكنك الآن تحميل الملف النصي الناتج.');
 
-            const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `كتاب_مستخرج_${Date.now()}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
+            if (accumulatedText.trim().length > 0) {
+                downloadNowBtn.style.display = 'block';
+                triggerDownload();
+            }
 
         } catch (error) {
-            log(`حدث خطأ قاتل: ${error.message}`);
-            statusEl.textContent = 'حدث خطأ، راجع السجل.';
+            log(`حدث خطأ: ${error.message}`);
+            statusEl.textContent = 'حدث خطأ أثناء المعالجة.';
+            if (timerInterval) clearInterval(timerInterval);
         } finally {
+            startBtn.style.display = 'block';
             startBtn.disabled = false;
+            stopBtn.style.display = 'none';
         }
     });
 </script>
