@@ -1,4 +1,4 @@
-// خدمة المزامنة السحابية اللحظية مع فايربيز
+﻿// خدمة المزامنة السحابية اللحظية مع فايربيز
 window.CloudSyncService = {
   // الاشتراك اللحظي في المحاضرات
   subscribeLectures: function(onUpdate) {

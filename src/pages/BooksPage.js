@@ -126,12 +126,28 @@ window.BooksPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
       if (cloudList) {
-        setBooks(cloudList);
-        utils.setLocal(cfg.storageKeys.books, cloudList);
-        if (cloudList.length > 0) {
+        // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي (Zero Data Loss Protection)
+        var mergedList = cloudList.map(function(cb) {
+          var cached = utils.getLocal("counsel_book_data_" + cb.id);
+          if (cached && cached.audioChapters) {
+            var mergedChaps = (cb.audioChapters || []).map(function(ch) {
+              var cachedCh = cached.audioChapters.find(function(cc) { return cc.id === ch.id; });
+              if (cachedCh && cachedCh.text && (!ch.text || ch.text.length < cachedCh.text.length)) {
+                return Object.assign({}, ch, { text: cachedCh.text });
+              }
+              return ch;
+            });
+            return Object.assign({}, cb, { audioChapters: mergedChaps });
+          }
+          return cb;
+        });
+
+        setBooks(mergedList);
+        utils.setLocal(cfg.storageKeys.books, mergedList);
+        if (mergedList.length > 0) {
           setActiveBook(function(prev) {
             if (!prev) return null;
-            var found = cloudList.find(function(b) { return b.id === prev.id; });
+            var found = mergedList.find(function(b) { return b.id === prev.id; });
             if (!found) return null;
             var savedPage = utils.getLocal("counsel_book_page_" + found.id);
             var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
@@ -1072,6 +1088,7 @@ window.BooksPage = function(props) {
 
     var processedPagesCount = 0;
     var workingChaps = chaps.slice();
+    var latestBookData = Object.assign({}, activeBook);
 
     for (var ci = 0; ci < workingChaps.length; ci++) {
       if (batchCancelledRef.current) break;
@@ -1086,9 +1103,15 @@ window.BooksPage = function(props) {
         }
       }
 
+      // تخطي الفصول المستخرجة مسبقاً لحفظ الوقت ومجهود المستخدم
+      if (currentChap.text && currentChap.text.trim().length > 30) {
+        processedPagesCount += Math.max(1, (ePage - sPage + 1));
+        continue;
+      }
+
       setExtractingChapterId(currentChap.id);
       var accumulated = "";
-    var lastOcrError = null;
+      var lastOcrError = null;
 
       for (var p = sPage; p <= ePage; p++) {
         if (batchCancelledRef.current) break;
@@ -1131,16 +1154,29 @@ window.BooksPage = function(props) {
         processedPagesCount++;
       }
 
-      // حفظ الفصل المنجز فوراً سحابياً ومحلياً
+      // حفظ الفصل المنجز فوراً سحابياً ومحلياً لمنع أي ضياع
       if (accumulated.trim()) {
         workingChaps[ci] = Object.assign({}, workingChaps[ci], {
           text: accumulated.trim(),
           startPage: sPage,
           endPage: ePage
         });
-        var updatedBookLive = Object.assign({}, activeBook, { audioChapters: workingChaps.slice() });
-        await cloud.saveBook(updatedBookLive);
-        setActiveBook(updatedBookLive);
+        latestBookData = Object.assign({}, latestBookData, { audioChapters: workingChaps.slice() });
+        
+        // 1. حفظ فوري متزامن محلياً
+        var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+        var bIdx = allBooks.findIndex(function(b) { return b.id === latestBookData.id; });
+        if (bIdx >= 0) allBooks[bIdx] = latestBookData;
+        else allBooks.push(latestBookData);
+        utils.setLocal(cfg.storageKeys.books, allBooks);
+        utils.setLocal("counsel_book_data_" + latestBookData.id, latestBookData);
+
+        // 2. تحديث واجهة React الحية
+        setActiveBook(latestBookData);
+        setBooks(allBooks);
+
+        // 3. الحفظ السحابي
+        await cloud.saveBook(latestBookData);
       }
     }
 
