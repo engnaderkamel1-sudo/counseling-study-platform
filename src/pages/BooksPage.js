@@ -1560,7 +1560,6 @@ window.BooksPage = function(props) {
 
         // شريط التبديل بين الزرارين الرئيسيين
         React.createElement(
-        React.createElement(
           "div",
           { className: "flex items-center justify-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 max-w-xl mx-auto shadow-inner border border-slate-200/60 dark:border-slate-700/60 gap-1.5" },
           React.createElement(
