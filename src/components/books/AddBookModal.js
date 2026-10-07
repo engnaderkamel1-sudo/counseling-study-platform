@@ -44,8 +44,23 @@ window.AddBookModal = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, isEditing ? "تعديل بيانات الكتاب" : "إضافة مرجع أو كتاب دراسي"),
-        !isUploading && React.createElement("button", { onClick: onClose, className: "text-slate-400 hover:text-slate-600 dark:hover:text-white" }, "✕")
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          React.createElement("button", {
+            type: "button",
+            onClick: onClose,
+            className: "p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all flex items-center gap-1 text-xs font-bold",
+            title: "رجوع / إغلاق"
+          }, React.createElement("span", { className: "text-base" }, "←"), React.createElement("span", null, "رجوع")),
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, isEditing ? "تعديل بيانات الكتاب" : "إضافة مرجع أو كتاب دراسي")
+        ),
+        React.createElement("button", {
+          type: "button",
+          onClick: onClose,
+          className: "w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-sm font-bold",
+          title: "إغلاق النافذة"
+        }, "✕")
       ),
       React.createElement(
         "form",
@@ -239,30 +254,40 @@ window.AddBookModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "mt-4 p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2" }, "ملف الصوت (ارفع من الجهاز أو ضع الرابط)"),
+          { className: "mt-4 p-3.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 space-y-2" },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "🎧 ملف صوتي للكتاب (اختياري تماماً)"),
+            React.createElement("span", { className: "text-[10px] text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-full" }, "اختياري")
+          ),
+          React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed" },
+            "إذا كان الكتاب يتوفر له تسجيل صوتي كامل، تلخيص مسموع، أو بودكاست، يمكنك إرفاقه هنا للاستماع إليه مع القراءة. إن لم يتوفر، اترك هذا الحقل فارغاً."
+          ),
           React.createElement("input", {
             type: "file",
             accept: "audio/*",
             onChange: function(e) { setSelectedAudioFile(e.target.files && e.target.files[0]); },
-            className: "block w-full text-xs text-slate-500 mb-2"
+            className: "block w-full text-xs text-slate-500 mb-1 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-950 dark:file:text-teal-300 hover:file:bg-teal-100"
           }),
           React.createElement("input", {
             type: "url",
             value: newTrack1Url,
             onChange: function(e) { setNewTrack1Url(e.target.value); },
-            placeholder: "أو رابط جوجل درايف لملف الصوت",
-            className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
+            placeholder: "أو الصق رابط Google Drive للملف الصوتي المرفق...",
+            className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
           })
         ),
         React.createElement(
           "div",
-          { className: "flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
-          !isUploading && React.createElement("button", { type: "button", onClick: onClose, className: "px-4 py-2 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl" }, "إلغاء"),
+          { className: "flex justify-between items-center pt-3 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement("button", {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all"
+          }, "رجوع / إلغاء"),
           React.createElement("button", {
             type: "submit",
             disabled: isUploading,
-            className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95 disabled:opacity-50"
+            className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95 disabled:opacity-50 transition-all"
           }, isUploading ? (uploadStatusText || "جاري الحفظ...") : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
         )
       )

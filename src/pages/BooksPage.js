@@ -999,25 +999,27 @@ window.BooksPage = function(props) {
                 if (parsed.author) setNewAuthor(parsed.author.trim());
                 if (parsed.translator) setNewTranslator(parsed.translator.trim());
 
-                if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
-                  var formattedChaps = parsed.chapters.map(function(c, cIdx) {
-                    return {
-                      id: "chap_" + Date.now() + "_" + cIdx,
-                      title: c.title || ("فصل " + (cIdx + 1)),
-                      startPage: Number(c.pdfStartPage) || 1,
-                      endPage: Number(c.pdfEndPage) || 1,
-                      audioUrl: "",
-                      text: ""
-                    };
-                  });
-                  setDetectedChaptersList(formattedChaps);
-                  setNewChaptersCount(formattedChaps.length);
-                  alert("✨ نجح الفحص التلقائي بالذكاء الاصطناعي!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ تم اختيار صفحة " + detectedCoverNum + " كغلاف\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
-                } else {
-                  alert("✨ تم استخراج بيانات الكتاب بنجاح!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ صفحة الغلاف: " + detectedCoverNum);
-                }
-                aiSuccess = true;
-                break;
+                  aiSuccess = true;
+                  setIsAiAnalyzingBook(false);
+                  setUploadStatusText("");
+                  if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
+                    var formattedChaps = parsed.chapters.map(function(c, cIdx) {
+                      return {
+                        id: "chap_" + Date.now() + "_" + cIdx,
+                        title: c.title || ("فصل " + (cIdx + 1)),
+                        startPage: Number(c.pdfStartPage) || 1,
+                        endPage: Number(c.pdfEndPage) || 1,
+                        audioUrl: "",
+                        text: ""
+                      };
+                    });
+                    setDetectedChaptersList(formattedChaps);
+                    setNewChaptersCount(formattedChaps.length);
+                    alert("✨ نجح الفحص التلقائي بالذكاء الاصطناعي!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ تم اختيار صفحة " + detectedCoverNum + " كغلاف\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
+                  } else {
+                    alert("✨ تم استخراج بيانات الكتاب بنجاح!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ صفحة الغلاف: " + detectedCoverNum);
+                  }
+                  break;
               }
             } else {
               var errData = await res.json().catch(function() { return {}; });
