@@ -63,6 +63,7 @@ window.BooksPage = function(props) {
   var [isSavingChapter, setIsSavingChapter] = React.useState(false);
   var [chapterSaveStatus, setChapterSaveStatus] = React.useState("");
   var [viewingChapterText, setViewingChapterText] = React.useState(null);
+  var [chapterTextFontSize, setChapterTextFontSize] = React.useState(15); // 13, 15, 17, 20
   var [playingChapterId, setPlayingChapterId] = React.useState(null);
   var chapterAudioRef = React.useRef(null);
 
@@ -1344,7 +1345,7 @@ window.BooksPage = function(props) {
             onClick: function() { handlePageChange((activeBook.currentPage || 1) - 1); },
             disabled: (activeBook.currentPage || 1) <= 1,
             title: "الصفحة السابقة",
-            className: "w-8 h-8 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 transition-all text-slate-700 dark:text-slate-200"
+            className: "w-10 h-10 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 transition-all text-slate-700 dark:text-slate-200 text-sm"
           }, "◀"),
           React.createElement("div", { className: "px-2 text-center" },
             React.createElement("span", { className: "text-[10px] text-slate-400 block" }, "صفحة"),
@@ -1359,7 +1360,7 @@ window.BooksPage = function(props) {
                   if (!isNaN(val)) handlePageChange(val);
                 },
                 title: "اكتب رقم الصفحة للانتقال المباشر",
-                className: "w-14 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-center font-extrabold text-emerald-600 dark:text-emerald-400 text-sm py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className: "w-14 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-center font-extrabold text-emerald-600 dark:text-emerald-400 text-sm py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               }),
               React.createElement("span", { className: "text-xs text-slate-400 font-semibold" }, " / " + getMaxPages())
             )
@@ -1369,7 +1370,7 @@ window.BooksPage = function(props) {
             onClick: function() { handlePageChange((activeBook.currentPage || 1) + 1); },
             disabled: (activeBook.currentPage || 1) >= getMaxPages(),
             title: "الصفحة التالية",
-            className: "w-8 h-8 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 transition-all text-slate-700 dark:text-slate-200"
+            className: "w-10 h-10 rounded-xl bg-white dark:bg-slate-700 font-bold flex items-center justify-center shadow-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 transition-all text-slate-700 dark:text-slate-200 text-sm"
           }, "▶")
         )
       ),
@@ -1450,9 +1451,9 @@ window.BooksPage = function(props) {
                 type: "button",
                 onClick: handleRotatePage,
                 title: "تدوير الصفحة 90 درجة",
-                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-sm active:scale-95 transition-all"
+                className: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm active:scale-95 transition-all min-h-[38px]"
               },
-              React.createElement("span", { className: "text-sm" }, "🔄"),
+              React.createElement("span", { className: "text-base" }, "🔄"),
               React.createElement("span", { className: "hidden sm:inline font-mono" }, pdfRotation + "°")
             ),
 
@@ -1463,10 +1464,10 @@ window.BooksPage = function(props) {
                 type: "button",
                 onClick: toggleFullScreen,
                 title: isFullScreen ? "الخروج من ملء الشاشة" : "وضع ملء الشاشة للقراءة",
-                className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                className: "px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all min-h-[38px]"
               },
               React.createElement("span", null, isFullScreen ? "🗗" : "⛶"),
-              React.createElement("span", null, isFullScreen ? "خروج من الشاشة" : "شاشة كاملة")
+              React.createElement("span", null, isFullScreen ? "خروج" : "ملء الشاشة")
             ),
 
             // زر فتح ملف PDF من الجهاز مباشرة لتخطي أي قيود سحابية وللقراءة الصوتية فوراً
@@ -1474,10 +1475,10 @@ window.BooksPage = function(props) {
               "label",
               {
                 title: "اختر ملف الكتاب من جهازك للقراءة الصوتية التلقائية وحفظه بدون نت",
-                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm cursor-pointer active:scale-95 transition-all"
+                className: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm cursor-pointer active:scale-95 transition-all min-h-[38px]"
               },
               React.createElement("span", null, "📂"),
-              React.createElement("span", { className: "hidden md:inline" }, "فتح ملف PDF"),
+              React.createElement("span", { className: "hidden sm:inline" }, "فتح ملف"),
               React.createElement("input", {
                 type: "file",
                 accept: "application/pdf",
@@ -1653,25 +1654,32 @@ window.BooksPage = function(props) {
               ) : null
             ),
 
-            // Ù…Ø´ØºÙ„ Ø§Ù„ØµÙˆØª Ù„Ù„ÙØµÙ„ Ø§Ù„Ù†Ø´Ø·
+            // مشغل الصوت للفصل النشط (مع وضع عائم أنيق للموبايل)
             playingChapterId && (function() {
               var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
               if (!activeChap) return null;
               return React.createElement(
                 "div",
-                { className: "p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in" },
+                { className: "p-3 sm:p-4 rounded-2xl bg-slate-900/95 backdrop-blur-md text-white border border-blue-500/30 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in fixed bottom-16 inset-x-3 sm:static sm:bottom-auto sm:inset-x-auto z-40" },
                 React.createElement(
                   "div",
-                  { className: "flex items-center gap-3 w-full sm:w-auto" },
-                  React.createElement("span", { className: "w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-lg animate-pulse" }, "ðŸŽµ"),
-                  React.createElement("div", null,
-                    React.createElement("div", { className: "font-black text-xs sm:text-sm text-white" }, "Ø¬Ø§Ø±ÙŠ ØªØ´ØºÙŠÙ„: " + activeChap.title),
-                    React.createElement("div", { className: "text-[11px] text-slate-400" }, "ÙŠØ¨Ø¯Ø£ Ù…Ù† ØµÙØ­Ø© PDF Ø±Ù‚Ù… " + (activeChap.startPage || 1))
+                  { className: "flex items-center gap-3 w-full sm:w-auto min-w-0" },
+                  React.createElement("span", { className: "w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-lg animate-pulse shrink-0" }, "🎵"),
+                  React.createElement("div", { className: "min-w-0 flex-1" },
+                    React.createElement("div", { className: "font-black text-xs sm:text-sm text-white truncate" }, "جاري تشغيل: " + activeChap.title),
+                    React.createElement("div", { className: "text-[11px] text-blue-300 flex items-center gap-2" },
+                      React.createElement("span", null, "صفحة PDF " + (activeChap.startPage || 1)),
+                      React.createElement("button", {
+                        type: "button",
+                        onClick: function() { handlePageChange(activeChap.startPage || 1); },
+                        className: "text-[10px] underline text-blue-200 hover:text-white"
+                      }, "انتقل للصفحة")
+                    )
                   )
                 ),
                 React.createElement(
                   "div",
-                  { className: "w-full sm:w-auto flex items-center gap-2" },
+                  { className: "w-full sm:w-auto flex items-center gap-2 shrink-0" },
                   React.createElement("audio", {
                     ref: chapterAudioRef,
                     src: utils.getAudioStreamUrl(activeChap.audioUrl),
@@ -1685,8 +1693,8 @@ window.BooksPage = function(props) {
                       if (chapterAudioRef.current) chapterAudioRef.current.pause();
                       setPlayingChapterId(null);
                     },
-                    className: "p-2 text-slate-400 hover:text-white"
-                  }, "âœ•")
+                    className: "p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+                  }, "✕")
                 )
               );
             })(),
@@ -2865,14 +2873,43 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800 shrink-0" },
-            React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
-              "ðŸ“„ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ù„Ù€: " + viewingChapterText.title
+            React.createElement("h3", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2 truncate" },
+              "📄 " + viewingChapterText.title
             ),
-            React.createElement("button", { type: "button", onClick: function() { setViewingChapterText(null); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "âœ•")
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 shrink-0" },
+              // أزرار تكبير وتصغير حجم خط القراءة على الموبايل
+              React.createElement(
+                "div",
+                { className: "flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700 text-xs font-bold" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { setChapterTextFontSize(function(s) { return Math.max(13, s - 1); }); },
+                  title: "تصغير الخط",
+                  className: "w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 active:scale-90 transition-all text-slate-600 dark:text-slate-300"
+                }, "A-"),
+                React.createElement("span", { className: "px-1.5 font-mono text-[11px] text-slate-400" }, chapterTextFontSize + "px"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { setChapterTextFontSize(function(s) { return Math.min(22, s + 1); }); },
+                  title: "تكبير الخط",
+                  className: "w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 active:scale-90 transition-all text-slate-600 dark:text-slate-300"
+                }, "A+")
+              ),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setViewingChapterText(null); },
+                className: "w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center text-sm"
+              }, "✕")
+            )
           ),
           React.createElement(
             "div",
-            { className: "overflow-y-auto flex-1 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-wrap select-text" },
+            {
+              className: "overflow-y-auto flex-1 p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-loose font-sans whitespace-pre-wrap select-text selection:bg-blue-600 selection:text-white",
+              style: { fontSize: chapterTextFontSize + "px" }
+            },
             viewingChapterText.text
           ),
           React.createElement(

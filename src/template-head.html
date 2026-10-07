@@ -91,10 +91,43 @@
       background: #64748b;
     }
 
+    /* تحسينات تجربة المستخدم للهاتف المحمول (Mobile-First UI/UX Pro Max) */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+
+    body {
+      padding-top: var(--sat);
+      padding-bottom: var(--sab);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* حماية مساحات اللمس لسهولة النقر بالإبهام (Minimum 44x44px target where needed) */
+    button, a, input, select {
+      touch-action: manipulation;
+    }
+
+    /* منع تحديد النصوص العشوائي أثناء التمرير في الموبايل */
+    .no-select {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* شريط التنقل السفلي متوافق مع Home Indicator في iOS */
+    .mobile-bottom-nav {
+      padding-bottom: calc(0.5rem + var(--sab));
+    }
+
     /* خطوط واضحة وقابلة للقراءة على الهاتف */
     @media (max-width: 640px) {
       body {
         font-size: 15px;
+        line-height: 1.6;
       }
     }
   </style>
