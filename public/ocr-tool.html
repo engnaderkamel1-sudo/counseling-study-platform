@@ -34,6 +34,16 @@
         #status { font-weight: bold; font-size: 0.9rem; color: #1e293b; text-align: center; }
         #log { margin-top: 15px; padding: 10px; background: #0f172a; border-radius: 10px; font-size: 0.8rem; color: #94a3b8; height: 140px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; }
         .preview-box { margin-top: 15px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; font-size: 0.85rem; color: #92400e; display: none; }
+        .workflow-box { margin-top: 25px; padding: 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; }
+        .workflow-title { font-weight: bold; font-size: 1rem; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .step-card { background: white; padding: 14px; border-radius: 10px; border: 1px solid #cbd5e1; margin-bottom: 12px; }
+        .step-num { display: inline-block; background: #0284c7; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 0.8rem; font-weight: bold; margin-left: 6px; }
+        .step-header { font-weight: bold; font-size: 0.9rem; color: #1e293b; margin-bottom: 6px; }
+        .step-desc { font-size: 0.85rem; color: #64748b; line-height: 1.5; margin-bottom: 10px; }
+        .action-link { display: inline-flex; align-items: center; gap: 6px; background: #0f172a; color: white; padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; text-decoration: none; transition: 0.2s; }
+        .action-link:hover { background: #334155; }
+        .action-link-secondary { background: #10b981; }
+        .action-link-secondary:hover { background: #059669; }
     </style>
 </head>
 <body>
@@ -95,6 +105,36 @@
 
     <div id="previewBox" class="preview-box"></div>
     <div id="log"></div>
+    <!-- دليل الخطوات التالية لتحويل النص لصوت ورفعه للتطبيق -->
+    <div class="workflow-box">
+        <div class="workflow-title">🎯 الخطوات التالية بعد استخراج النص:</div>
+
+        <div class="step-card">
+            <div class="step-header"><span class="step-num">2</span>الخطوة الثانية: تحويل النص المستخرج إلى ملف صوت (MP3) مجاناً</div>
+            <div class="step-desc">
+                بعد تحميل ملف النص (.txt)، افتح موقع تحويل النصوص إلى صوت مجاني بصوت بشري نقي (مايكروسوفت شاكر أو سلمى)، الصق النص واضغط تحميل الصوت:
+            </div>
+            <a href="https://edge-tts.com" target="_blank" class="action-link">
+                🌐 فتح موقع تحويل النصوص إلى صوت (Edge-TTS)
+            </a>
+            <span style="font-size: 0.8rem; color: #64748b; margin-right: 8px;">(اختر صوت Shakir أو Salma واضغط Download)</span>
+        </div>
+
+        <div class="step-card">
+            <div class="step-header"><span class="step-num">3</span>الخطوة الثالثة: ربط ملف الصوت بالكتاب داخل التطبيق</div>
+            <div class="step-desc">
+                بعد تحميل ملف الصوت (MP3) على جهازك، ارجع لتطبيق المنصة، اذهب لقسم <b>المراجع والكتب</b>، واضغط <b>إضافة كتاب جديد</b> (أو تعديل الكتاب الحالي):
+            </div>
+            <div style="font-size: 0.85rem; color: #334155; line-height: 1.6; background: #f1f5f9; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                • اختر ملف الـ PDF من جهازك للقراءة.<br>
+                • اختر ملف الصوت الـ MP3 من جهازك للاستماع.<br>
+                • اضغط <b>حفظ الكتاب</b>، والتطبيق سيقوم برفع كل شيء وربطه تلقائياً!
+            </div>
+            <a href="/#books" class="action-link action-link-secondary">
+                📚 العودة لصفحة الكتب بالتطبيق لإضافة التراك
+            </a>
+        </div>
+    </div>
 </div>
 
 <script>
