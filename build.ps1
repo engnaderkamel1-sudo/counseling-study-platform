@@ -72,8 +72,12 @@ function Build-App {
 
     $finalHtml = [string]::Join("`n", $bodyParts)
     [System.IO.File]::WriteAllText($outIndex, $finalHtml, $utf8NoBom)
+    $publicDir = Join-Path $appDir "public"
+    if (Test-Path $publicDir) {
+        [System.IO.File]::WriteAllText((Join-Path $publicDir "index.html"), $finalHtml, $utf8NoBom)
+    }
 
-    Write-Host "[Build] App bundled successfully to index.html with Error Reporting" -ForegroundColor Green
+    Write-Host "[Build] App bundled successfully to index.html and public/index.html" -ForegroundColor Green
 }
 
 Build-App

@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791387553",
-  buildTime: "2026-10-07T15:39:13",
+  version: "1.2.1791389111",
+  buildTime: "2026-10-07T16:05:11",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2886,21 +2886,71 @@ window.AudioChaptersView = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "w-full sm:w-auto flex items-center gap-2 shrink-0" },
+          { className: "w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2 shrink-0" },
           React.createElement("audio", {
             ref: chapterAudioRef,
             src: utils.getAudioStreamUrl(activeChap.audioUrl),
-            controls: true,
+            controls: false,
             autoPlay: true,
-            className: "h-9 w-full sm:w-64 accent-blue-500"
+            className: "hidden"
           }),
+          React.createElement("div", { className: "flex items-center justify-center gap-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 shadow-inner" },
+            // Speed Button
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { 
+                if (chapterAudioRef.current) {
+                  var currentSpeed = chapterAudioRef.current.playbackRate;
+                  chapterAudioRef.current.playbackRate = currentSpeed >= 2 ? 1 : currentSpeed + 0.5;
+                  // Trigger a re-render or just let it be silent (user hears it)
+                } 
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-[10px] font-bold text-slate-300 hover:text-white transition-all",
+              title: "سرعة التشغيل"
+            }, "تسريع"),
+            
+            // Rewind 10s
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
+              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
+              title: "تأخير 10 ثواني"
+            }, "⏪"),
+            
+            // Play/Pause (Using simple check or forcing native controls if state is too complex, but let's try direct play/pause)
+            React.createElement("button", {
+              type: "button",
+              onClick: function(e) { 
+                if (chapterAudioRef.current) {
+                  if (chapterAudioRef.current.paused) { 
+                    chapterAudioRef.current.play(); 
+                    e.currentTarget.textContent = "⏸️";
+                  } else { 
+                    chapterAudioRef.current.pause(); 
+                    e.currentTarget.textContent = "▶️";
+                  }
+                } 
+              },
+              className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md transition-all flex items-center justify-center w-8 h-8",
+              title: "تشغيل / إيقاف"
+            }, "⏸️"),
+            
+            // Forward 10s
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
+              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
+              title: "تقديم 10 ثواني"
+            }, "⏩")
+          ),
+          // Close button
           React.createElement("button", {
             type: "button",
             onClick: function() {
               if (chapterAudioRef.current) chapterAudioRef.current.pause();
               setPlayingChapterId(null);
             },
-            className: "p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+            className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1"
           }, "✕")
         )
       );
@@ -3030,6 +3080,7 @@ window.AudioChaptersView = function(props) {
     )
   );
 };
+
 
 // Module: pages/LecturesPage.js
 // شاشة المحاضرات مع دعم رابط يوتيوب ودرايف والملخص والبودكاست وأدوات الذكاء للمسؤول فقط
@@ -5093,7 +5144,7 @@ window.BooksPage = function(props) {
         "}";
 
       var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-      var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+      var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
       var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
       candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
 
@@ -5209,7 +5260,10 @@ window.BooksPage = function(props) {
 
   // دالة مساعدة قوية لاستخراج نص صفحة مفردة مع معالجة الـ Rate Limit وإعادة المحاولة
   var extractTextFromPageBase64 = async function(base64Image, key, pageNum, isBatchCancelledRef) {
-    var candidateModels = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+    var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+    var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
+    candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
     var prompt = "أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).\n" +
       "المهمة: استخرج متن نص هذه الصفحة العربية رقم " + pageNum + " بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.\n\n" +
       "قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:\n" +
@@ -5241,21 +5295,27 @@ window.BooksPage = function(props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
+          
           if (res.status === 429) {
-            // انتظار قصير لتخفيف ضغط الكوتا
             await new Promise(function(r) { setTimeout(r, 6000); });
             retries--;
             continue;
           }
+          
           if (res.ok) {
             var data = await res.json();
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
               return (data.candidates[0].content.parts[0].text || "").trim();
+            } else {
+              // Failed due to safety or empty response
+              lastErr = new Error("Empty response or safety block from model " + modelName);
+              break; // try next model
             }
+          } else {
+            var errD = await res.json().catch(function() { return {}; });
+            lastErr = new Error((errD.error && errD.error.message) || ("Model " + modelName + " status " + res.status));
+            break; // Try next model on 4xx/5xx
           }
-          var errD = await res.json().catch(function() { return {}; });
-          lastErr = new Error((errD.error && errD.error.message) || ("Model " + modelName + " status " + res.status));
-          break; // جرب النموذج التالي
         } catch (callErr) {
           if (callErr.message === "CANCELLED") throw callErr;
           lastErr = callErr;
@@ -5664,7 +5724,7 @@ window.BooksPage = function(props) {
       if (scanParts.length > 0) {
         var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
         // وضع نماذج gemini-2.0-flash و gemini-1.5-flash في المقدمة لأنها تدعم الصور والرؤية بامتياز
-        var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+        var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
         var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
         // إزالة التكرار
         candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
@@ -6290,6 +6350,9 @@ window.BooksPage = function(props) {
           setViewingChapterText: setViewingChapterText,
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
+          handleBatchExtractAllChapters: handleBatchExtractAllChapters,
+          handleStopBatchExtraction: handleStopBatchExtraction,
+          batchProgress: batchProgress,
           extractingChapterId: extractingChapterId,
           extractStatusText: extractStatusText,
           handleClearAllChapters: handleClearAllChapters,
@@ -6960,6 +7023,9 @@ window.BooksPage = function(props) {
     })
   );
 };
+
+
+
 
 // Module: pages/CurriculumPage.js
 // شاشة المنهج الدراسي والتقارير التفاعلية المجهزة للمستقبل (Interactive Report & NotebookLM style)
