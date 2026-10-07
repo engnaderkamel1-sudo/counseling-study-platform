@@ -1,4 +1,4 @@
-﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -1018,6 +1018,15 @@ window.BooksPage = function(props) {
     var lastOcrError = null;
       for (var pi = 0; pi < pagesToExtract.length; pi++) {
         var pageNum = pagesToExtract[pi];
+        var chapPct = Math.round((pi / Math.max(1, pagesToExtract.length)) * 100);
+        setSingleExtractProgress({
+          chapterId: chapId,
+          currentPage: pageNum,
+          pageIndex: pi + 1,
+          totalPages: pagesToExtract.length,
+          remainingPages: Math.max(0, pagesToExtract.length - pi),
+          percent: chapPct
+        });
         setExtractStatusText("جاري قراءة صفحة " + pageNum + " (" + (pi + 1) + " من " + pagesToExtract.length + ")...");
         try {
           var pageObj = await pdfDoc.getPage(pageNum);
@@ -1067,10 +1076,12 @@ window.BooksPage = function(props) {
     } finally {
       setExtractingChapterId(null);
       setExtractStatusText("");
+      setSingleExtractProgress(null);
     }
   };
 
   // استخراج نصوص كافة الفصول دفعة واحدة (Batch All Chapters Extraction)
+  var [singleExtractProgress, setSingleExtractProgress] = React.useState(null);
   var [batchProgress, setBatchProgress] = React.useState(null);
   var batchCancelledRef = React.useRef(false);
 
@@ -1168,7 +1179,12 @@ window.BooksPage = function(props) {
         var remainingSec = Math.max(0, (totalPagesToProcess - processedPagesCount) * avgSec);
         var pct = Math.round((processedPagesCount / Math.max(1, totalPagesToProcess)) * 100);
 
+        var chapTotalPages = Math.max(1, (ePage - sPage + 1));
+        var chapPagesDone = (p - sPage);
+        var chapPct = Math.round((chapPagesDone / chapTotalPages) * 100);
+
         setBatchProgress({
+          currentChapterId: currentChap.id,
           currentChapterIndex: ci + 1,
           totalChapters: chaps.length,
           currentChapterTitle: currentChap.title,
@@ -1177,7 +1193,14 @@ window.BooksPage = function(props) {
           totalPages: totalPagesToProcess,
           percent: pct,
           elapsedSeconds: elapsedSec,
-          remainingSeconds: remainingSec
+          remainingSeconds: remainingSec,
+          chapterStartPage: sPage,
+          chapterEndPage: ePage,
+          chapterTotalPages: chapTotalPages,
+          chapterCurrentPage: p,
+          chapterPageIndex: (p - sPage + 1),
+          chapterPercent: chapPct,
+          chapterRemainingPages: Math.max(0, ePage - p + 1)
         });
 
         try {
@@ -2038,14 +2061,11 @@ window.BooksPage = function(props) {
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
           handleBatchExtractAllChapters: handleBatchExtractAllChapters,
-          handleStopBatchExtraction: handleStopBatchExtraction,
           batchProgress: batchProgress,
+          singleExtractProgress: singleExtractProgress,
           extractingChapterId: extractingChapterId,
           extractStatusText: extractStatusText,
-          handleClearAllChapters: handleClearAllChapters,
-          handleBatchExtractAllChapters: handleBatchExtractAllChapters,
-          handleStopBatchExtraction: handleStopBatchExtraction,
-          batchProgress: batchProgress
+          handleClearAllChapters: handleClearAllChapters
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";

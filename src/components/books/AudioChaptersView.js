@@ -1,4 +1,4 @@
-﻿// مكون فصول الكتاب الصوتية والنصوص المفرغة ومشغل الصوت المستقل
+// مكون فصول الكتاب الصوتية والنصوص المفرغة ومشغل الصوت المستقل
 window.AudioChaptersView = function(props) {
   var activeBook = props.activeBook;
   var currentUser = props.currentUser;
@@ -19,6 +19,7 @@ window.AudioChaptersView = function(props) {
   var handleBatchExtractAllChapters = props.handleBatchExtractAllChapters;
   var handleStopBatchExtraction = props.handleStopBatchExtraction;
   var batchProgress = props.batchProgress;
+  var singleExtractProgress = props.singleExtractProgress;
   var handleMoveChapter = props.handleMoveChapter;
 
   var utils = window.APP_UTILS;
@@ -387,21 +388,37 @@ window.AudioChaptersView = function(props) {
       chaps.map(function(chap, idx) {
         var isThisPlaying = playingChapterId === chap.id;
         var isExtractingThis = extractingChapterId === chap.id;
+
+        var currentChapProgress = null;
+        if (isExtractingThis) {
+          if (batchProgress && (batchProgress.currentChapterId === chap.id || batchProgress.currentChapterIndex === (idx + 1))) {
+            currentChapProgress = {
+              percent: batchProgress.chapterPercent !== undefined ? batchProgress.chapterPercent : 0,
+              currentPage: batchProgress.chapterCurrentPage || batchProgress.currentPage,
+              totalPages: batchProgress.chapterTotalPages || 1,
+              pageIndex: batchProgress.chapterPageIndex || 1,
+              remainingPages: batchProgress.chapterRemainingPages !== undefined ? batchProgress.chapterRemainingPages : Math.max(0, (batchProgress.chapterTotalPages || 1) - (batchProgress.chapterPageIndex || 1))
+            };
+          } else if (singleExtractProgress && singleExtractProgress.chapterId === chap.id) {
+            currentChapProgress = singleExtractProgress;
+          }
+        }
+
         return React.createElement(
           "div",
           {
             key: chap.id,
             className: "p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 " +
-              (isThisPlaying ? "border-blue-500 shadow-md ring-2 ring-blue-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
+              (isThisPlaying ? "border-blue-500 shadow-md ring-2 ring-blue-500/20" : isExtractingThis ? "border-emerald-500/70 shadow-md ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
           },
           React.createElement(
             "div",
-            { className: "flex items-start gap-3" },
+            { className: "flex items-start gap-3 flex-1 min-w-0" },
             React.createElement(
               "div",
               { className: "flex flex-col items-center gap-1 shrink-0" },
-              React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
-                (idx + 1)
+              React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs " + (isThisPlaying ? "bg-blue-600 text-white" : isExtractingThis ? "bg-emerald-600 text-white animate-pulse" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
+                isExtractingThis ? "⏳" : (idx + 1)
               ),
               currentUser && currentUser.role === "admin" ? React.createElement(
                 "div",
@@ -422,7 +439,7 @@ window.AudioChaptersView = function(props) {
             ),
             React.createElement(
               "div",
-              { className: "space-y-1" },
+              { className: "space-y-1.5 flex-1 min-w-0" },
               React.createElement("h5", { className: "font-bold text-sm text-slate-900 dark:text-white" }, chap.title),
               React.createElement(
                 "div",
@@ -434,7 +451,44 @@ window.AudioChaptersView = function(props) {
                 }, "📖 صفحة PDF رقم " + (chap.startPage || 1)),
                 chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "• أوديو MP3 متاح ✓") : null,
                 chap.text ? React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" }, "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓") : null
-              )
+              ),
+
+              // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية
+              isExtractingThis && currentChapProgress ? React.createElement(
+                "div",
+                { className: "mt-2.5 p-2.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/50 border border-emerald-500/30 space-y-1.5 animate-fade-in" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between text-xs flex-wrap gap-1" },
+                  React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300" },
+                    React.createElement("span", { className: "animate-spin inline-block text-[11px]" }, "⚙️"),
+                    React.createElement("span", null, "نسبة إنجاز هذا الفصل:"),
+                    React.createElement("span", { className: "font-mono font-black text-white px-2 py-0.5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-xs shadow-xs" },
+                      currentChapProgress.percent + "%"
+                    )
+                  ),
+                  React.createElement("div", { className: "text-[11px] text-slate-700 dark:text-slate-300 font-bold" },
+                    "صفحة " + currentChapProgress.currentPage + " (فاضل " + currentChapProgress.remainingPages + " من " + currentChapProgress.totalPages + " صفحة)"
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden border border-emerald-500/20" },
+                  React.createElement("div", {
+                    className: "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300",
+                    style: { width: Math.max(5, currentChapProgress.percent) + "%" }
+                  })
+                ),
+                currentChapProgress.remainingPages <= 2 ? React.createElement(
+                  "p",
+                  { className: "text-[10px] text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1 pt-0.5" },
+                  "⏳ أوشك هذا الفصل على الانتهاء! فاضل " + currentChapProgress.remainingPages + " صفحة فقط - ننصح بالانتظار لحظات ليتم حفظه تلقائيًا."
+                ) : currentChapProgress.percent <= 25 ? React.createElement(
+                  "p",
+                  { className: "text-[10px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 pt-0.5" },
+                  "💡 الفصل في بدايته (صفحة " + currentChapProgress.pageIndex + " من " + currentChapProgress.totalPages + ") - يمكنك إيقاف الاستخراج بأمان إن أردت."
+                ) : null
+              ) : null
             )
           ),
           React.createElement(
@@ -453,7 +507,7 @@ window.AudioChaptersView = function(props) {
               title: "استخراج وقراءة نص صفحات هذا الفصل بالكامل من الكتاب لنسخه"
             },
             React.createElement("span", null, isExtractingThis ? "⏳" : "⚡"),
-            React.createElement("span", null, isExtractingThis ? (extractStatusText || "جاري الاستخراج...") : (chap.text ? "إعادة استخراج النص" : "استخراج نص الفصل بالـ AI"))
+            React.createElement("span", null, isExtractingThis ? (currentChapProgress ? ("جاري الاستخراج: " + currentChapProgress.percent + "%") : (extractStatusText || "جاري الاستخراج...")) : (chap.text ? "إعادة استخراج النص" : "استخراج نص الفصل بالـ AI"))
             ),
 
             // 2. زر عرض ونسخ النص المفرغ
