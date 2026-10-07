@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -270,6 +270,9 @@
         if (!file) return alert('الرجاء اختيار ملف الكتاب أولاً');
         if (!apiKey) return alert('الرجاء وضع مفتاح جوجل');
 
+        localStorage.setItem('counsel_ai_api_key', apiKey);
+        localStorage.setItem('COUNSEL_API_KEY', apiKey);
+
         isStopped = false;
         accumulatedText = '';
         startBtn.disabled = true;
@@ -348,7 +351,7 @@
                 if (success) {
                                         const withHeader = document.getElementById('includePageHeaders').checked;
                     if (withHeader) {
-                        accumulatedText += \n\n=== الصفحة ${pageNum} ===\n\n + text;
+                        accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n` + text;
                     } else {
                         accumulatedText += (accumulatedText ? '\n\n' : '') + text;
                     }

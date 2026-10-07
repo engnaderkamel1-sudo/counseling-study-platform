@@ -1051,6 +1051,28 @@ window.BooksPage = function(props) {
                 target: "_blank",
                 className: "inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
               }, "⚡ فتح أداة استخراج نصوص الكتاب")
+            ),
+            currentUser.role === "admin" && React.createElement(
+              "div",
+              { className: "mt-3 p-3.5 bg-blue-50/80 dark:bg-slate-800/80 border border-blue-200 dark:border-blue-900/60 rounded-xl space-y-2 text-xs" },
+              React.createElement("div", { className: "font-bold text-slate-900 dark:text-white flex items-center gap-1.5" },
+                React.createElement("span", null, "🎧"),
+                "خطوات تجهيز وتحويل الكتاب لصوت بشري نقي:"
+              ),
+              React.createElement("div", { className: "text-slate-600 dark:text-slate-300 space-y-2 text-[11px] leading-relaxed" },
+                React.createElement("div", { className: "flex items-start gap-1.5" },
+                  React.createElement("span", { className: "font-bold text-blue-600" }, "1️⃣"),
+                  React.createElement("span", null, React.createElement("b", null, "استخراج النص:"), " اضغط زر 'فتح أداة استخراج نصوص الكتاب' أعلاه لاستخراج النص الأصلي بدقة 100% بدون أي تلخيص، ثم اضغط زر التحميل (.txt).")
+                ),
+                React.createElement("div", { className: "flex items-start gap-1.5" },
+                  React.createElement("span", { className: "font-bold text-teal-600" }, "2️⃣"),
+                  React.createElement("span", null, React.createElement("b", null, "تحويل النص لصوت:"), " افتح موقع ", React.createElement("a", { href: "https://edge-tts.com", target: "_blank", className: "text-blue-600 dark:text-blue-400 font-bold underline" }, "Edge-TTS (اضغط هنا للفتح)"), "، الصق النص، واختر صوت شاكر أو سلمى، ثم اضغط Download لتحميل ملف الـ MP3.")
+                ),
+                React.createElement("div", { className: "flex items-start gap-1.5" },
+                  React.createElement("span", { className: "font-bold text-emerald-600" }, "3️⃣"),
+                  React.createElement("span", null, React.createElement("b", null, "رفع الصوت للتطبيق:"), " اضغط زر 'رفع كتاب أو مرجع جديد (PDF)' بأعلى الصفحة، واختر ملف الكتاب وملف الصوت معاً، والتطبيق سيرفعهما تلقائياً للدارسين!")
+                )
+              )
             )
           )
         ),
