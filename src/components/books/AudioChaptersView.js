@@ -191,21 +191,71 @@ window.AudioChaptersView = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "w-full sm:w-auto flex items-center gap-2 shrink-0" },
+          { className: "w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2 shrink-0" },
           React.createElement("audio", {
             ref: chapterAudioRef,
             src: utils.getAudioStreamUrl(activeChap.audioUrl),
-            controls: true,
+            controls: false,
             autoPlay: true,
-            className: "h-9 w-full sm:w-64 accent-blue-500"
+            className: "hidden"
           }),
+          React.createElement("div", { className: "flex items-center justify-center gap-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700 shadow-inner" },
+            // Speed Button
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { 
+                if (chapterAudioRef.current) {
+                  var currentSpeed = chapterAudioRef.current.playbackRate;
+                  chapterAudioRef.current.playbackRate = currentSpeed >= 2 ? 1 : currentSpeed + 0.5;
+                  // Trigger a re-render or just let it be silent (user hears it)
+                } 
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-700/50 hover:bg-slate-700 text-[10px] font-bold text-slate-300 hover:text-white transition-all",
+              title: "سرعة التشغيل"
+            }, "تسريع"),
+            
+            // Rewind 10s
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
+              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
+              title: "تأخير 10 ثواني"
+            }, "⏪"),
+            
+            // Play/Pause (Using simple check or forcing native controls if state is too complex, but let's try direct play/pause)
+            React.createElement("button", {
+              type: "button",
+              onClick: function(e) { 
+                if (chapterAudioRef.current) {
+                  if (chapterAudioRef.current.paused) { 
+                    chapterAudioRef.current.play(); 
+                    e.currentTarget.textContent = "⏸️";
+                  } else { 
+                    chapterAudioRef.current.pause(); 
+                    e.currentTarget.textContent = "▶️";
+                  }
+                } 
+              },
+              className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md transition-all flex items-center justify-center w-8 h-8",
+              title: "تشغيل / إيقاف"
+            }, "⏸️"),
+            
+            // Forward 10s
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
+              className: "p-1.5 rounded-xl text-slate-400 hover:bg-slate-700 hover:text-white transition-all",
+              title: "تقديم 10 ثواني"
+            }, "⏩")
+          ),
+          // Close button
           React.createElement("button", {
             type: "button",
             onClick: function() {
               if (chapterAudioRef.current) chapterAudioRef.current.pause();
               setPlayingChapterId(null);
             },
-            className: "p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
+            className: "p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/30 hover:text-rose-200 transition-all ml-1"
           }, "✕")
         )
       );
@@ -335,3 +385,4 @@ window.AudioChaptersView = function(props) {
     )
   );
 };
+

@@ -737,7 +737,7 @@ window.BooksPage = function(props) {
         "}";
 
       var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-      var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+      var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
       var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
       candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
 
@@ -853,7 +853,10 @@ window.BooksPage = function(props) {
 
   // دالة مساعدة قوية لاستخراج نص صفحة مفردة مع معالجة الـ Rate Limit وإعادة المحاولة
   var extractTextFromPageBase64 = async function(base64Image, key, pageNum, isBatchCancelledRef) {
-    var candidateModels = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+    var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+    var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
+    candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
     var prompt = "أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).\n" +
       "المهمة: استخرج متن نص هذه الصفحة العربية رقم " + pageNum + " بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.\n\n" +
       "قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:\n" +
@@ -885,21 +888,27 @@ window.BooksPage = function(props) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
           });
+          
           if (res.status === 429) {
-            // انتظار قصير لتخفيف ضغط الكوتا
             await new Promise(function(r) { setTimeout(r, 6000); });
             retries--;
             continue;
           }
+          
           if (res.ok) {
             var data = await res.json();
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
               return (data.candidates[0].content.parts[0].text || "").trim();
+            } else {
+              // Failed due to safety or empty response
+              lastErr = new Error("Empty response or safety block from model " + modelName);
+              break; // try next model
             }
+          } else {
+            var errD = await res.json().catch(function() { return {}; });
+            lastErr = new Error((errD.error && errD.error.message) || ("Model " + modelName + " status " + res.status));
+            break; // Try next model on 4xx/5xx
           }
-          var errD = await res.json().catch(function() { return {}; });
-          lastErr = new Error((errD.error && errD.error.message) || ("Model " + modelName + " status " + res.status));
-          break; // جرب النموذج التالي
         } catch (callErr) {
           if (callErr.message === "CANCELLED") throw callErr;
           lastErr = callErr;
@@ -1308,7 +1317,7 @@ window.BooksPage = function(props) {
       if (scanParts.length > 0) {
         var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
         // وضع نماذج gemini-2.0-flash و gemini-1.5-flash في المقدمة لأنها تدعم الصور والرؤية بامتياز
-        var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+        var defaultCandidateModels = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
         var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
         // إزالة التكرار
         candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
@@ -1934,6 +1943,9 @@ window.BooksPage = function(props) {
           setViewingChapterText: setViewingChapterText,
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
+          handleBatchExtractAllChapters: handleBatchExtractAllChapters,
+          handleStopBatchExtraction: handleStopBatchExtraction,
+          batchProgress: batchProgress,
           extractingChapterId: extractingChapterId,
           extractStatusText: extractStatusText,
           handleClearAllChapters: handleClearAllChapters,
@@ -2604,3 +2616,6 @@ window.BooksPage = function(props) {
     })
   );
 };
+
+
+
