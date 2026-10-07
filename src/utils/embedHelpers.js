@@ -19,7 +19,7 @@ window.APP_UTILS.getAudioStreamUrl = function(url) {
   if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    return "https://lh3.googleusercontent.com/d/" + driveId;
+    return "/api/audio-proxy?id=" + driveId;
   }
   return url;
 };
