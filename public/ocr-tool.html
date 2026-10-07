@@ -48,7 +48,12 @@
     <label for="pdfFile">اختر ملف الكتاب (PDF):</label>
     <input type="file" id="pdfFile" accept="application/pdf" />
 
-    <div class="row">
+    <div style="margin-bottom: 12px; display: flex; items-center; gap: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem; color: #475569; cursor: pointer;">
+            <input type="checkbox" id="includePageHeaders" style="width: auto; margin-bottom: 0;" />
+            تضمين عبارة "الصفحة رقم كذا" داخل النص (غير محبذ للكتب الصوتية حتى لا يقطع السماع)
+        </label>
+    </div>    <div class="row">
         <div>
             <label for="startPage">من صفحة:</label>
             <input type="number" id="startPage" value="1" min="1" />
@@ -268,7 +273,12 @@
                 }
 
                 if (success) {
-                    accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n` + text;
+                                        const withHeader = document.getElementById('includePageHeaders').checked;
+                    if (withHeader) {
+                        accumulatedText += \n\n=== الصفحة ${pageNum} ===\n\n + text;
+                    } else {
+                        accumulatedText += (accumulatedText ? '\n\n' : '') + text;
+                    }
                     previewBox.style.display = 'block';
                     previewBox.textContent = `آخر نص تم استخراجه (صفحة ${pageNum}): ` + text.substring(0, 150) + '...';
                 } else if (!isStopped) {
