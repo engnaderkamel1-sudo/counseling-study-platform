@@ -974,11 +974,15 @@ window.BooksPage = function(props) {
 
         for (var i = 0; i < candidateModels.length; i++) {
           try {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
             var res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + candidateModels[i] + ":generateContent?key=" + key, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(requestBody)
+              body: JSON.stringify(requestBody),
+              signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (res.ok) {
               var d = await res.json();
               if (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts[0]) {
@@ -999,37 +1003,39 @@ window.BooksPage = function(props) {
                 if (parsed.author) setNewAuthor(parsed.author.trim());
                 if (parsed.translator) setNewTranslator(parsed.translator.trim());
 
-                  aiSuccess = true;
-                  setIsAiAnalyzingBook(false);
-                  setUploadStatusText("");
-                  if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
-                    var formattedChaps = parsed.chapters.map(function(c, cIdx) {
-                      return {
-                        id: "chap_" + Date.now() + "_" + cIdx,
-                        title: c.title || ("فصل " + (cIdx + 1)),
-                        startPage: Number(c.pdfStartPage) || 1,
-                        endPage: Number(c.pdfEndPage) || 1,
-                        audioUrl: "",
-                        text: ""
-                      };
-                    });
-                    setDetectedChaptersList(formattedChaps);
-                    setNewChaptersCount(formattedChaps.length);
-                    alert("✨ نجح الفحص التلقائي بالذكاء الاصطناعي!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ تم اختيار صفحة " + detectedCoverNum + " كغلاف\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
-                  } else {
-                    alert("✨ تم استخراج بيانات الكتاب بنجاح!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ صفحة الغلاف: " + detectedCoverNum);
-                  }
-                  break;
+                aiSuccess = true;
+                setIsAiAnalyzingBook(false);
+                setUploadStatusText("");
+                if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
+                  var formattedChaps = parsed.chapters.map(function(c, cIdx) {
+                    return {
+                      id: "chap_" + Date.now() + "_" + cIdx,
+                      title: c.title || ("فصل " + (cIdx + 1)),
+                      startPage: Number(c.pdfStartPage) || 1,
+                      endPage: Number(c.pdfEndPage) || 1,
+                      audioUrl: "",
+                      text: ""
+                    };
+                  });
+                  setDetectedChaptersList(formattedChaps);
+                  setNewChaptersCount(formattedChaps.length);
+                  alert("✨ نجح الفحص التلقائي بالذكاء الاصطناعي!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ تم اختيار صفحة " + detectedCoverNum + " كغلاف\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
+                } else {
+                  alert("✨ تم استخراج بيانات الكتاب بنجاح!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ صفحة الغلاف: " + detectedCoverNum);
+                }
+                break;
               }
             } else {
               var errData = await res.json().catch(function() { return {}; });
               lastAiError = (errData.error && errData.error.message) || ("Model " + candidateModels[i] + " returned status " + res.status);
             }
           } catch (eVis) {
-            lastAiError = eVis.message || String(eVis);
+            lastAiError = eVis.name === "AbortError" ? "استغرقت الاستجابة وقتاً طويلاً" : (eVis.message || String(eVis));
             console.warn("AI inspect model error:", eVis);
           }
         }
+        setIsAiAnalyzingBook(false);
+        setUploadStatusText("");
         if (!aiSuccess) {
           alert("تنبيه من خدمة الذكاء الاصطناعي: " + (lastAiError || "تعذر قراءة صفحات الفهرس بواسطة النماذج المتاحة. تأكد من صلاحية مفتاح Gemini في الإعدادات."));
         }
@@ -1057,23 +1063,23 @@ window.BooksPage = function(props) {
   var processSelectedFile = function(file) {
     if (!file) return;
     setSelectedFile(file);
-    var rawName = file.name.replace(/\.[^/.]+$/, "");
-    if (!newTitle.trim()) {
-      if (rawName.indexOf(" - ") !== -1) {
-        var parts = rawName.split(" - ");
-        setNewTitle(parts[0].trim());
-        if (!newAuthor.trim() && parts[1]) {
-          setNewAuthor(parts[1].trim());
-        }
-      } else if (rawName.indexOf(" _ ") !== -1) {
-        var partsUnderscore = rawName.split(" _ ");
-        setNewTitle(partsUnderscore[0].trim());
-        if (!newAuthor.trim() && partsUnderscore[1]) {
-          setNewAuthor(partsUnderscore[1].trim());
-        }
-      } else {
-        setNewTitle(rawName);
-      }
+    // استخراج صورة الصفحة الأولى للمعاينة فوراً بدون كتابة اسم الملف الخام كاسم للكتاب
+    if (window.pdfjsLib) {
+      file.arrayBuffer().then(function(buf) {
+        return window.pdfjsLib.getDocument({ data: buf }).promise;
+      }).then(function(doc) {
+        setNewTotalPages(doc.numPages || 1);
+        return doc.getPage(1);
+      }).then(function(page) {
+        var vp = page.getViewport({ scale: 0.8 });
+        var canvas = document.createElement("canvas");
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        var ctx = canvas.getContext("2d");
+        return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+          setNewCoverUrl(canvas.toDataURL("image/jpeg", 0.8));
+        });
+      }).catch(function() {});
     }
   };
 

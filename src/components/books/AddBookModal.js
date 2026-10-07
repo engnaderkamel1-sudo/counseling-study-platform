@@ -144,7 +144,7 @@ window.AddBookModal = function(props) {
               required: true,
               value: newTitle,
               onChange: function(e) { setNewTitle(e.target.value); },
-              placeholder: "مثال: الروحانية الناضجة وجدانياً، فخاخ العلاقات...",
+              placeholder: "أدخل عنوان الكتاب...",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium"
             })
           ),
@@ -157,7 +157,7 @@ window.AddBookModal = function(props) {
               required: true,
               value: newAuthor,
               onChange: function(e) { setNewAuthor(e.target.value); },
-              placeholder: "مثال: د. أوسم وصفي، بيتر سكارزيرو...",
+              placeholder: "أدخل اسم الكاتب...",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           ),
@@ -169,7 +169,7 @@ window.AddBookModal = function(props) {
               type: "text",
               value: newTranslator || "",
               onChange: function(e) { setNewTranslator && setNewTranslator(e.target.value); },
-              placeholder: "مثال: د. أوسم وصفي، منير عتيق...",
+              placeholder: "أدخل اسم المترجم إن وجد...",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           ),
@@ -183,11 +183,11 @@ window.AddBookModal = function(props) {
               // معاينة مصغرة للغلاف
               (selectedCoverFile || newCoverUrl) ? React.createElement(
                 "div",
-                { className: "w-12 h-16 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-900 shrink-0 shadow-xs" },
+                { className: "w-12 h-16 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-900 shrink-0 shadow-xs flex items-center justify-center p-0.5" },
                 React.createElement("img", {
                   src: selectedCoverFile ? URL.createObjectURL(selectedCoverFile) : utils.getDriveImageUrl(newCoverUrl),
                   alt: "Cover Preview",
-                  className: "w-full h-full object-cover",
+                  className: "w-full h-full object-contain rounded",
                   onError: function(e) {
                     var rawId = utils.extractDriveId(newCoverUrl);
                     if (rawId && !e.target._triedLh3) {
@@ -251,30 +251,6 @@ window.AddBookModal = function(props) {
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
             })
           )
-        ),
-        React.createElement(
-          "div",
-          { className: "mt-4 p-3.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 space-y-2" },
-          React.createElement("div", { className: "flex items-center justify-between" },
-            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "🎧 ملف صوتي للكتاب (اختياري تماماً)"),
-            React.createElement("span", { className: "text-[10px] text-slate-400 bg-slate-200/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-full" }, "اختياري")
-          ),
-          React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed" },
-            "إذا كان الكتاب يتوفر له تسجيل صوتي كامل، تلخيص مسموع، أو بودكاست، يمكنك إرفاقه هنا للاستماع إليه مع القراءة. إن لم يتوفر، اترك هذا الحقل فارغاً."
-          ),
-          React.createElement("input", {
-            type: "file",
-            accept: "audio/*",
-            onChange: function(e) { setSelectedAudioFile(e.target.files && e.target.files[0]); },
-            className: "block w-full text-xs text-slate-500 mb-1 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-950 dark:file:text-teal-300 hover:file:bg-teal-100"
-          }),
-          React.createElement("input", {
-            type: "url",
-            value: newTrack1Url,
-            onChange: function(e) { setNewTrack1Url(e.target.value); },
-            placeholder: "أو الصق رابط Google Drive للملف الصوتي المرفق...",
-            className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
-          })
         ),
         React.createElement(
           "div",
