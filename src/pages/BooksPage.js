@@ -2005,12 +2005,6 @@ window.BooksPage = function(props) {
               className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
             })
           ),
-          React.createElement("div", {className: "hidden"}, 
-                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
-              })
-            )
-          ),
-
           React.createElement(
             "div",
             { className: "flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
