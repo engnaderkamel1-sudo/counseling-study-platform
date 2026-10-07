@@ -1,4 +1,4 @@
-// دالة استخراج وتضمين يوتيوب أو جوجل درايف
+﻿// دالة استخراج وتضمين يوتيوب أو جوجل درايف
 window.APP_UTILS.getMediaEmbedUrl = function(url) {
   if (!url) return "";
   // فحص يوتيوب
@@ -19,7 +19,7 @@ window.APP_UTILS.getAudioStreamUrl = function(url) {
   if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    return "https://docs.google.com/uc?export=download&id=" + driveId;
+    return "https://lh3.googleusercontent.com/d/" + driveId;
   }
   return url;
 };

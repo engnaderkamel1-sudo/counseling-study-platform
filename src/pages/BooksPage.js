@@ -1,4 +1,4 @@
-// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -980,6 +980,7 @@ window.BooksPage = function(props) {
 
     try {
       var accumulated = "";
+    var lastOcrError = null;
       for (var pi = 0; pi < pagesToExtract.length; pi++) {
         var pageNum = pagesToExtract[pi];
         setExtractStatusText("جاري قراءة صفحة " + pageNum + " (" + (pi + 1) + " من " + pagesToExtract.length + ")...");
@@ -1087,6 +1088,7 @@ window.BooksPage = function(props) {
 
       setExtractingChapterId(currentChap.id);
       var accumulated = "";
+    var lastOcrError = null;
 
       for (var p = sPage; p <= ePage; p++) {
         if (batchCancelledRef.current) break;

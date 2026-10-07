@@ -26,6 +26,8 @@ window.AudioChaptersView = function(props) {
   var [audioDuration, setAudioDuration] = React.useState(0);
   var [audioSpeed, setAudioSpeed] = React.useState(1);
   var [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
+  var [audioHasError, setAudioHasError] = React.useState(false);
+  var [useIframePlayer, setUseIframePlayer] = React.useState(false);
 
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
@@ -49,6 +51,7 @@ window.AudioChaptersView = function(props) {
       audio.removeEventListener("pause", updatePlayState);
       audio.removeEventListener("ratechange", updateSpeed);
     };
+      setAudioHasError(false);
   }, [playingChapterId, chapterAudioRef]);
 
   var formatTime = function(sec) {
@@ -224,41 +227,71 @@ window.AudioChaptersView = function(props) {
             )
           )
         ),
-        React.createElement(
+        useIframePlayer ? React.createElement(
+          "div",
+          { className: "w-full sm:flex-1 flex flex-col gap-1.5 mt-2 sm:mt-0" },
+          React.createElement("iframe", {
+            src: utils.getMediaEmbedUrl(activeChap.audioUrl),
+            className: "w-full h-14 rounded-xl border border-slate-700 bg-black shadow-inner",
+            allow: "autoplay"
+          }),
+          React.createElement("div", { className: "flex justify-between items-center text-[11px]" },
+            React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" }, "✓ مشغل Google Drive الرسمي المباشر"),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setUseIframePlayer(false); },
+              className: "text-blue-300 hover:text-white underline font-bold"
+            }, "العودة للمشغل المتقدم ↺")
+          )
+        ) : React.createElement(
+          "div",
+          { className: "w-full flex flex-col gap-2 mt-2 sm:mt-0 sm:flex-1 min-w-[200px]" },
+          
+          // Audio element hidden
+          React.createElement("audio", {
+            ref: chapterAudioRef,
+            src: utils.getAudioStreamUrl(activeChap.audioUrl),
+            controls: false,
+            autoPlay: true,
+            className: "hidden",
+            onError: function() { setAudioHasError(true); }
+          }),
+
+          // Error Banner with 1-click fallback
+          audioHasError ? React.createElement(
             "div",
-            { className: "w-full flex flex-col gap-2 mt-2 sm:mt-0 sm:flex-1 min-w-[200px]" },
-            
-            // Audio element hidden
-            React.createElement("audio", {
-              ref: chapterAudioRef,
-              src: utils.getAudioStreamUrl(activeChap.audioUrl),
-              controls: false,
-              autoPlay: true,
-              className: "hidden", onError: function(e) { alert("تعذر تشغيل الصوت. تأكد أن الملف المرفوع على Google Drive تمت مشاركته بصلاحية \"أي شخص لديه الرابط\" (Anyone with the link). وإذا كان الملف كبيراً قد تمنع جوجل تشغيله مباشرة."); }
+            { className: "p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-2" },
+            React.createElement("span", { className: "text-[11px]" }, "⚠️ جوجل تمنع البث المباشر. اضغط للتبديل:"),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setUseIframePlayer(true); },
+              className: "px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-black rounded-lg text-xs transition-all shadow-sm shrink-0"
+            }, "مشغل Google المباشر ↗")
+          ) : null,
+          
+          // Progress Bar & Time
+          React.createElement("div", { className: "flex items-center gap-2 text-xs" },
+            React.createElement("span", { className: "text-blue-200 tabular-nums" }, formatTime(audioProgress)),
+            React.createElement("input", {
+              type: "range",
+              min: 0,
+              max: audioDuration || 100,
+              value: audioProgress || 0,
+              onChange: function(e) {
+                if (chapterAudioRef.current) {
+                  chapterAudioRef.current.currentTime = parseFloat(e.target.value);
+                }
+              },
+              className: "flex-1 h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-blue-500"
             }),
-            
-            // Progress Bar & Time
-            React.createElement("div", { className: "flex items-center gap-2 text-xs" },
-              React.createElement("span", { className: "text-blue-200 tabular-nums" }, formatTime(audioProgress)),
-              React.createElement("input", {
-                type: "range",
-                min: 0,
-                max: audioDuration || 100,
-                value: audioProgress || 0,
-                onChange: function(e) {
-                  if (chapterAudioRef.current) {
-                    chapterAudioRef.current.currentTime = parseFloat(e.target.value);
-                  }
-                },
-                className: "flex-1 h-2 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              }),
-              React.createElement("span", { className: "text-slate-400 tabular-nums" }, formatTime(audioDuration))
-            ),
-            
-            // Controls
-            React.createElement("div", { className: "flex items-center justify-between gap-4" },
-              // Speed Slider
-              React.createElement("div", { className: "flex items-center gap-2 text-[11px] text-slate-300 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50" },
+            React.createElement("span", { className: "text-slate-400 tabular-nums" }, formatTime(audioDuration))
+          ),
+          
+          // Controls
+          React.createElement("div", { className: "flex items-center justify-between gap-4" },
+            // Speed Slider + Drive link
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("div", { className: "flex items-center gap-1.5 text-[11px] text-slate-300 bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50" },
                 React.createElement("span", { className: "font-bold w-6" }, audioSpeed.toFixed(1) + "x"),
                 React.createElement("input", {
                   type: "range",
@@ -271,37 +304,43 @@ window.AudioChaptersView = function(props) {
                       chapterAudioRef.current.playbackRate = parseFloat(e.target.value);
                     }
                   },
-                  className: "w-20 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className: "w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500"
                 })
               ),
-              
-              // Playback Buttons
-              React.createElement("div", { className: "flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-full border border-slate-700/50 shadow-inner" },
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
-                  className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
-                  title: "تأخير 10 ثواني"
-                }, "⏪"),
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { 
-                    if (chapterAudioRef.current) {
-                      if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
-                      else chapterAudioRef.current.pause();
-                    }
-                  },
-                  className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all flex items-center justify-center w-10 h-10 text-lg"
-                }, isAudioPlaying ? "⏸️" : "▶️"),
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
-                  className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
-                  title: "تقديم 10 ثواني"
-                }, "⏩")
-              )
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setUseIframePlayer(true); },
+                className: "text-[10px] text-slate-400 hover:text-blue-300 underline hidden sm:inline"
+              }, "مشغل Google ↗")
+            ),
+            
+            // Playback Buttons
+            React.createElement("div", { className: "flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-full border border-slate-700/50 shadow-inner" },
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10; },
+                className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
+                title: "تأخير 10 ثواني"
+              }, "⏪"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { 
+                  if (chapterAudioRef.current) {
+                    if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
+                    else chapterAudioRef.current.pause();
+                  }
+                },
+                className: "p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 shadow-md shadow-blue-500/20 transition-all flex items-center justify-center w-10 h-10 text-lg"
+              }, isAudioPlaying ? "⏸️" : "▶️"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { if (chapterAudioRef.current) chapterAudioRef.current.currentTime += 10; },
+                className: "p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition-all",
+                title: "تقديم 10 ثواني"
+              }, "⏩")
             )
-          ),
+          )
+        ),
           // Close button
           React.createElement("button", {
             type: "button",
