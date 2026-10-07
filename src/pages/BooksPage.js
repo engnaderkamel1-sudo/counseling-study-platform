@@ -1044,7 +1044,14 @@ window.BooksPage = function(props) {
                 React.createElement("span", null, "تغيير الغلاف")
               )
             ),
-            React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة")
+            React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة"),
+            React.createElement("div", { className: "mt-1.5 flex items-center gap-2" },
+              React.createElement("a", {
+                href: "/ocr-tool.html",
+                target: "_blank",
+                className: "inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
+              }, "⚡ فتح أداة استخراج نصوص الكتاب")
+            )
           )
         ),
         React.createElement(
