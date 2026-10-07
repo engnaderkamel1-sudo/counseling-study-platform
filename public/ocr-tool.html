@@ -141,6 +141,26 @@
 
     <div id="previewBox" class="preview-box"></div>
     <div id="log"></div>
+
+    <!-- أداة سريعة لتنظيف أي نص جاهز من أرقام الصفحات والعناوين المتكررة بنقرة واحدة -->
+    <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 14px; margin-top: 15px; margin-bottom: 15px;">
+        <div style="font-size: 0.9rem; font-weight: bold; color: #1e293b; display: flex; align-items: center; justify-content: space-between;">
+            <span>🧹 أداة سريعة لتنظيف أي نص موجود مسبقاً (حذف أرقام الصفحات ٧، ٨ والترويسات فوراً):</span>
+            <button id="toggleQuickCleanerBtn" type="button" style="background: none; border: none; color: #0284c7; cursor: pointer; font-size: 0.85rem; font-weight: bold;">فتح / إغلاق</button>
+        </div>
+        <div id="quickCleanerBox" style="display: none; margin-top: 10px;">
+            <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 8px;">
+                إذا كان لديك نص مستخرج سابقاً وتريد إزالة أرقام الصفحات المتفرقة أو الترويسات المتكررة منه فوراً لتحويله لصوت في Edge-TTS، الصقه هنا واضغط تنظيف:
+            </p>
+            <textarea id="quickCleanerInput" rows="6" placeholder="الصق النص هنا..." style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; font-family: inherit; font-size: 0.85rem; box-sizing: border-box; direction: rtl;"></textarea>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button id="cleanNowBtn" type="button" style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">✨ تنظيف النص وحذف الأرقام</button>
+                <button id="copyCleanedBtn" type="button" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; display: none;">📋 نسخ النص المنظف</button>
+            </div>
+            <div id="quickCleanerResult" style="display: none; margin-top: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; max-height: 250px; overflow-y: auto; font-size: 0.85rem; white-space: pre-wrap; direction: rtl;"></div>
+        </div>
+    </div>
+
     <!-- دليل الخطوات التالية لتحويل النص لصوت ورفعه للتطبيق -->
     <div class="workflow-box">
         <div class="workflow-title">🎯 الخطوات التالية بعد استخراج النص:</div>
@@ -174,6 +194,71 @@
 </div>
 
 <script>
+    let detectedRunningHeaders = new Set();
+
+    function cleanExtractedText(rawText, bookName = '', chapterName = '') {
+        if (!rawText) return '';
+        const lines = rawText.split(/\r?\n/);
+        const normBook = bookName ? bookName.replace(/\.pdf$/i, '').trim().toLowerCase() : '';
+        const normChap = chapterName ? chapterName.trim().toLowerCase() : '';
+        const cleanedLines = [];
+
+        let candidateHeader = '';
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+            if (!line) {
+                cleanedLines.push('');
+                continue;
+            }
+
+            // 1. Detect standalone page numbers (Eastern Arabic digits ٠-٩ or Western digits 0-9)
+            // e.g. "٧", "8", "- ٧ -", "( 12 )", "[٩]", "ص ٧", "صفحة ٨", "Page 15", "٧.", "8-"
+            const isStandalonePageNumber = /^[-\–—\(\[\{.\s\/\\#]*[0-9٠-٩]+[-\–—\)\]\}.\s\/\\#]*$/i.test(line) ||
+                /^(صفحة|ص|page|p|pg)[\s.:\-–—]*[0-9٠-٩]+$/i.test(line);
+
+            if (isStandalonePageNumber) {
+                continue; // Skip printed page numbers!
+            }
+
+            // 2. Detect running headers at the very top (first 3 lines) or bottom (last 2 lines)
+            const isTopOrBottom = (i < 3 || i >= lines.length - 2);
+            if (isTopOrBottom && line.length < 60) {
+                const normL = line.toLowerCase();
+                const matchesBook = normBook && (normL === normBook || normL.includes(normBook) || normBook.includes(normL));
+                const matchesChap = normChap && (normL === normChap || normL.includes(normChap) || normChap.includes(normL));
+                const isKnownHeader = detectedRunningHeaders.has(normL);
+
+                if (matchesBook || isKnownHeader || (matchesChap && typeof accumulatedText !== 'undefined' && accumulatedText && accumulatedText.length > 50)) {
+                    continue; // Skip running book or chapter header
+                }
+
+                // If short phrase (<= 4 words) at the top margin, remember it as possible running header
+                if (normL.split(/\s+/).length <= 4 && !matchesChap) {
+                    candidateHeader = normL;
+                }
+            }
+
+            // 3. Remove inline page numbers at the start or end of short lines (< 35 chars)
+            if (line.length < 35) {
+                line = line.replace(/^[-\–—\(\[\{.\s\/\\#]*[0-9٠-٩]+[-\–—\)\]\}.\s\/\\#]*/, '')
+                           .replace(/[-\–—\(\[\{.\s\/\\#]*[0-9٠-٩]+[-\–—\)\]\}.\s\/\\#]*$/, '')
+                           .trim();
+            }
+
+            if (line) {
+                cleanedLines.push(line);
+            }
+        }
+
+        if (candidateHeader) {
+            detectedRunningHeaders.add(candidateHeader);
+        }
+
+        let result = cleanedLines.join('\n');
+        return result.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
     function loadSavedKey() {
         // 1. First check URL query parameter ?key=...
         const urlParams = new URLSearchParams(window.location.search);
@@ -238,7 +323,8 @@
             bannerText.innerHTML = `تم حفظ العمل تلقائياً لكتاب <b>"${bookName}"</b>${chapterInfo} حتى <b>الصفحة ${lastPage}</b> بمجموع <b>${savedText.length.toLocaleString('ar-EG')} حرف</b>${timeStr}. لا داعي للقلق، عملك محفوظ بالكامل حتى لو أغلق المتصفح أو فصل الجهاز.`;
 
             document.getElementById('resumeDownloadBtn').onclick = () => {
-                const blob = new Blob([savedText], { type: 'text/plain;charset=utf-8' });
+                const cleaned = cleanExtractedText(savedText, bookName, savedChapter);
+                const blob = new Blob([cleaned], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -249,13 +335,13 @@
             };
 
             document.getElementById('resumeContinueBtn').onclick = () => {
-                accumulatedText = savedText;
+                accumulatedText = cleanExtractedText(savedText, bookName, savedChapter);
                 document.getElementById('startPage').value = parseInt(lastPage) + 1;
                 downloadNowBtn.style.display = 'block';
                 banner.style.display = 'none';
                 previewBox.style.display = 'block';
-                previewBox.innerHTML = `🔄 <b>تم استئناف الجلسة بنجاح:</b> تم تحميل النص المحفوظ حتى صفحة ${lastPage}. تم ضبط "من صفحة" على <b>${parseInt(lastPage) + 1}</b> تلقائياً. اختر ملف الكتاب واضغط "بدء الاستخراج" للمتابعة.`;
-                log(`🔄 تم استرجاع ما تم استخراجه سابقاً حتى صفحة ${lastPage} (${savedText.length} حرف).`);
+                previewBox.innerHTML = `🔄 <b>تم استئناف الجلسة بنجاح:</b> تم تحميل النص المحفوظ وتنظيفه من أرقام الصفحات حتى صفحة ${lastPage}. تم ضبط "من صفحة" على <b>${parseInt(lastPage) + 1}</b> تلقائياً. اختر ملف الكتاب واضغط "بدء الاستخراج" للمتابعة.`;
+                log(`🔄 تم استرجاع ما تم استخراجه سابقاً وتنظيفه من أرقام الصفحات حتى صفحة ${lastPage} (${accumulatedText.length} حرف).`);
                 log(`اختر ملف الكتاب واضغط "بدء الاستخراج" للمتابعة من صفحة ${parseInt(lastPage) + 1}.`);
             };
 
@@ -270,6 +356,41 @@
                 }
             };
         }
+    }
+
+    // Quick Text Cleaner controls
+    const toggleCleanerBtn = document.getElementById('toggleQuickCleanerBtn');
+    const quickCleanerBox = document.getElementById('quickCleanerBox');
+    const cleanNowBtn = document.getElementById('cleanNowBtn');
+    const copyCleanedBtn = document.getElementById('copyCleanedBtn');
+    const quickInput = document.getElementById('quickCleanerInput');
+    const quickResult = document.getElementById('quickCleanerResult');
+
+    if (toggleCleanerBtn && quickCleanerBox) {
+        toggleCleanerBtn.addEventListener('click', () => {
+            quickCleanerBox.style.display = (quickCleanerBox.style.display === 'none' || !quickCleanerBox.style.display) ? 'block' : 'none';
+        });
+    }
+
+    if (cleanNowBtn && quickInput && quickResult) {
+        cleanNowBtn.addEventListener('click', () => {
+            const raw = quickInput.value;
+            if (!raw || !raw.trim()) return alert('الرجاء لصق نص أولاً لتنظيفه');
+            const cleaned = cleanExtractedText(raw);
+            quickResult.textContent = cleaned;
+            quickResult.style.display = 'block';
+            copyCleanedBtn.style.display = 'inline-block';
+            copyCleanedBtn.textContent = '📋 نسخ النص المنظف';
+        });
+    }
+
+    if (copyCleanedBtn && quickResult) {
+        copyCleanedBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(quickResult.textContent).then(() => {
+                copyCleanedBtn.textContent = '✓ تم النسخ بنجاح!';
+                setTimeout(() => { copyCleanedBtn.textContent = '📋 نسخ النص المنظف'; }, 2000);
+            });
+        });
     }
 
     window.addEventListener('beforeunload', (e) => {
@@ -392,7 +513,8 @@
         if (startP && endP) fileName += `_صفحة_${startP}_الى_${endP}`;
         fileName += '.txt';
 
-        const blob = new Blob([accumulatedText], { type: 'text/plain;charset=utf-8' });
+        const finalText = cleanExtractedText(accumulatedText, rawBookName, chapterVal);
+        const blob = new Blob([finalText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -416,10 +538,19 @@
         for (const m of candidateModels) {
             try {
                 const url = "https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent?key=" + apiKey;
+                const prompt = `أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).
+المهمة: استخرج متن نص هذه الصفحة العربية بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.
+
+قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:
+1. استبعاد أرقام الصفحات نهائياً: لا تقم بكتابة أي رقم صفحة مطبوع في الهوامش أو أسفل الصفحة أو أعلاها إطلاقاً (سواء كان رقماً عربياً مشرقياً مثل ٧، ٨، ٩ أو غربياً مثل 7, 8, 9).
+2. استبعاد ترويسة وهوامش الصفحة المتكررة (Running Headers/Footers): مثل تكرار اسم الكتاب أو عنوان الفصل المطبوع في أعلى أو أسفل كل ورقة، استبعدها وتجاهلها.
+3. استخرج صلب ومتن الكلام فقط بتدفقه السليم حتى يقرأه المعلق الصوتي بسلاسة بدون انقطاع.
+4. ارجع النص المستخرج فقط مباشرة بدون أي مقدمات أو اعتذارات أو ملاحظات من عندك.`;
+
                 const payload = {
                     contents: [{
                         parts: [
-                            { text: "استخرج جميع النصوص العربية من هذه الصفحة بدقة متناهية 100% كما هي مكتوبة حرفياً وبدون أي تلخيص. ارجع النص فقط." },
+                            { text: prompt },
                             { inline_data: { mime_type: "image/jpeg", data: base64Image } }
                         ]
                     }],
@@ -505,7 +636,8 @@
             }
             const chapterVal = document.getElementById('chapterName').value.trim();
             const rawBookName = file.name.replace(/\.pdf$/i, '');
-            if (!accumulatedText) {
+            const withHeader = document.getElementById('includePageHeaders').checked;
+            if (withHeader && !accumulatedText) {
                 const headerTitle = chapterVal ? `كتاب: ${rawBookName} | فصل: ${chapterVal}` : `كتاب: ${rawBookName}`;
                 accumulatedText = `=== ${headerTitle} (من صفحة ${fromPage} إلى ${toPage}) ===\n\n`;
             }
@@ -566,6 +698,7 @@
                 while (!success && retries > 0 && !isStopped) {
                     try {
                         text = await extractTextFromBase64(base64Data, apiKey);
+                        text = cleanExtractedText(text, rawBookName, chapterVal);
                         success = true;
                         log(`✓ تم استخراج صفحة ${pageNum} بنجاح!`);
                     } catch (err) {
@@ -584,7 +717,7 @@
                 if (success) {
                     const withHeader = document.getElementById('includePageHeaders').checked;
                     if (withHeader) {
-                        accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n` + text;
+                        accumulatedText += (accumulatedText ? '\n\n' : '') + `=== الصفحة ${pageNum} ===\n\n` + text;
                     } else {
                         accumulatedText += (accumulatedText ? '\n\n' : '') + text;
                     }
