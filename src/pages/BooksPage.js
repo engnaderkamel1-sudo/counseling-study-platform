@@ -58,7 +58,25 @@ window.BooksPage = function(props) {
   var [ttsStatusMsg, setTtsStatusMsg] = React.useState("");
   var isTtsActiveRef = React.useRef(false);
   var ttsAudioObjRef = React.useRef(null);
+  var ttsSessionIdRef = React.useRef(0);
 
+  // إيقاف أي صوت أو جلسة قراءة سابقة فوراً وبشكل حاسم لمنع تداخل الصفحات
+  var stopCurrentAudioImmediately = function() {
+    ttsSessionIdRef.current++; // يبطل فوراً أي جلسة سابقة أو تايمر معلق
+    if (ttsAudioObjRef.current) {
+      try {
+        var old = ttsAudioObjRef.current;
+        old.onended = null;
+        old.onerror = null;
+        old.pause();
+        old.src = "";
+      } catch (e) {}
+      ttsAudioObjRef.current = null;
+    }
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+  };
 
   // حقل تعديل غلاف الكتاب للكتاب الحالي
   var [showCoverEditModal, setShowCoverEditModal] = React.useState(false);
@@ -73,19 +91,10 @@ window.BooksPage = function(props) {
       setIsTrack1Playing(false);
       var allAudios = document.querySelectorAll("audio");
       allAudios.forEach(function(a) { a.pause(); });
-      if (ttsAudioObjRef.current) {
-        try {
-          ttsAudioObjRef.current.pause();
-          ttsAudioObjRef.current.src = "";
-        } catch (e) {}
-        ttsAudioObjRef.current = null;
-      }
-      if (window.speechSynthesis) {
-        isTtsActiveRef.current = false;
-        window.speechSynthesis.cancel();
-        setIsTtsReading(false);
-        setIsTtsPaused(false);
-      }
+      stopCurrentAudioImmediately();
+      isTtsActiveRef.current = false;
+      setIsTtsReading(false);
+      setIsTtsPaused(false);
     } catch (e) {}
   };
 
@@ -371,8 +380,8 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً
-  var handlePageChange = function(newPage) {
+  // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً مع حماية تداخل الصوت
+  var handlePageChange = function(newPage, fromTtsAutoAdvance) {
     if (!activeBook) return Promise.resolve(false);
     var maxPages = getMaxPages();
     var validPage = Math.max(1, Math.min(Number(newPage) || 1, maxPages));
@@ -384,6 +393,21 @@ window.BooksPage = function(props) {
     var updated = Object.assign({}, activeBook, { currentPage: validPage });
     setActiveBook(updated);
     cloud.updateBookPage(activeBook.id, validPage);
+
+    // إذا قام المستخدم بتغيير الصفحة يدوياً وكان القارئ الصوتي شغالاً:
+    // نوقف فوراً أي صوت للصفحة السابقة ونبدأ قراءة الصفحة الجديدة بدون أي تداخل أصوات!
+    if (!fromTtsAutoAdvance && isTtsActiveRef.current) {
+      stopCurrentAudioImmediately();
+      if (pdfDoc) {
+        setTtsStatusMsg("تم الانتقال لصفحة " + validPage + "، جاري قراءتها... 🎧");
+        setTimeout(function() {
+          if (isTtsActiveRef.current && pdfDoc) {
+            readPageTextWithTts(pdfDoc, validPage);
+          }
+        }, 80);
+      }
+    }
+
     return p;
   };
 
@@ -453,17 +477,9 @@ window.BooksPage = function(props) {
       return;
     }
 
-    // إيقاف أي صوت سابق فوراً
-    if (ttsAudioObjRef.current) {
-      try {
-        ttsAudioObjRef.current.pause();
-        ttsAudioObjRef.current.src = "";
-      } catch (e) {}
-      ttsAudioObjRef.current = null;
-    }
-    if (window.speechSynthesis) {
-      try { window.speechSynthesis.cancel(); } catch (e) {}
-    }
+    // إيقاف أي صوت أو جلسة سابقة فوراً لمنع تداخل الصفحات
+    stopCurrentAudioImmediately();
+    var thisSession = ttsSessionIdRef.current;
 
     // إصلاح أي حروف مجزأة لضمان نطق كلمات كاملة بطلاقة
     var cleanText = text;
@@ -471,7 +487,7 @@ window.BooksPage = function(props) {
       cleanText = repairFragmentedArabicText(cleanText);
     }
 
-    // تقسيم النص لجمل واضحة وقصيرة (أقل من 140 حرف) لضمان تدفق الصوت دون انقطاع
+    // تقسيم النص لجمل واضحة وقصيرة (أقل من 130 حرف) لضمان تدفق الصوت دون انقطاع
     var sentences = cleanText.match(/[^.،؟!\n]+[.،؟!\n]?/g) || [cleanText];
     var chunks = [];
     var current = "";
@@ -503,8 +519,10 @@ window.BooksPage = function(props) {
       }
       var idx = startIdx || 0;
       var speakNext = function() {
-        if (!isTtsActiveRef.current || idx >= chunks.length) {
-          if (isTtsActiveRef.current && typeof onFinished === "function") onFinished();
+        if (thisSession !== ttsSessionIdRef.current || !isTtsActiveRef.current || idx >= chunks.length) {
+          if (thisSession === ttsSessionIdRef.current && isTtsActiveRef.current && typeof onFinished === "function") {
+            onFinished();
+          }
           return;
         }
         if (isTtsPaused) {
@@ -515,12 +533,16 @@ window.BooksPage = function(props) {
         utterance.rate = ttsSpeed || 1.0;
         utterance.lang = "ar-EG";
         utterance.onend = function() {
-          idx++;
-          if (isTtsActiveRef.current && !isTtsPaused) speakNext();
+          if (thisSession === ttsSessionIdRef.current) {
+            idx++;
+            if (isTtsActiveRef.current && !isTtsPaused) speakNext();
+          }
         };
         utterance.onerror = function() {
-          idx++;
-          if (isTtsActiveRef.current && !isTtsPaused) speakNext();
+          if (thisSession === ttsSessionIdRef.current) {
+            idx++;
+            if (isTtsActiveRef.current && !isTtsPaused) speakNext();
+          }
         };
         window.speechSynthesis.speak(utterance);
       };
@@ -528,8 +550,9 @@ window.BooksPage = function(props) {
     };
 
     var playNextChunk = function() {
-      if (!isTtsActiveRef.current || chunkIdx >= chunks.length) {
-        if (isTtsActiveRef.current && typeof onFinished === "function") {
+      // إذا تم تغيير الصفحة أو تغيرت الجلسة، نتوقف فوراً دون تشغيل أي مقطع جديد
+      if (thisSession !== ttsSessionIdRef.current || !isTtsActiveRef.current || chunkIdx >= chunks.length) {
+        if (thisSession === ttsSessionIdRef.current && isTtsActiveRef.current && typeof onFinished === "function") {
           onFinished();
         }
         return;
@@ -552,24 +575,28 @@ window.BooksPage = function(props) {
       audio.playbackRate = ttsSpeed || 1.0;
 
       audio.onended = function() {
-        if (isTtsActiveRef.current && !isTtsPaused) {
+        if (thisSession === ttsSessionIdRef.current && isTtsActiveRef.current && !isTtsPaused) {
           playNextChunk();
         }
       };
 
       audio.onerror = function(err) {
+        if (thisSession !== ttsSessionIdRef.current) return;
         console.warn("Audio stream notice for chunk " + currentIdx + ", switching gracefully:", err);
         // في حال تشغيل التطبيق في بيئة محلية تفتقر لـ /api/tts
         if (currentIdx === 0 && window.speechSynthesis) {
           speakWithBrowserTts(0);
         } else if (isTtsActiveRef.current && !isTtsPaused) {
-          setTimeout(playNextChunk, 200);
+          setTimeout(function() {
+            if (thisSession === ttsSessionIdRef.current) playNextChunk();
+          }, 200);
         }
       };
 
       var playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(function(playErr) {
+          if (thisSession !== ttsSessionIdRef.current) return;
           console.warn("Audio autoplay notice:", playErr);
           if (window.speechSynthesis) {
             speakWithBrowserTts(currentIdx);
@@ -696,16 +723,19 @@ window.BooksPage = function(props) {
       return;
     }
 
+    ttsSessionIdRef.current++;
+    var thisReadSession = ttsSessionIdRef.current;
+
     var bookId = activeBook && activeBook.id;
     setTtsStatusMsg("جاري جلب نص صفحة " + pageNum + "... ⚡");
 
     if (pdfCurrentPage !== pageNum) {
-      await handlePageChange(pageNum);
+      await handlePageChange(pageNum, true);
     }
 
     try {
       var result = await extractPageTextHybrid(doc, bookId, pageNum);
-      if (!isTtsActiveRef.current) return;
+      if (thisReadSession !== ttsSessionIdRef.current || !isTtsActiveRef.current) return;
 
       var textToRead = result.text;
       if (isArabicFragmented(textToRead)) {
@@ -799,16 +829,7 @@ window.BooksPage = function(props) {
   // إيقاف القارئ الصوتي الذكي تماماً
   var stopTtsReaderCompletely = function() {
     isTtsActiveRef.current = false;
-    if (ttsAudioObjRef.current) {
-      try {
-        ttsAudioObjRef.current.pause();
-        ttsAudioObjRef.current.src = "";
-      } catch (e) {}
-      ttsAudioObjRef.current = null;
-    }
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
+    stopCurrentAudioImmediately();
     setIsTtsReading(false);
     setIsTtsPaused(false);
     setTtsStatusMsg("");
@@ -1739,9 +1760,6 @@ window.BooksPage = function(props) {
               onChange: function(e) {
                 var p = parseInt(e.target.value) || 1;
                 handlePageChange(p);
-                if (pdfDoc && isTtsReading) {
-                  readPageTextWithTts(pdfDoc, p);
-                }
               },
               className: "w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
             })
@@ -1762,7 +1780,6 @@ window.BooksPage = function(props) {
                   onClick: function() {
                     var prevP = Math.max(1, (activeBook.currentPage || 1) - 1);
                     handlePageChange(prevP);
-                    if (pdfDoc && isTtsReading) readPageTextWithTts(pdfDoc, prevP);
                   },
                   disabled: (activeBook.currentPage || 1) <= 1,
                   title: "الصفحة السابقة",
@@ -1789,7 +1806,6 @@ window.BooksPage = function(props) {
                   onClick: function() {
                     var nextP = Math.min(getMaxPages(), (activeBook.currentPage || 1) + 1);
                     handlePageChange(nextP);
-                    if (pdfDoc && isTtsReading) readPageTextWithTts(pdfDoc, nextP);
                   },
                   disabled: (activeBook.currentPage || 1) >= getMaxPages(),
                   title: "الصفحة التالية",
