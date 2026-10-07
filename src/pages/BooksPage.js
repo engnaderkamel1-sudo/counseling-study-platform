@@ -130,6 +130,7 @@ window.BooksPage = function(props) {
   var [newChaptersCount, setNewChaptersCount] = React.useState(8);
   var [newTrack1Url, setNewTrack1Url] = React.useState("");
   var [detectedChaptersList, setDetectedChaptersList] = React.useState([]);
+  var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
