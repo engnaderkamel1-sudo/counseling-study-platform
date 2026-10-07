@@ -25,10 +25,10 @@
         .btn-download:hover { background: #059669; }
         button:disabled { background: #94a3b8; cursor: not-allowed; }
         #progress-container { display: none; margin-top: 15px; padding: 15px; background: #f1f5f9; border-radius: 12px; border: 1px solid #e2e8f0; }
-        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-top: 10px; }
-        .metric-card { background: white; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
-        .metric-val { font-size: 1.1rem; font-weight: bold; color: #0284c7; }
-        .metric-lbl { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: center; margin-top: 10px; }
+        .metric-card { background: white; padding: 10px; border-radius: 10px; border: 1px solid #cbd5e1; }
+        .metric-val { font-size: 1.05rem; font-weight: bold; color: #0284c7; min-height: 24px; display: flex; align-items: center; justify-content: center; }
+        .metric-lbl { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
         .progress-bar { height: 10px; background: #cbd5e1; border-radius: 5px; overflow: hidden; margin-top: 10px; }
         .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.3s ease; }
         #status { font-weight: bold; font-size: 0.9rem; color: #1e293b; text-align: center; }
@@ -89,16 +89,20 @@
 
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-val" id="percentVal">0%</div>
-                <div class="metric-lbl">نسبة الإنجاز</div>
+                <div class="metric-val" id="percentVal">0 / 0 (0%)</div>
+                <div class="metric-lbl">الصفحات المنجزة من الكتاب</div>
             </div>
             <div class="metric-card">
-                <div class="metric-val" id="timeElapsedVal">00:00</div>
-                <div class="metric-lbl">الوقت المستغرق</div>
+                <div class="metric-val" id="timeElapsedVal">0 ثانية</div>
+                <div class="metric-lbl">الوقت المنقضي حتى الآن</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-val" id="timeRemainingVal">--:--</div>
-                <div class="metric-lbl">الوقت المتوقع المتبقي</div>
+            <div class="metric-card" style="border-color: #0284c7; background: #f0f9ff;">
+                <div class="metric-val" id="timeRemainingVal" style="color: #0369a1;">جاري التقدير...</div>
+                <div class="metric-lbl" style="color: #0284c7; font-weight: bold;">الوقت المتبقي لإنهاء الكتاب ككل</div>
+            </div>
+            <div class="metric-card" style="border-color: #10b981; background: #ecfdf5;">
+                <div class="metric-val" id="totalEstimatedVal" style="color: #047857;">--</div>
+                <div class="metric-lbl" style="color: #059669; font-weight: bold;">الوقت الإجمالي المتوقع للكتاب ككل</div>
             </div>
         </div>
     </div>
@@ -176,6 +180,28 @@
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
+    document.getElementById('pdfFile').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+            log('جاري فحص ملف الكتاب لحساب الصفحات والوقت التقديري...');
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const total = pdf.numPages;
+            document.getElementById('endPage').value = total;
+            document.getElementById('endPage').placeholder = total;
+            
+            const estSec = total * 7.5;
+            log(`✓ تم قراءة ملف الكتاب: يتكون من ${total} صفحة.`);
+            log(`⏱️ الوقت التقديري المتوقع للكتاب بالكامل: حوالي ${formatReadableTime(estSec)} (بمعدل ~7 ثواني للصفحة).`);
+            
+            previewBox.style.display = 'block';
+            previewBox.innerHTML = `📚 <b>تم فحص الكتاب بنجاح:</b> يتكون من <b>${total} صفحة</b>.<br>⏱️ <b>الوقت التقديري المتوقع للكتاب كاملاً:</b> حوالي <b style="color:#0284c7;">${formatReadableTime(estSec)}</b> (بمعدل ~7 ثواني للصفحة شاملاً وقت الاستخراج وفترات الأمان).`;
+        } catch(err) {
+            log('تنبيه أثناء قراءة صفحات الكتاب: ' + err.message);
+        }
+    });
+
     const logEl = document.getElementById('log');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
@@ -186,6 +212,7 @@
     const percentVal = document.getElementById('percentVal');
     const timeElapsedVal = document.getElementById('timeElapsedVal');
     const timeRemainingVal = document.getElementById('timeRemainingVal');
+    const totalEstimatedVal = document.getElementById('totalEstimatedVal');
     const previewBox = document.getElementById('previewBox');
 
     let isStopped = false;
@@ -193,11 +220,24 @@
     let timerInterval = null;
     let startTime = null;
 
-    function formatTime(seconds) {
-        if (!seconds || isNaN(seconds) || seconds < 0) return '00:00';
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    function formatReadableTime(totalSeconds) {
+        if (!totalSeconds || isNaN(totalSeconds) || totalSeconds <= 0) return '0 ثانية';
+        const s = Math.round(totalSeconds);
+        const hours = Math.floor(s / 3600);
+        const minutes = Math.floor((s % 3600) / 60);
+        const seconds = s % 60;
+
+        let parts = [];
+        if (hours > 0) {
+            parts.push(hours + (hours === 1 ? ' ساعة' : hours === 2 ? ' ساعتان' : (hours >= 3 && hours <= 10) ? ' ساعات' : ' ساعة'));
+        }
+        if (minutes > 0) {
+            parts.push(minutes + (minutes === 1 ? ' دقيقة' : minutes === 2 ? ' دقيقتان' : (minutes >= 3 && minutes <= 10) ? ' دقائق' : ' دقيقة'));
+        }
+        if (hours === 0 && seconds > 0) {
+            parts.push(seconds + ' ثانية');
+        }
+        return parts.join(' و ') || '0 ثانية';
     }
 
     function log(msg) {
@@ -298,12 +338,29 @@
             log(`تم فتح الكتاب. سيتم استخراج الصفحات من ${fromPage} إلى ${toPage} (إجمالي: ${totalToProcess} صفحة).`);
 
             startTime = Date.now();
+            let completedCount = 0;
+            percentVal.textContent = `0 / ${totalToProcess} (0%)`;
+
+            // Initial estimate for the entire book
+            const initialTotalEst = totalToProcess * 7.5;
+            totalEstimatedVal.textContent = 'حوالي ' + formatReadableTime(initialTotalEst);
+            timeRemainingVal.textContent = 'حوالي ' + formatReadableTime(initialTotalEst);
+
             timerInterval = setInterval(() => {
                 const elapsedSec = (Date.now() - startTime) / 1000;
-                timeElapsedVal.textContent = formatTime(elapsedSec);
-            }, 1000);
+                timeElapsedVal.textContent = formatReadableTime(elapsedSec);
 
-            let completedCount = 0;
+                if (completedCount > 0) {
+                    const avgSecPerPage = elapsedSec / completedCount;
+                    const remainingPages = totalToProcess - completedCount;
+                    const estRemainingSec = Math.max(0, avgSecPerPage * remainingPages);
+                    timeRemainingVal.textContent = formatReadableTime(estRemainingSec);
+                    totalEstimatedVal.textContent = formatReadableTime(avgSecPerPage * totalToProcess);
+                } else {
+                    const currentRem = Math.max(0, initialTotalEst - elapsedSec);
+                    timeRemainingVal.textContent = 'حوالي ' + formatReadableTime(currentRem);
+                }
+            }, 1000);
 
             for (let pageNum = fromPage; pageNum <= toPage; pageNum++) {
                 if (isStopped) {
@@ -349,7 +406,7 @@
                 }
 
                 if (success) {
-                                        const withHeader = document.getElementById('includePageHeaders').checked;
+                    const withHeader = document.getElementById('includePageHeaders').checked;
                     if (withHeader) {
                         accumulatedText += `\n\n=== الصفحة ${pageNum} ===\n\n` + text;
                     } else {
@@ -364,15 +421,20 @@
 
                 completedCount++;
                 const pct = Math.round((completedCount / totalToProcess) * 100);
-                percentVal.textContent = pct + '%';
+                percentVal.textContent = `${completedCount} / ${totalToProcess} (${pct}%)`;
                 progressFill.style.width = pct + '%';
 
-                // Calculate estimated time remaining
+                // Calculate estimated time for entire book and remaining
                 const elapsedSec = (Date.now() - startTime) / 1000;
                 const avgSecPerPage = elapsedSec / completedCount;
                 const remainingPages = totalToProcess - completedCount;
                 const estRemainingSec = avgSecPerPage * remainingPages;
-                timeRemainingVal.textContent = formatTime(estRemainingSec);
+                const totalBookEstSec = avgSecPerPage * totalToProcess;
+
+                timeRemainingVal.textContent = formatReadableTime(estRemainingSec);
+                totalEstimatedVal.textContent = formatReadableTime(totalBookEstSec);
+
+                log(`✓ صفحة ${pageNum} اكتملت. [متبقي للكتاب: ${formatReadableTime(estRemainingSec)} | وقت الكتاب ككل: ${formatReadableTime(totalBookEstSec)}]`);
 
                 // Show download button early if we have text
                 if (accumulatedText.length > 0) {
@@ -386,8 +448,11 @@
             }
 
             clearInterval(timerInterval);
-            statusEl.textContent = isStopped ? 'تم الإيقاف بنجاح!' : 'اكتمل الاستخراج بالكامل!';
-            log('\nانتهت العملية. يمكنك الآن تحميل الملف النصي الناتج.');
+            const totalElapsed = (Date.now() - startTime) / 1000;
+            statusEl.textContent = isStopped ? 'تم الإيقاف بنجاح وحفظ ما تم استخراجه!' : '🎉 اكتمل استخراج الكتاب بالكامل!';
+            timeRemainingVal.textContent = '0 ثانية (مكتمل)';
+            totalEstimatedVal.textContent = formatReadableTime(totalElapsed);
+            log(`\nانتهت العملية بالكامل في ${formatReadableTime(totalElapsed)}. يمكنك الآن تحميل الملف النصي الناتج.`);
 
             if (accumulatedText.trim().length > 0) {
                 downloadNowBtn.style.display = 'block';
