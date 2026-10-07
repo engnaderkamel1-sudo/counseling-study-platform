@@ -98,8 +98,32 @@
 </div>
 
 <script>
-    const savedKey = localStorage.getItem('counsel_ai_api_key') || localStorage.getItem('COUNSEL_API_KEY') || localStorage.getItem('APP_CONFIG_API_KEY');
-    if (savedKey) document.getElementById('apiKey').value = savedKey.replace(/"/g, '');
+    function loadSavedKey() {
+        let k = '';
+        for (let i = 0; i < localStorage.length; i++) {
+            const keyName = localStorage.key(i);
+            if (keyName && (keyName.includes('api_key') || keyName.includes('API_KEY'))) {
+                k = localStorage.getItem(keyName);
+                if (k) break;
+            }
+        }
+        if (!k) {
+            k = localStorage.getItem('counsel_ai_api_key') || localStorage.getItem('COUNSEL_API_KEY') || localStorage.getItem('APP_CONFIG_API_KEY') || localStorage.getItem('gemini_api_key') || '';
+        }
+        if (k) {
+            try { k = JSON.parse(k); } catch(e) {}
+            document.getElementById('apiKey').value = String(k).replace(/"/g, '').trim();
+        }
+    }
+    loadSavedKey();
+
+    document.getElementById('apiKey').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+            localStorage.setItem('counsel_ai_api_key', val);
+            localStorage.setItem('COUNSEL_API_KEY', val);
+        }
+    });
 
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
