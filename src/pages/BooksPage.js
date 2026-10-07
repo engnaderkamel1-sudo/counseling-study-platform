@@ -1,4 +1,4 @@
-﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -1047,7 +1047,7 @@ window.BooksPage = function(props) {
             React.createElement("p", { className: "text-xs text-slate-500" }, "المؤلف: " + activeBook.author + " • إجمالي الصفحات: " + activeBook.totalPages + " صفحة"),
             React.createElement("div", { className: "mt-1.5 flex items-center gap-2" },
               React.createElement("a", {
-                href: "/ocr-tool.html",
+                href: "/ocr-tool.html?key=" + encodeURIComponent(utils.getLocal(cfg.storageKeys.apiKey, "") || ""),
                 target: "_blank",
                 className: "inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
               }, "⚡ فتح أداة استخراج نصوص الكتاب")
