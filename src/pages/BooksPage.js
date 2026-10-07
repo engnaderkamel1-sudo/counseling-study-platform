@@ -1212,14 +1212,17 @@ window.BooksPage = function(props) {
     }
 
     var existingBook = editingBookId ? books.find(function(b) { return b.id === editingBookId; }) : null;
+    var nowTimestamp = Date.now();
     var newB = Object.assign({}, existingBook || {}, {
-      id: editingBookId || ("book-" + Date.now()),
+      id: editingBookId || ("book-" + nowTimestamp),
       title: newTitle.trim(),
       author: finalAuthor || "غير محدد",
       translator: newTranslator.trim() || (existingBook ? existingBook.translator : ""),
       coverUrl: finalCoverUrl || (existingBook ? existingBook.coverUrl : ""),
       driveUrl: finalDriveUrl || (existingBook ? existingBook.driveUrl : ""),
-      audioUrl: finalAudioUrl || (existingBook ? existingBook.audioUrl : "")
+      audioUrl: finalAudioUrl || (existingBook ? existingBook.audioUrl : ""),
+      uploadedAt: (existingBook && (existingBook.uploadedAt || existingBook.createdAt)) ? (existingBook.uploadedAt || existingBook.createdAt) : nowTimestamp,
+      createdAt: (existingBook && existingBook.createdAt) ? existingBook.createdAt : nowTimestamp
     });
 
     if (!existingBook) {
@@ -1995,12 +1998,11 @@ window.BooksPage = function(props) {
         React.createElement("span", { className: "text-xs text-slate-400" }, "اضغط على أي كتاب لفتحه وبدء القراءة والاستماع")
       ),
 
-      // شبكة بطاقات الكتب (Book Cover Cards Grid)
+      // شبكة بطاقات الكتب (Book Cover Cards Grid بتصميم شيك ومرتب يسهل التصفح)
       React.createElement(
         "div",
-        { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" },
+        { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5" },
         books.map(function(b, bIdx) {
-          // ألوان خلفيات مميزة أنيقة للأغلفة الافتراضية
           var coverPalettes = [
             "from-emerald-800 via-teal-900 to-slate-900",
             "from-indigo-800 via-purple-900 to-slate-900",
@@ -2009,6 +2011,26 @@ window.BooksPage = function(props) {
             "from-rose-800 via-slate-900 to-slate-950"
           ];
           var palette = coverPalettes[bIdx % coverPalettes.length];
+
+          // تنسيق تاريخ الرفع
+          var uploadDateStr = "";
+          if (b.uploadedAt || b.createdAt) {
+            try {
+              var d = new Date(b.uploadedAt || b.createdAt);
+              uploadDateStr = d.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+            } catch (ed) {}
+          }
+
+          // استخراج اسم الكاتب بدون لاحقة المترجم إن كانت مدمجة
+          var displayAuthor = b.author || "غير محدد";
+          var displayTranslator = b.translator || "";
+          if (displayAuthor.indexOf(" (ترجمة: ") !== -1) {
+            var splitted = displayAuthor.split(" (ترجمة: ");
+            displayAuthor = splitted[0];
+            if (!displayTranslator && splitted[1]) {
+              displayTranslator = splitted[1].replace(")", "");
+            }
+          }
 
           return React.createElement(
             "div",
@@ -2021,15 +2043,13 @@ window.BooksPage = function(props) {
                 utils.setLocal("counsel_active_book_id", b.id);
                 setActiveBook(targetBook);
               },
-              className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs hover:shadow-xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between"
+              className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 shadow-sm hover:shadow-xl hover:border-teal-500/60 dark:hover:border-teal-500/60 transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
             },
 
-            // غلاف الكتاب (Image or Styled Book Spine Cover)
+            // كارت الغلاف الأنيق
             React.createElement(
               "div",
-              {
-                className: "w-full aspect-[3/4] rounded-xl overflow-hidden relative shadow-md mb-3 flex flex-col justify-between p-3.5 bg-gradient-to-br " + palette
-              },
+              { className: "relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md mb-2.5 bg-gradient-to-br " + palette },
               b.coverUrl ? React.createElement("img", {
                 src: utils.getDriveImageUrl(b.coverUrl),
                 alt: b.title,
@@ -2041,44 +2061,40 @@ window.BooksPage = function(props) {
                     e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
                   }
                 }
-              }) : [
-                // تصميم كتاب فخم في حال عدم وجود صورة غلاف خارجية
+              }) : React.createElement(
+                "div",
+                { className: "absolute inset-0 p-3 flex flex-col justify-between text-white text-center" },
+                React.createElement("div", { className: "text-[10px] text-white/60 font-medium text-right" }, "مرجع معتمد"),
                 React.createElement(
                   "div",
-                  { key: "top", className: "flex items-center justify-between text-white/70 text-[10px]" },
-                  React.createElement("span", { className: "font-mono" }, "مرجع دراسي"),
-                  React.createElement("span", null, "📖")
+                  { className: "space-y-1 px-1 my-auto" },
+                  React.createElement("div", { className: "text-3xl" }, "📖"),
+                  React.createElement("div", { className: "text-xs font-bold line-clamp-3 leading-snug" }, b.title)
                 ),
-                React.createElement(
-                  "div",
-                  { key: "mid", className: "text-center my-auto px-1" },
-                  React.createElement("div", { className: "text-2xl mb-1.5 transform group-hover:scale-110 transition-transform" }, "📕"),
-                  React.createElement("h4", { className: "font-extrabold text-white text-xs leading-snug line-clamp-3 text-shadow" }, b.title)
-                ),
-                React.createElement(
-                  "div",
-                  { key: "bot", className: "text-center border-t border-white/20 pt-1.5" },
-                  React.createElement("p", { className: "text-[10px] text-emerald-300 font-medium truncate" }, b.author || "معهد المشورة")
-                )
-              ],
-              // شارة عدد الفصول
-              React.createElement(
-                "span",
-                {
-                  className: "absolute top-2 left-2 text-[9px] font-bold bg-slate-950/80 text-emerald-400 backdrop-blur-xs px-2 py-0.5 rounded-full border border-slate-700/50"
-                },
-                ((b.chapters || []).length) + " فصول"
+                React.createElement("div", { className: "text-[10px] text-teal-300/80 truncate border-t border-white/10 pt-1" }, displayAuthor)
               ),
-              // أزرار التعديل والحذف للأدمن
+
+              // تأثير طبقة الظل الخفيفة عند المرور
+              React.createElement("div", { className: "absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" }),
+
+              // شارة الصفحات في أعلى الكارت
+              React.createElement(
+                "div",
+                { className: "absolute top-2 left-2 flex items-center gap-1 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[9px] font-bold text-white shadow-xs border border-white/10" },
+                React.createElement("span", null, "📄"),
+                React.createElement("span", null, (b.totalPages || 0) + " ص")
+              ),
+
+              // أزرار التحكم للأدمن (تعديل وحذف)
               currentUser.role === "admin" && React.createElement(
                 "div",
-                { className: "absolute top-2 right-2 flex flex-col gap-1.5 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" },
+                { className: "absolute top-2 right-2 flex items-center gap-1 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" },
                 React.createElement(
                   "button",
                   {
                     type: "button",
                     onClick: function(e) { handleEditBookClick(e, b); },
-                    className: "bg-slate-900/90 hover:bg-emerald-600 text-white p-2 rounded-xl backdrop-blur-xs transition-colors shadow-md active:scale-90 text-xs",
+                    className: "bg-slate-900/90 hover:bg-teal-600 text-white w-7 h-7 rounded-lg backdrop-blur-xs transition-colors shadow-md flex items-center justify-center text-xs active:scale-90",
                     title: "تعديل بيانات الكتاب"
                   },
                   "✏️"
@@ -2088,7 +2104,7 @@ window.BooksPage = function(props) {
                   {
                     type: "button",
                     onClick: function(e) { handleDeleteBook(e, b.id); },
-                    className: "bg-slate-900/90 hover:bg-rose-600 text-white p-2 rounded-xl backdrop-blur-xs transition-colors shadow-md active:scale-90 text-xs",
+                    className: "bg-slate-900/90 hover:bg-rose-600 text-white w-7 h-7 rounded-lg backdrop-blur-xs transition-colors shadow-md flex items-center justify-center text-xs active:scale-90",
                     title: "حذف الكتاب نهائياً"
                   },
                   "🗑️"
@@ -2096,17 +2112,51 @@ window.BooksPage = function(props) {
               )
             ),
 
-            // معلومات الكتاب أسفل الغلاف
+            // تفاصيل وبيانات الكتاب
             React.createElement(
               "div",
-              { className: "space-y-1 text-right px-0.5" },
-              React.createElement("h4", { className: "font-bold text-xs text-slate-900 dark:text-white line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" }, b.title),
-              React.createElement("p", { className: "text-[11px] text-slate-500 truncate" }, "✍️ " + (b.author || "غير محدد")),
+              { className: "space-y-1.5 px-0.5 text-right flex-1 flex flex-col justify-between" },
               React.createElement(
                 "div",
-                { className: "flex items-center justify-between pt-1 text-[10px] text-slate-400" },
-                React.createElement("span", null, (b.totalPages || 0) + " ص"),
-                React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold group-hover:underline" }, "فتح الكتاب ◀")
+                null,
+                React.createElement("h4", {
+                  className: "font-bold text-xs sm:text-[13px] text-slate-900 dark:text-white line-clamp-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors leading-snug",
+                  title: b.title
+                }, b.title),
+
+                // اسم الكاتب
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-1 text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-1 truncate" },
+                  React.createElement("span", { className: "text-slate-400" }, "✍️"),
+                  React.createElement("span", { className: "truncate", title: displayAuthor }, displayAuthor)
+                ),
+
+                // اسم المترجم إن وجد
+                displayTranslator ? React.createElement(
+                  "div",
+                  { className: "flex items-center gap-1 text-[10px] text-teal-700 dark:text-teal-400 font-medium truncate mt-0.5" },
+                  React.createElement("span", { className: "text-slate-400" }, "🌐"),
+                  React.createElement("span", { className: "truncate", title: "ترجمة: " + displayTranslator }, "ترجمة: " + displayTranslator)
+                ) : null
+              ),
+
+              // الفوتر: تاريخ الرفع وزر الفتح
+              React.createElement(
+                "div",
+                { className: "pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 mt-2" },
+                uploadDateStr ? React.createElement(
+                  "span",
+                  { className: "flex items-center gap-1 text-slate-400", title: "تاريخ رفع الكتاب" },
+                  React.createElement("span", null, "📅"),
+                  React.createElement("span", null, uploadDateStr)
+                ) : React.createElement("span", null, ((b.chapters || []).length || (b.audioChapters || []).length || 0) + " فصول"),
+                React.createElement(
+                  "span",
+                  { className: "text-teal-600 dark:text-teal-400 font-bold group-hover:translate-x-[-2px] transition-transform flex items-center gap-0.5" },
+                  React.createElement("span", null, "قراءة"),
+                  React.createElement("span", null, "◀")
+                )
               )
             )
           );
