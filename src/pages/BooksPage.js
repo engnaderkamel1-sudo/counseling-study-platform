@@ -124,6 +124,7 @@ window.BooksPage = function(props) {
       
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
+  var [newTranslator, setNewTranslator] = React.useState("");
   var [newCoverUrl, setNewCoverUrl] = React.useState("");
   var [newTotalPages, setNewTotalPages] = React.useState(350);
   var [newDriveUrl, setNewDriveUrl] = React.useState("");
@@ -910,17 +911,19 @@ window.BooksPage = function(props) {
       var pageThumbnails = {}; // p -> dataUrl
       if (doc) {
         setNewTotalPages(doc.numPages || 300);
-        var maxInspect = Math.min(doc.numPages || 1, 12);
+        // فحص أول 6 صفحات بدقة واضحة للقراءة
+        var maxInspect = Math.min(doc.numPages || 1, 6);
         for (var p = 1; p <= maxInspect; p++) {
           try {
             var pageObj = await doc.getPage(p);
-            var vp = pageObj.getViewport({ scale: p <= 3 ? 1.2 : 0.85 });
+            // مقياس مناسب جداً لقراءة النصوص العربية والعناوين بدقة بدون استهلاك ذاكرة
+            var vp = pageObj.getViewport({ scale: 1.2 });
             var tempCanvas = document.createElement("canvas");
             tempCanvas.width = vp.width;
             tempCanvas.height = vp.height;
             var ctx = tempCanvas.getContext("2d");
             await pageObj.render({ canvasContext: ctx, viewport: vp }).promise;
-            var dataUrl = tempCanvas.toDataURL("image/jpeg", p <= 3 ? 0.8 : 0.55);
+            var dataUrl = tempCanvas.toDataURL("image/jpeg", 0.85);
             pageThumbnails[p] = dataUrl;
             if (p === 1) {
               coverDataUrl = dataUrl;
@@ -941,15 +944,23 @@ window.BooksPage = function(props) {
         return;
       }
 
+      var aiSuccess = false;
+      var lastAiError = "";
+
       if (scanParts.length > 0) {
         var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-        var candidateModels = autoModels.length > 0 ? autoModels : ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-3-flash-preview"];
+        // وضع نماذج gemini-2.0-flash و gemini-1.5-flash في المقدمة لأنها تدعم الصور والرؤية بامتياز
+        var defaultCandidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-1.5-pro"];
+        var candidateModels = autoModels.length > 0 ? autoModels.concat(defaultCandidateModels) : defaultCandidateModels;
+        // إزالة التكرار
+        candidateModels = candidateModels.filter(function(item, pos) { return candidateModels.indexOf(item) === pos; });
+
         var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور أول صفحات كتاب بترتيب الصفحات من 1 إلى " + scanParts.length + " (تشمل الغلاف وصفحة العنوان وصفحات الفهرس/المحتويات). إجمالي صفحات الـ PDF: " + (doc ? doc.numPages : 300) + ".\n" +
-          "مطلوب منك بدقة شديدة الإجابة بصيغة JSON صريحة فقط:\n" +
-          "1. coverPageNumber: رقم صفحة الغلاف الحقيقي الملون للكتاب (غالباً 1، أو 2 أو 3 إذا كانت الصفحة الأولى بيضاء أو ترويجية).\n" +
-          "2. title: اسم الكتاب الدقيق.\n" +
-          "3. author: اسم المؤلف / الكاتب الرئيسي.\n" +
-          "4. translator: اسم المترجم أو المعرب إن وجد وإلا \"\".\n" +
+          "مطلوب منك بدقة شديدة الإجابة بصيغة JSON صريحة فقط بدون أي شرح أو كلام إضافي:\n" +
+          "1. coverPageNumber: رقم صفحة الغلاف الحقيقي الملون للكتاب (غالباً 1، أو 2 أو 3 إذا كانت الصفحة الأولى بيضاء أو فارغة).\n" +
+          "2. title: اسم الكتاب الدقيق المكتوب على الغلاف أو صفحة العنوان (مثل: الروحانية الناضجة وجدانياً).\n" +
+          "3. author: اسم المؤلف / الكاتب الأصلي (مثل: بيتر سكارزيرو أو Peter Scazzero).\n" +
+          "4. translator: اسم المترجم أو المعرب إن وجد وإلا \"\" (مثل: د. أوسم وصفي).\n" +
           "5. chapters: مصفوفة بجميع فصول وأقسام الفهرس، كل عنصر: {\"title\": \"اسم الفصل\", \"pdfStartPage\": رقم بداية الفصل بالـ PDF, \"pdfEndPage\": رقم نهاية الفصل بالـ PDF}.\n" +
           "أجب بصيغة JSON صريحة فقط: {\"coverPageNumber\": 1, \"title\": \"...\", \"author\": \"...\", \"translator\": \"...\", \"chapters\": [{\"title\": \"المقدمة\", \"pdfStartPage\": 7, \"pdfEndPage\": 12}]}";
 
@@ -984,12 +995,9 @@ window.BooksPage = function(props) {
                   setNewCoverUrl(pageThumbnails[detectedCoverNum]);
                 }
 
-                if (parsed.title) setNewTitle(parsed.title);
-                var fullAuthor = (parsed.author || "").trim();
-                if (parsed.translator && parsed.translator.trim()) {
-                  fullAuthor += " (ترجمة: " + parsed.translator.trim() + ")";
-                }
-                if (fullAuthor) setNewAuthor(fullAuthor);
+                if (parsed.title) setNewTitle(parsed.title.trim());
+                if (parsed.author) setNewAuthor(parsed.author.trim());
+                if (parsed.translator) setNewTranslator(parsed.translator.trim());
 
                 if (Array.isArray(parsed.chapters) && parsed.chapters.length > 0) {
                   var formattedChaps = parsed.chapters.map(function(c, cIdx) {
@@ -1004,16 +1012,24 @@ window.BooksPage = function(props) {
                   });
                   setDetectedChaptersList(formattedChaps);
                   setNewChaptersCount(formattedChaps.length);
-                  alert("✨ نجح الفحص التلقائي بالـ AI!\n\n🖼️ صفحة الغلاف المختارة: صفحة " + detectedCoverNum + "\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + fullAuthor + "\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
+                  alert("✨ نجح الفحص التلقائي بالذكاء الاصطناعي!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ تم اختيار صفحة " + detectedCoverNum + " كغلاف\n📋 تم تقسيم " + formattedChaps.length + " فصول تلقائياً من الفهرس!");
                 } else {
-                  alert("✨ تم استخراج الغلاف وبيانات الكتاب بنجاح!\n🖼️ صفحة الغلاف: " + detectedCoverNum + "\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + fullAuthor);
+                  alert("✨ تم استخراج بيانات الكتاب بنجاح!\n\n📖 اسم الكتاب: " + (parsed.title || "") + "\n✍️ المؤلف: " + (parsed.author || "") + (parsed.translator ? "\n🌐 المترجم: " + parsed.translator : "") + "\n🖼️ صفحة الغلاف: " + detectedCoverNum);
                 }
+                aiSuccess = true;
                 break;
               }
+            } else {
+              var errData = await res.json().catch(function() { return {}; });
+              lastAiError = (errData.error && errData.error.message) || ("Model " + candidateModels[i] + " returned status " + res.status);
             }
           } catch (eVis) {
+            lastAiError = eVis.message || String(eVis);
             console.warn("AI inspect model error:", eVis);
           }
+        }
+        if (!aiSuccess) {
+          alert("تنبيه من خدمة الذكاء الاصطناعي: " + (lastAiError || "تعذر قراءة صفحات الفهرس بواسطة النماذج المتاحة. تأكد من صلاحية مفتاح Gemini في الإعدادات."));
         }
       } else {
         var query = (newTitle || (selectedFile ? selectedFile.name : "")).trim();
@@ -1090,6 +1106,7 @@ window.BooksPage = function(props) {
     setEditingBookId(book.id);
     setNewTitle(book.title || "");
     setNewAuthor(book.author || "");
+    setNewTranslator(book.translator || "");
     setNewCoverUrl(book.coverUrl || "");
     setNewDriveUrl(book.driveUrl || "");
     setNewTrack1Url(book.audioUrl || "");
@@ -1182,11 +1199,17 @@ window.BooksPage = function(props) {
       } catch (errCover) {}
     }
 
+    var finalAuthor = newAuthor.trim();
+    if (newTranslator.trim()) {
+      finalAuthor = finalAuthor ? (finalAuthor + " (ترجمة: " + newTranslator.trim() + ")") : ("ترجمة: " + newTranslator.trim());
+    }
+
     var existingBook = editingBookId ? books.find(function(b) { return b.id === editingBookId; }) : null;
     var newB = Object.assign({}, existingBook || {}, {
       id: editingBookId || ("book-" + Date.now()),
       title: newTitle.trim(),
-      author: newAuthor.trim() || "غير محدد",
+      author: finalAuthor || "غير محدد",
+      translator: newTranslator.trim() || (existingBook ? existingBook.translator : ""),
       coverUrl: finalCoverUrl || (existingBook ? existingBook.coverUrl : ""),
       driveUrl: finalDriveUrl || (existingBook ? existingBook.driveUrl : ""),
       audioUrl: finalAudioUrl || (existingBook ? existingBook.audioUrl : "")
@@ -1224,6 +1247,7 @@ window.BooksPage = function(props) {
     setSelectedCoverFile(null);
     setNewTitle("");
     setNewAuthor("");
+    setNewTranslator("");
     setNewCoverUrl("");
     setNewDriveUrl("");
     setDetectedChaptersList([]);
@@ -2108,6 +2132,8 @@ window.BooksPage = function(props) {
       setNewTitle: setNewTitle,
       newAuthor: newAuthor,
       setNewAuthor: setNewAuthor,
+      newTranslator: newTranslator,
+      setNewTranslator: setNewTranslator,
       newCoverUrl: newCoverUrl,
       setNewCoverUrl: setNewCoverUrl,
       selectedCoverFile: selectedCoverFile,

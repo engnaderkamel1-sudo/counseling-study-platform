@@ -16,6 +16,8 @@ window.AddBookModal = function(props) {
   var setNewTitle = props.setNewTitle;
   var newAuthor = props.newAuthor;
   var setNewAuthor = props.setNewAuthor;
+  var newTranslator = props.newTranslator;
+  var setNewTranslator = props.setNewTranslator;
   var newCoverUrl = props.newCoverUrl;
   var setNewCoverUrl = props.setNewCoverUrl;
   var selectedCoverFile = props.selectedCoverFile;
@@ -140,7 +142,19 @@ window.AddBookModal = function(props) {
               required: true,
               value: newAuthor,
               onChange: function(e) { setNewAuthor(e.target.value); },
-              placeholder: "مثال: د. أوسم وصفي، د. إميل جورج...",
+              placeholder: "مثال: د. أوسم وصفي، بيتر سكارزيرو...",
+              className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "اسم المترجم (إن وجد)"),
+            React.createElement("input", {
+              type: "text",
+              value: newTranslator || "",
+              onChange: function(e) { setNewTranslator && setNewTranslator(e.target.value); },
+              placeholder: "مثال: د. أوسم وصفي، منير عتيق...",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           ),
