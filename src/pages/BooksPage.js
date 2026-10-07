@@ -53,6 +53,7 @@ window.BooksPage = function(props) {
   var [chapTitle, setChapTitle] = React.useState("");
   var [chapStartPage, setChapStartPage] = React.useState(1);
   var [chapEndPage, setChapEndPage] = React.useState("");
+  var [chapInsertPos, setChapInsertPos] = React.useState("end");
   var [chapAudioUrl, setChapAudioUrl] = React.useState("");
   var [chapAudioFile, setChapAudioFile] = React.useState(null);
   var [chapText, setChapText] = React.useState("");
@@ -1260,13 +1261,22 @@ window.BooksPage = function(props) {
 
       if (editingChapter) {
         var idx = currentChaps.findIndex(function(c) { return c.id === editingChapter.id; });
-        if (idx >= 0) currentChaps[idx] = chapterObj;
+        if (idx >= 0) currentChaps[idx] = Object.assign({}, currentChaps[idx], chapterObj);
         else currentChaps.push(chapterObj);
       } else {
-        currentChaps.push(chapterObj);
+        if (chapInsertPos === "start") {
+          currentChaps.unshift(chapterObj);
+        } else if (chapInsertPos === "end" || !chapInsertPos) {
+          currentChaps.push(chapterObj);
+        } else {
+          var insertIdx = parseInt(chapInsertPos);
+          if (!isNaN(insertIdx) && insertIdx >= 0 && insertIdx <= currentChaps.length) {
+            currentChaps.splice(insertIdx, 0, chapterObj);
+          } else {
+            currentChaps.push(chapterObj);
+          }
+        }
       }
-
-      currentChaps.sort(function(a, b) { return (a.startPage || 1) - (b.startPage || 1); });
 
       var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
       await cloud.saveBook(updatedBook);
@@ -1978,6 +1988,7 @@ window.BooksPage = function(props) {
           handleOpenAddChapter: handleOpenAddChapter,
           handleOpenEditChapter: handleOpenEditChapter,
           handleDeleteChapter: handleDeleteChapter,
+          handleMoveChapter: handleMoveChapter,
           setViewingChapterText: setViewingChapterText,
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
@@ -2623,6 +2634,9 @@ window.BooksPage = function(props) {
       isOpen: showChapterModal,
       onClose: function() { setShowChapterModal(false); },
       editingChapter: editingChapter,
+        existingChapters: (activeBook && activeBook.audioChapters) || [],
+        chapInsertPos: chapInsertPos,
+        setChapInsertPos: setChapInsertPos,
       chapTitle: chapTitle,
       setChapTitle: setChapTitle,
       chapStartPage: chapStartPage,

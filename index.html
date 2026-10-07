@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791395643",
-  buildTime: "2026-10-07T17:54:03",
+  version: "1.2.1791398174",
+  buildTime: "2026-10-07T18:36:14",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2054,17 +2054,20 @@ window.BookSummaryModal = function(props) {
 };
 
 // Module: components/books/ChapterEditModal.js
-// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ
+// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ مع تحديد الموضع والترتيب
 window.ChapterEditModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
   var editingChapter = props.editingChapter;
+  var existingChapters = props.existingChapters || [];
   var chapTitle = props.chapTitle;
   var setChapTitle = props.setChapTitle;
   var chapStartPage = props.chapStartPage;
   var setChapStartPage = props.setChapStartPage;
   var chapEndPage = props.chapEndPage;
   var setChapEndPage = props.setChapEndPage;
+  var chapInsertPos = props.chapInsertPos;
+  var setChapInsertPos = props.setChapInsertPos;
   var chapAudioUrl = props.chapAudioUrl;
   var setChapAudioUrl = props.setChapAudioUrl;
   var setChapAudioFile = props.setChapAudioFile;
@@ -2094,7 +2097,7 @@ window.ChapterEditModal = function(props) {
         "div",
         { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
         React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
-          editingChapter ? "✏️ تعديل بيانات الفصل وصفحاته" : "➕ إضافة فصل جديد للكتاب"
+          editingChapter ? "✏️ تعديل بيانات الفصل وصفحاته" : "➕ إضافة فصل أو جزء جديد للكتاب"
         ),
         !isSavingChapter ? React.createElement("button", { type: "button", onClick: onClose, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕") : null
       ),
@@ -2103,13 +2106,13 @@ window.ChapterEditModal = function(props) {
       React.createElement(
         "div",
         { className: "space-y-1" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم أو عنوان الفصل * :"),
+        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم أو عنوان الفصل / الجزء * :"),
         React.createElement("input", {
           type: "text",
           required: true,
           value: chapTitle,
           onChange: function(e) { setChapTitle(e.target.value); },
-          placeholder: "مثال: الفصل الأول: إدراك روحانية قمة جبل الجليد...",
+          placeholder: "مثال: الجزء الثاني: الطريق إلى الروحانية... أو الفصل 4...",
           className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold"
         })
       ),
@@ -2145,6 +2148,24 @@ window.ChapterEditModal = function(props) {
           })
         )
       ),
+
+      // موضع الترتيب في القائمة (عند الإضافة الجديدة)
+      !editingChapter && existingChapters.length > 0 ? React.createElement(
+        "div",
+        { className: "space-y-1" },
+        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "📌 موضع هذا الفصل في ترتيب القائمة:"),
+        React.createElement("select", {
+          value: chapInsertPos || "end",
+          onChange: function(e) { setChapInsertPos(e.target.value); },
+          className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold"
+        },
+          React.createElement("option", { value: "end" }, "في نهاية القائمة (الأخير)"),
+          React.createElement("option", { value: "start" }, "في بداية القائمة (الأول)"),
+          existingChapters.map(function(c, i) {
+            return React.createElement("option", { key: c.id, value: String(i + 1) }, "بعد: " + (i + 1) + " - " + c.title);
+          })
+        )
+      ) : null,
 
       // ملف الصوت (اختياري)
       React.createElement(
@@ -2734,6 +2755,7 @@ window.AudioChaptersView = function(props) {
   var handleBatchExtractAllChapters = props.handleBatchExtractAllChapters;
   var handleStopBatchExtraction = props.handleStopBatchExtraction;
   var batchProgress = props.batchProgress;
+  var handleMoveChapter = props.handleMoveChapter;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -3102,8 +3124,28 @@ window.AudioChaptersView = function(props) {
           React.createElement(
             "div",
             { className: "flex items-start gap-3" },
-            React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs shrink-0 " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
-              (idx + 1)
+            React.createElement(
+              "div",
+              { className: "flex flex-col items-center gap-1 shrink-0" },
+              React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
+                (idx + 1)
+              ),
+              currentUser && currentUser.role === "admin" ? React.createElement(
+                "div",
+                { className: "flex items-center gap-0.5" },
+                idx > 0 ? React.createElement("button", {
+                  type: "button",
+                  onClick: function() { handleMoveChapter && handleMoveChapter(idx, -1); },
+                  className: "w-4 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[9px] font-black transition-all",
+                  title: "تقديم الترتيب لأعلى ⬆️"
+                }, "▲") : null,
+                idx < chaps.length - 1 ? React.createElement("button", {
+                  type: "button",
+                  onClick: function() { handleMoveChapter && handleMoveChapter(idx, 1); },
+                  className: "w-4 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[9px] font-black transition-all",
+                  title: "تأخير الترتيب لأسفل ⬇️"
+                }, "▼") : null
+              ) : null
             ),
             React.createElement(
               "div",
@@ -4575,6 +4617,7 @@ window.BooksPage = function(props) {
   var [chapTitle, setChapTitle] = React.useState("");
   var [chapStartPage, setChapStartPage] = React.useState(1);
   var [chapEndPage, setChapEndPage] = React.useState("");
+  var [chapInsertPos, setChapInsertPos] = React.useState("end");
   var [chapAudioUrl, setChapAudioUrl] = React.useState("");
   var [chapAudioFile, setChapAudioFile] = React.useState(null);
   var [chapText, setChapText] = React.useState("");
@@ -5782,13 +5825,22 @@ window.BooksPage = function(props) {
 
       if (editingChapter) {
         var idx = currentChaps.findIndex(function(c) { return c.id === editingChapter.id; });
-        if (idx >= 0) currentChaps[idx] = chapterObj;
+        if (idx >= 0) currentChaps[idx] = Object.assign({}, currentChaps[idx], chapterObj);
         else currentChaps.push(chapterObj);
       } else {
-        currentChaps.push(chapterObj);
+        if (chapInsertPos === "start") {
+          currentChaps.unshift(chapterObj);
+        } else if (chapInsertPos === "end" || !chapInsertPos) {
+          currentChaps.push(chapterObj);
+        } else {
+          var insertIdx = parseInt(chapInsertPos);
+          if (!isNaN(insertIdx) && insertIdx >= 0 && insertIdx <= currentChaps.length) {
+            currentChaps.splice(insertIdx, 0, chapterObj);
+          } else {
+            currentChaps.push(chapterObj);
+          }
+        }
       }
-
-      currentChaps.sort(function(a, b) { return (a.startPage || 1) - (b.startPage || 1); });
 
       var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
       await cloud.saveBook(updatedBook);
@@ -6500,6 +6552,7 @@ window.BooksPage = function(props) {
           handleOpenAddChapter: handleOpenAddChapter,
           handleOpenEditChapter: handleOpenEditChapter,
           handleDeleteChapter: handleDeleteChapter,
+          handleMoveChapter: handleMoveChapter,
           setViewingChapterText: setViewingChapterText,
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
@@ -7145,6 +7198,9 @@ window.BooksPage = function(props) {
       isOpen: showChapterModal,
       onClose: function() { setShowChapterModal(false); },
       editingChapter: editingChapter,
+        existingChapters: (activeBook && activeBook.audioChapters) || [],
+        chapInsertPos: chapInsertPos,
+        setChapInsertPos: setChapInsertPos,
       chapTitle: chapTitle,
       setChapTitle: setChapTitle,
       chapStartPage: chapStartPage,

@@ -1,14 +1,17 @@
-﻿// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ
+﻿// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ مع تحديد الموضع والترتيب
 window.ChapterEditModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
   var editingChapter = props.editingChapter;
+  var existingChapters = props.existingChapters || [];
   var chapTitle = props.chapTitle;
   var setChapTitle = props.setChapTitle;
   var chapStartPage = props.chapStartPage;
   var setChapStartPage = props.setChapStartPage;
   var chapEndPage = props.chapEndPage;
   var setChapEndPage = props.setChapEndPage;
+  var chapInsertPos = props.chapInsertPos;
+  var setChapInsertPos = props.setChapInsertPos;
   var chapAudioUrl = props.chapAudioUrl;
   var setChapAudioUrl = props.setChapAudioUrl;
   var setChapAudioFile = props.setChapAudioFile;
@@ -38,7 +41,7 @@ window.ChapterEditModal = function(props) {
         "div",
         { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
         React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
-          editingChapter ? "✏️ تعديل بيانات الفصل وصفحاته" : "➕ إضافة فصل جديد للكتاب"
+          editingChapter ? "✏️ تعديل بيانات الفصل وصفحاته" : "➕ إضافة فصل أو جزء جديد للكتاب"
         ),
         !isSavingChapter ? React.createElement("button", { type: "button", onClick: onClose, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕") : null
       ),
@@ -47,13 +50,13 @@ window.ChapterEditModal = function(props) {
       React.createElement(
         "div",
         { className: "space-y-1" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم أو عنوان الفصل * :"),
+        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم أو عنوان الفصل / الجزء * :"),
         React.createElement("input", {
           type: "text",
           required: true,
           value: chapTitle,
           onChange: function(e) { setChapTitle(e.target.value); },
-          placeholder: "مثال: الفصل الأول: إدراك روحانية قمة جبل الجليد...",
+          placeholder: "مثال: الجزء الثاني: الطريق إلى الروحانية... أو الفصل 4...",
           className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold"
         })
       ),
@@ -89,6 +92,24 @@ window.ChapterEditModal = function(props) {
           })
         )
       ),
+
+      // موضع الترتيب في القائمة (عند الإضافة الجديدة)
+      !editingChapter && existingChapters.length > 0 ? React.createElement(
+        "div",
+        { className: "space-y-1" },
+        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "📌 موضع هذا الفصل في ترتيب القائمة:"),
+        React.createElement("select", {
+          value: chapInsertPos || "end",
+          onChange: function(e) { setChapInsertPos(e.target.value); },
+          className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold"
+        },
+          React.createElement("option", { value: "end" }, "في نهاية القائمة (الأخير)"),
+          React.createElement("option", { value: "start" }, "في بداية القائمة (الأول)"),
+          existingChapters.map(function(c, i) {
+            return React.createElement("option", { key: c.id, value: String(i + 1) }, "بعد: " + (i + 1) + " - " + c.title);
+          })
+        )
+      ) : null,
 
       // ملف الصوت (اختياري)
       React.createElement(

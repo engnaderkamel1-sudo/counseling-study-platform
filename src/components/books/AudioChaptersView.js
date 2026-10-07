@@ -19,6 +19,7 @@ window.AudioChaptersView = function(props) {
   var handleBatchExtractAllChapters = props.handleBatchExtractAllChapters;
   var handleStopBatchExtraction = props.handleStopBatchExtraction;
   var batchProgress = props.batchProgress;
+  var handleMoveChapter = props.handleMoveChapter;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -387,8 +388,28 @@ window.AudioChaptersView = function(props) {
           React.createElement(
             "div",
             { className: "flex items-start gap-3" },
-            React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs shrink-0 " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
-              (idx + 1)
+            React.createElement(
+              "div",
+              { className: "flex flex-col items-center gap-1 shrink-0" },
+              React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
+                (idx + 1)
+              ),
+              currentUser && currentUser.role === "admin" ? React.createElement(
+                "div",
+                { className: "flex items-center gap-0.5" },
+                idx > 0 ? React.createElement("button", {
+                  type: "button",
+                  onClick: function() { handleMoveChapter && handleMoveChapter(idx, -1); },
+                  className: "w-4 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[9px] font-black transition-all",
+                  title: "تقديم الترتيب لأعلى ⬆️"
+                }, "▲") : null,
+                idx < chaps.length - 1 ? React.createElement("button", {
+                  type: "button",
+                  onClick: function() { handleMoveChapter && handleMoveChapter(idx, 1); },
+                  className: "w-4 h-4 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-[9px] font-black transition-all",
+                  title: "تأخير الترتيب لأسفل ⬇️"
+                }, "▼") : null
+              ) : null
             ),
             React.createElement(
               "div",
