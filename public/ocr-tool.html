@@ -77,6 +77,11 @@
     <label for="pdfFile">اختر ملف الكتاب (PDF):</label>
     <input type="file" id="pdfFile" accept="application/pdf" />
 
+    <div style="margin-bottom: 12px;">
+        <label for="chapterName">🔖 اسم الفصل أو الجزء (مثال: المقدمة، الفصل الأول - لتسمية الملف وتنظيمه):</label>
+        <input type="text" id="chapterName" placeholder="مثال: المقدمة، أو الفصل الأول: الشخصية الناضجة" style="direction: rtl; text-align: right;" />
+    </div>
+
     <div style="margin-bottom: 12px; display: flex; items-center; gap: 8px;">
         <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.85rem; color: #475569; cursor: pointer;">
             <input type="checkbox" id="includePageHeaders" style="width: auto; margin-bottom: 0;" />
@@ -210,6 +215,7 @@
         const savedText = localStorage.getItem('counsel_ocr_backup_text');
         const lastPage = localStorage.getItem('counsel_ocr_backup_last_page');
         const bookName = localStorage.getItem('counsel_ocr_backup_book_name') || 'كتاب سابق';
+        const savedChapter = localStorage.getItem('counsel_ocr_backup_chapter_name') || '';
         const savedTime = localStorage.getItem('counsel_ocr_backup_timestamp');
 
         if (savedText && savedText.trim().length > 0 && lastPage) {
@@ -218,20 +224,26 @@
             if (!banner || !bannerText) return;
             banner.style.display = 'block';
 
+            if (savedChapter && !document.getElementById('chapterName').value) {
+                document.getElementById('chapterName').value = savedChapter;
+            }
+
             let timeStr = '';
             if (savedTime) {
                 const d = new Date(parseInt(savedTime));
                 timeStr = ` (تم الحفظ: ${d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })})`;
             }
 
-            bannerText.innerHTML = `تم حفظ العمل تلقائياً لكتاب <b>"${bookName}"</b> حتى <b>الصفحة ${lastPage}</b> بمجموع <b>${savedText.length.toLocaleString('ar-EG')} حرف</b>${timeStr}. لا داعي للقلق، عملك محفوظ بالكامل حتى لو أغلق المتصفح أو فصل الجهاز.`;
+            const chapterInfo = savedChapter ? ` (فصل: <b>${savedChapter}</b>)` : '';
+            bannerText.innerHTML = `تم حفظ العمل تلقائياً لكتاب <b>"${bookName}"</b>${chapterInfo} حتى <b>الصفحة ${lastPage}</b> بمجموع <b>${savedText.length.toLocaleString('ar-EG')} حرف</b>${timeStr}. لا داعي للقلق، عملك محفوظ بالكامل حتى لو أغلق المتصفح أو فصل الجهاز.`;
 
             document.getElementById('resumeDownloadBtn').onclick = () => {
                 const blob = new Blob([savedText], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `كتاب_مسترجع_${bookName.replace(/\.pdf$/i, '')}_حتى_صفحة_${lastPage}.txt`;
+                const cleanChap = savedChapter ? '_' + savedChapter.replace(/[\/\\?%*:|"<>]/g, '_') : '';
+                a.download = `كتاب_مسترجع_${bookName.replace(/\.pdf$/i, '')}${cleanChap}_حتى_صفحة_${lastPage}.txt`;
                 a.click();
                 URL.revokeObjectURL(url);
             };
@@ -367,11 +379,24 @@
 
     function triggerDownload() {
         if (!accumulatedText.trim()) return alert('لا يوجد نص مستخرج للتحميل بعد.');
+        const file = document.getElementById('pdfFile').files[0];
+        const rawBookName = file ? file.name.replace(/\.pdf$/i, '') : 'الكتاب';
+        const cleanBookName = rawBookName.replace(/[\/\\?%*:|"<>]/g, '_');
+        const chapterVal = document.getElementById('chapterName').value.trim();
+        const cleanChapter = chapterVal ? chapterVal.replace(/[\/\\?%*:|"<>]/g, '_') : '';
+        const startP = document.getElementById('startPage').value || '1';
+        const endP = document.getElementById('endPage').value || '';
+        
+        let fileName = `كتاب_${cleanBookName}`;
+        if (cleanChapter) fileName += `_${cleanChapter}`;
+        if (startP && endP) fileName += `_صفحة_${startP}_الى_${endP}`;
+        fileName += '.txt';
+
         const blob = new Blob([accumulatedText], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `كتاب_مستخرج_${Date.now()}.txt`;
+        a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -478,7 +503,14 @@
             if (excludedCount > 0) {
                 log(`🚫 تم استبعاد ${excludedCount} صفحة بناءً على رغبتك (مثل الفهرس أو المراجع).`);
             }
-            log(`تم فتح الكتاب. سيتم استخراج ${totalToProcess} صفحة مطلوبة من نطاق (${fromPage} إلى ${toPage}).`);
+            const chapterVal = document.getElementById('chapterName').value.trim();
+            const rawBookName = file.name.replace(/\.pdf$/i, '');
+            if (!accumulatedText) {
+                const headerTitle = chapterVal ? `كتاب: ${rawBookName} | فصل: ${chapterVal}` : `كتاب: ${rawBookName}`;
+                accumulatedText = `=== ${headerTitle} (من صفحة ${fromPage} إلى ${toPage}) ===\n\n`;
+            }
+
+            log(`تم فتح الكتاب. سيتم استخراج ${totalToProcess} صفحة مطلوبة من نطاق (${fromPage} إلى ${toPage})${chapterVal ? ' [فصل: ' + chapterVal + ']' : ''}.`);
 
             startTime = Date.now();
             let completedCount = 0;
@@ -564,6 +596,7 @@
                         localStorage.setItem('counsel_ocr_backup_text', accumulatedText);
                         localStorage.setItem('counsel_ocr_backup_last_page', pageNum);
                         localStorage.setItem('counsel_ocr_backup_book_name', file.name);
+                        localStorage.setItem('counsel_ocr_backup_chapter_name', chapterVal);
                         localStorage.setItem('counsel_ocr_backup_timestamp', Date.now());
                     } catch(err) {
                         console.warn('Backup save error:', err);

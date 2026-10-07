@@ -1,4 +1,4 @@
-// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -50,7 +50,21 @@ window.BooksPage = function(props) {
   var pdfRenderTaskRef = React.useRef(null);
 
   // التبويب النشط لمحتوى الكتاب الدراسي (تراك 1 الشامل أو ملخص الكتاب)
-  var [bookStudyTab, setBookStudyTab] = React.useState("track1");
+  var [bookStudyTab, setBookStudyTab] = React.useState("chapters");
+
+  // إدارة الفصول والتراكات الصوتية المستقلة (فصل فصل: صوت MP3 + نص مفرغ)
+  var [showChapterModal, setShowChapterModal] = React.useState(false);
+  var [editingChapter, setEditingChapter] = React.useState(null);
+  var [chapTitle, setChapTitle] = React.useState("");
+  var [chapStartPage, setChapStartPage] = React.useState(1);
+  var [chapAudioUrl, setChapAudioUrl] = React.useState("");
+  var [chapAudioFile, setChapAudioFile] = React.useState(null);
+  var [chapText, setChapText] = React.useState("");
+  var [isSavingChapter, setIsSavingChapter] = React.useState(false);
+  var [chapterSaveStatus, setChapterSaveStatus] = React.useState("");
+  var [viewingChapterText, setViewingChapterText] = React.useState(null);
+  var [playingChapterId, setPlayingChapterId] = React.useState(null);
+  var chapterAudioRef = React.useRef(null);
 
   // مشغل تراك 1 الشامل (Master NotebookLM Podcast Track) واستئناف التشغيل التلقائي
   var [isTrack1Playing, setIsTrack1Playing] = React.useState(false);
@@ -81,6 +95,8 @@ window.BooksPage = function(props) {
         track1AudioRef.current.pause();
       }
       setIsTrack1Playing(false);
+      if (chapterAudioRef.current) chapterAudioRef.current.pause();
+      setPlayingChapterId(null);
       var allAudios = document.querySelectorAll("audio");
       allAudios.forEach(function(a) { a.pause(); });
       
@@ -645,6 +661,130 @@ window.BooksPage = function(props) {
     cloud.saveBook(updatedBook);
     setActiveBook(updatedBook);
     setShowSummaryModal(false);
+  };
+
+  var handleOpenAddChapter = function() {
+    setEditingChapter(null);
+    setChapTitle("");
+    setChapStartPage(activeBook ? (activeBook.currentPage || 1) : 1);
+    setChapAudioUrl("");
+    setChapAudioFile(null);
+    setChapText("");
+    setIsSavingChapter(false);
+    setChapterSaveStatus("");
+    setShowChapterModal(true);
+  };
+
+  var handleOpenEditChapter = function(chap) {
+    setEditingChapter(chap);
+    setChapTitle(chap.title || "");
+    setChapStartPage(chap.startPage || 1);
+    setChapAudioUrl(chap.audioUrl || "");
+    setChapAudioFile(null);
+    setChapText(chap.text || "");
+    setIsSavingChapter(false);
+    setChapterSaveStatus("");
+    setShowChapterModal(true);
+  };
+
+  var handleDeleteChapter = async function(chapId) {
+    if (!activeBook || !window.confirm("هل أنت متأكد من رغبتك في حذف هذا الفصل الصوتي؟")) return;
+    var currentChaps = (activeBook.audioChapters || []).filter(function(c) { return c.id !== chapId; });
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    if (playingChapterId === chapId) {
+      if (chapterAudioRef.current) chapterAudioRef.current.pause();
+      setPlayingChapterId(null);
+    }
+  };
+
+  var handleChapterTextFileChange = function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      setChapText(evt.target.result || "");
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  var handleSaveChapterSubmit = async function(e) {
+    e.preventDefault();
+    if (!chapTitle.trim()) {
+      alert("الرجاء كتابة اسم الفصل (مثال: المقدمة أو الفصل الأول)");
+      return;
+    }
+    if (!chapAudioUrl.trim() && !chapAudioFile) {
+      alert("الرجاء اختيار ملف الصوت (MP3) أو وضع رابط الصوت للفصل");
+      return;
+    }
+
+    setIsSavingChapter(true);
+    setChapterSaveStatus("جاري معالجة الفصل ورفع الصوت...");
+
+    try {
+      var finalAudio = chapAudioUrl.trim();
+
+      if (chapAudioFile) {
+        setChapterSaveStatus("جاري رفع ملف الصوت (MP3) إلى Google Drive...");
+        var audioBase64 = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var res = reader.result;
+            resolve(typeof res === "string" && res.includes(",") ? res.split(",")[1] : res);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(chapAudioFile);
+        });
+
+        var audioRes = await fetch(cfg.driveUploadEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            fileName: (activeBook.title || "كتاب") + "_" + chapTitle.trim().replace(/\s+/g, "_") + ".mp3",
+            mimeType: chapAudioFile.type || "audio/mpeg",
+            base64Data: audioBase64
+          })
+        });
+
+        var aData = await audioRes.json();
+        if (aData.status === "success" && (aData.fileUrl || aData.fileId)) {
+          finalAudio = aData.fileUrl || ("https://drive.google.com/file/d/" + aData.fileId + "/view");
+        }
+      }
+
+      var currentChaps = (activeBook.audioChapters || []).slice();
+      var chapterObj = {
+        id: editingChapter ? editingChapter.id : ("ch_" + Date.now()),
+        title: chapTitle.trim(),
+        startPage: parseInt(chapStartPage) || 1,
+        audioUrl: finalAudio,
+        text: chapText.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (editingChapter) {
+        var idx = currentChaps.findIndex(function(c) { return c.id === editingChapter.id; });
+        if (idx >= 0) currentChaps[idx] = chapterObj;
+        else currentChaps.push(chapterObj);
+      } else {
+        currentChaps.push(chapterObj);
+      }
+
+      currentChaps.sort(function(a, b) { return (a.startPage || 1) - (b.startPage || 1); });
+
+      var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
+      await cloud.saveBook(updatedBook);
+      setActiveBook(updatedBook);
+
+      setIsSavingChapter(false);
+      setShowChapterModal(false);
+    } catch(err) {
+      console.error(err);
+      alert("حدث خطأ أثناء حفظ الفصل: " + (err.message || err));
+      setIsSavingChapter(false);
+    }
   };
 
   var handleAutoDetectBookWithAi = async function() {
@@ -1300,20 +1440,35 @@ window.BooksPage = function(props) {
 
         // شريط التبديل بين الزرارين الرئيسيين
         React.createElement(
+        React.createElement(
           "div",
-          { className: "flex items-center justify-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 max-w-md mx-auto shadow-inner border border-slate-200/60 dark:border-slate-700/60" },
+          { className: "flex items-center justify-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 max-w-xl mx-auto shadow-inner border border-slate-200/60 dark:border-slate-700/60 gap-1.5" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setBookStudyTab("chapters"); },
+              className: "flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all " +
+                (bookStudyTab === "chapters"
+                  ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-md font-black scale-[1.02]"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
+            },
+            React.createElement("span", { className: "text-base" }, "ðŸŽ§"),
+            React.createElement("span", null, "ÙØµÙˆÙ„ ÙˆØªØ±Ø§ÙƒØ§Øª Ø§Ù„ÙƒØªØ§Ø¨"),
+            (activeBook.audioChapters || []).length > 0 ? React.createElement("span", { className: "px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300" }, (activeBook.audioChapters || []).length) : null
+          ),
           React.createElement(
             "button",
             {
               type: "button",
               onClick: function() { setBookStudyTab("track1"); },
-              className: "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all " +
+              className: "flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all " +
                 (bookStudyTab === "track1"
                   ? "bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-md font-black scale-[1.02]"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
             },
-            React.createElement("span", { className: "text-base" }, "🎙️"),
-            React.createElement("span", null, "تراك 1 (البودكاست الشامل)"),
+            React.createElement("span", { className: "text-base" }, "ðŸŽ™ï¸"),
+            React.createElement("span", null, "ØªØ±Ø§Ùƒ 1 (Ø§Ù„Ø¨ÙˆØ¯ÙƒØ§Ø³Øª)"),
             activeBook.audioUrl ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }) : null
           ),
           React.createElement(
@@ -1321,17 +1476,178 @@ window.BooksPage = function(props) {
             {
               type: "button",
               onClick: function() { setBookStudyTab("summary"); },
-              className: "flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all " +
+              className: "flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all " +
                 (bookStudyTab === "summary"
                   ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-md font-black scale-[1.02]"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
             },
-            React.createElement("span", { className: "text-base" }, "📖"),
-            React.createElement("span", null, "ملخص الكتاب")
+            React.createElement("span", { className: "text-base" }, "ðŸ“–"),
+            React.createElement("span", null, "Ù…Ù„Ø®Øµ Ø§Ù„ÙƒØªØ§Ø¨")
           )
         ),
 
-        // محتوى تبويب: تراك 1 (البودكاست المتواصل مع استئناف الاستماع والعلامات المرجعية)
+        bookStudyTab === "chapters" ? (function() {
+          var chaps = activeBook.audioChapters || [];
+          return React.createElement(
+            "div",
+            { className: "space-y-4" },
+
+            // ØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ÙØµÙˆÙ„
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("h4", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2" },
+                  "ðŸŽ§ ÙØµÙˆÙ„ Ø§Ù„ÙƒØªØ§Ø¨ Ø§Ù„ØµÙˆØªÙŠØ© ÙˆØ§Ù„Ù†ØµÙˆØµ Ø§Ù„Ù…ÙØ±ØºØ©",
+                  React.createElement("span", { className: "text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300" },
+                    chaps.length + " ÙØµÙˆÙ„ Ù…Ø¶Ø§ÙØ©"
+                  )
+                ),
+                React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" },
+                  "Ø§Ø³ØªÙ…Ø¹ Ù„Ù„Ù…Ù‚Ø¯Ù…Ø© ÙˆÙ„ÙƒÙ„ ÙØµÙ„ Ø¨Ø´ÙƒÙ„ Ù…Ø³ØªÙ‚Ù„ Ø¨ØµÙˆØª Ù†Ù‚ÙŠØŒ ÙˆØ§Ù‚Ø±Ø£ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ø£Ùˆ Ø§Ù†ØªÙ‚Ù„ Ù„ØµÙØ­ØªÙ‡ ÙÙŠ Ø§Ù„ÙƒØªØ§Ø¨ Ø¨Ø¶ØºØ·Ø© Ø²Ø±."
+                )
+              ),
+              currentUser.role === "admin" ? React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleOpenAddChapter,
+                  className: "inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all self-start sm:self-auto"
+                },
+                "âž• Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ ØµÙˆØªÙŠ Ø¬Ø¯ÙŠØ¯"
+              ) : null
+            ),
+
+            // Ù…Ø´ØºÙ„ Ø§Ù„ØµÙˆØª Ù„Ù„ÙØµÙ„ Ø§Ù„Ù†Ø´Ø·
+            playingChapterId && (function() {
+              var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
+              if (!activeChap) return null;
+              return React.createElement(
+                "div",
+                { className: "p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-3 w-full sm:w-auto" },
+                  React.createElement("span", { className: "w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-lg animate-pulse" }, "ðŸŽµ"),
+                  React.createElement("div", null,
+                    React.createElement("div", { className: "font-black text-xs sm:text-sm text-white" }, "Ø¬Ø§Ø±ÙŠ ØªØ´ØºÙŠÙ„: " + activeChap.title),
+                    React.createElement("div", { className: "text-[11px] text-slate-400" }, "ÙŠØ¨Ø¯Ø£ Ù…Ù† ØµÙØ­Ø© PDF Ø±Ù‚Ù… " + (activeChap.startPage || 1))
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "w-full sm:w-auto flex items-center gap-2" },
+                  React.createElement("audio", {
+                    ref: chapterAudioRef,
+                    src: utils.getAudioStreamUrl(activeChap.audioUrl),
+                    controls: true,
+                    autoPlay: true,
+                    className: "h-9 w-full sm:w-64 accent-blue-500"
+                  }),
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: function() {
+                      if (chapterAudioRef.current) chapterAudioRef.current.pause();
+                      setPlayingChapterId(null);
+                    },
+                    className: "p-2 text-slate-400 hover:text-white"
+                  }, "âœ•")
+                )
+              );
+            })(),
+
+            // Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ÙØµÙˆÙ„
+            chaps.length === 0 ? React.createElement(
+              "div",
+              { className: "text-center py-10 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
+              React.createElement("span", { className: "text-4xl block" }, "ðŸ“‚"),
+              React.createElement("h5", { className: "font-bold text-slate-700 dark:text-slate-200 text-sm" }, "Ù„Ù… ÙŠØªÙ… Ø¥Ø¶Ø§ÙØ© ÙØµÙˆÙ„ ØµÙˆØªÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„ÙƒØªØ§Ø¨ Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†"),
+              React.createElement("p", { className: "text-xs text-slate-500 max-w-md mx-auto" },
+                "ÙŠÙ…ÙƒÙ† Ù„Ù„Ù…Ø³Ø¤ÙˆÙ„ Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ù†Øµ Ø§Ù„Ù…Ù‚Ø¯Ù…Ø© Ø£Ùˆ Ø£ÙŠ ÙØµÙ„ Ø¹Ø¨Ø± Ø§Ù„Ø£Ø¯Ø§Ø©ØŒ ÙˆØªØ­ÙˆÙŠÙ„Ù‡ Ù„ØµÙˆØª Ø«Ù… Ø±ÙØ¹Ù‡ Ù‡Ù†Ø§ Ù„ÙŠØ¸Ù‡Ø± Ù„Ù„Ø¯Ø§Ø±Ø³ÙŠÙ† ÙƒÙ‚Ø§Ø¦Ù…Ø© Ù…ØªØ³Ù„Ø³Ù„Ø©."
+              ),
+              currentUser.role === "admin" ? React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleOpenAddChapter,
+                  className: "mt-2 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
+                },
+                "âž• Ø¥Ø¶Ø§ÙØ© Ø£ÙˆÙ„ ÙØµÙ„ (Ù…Ø«Ù„Ø§Ù‹: Ø§Ù„Ù…Ù‚Ø¯Ù…Ø©)"
+              ) : null
+            ) : React.createElement(
+              "div",
+              { className: "space-y-3" },
+              chaps.map(function(chap, idx) {
+                var isThisPlaying = playingChapterId === chap.id;
+                return React.createElement(
+                  "div",
+                  {
+                    key: chap.id,
+                    className: "p-4 rounded-2xl bg-white dark:bg-slate-900 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 " +
+                      (isThisPlaying ? "border-blue-500 shadow-md ring-2 ring-blue-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-start gap-3" },
+                    React.createElement("span", { className: "w-8 h-8 rounded-xl font-bold flex items-center justify-center text-xs shrink-0 " + (isThisPlaying ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300") },
+                      (idx + 1)
+                    ),
+                    React.createElement(
+                      "div",
+                      { className: "space-y-1" },
+                      React.createElement("h5", { className: "font-bold text-sm text-slate-900 dark:text-white" }, chap.title),
+                      React.createElement(
+                        "div",
+                        { className: "flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400" },
+                        React.createElement("button", {
+                          type: "button",
+                          onClick: function() { handlePageChange(chap.startPage || 1); },
+                          className: "hover:text-blue-600 font-bold underline flex items-center gap-1"
+                        }, "ðŸ“– ØµÙØ­Ø© PDF Ø±Ù‚Ù… " + (chap.startPage || 1)),
+                        chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "â€¢ Ø£ÙˆØ¯ÙŠÙˆ MP3 Ù…ØªØ§Ø­ âœ“") : null,
+                        chap.text ? React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" }, "â€¢ Ù†Øµ Ù…ÙØ±Øº Ù…ØªØ§Ø­ (" + (chap.text.length) + " Ø­Ø±Ù) âœ“") : null
+                      )
+                    )
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 self-end md:self-auto shrink-0" },
+                    chap.text ? React.createElement("button", {
+                      type: "button",
+                      onClick: function() { setViewingChapterText(chap); },
+                      className: "px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1"
+                    }, "ðŸ“„ Ø¹Ø±Ø¶ Ø§Ù„Ù†Øµ") : null,
+                    chap.audioUrl ? React.createElement("button", {
+                      type: "button",
+                      onClick: function() {
+                        if (isThisPlaying) {
+                          if (chapterAudioRef.current) chapterAudioRef.current.pause();
+                          setPlayingChapterId(null);
+                        } else {
+                          setPlayingChapterId(chap.id);
+                        }
+                      },
+                      className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
+                        (isThisPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20")
+                    }, isThisPlaying ? "â¸ï¸ Ø¥ÙŠÙ‚Ø§Ù" : "â–¶ï¸ Ø§Ø³ØªÙ…Ø§Ø¹") : null,
+                    currentUser.role === "admin" ? React.createElement("button", {
+                      type: "button",
+                      onClick: function() { handleOpenEditChapter(chap); },
+                      className: "p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
+                    }, "âœï¸") : null,
+                    currentUser.role === "admin" ? React.createElement("button", {
+                      type: "button",
+                      onClick: function() { handleDeleteChapter(chap.id); },
+                      className: "p-1.5 text-rose-400 hover:text-rose-600 text-xs"
+                    }, "ðŸ—‘ï¸") : null
+                  )
+                );
+              })
+            )
+          );
+        })() :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
           var bookmarks = activeBook.bookmarks || [];
@@ -2283,6 +2599,165 @@ window.BooksPage = function(props) {
             { className: "flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 shrink-0" },
             React.createElement("button", { type: "button", onClick: function() { setShowSummaryModal(false); }, className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300" }, "إلغاء"),
             React.createElement("button", { type: "button", onClick: handleSaveSummary, className: "px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md active:scale-95" }, "حفظ الملخص ✓")
+          )
+        )
+      ) : null,
+
+      // Modal: Ø¥Ø¶Ø§ÙØ© Ø£Ùˆ ØªØ¹Ø¯ÙŠÙ„ ÙØµÙ„ ØµÙˆØªÙŠ
+      showChapterModal ? React.createElement(
+        "div",
+        { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { if (!isSavingChapter) setShowChapterModal(false); } },
+        React.createElement(
+          "form",
+          {
+            onSubmit: handleSaveChapterSubmit,
+            className: "bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[90vh] overflow-y-auto",
+            onClick: function(e) { e.stopPropagation(); }
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
+            React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
+              editingChapter ? "âœï¸ ØªØ¹Ø¯ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ÙØµÙ„ Ø§Ù„ØµÙˆØªÙŠ" : "âž• Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ ØµÙˆØªÙŠ Ø¬Ø¯ÙŠØ¯ Ù„Ù„ÙƒØªØ§Ø¨"
+            ),
+            !isSavingChapter ? React.createElement("button", { type: "button", onClick: function() { setShowChapterModal(false); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "âœ•") : null
+          ),
+
+          // Ø§Ø³Ù… Ø§Ù„ÙØµÙ„
+          React.createElement(
+            "div",
+            { className: "space-y-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "Ø§Ø³Ù… Ø§Ù„ÙØµÙ„ Ø£Ùˆ Ø§Ù„Ø¬Ø²Ø¡ * :"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: chapTitle,
+              onChange: function(e) { setChapTitle(e.target.value); },
+              placeholder: "Ù…Ø«Ø§Ù„: Ø§Ù„Ù…Ù‚Ø¯Ù…Ø©: Ù…Ø¯Ø®Ù„ Ù„Ø¯Ø±Ø§Ø³Ø© Ø§Ù„Ù…Ø´ÙˆØ±Ø©ØŒ Ø£Ùˆ Ø§Ù„ÙØµÙ„ Ø§Ù„Ø£ÙˆÙ„...",
+              className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+
+          // ØµÙØ­Ø© Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©
+          React.createElement(
+            "div",
+            { className: "space-y-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "Ø±Ù‚Ù… ØµÙØ­Ø© Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„ÙØµÙ„ ÙÙŠ Ù…Ù„Ù Ø§Ù„Ù€ PDF:"),
+            React.createElement("input", {
+              type: "number",
+              min: 1,
+              value: chapStartPage,
+              onChange: function(e) { setChapStartPage(e.target.value); },
+              className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+
+          // Ù…Ù„Ù Ø§Ù„ØµÙˆØª
+          React.createElement(
+            "div",
+            { className: "space-y-1 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5" },
+              "ðŸŽµ Ù…Ù„Ù Ø§Ù„ØµÙˆØª Ù„Ù„ÙØµÙ„ (MP3):"
+            ),
+            React.createElement("input", {
+              type: "file",
+              accept: "audio/*",
+              onChange: function(e) { setChapAudioFile(e.target.files && e.target.files[0]); },
+              className: "block w-full text-xs text-slate-500 mb-2"
+            }),
+            React.createElement("input", {
+              type: "url",
+              value: chapAudioUrl,
+              onChange: function(e) { setChapAudioUrl(e.target.value); },
+              placeholder: "Ø£Ùˆ Ø§Ù„ØµÙ‚ Ø±Ø§Ø¨Ø· Ø§Ù„ØµÙˆØª Ø§Ù„Ù…Ø¨Ø§Ø´Ø± / Ø¬ÙˆØ¬Ù„ Ø¯Ø±Ø§ÙŠÙ Ø¥Ø°Ø§ ÙƒØ§Ù† Ù…Ø±ÙÙˆØ¹Ø§Ù‹",
+              className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
+            }),
+            React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "ðŸ’¡ Ø§Ø®ØªØ± Ù…Ù„Ù Ø§Ù„ØµÙˆØª Ø§Ù„Ø°ÙŠ Ø­Ù…Ù„ØªÙ‡ Ù…Ù† Edge-TTS ÙˆØ³ÙŠØªÙ… Ø±ÙØ¹Ù‡ Ù„Ø¬ÙˆØ¬Ù„ Ø¯Ø±Ø§ÙŠÙ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹.")
+          ),
+
+          // Ù…Ù„Ù Ø§Ù„Ù†Øµ
+          React.createElement(
+            "div",
+            { className: "space-y-1 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5" },
+              "ðŸ“„ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ù„Ù„ÙØµÙ„ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ Ù„Ù„Ù‚Ø±Ø§Ø¡Ø© ÙˆØ§Ù„Ù†Ø³Ø®):"
+            ),
+            React.createElement("input", {
+              type: "file",
+              accept: ".txt",
+              onChange: handleChapterTextFileChange,
+              className: "block w-full text-xs text-slate-500 mb-2"
+            }),
+            React.createElement("textarea", {
+              rows: 4,
+              value: chapText,
+              onChange: function(e) { setChapText(e.target.value); },
+              placeholder: "Ø£Ùˆ Ø§Ù„ØµÙ‚ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ù‡Ù†Ø§...",
+              className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-sans"
+            }),
+            React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "ðŸ’¡ ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ø®ØªÙŠØ§Ø± Ù…Ù„Ù Ø§Ù„Ù€ .txt Ø§Ù„Ø°ÙŠ Ù‚Ù…Øª Ø¨ØªØ­Ù…ÙŠÙ„Ù‡ Ù…Ù† Ø£Ø¯Ø§Ø© Ø§Ù„Ø§Ø³ØªØ®Ø±Ø§Ø¬ ÙˆØ³ÙŠØªÙ… Ù‚Ø±Ø§Ø¡ØªÙ‡ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹!")
+          ),
+
+          // Ø­Ø§Ù„Ø© Ø§Ù„Ø­ÙØ¸
+          isSavingChapter ? React.createElement(
+            "div",
+            { className: "p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl text-xs font-bold animate-pulse text-center" },
+            chapterSaveStatus
+          ) : null,
+
+          React.createElement(
+            "div",
+            { className: "flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+            !isSavingChapter ? React.createElement("button", {
+              type: "button",
+              onClick: function() { setShowChapterModal(false); },
+              className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+            }, "Ø¥Ù„ØºØ§Ø¡") : null,
+            React.createElement("button", {
+              type: "submit",
+              disabled: isSavingChapter,
+              className: "px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95 disabled:opacity-50"
+            }, isSavingChapter ? "Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø±ÙØ¹ ÙˆØ§Ù„Ø­ÙØ¸..." : "Ø­ÙØ¸ Ø§Ù„ÙØµÙ„ âœ“")
+          )
+        )
+      ) : null,
+
+      // Modal: Ø¹Ø±Ø¶ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ù„Ù„ÙØµÙ„
+      viewingChapterText ? React.createElement(
+        "div",
+        { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setViewingChapterText(null); } },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-2xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 max-h-[85vh] flex flex-col", onClick: function(e) { e.stopPropagation(); } },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800 shrink-0" },
+            React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
+              "ðŸ“„ Ø§Ù„Ù†Øµ Ø§Ù„Ù…ÙØ±Øº Ù„Ù€: " + viewingChapterText.title
+            ),
+            React.createElement("button", { type: "button", onClick: function() { setViewingChapterText(null); }, className: "text-slate-400 hover:text-slate-600 text-lg" }, "âœ•")
+          ),
+          React.createElement(
+            "div",
+            { className: "overflow-y-auto flex-1 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans whitespace-pre-wrap select-text" },
+            viewingChapterText.text
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800 shrink-0" },
+            React.createElement("button", {
+              type: "button",
+              onClick: function() {
+                navigator.clipboard.writeText(viewingChapterText.text);
+                alert("ØªÙ… Ù†Ø³Ø® Ù†Øµ Ø§Ù„ÙØµÙ„ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ âœ“");
+              },
+              className: "px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 flex items-center gap-1.5"
+            }, "ðŸ“‹ Ù†Ø³Ø® Ø§Ù„Ù†Øµ ÙƒØ§Ù…Ù„Ø§Ù‹"),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setViewingChapterText(null); },
+              className: "px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md"
+            }, "Ø¥ØºÙ„Ø§Ù‚")
           )
         )
       ) : null
