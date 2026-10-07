@@ -74,6 +74,14 @@
         </div>
     </div>
 
+    <div style="margin-bottom: 12px;">
+        <label for="excludePages">🚫 استبعاد صفحات معينة (مثل الفهرس أو المقدمة أو المراجع):</label>
+        <input type="text" id="excludePages" placeholder="مثال: 3, 4, 10-15 (أرقام مفردة أو نطاق)" style="direction: ltr; text-align: left;" />
+        <span style="font-size: 0.75rem; color: #64748b; display: block; margin-top: -8px; margin-bottom: 8px;">
+            اكتب أرقام الصفحات التي لا تريد قراءتها مفصولة بفاصلة أو شرطة (مثال: 4, 5, 8-12). سيتم تخطيها بالكامل وتوفير وقتها.
+        </span>
+    </div>
+
     <div class="btn-group">
         <button id="startBtn" class="btn-start">🚀 بدء الاستخراج</button>
         <button id="stopBtn" class="btn-stop">⏹️ إيقاف وحفظ ما تم إنجازه</button>
@@ -240,6 +248,37 @@
         return parts.join(' و ') || '0 ثانية';
     }
 
+    function parseExcludedPages(inputStr) {
+        const excludedSet = new Set();
+        if (!inputStr || !inputStr.trim()) return excludedSet;
+        const normalized = inputStr.replace(/،/g, ',');
+        const parts = normalized.split(',');
+        for (let part of parts) {
+            part = part.trim();
+            if (!part) continue;
+            if (part.includes('-')) {
+                const rangeParts = part.split('-');
+                if (rangeParts.length === 2) {
+                    const start = parseInt(rangeParts[0].trim());
+                    const end = parseInt(rangeParts[1].trim());
+                    if (!isNaN(start) && !isNaN(end)) {
+                        const min = Math.min(start, end);
+                        const max = Math.max(start, end);
+                        for (let i = min; i <= max; i++) {
+                            excludedSet.add(i);
+                        }
+                    }
+                }
+            } else {
+                const num = parseInt(part);
+                if (!isNaN(num)) {
+                    excludedSet.add(num);
+                }
+            }
+        }
+        return excludedSet;
+    }
+
     function log(msg) {
         logEl.textContent += msg + '\n';
         logEl.scrollTop = logEl.scrollHeight;
@@ -334,8 +373,31 @@
             let toPage = parseInt(document.getElementById('endPage').value) || pdfTotal;
             toPage = Math.min(pdfTotal, Math.max(fromPage, toPage));
 
-            const totalToProcess = (toPage - fromPage) + 1;
-            log(`تم فتح الكتاب. سيتم استخراج الصفحات من ${fromPage} إلى ${toPage} (إجمالي: ${totalToProcess} صفحة).`);
+            const excludeInput = document.getElementById('excludePages').value.trim();
+            const excludedSet = parseExcludedPages(excludeInput);
+
+            const pagesToProcess = [];
+            for (let p = fromPage; p <= toPage; p++) {
+                if (!excludedSet.has(p)) {
+                    pagesToProcess.push(p);
+                }
+            }
+
+            if (pagesToProcess.length === 0) {
+                alert('تنبيه: جميع الصفحات في هذا النطاق تم استبعادها! يرجى مراجعة خانة الصفحات المستبعدة.');
+                startBtn.style.display = 'block';
+                startBtn.disabled = false;
+                stopBtn.style.display = 'none';
+                progressContainer.style.display = 'none';
+                return;
+            }
+
+            const totalToProcess = pagesToProcess.length;
+            const excludedCount = (toPage - fromPage + 1) - totalToProcess;
+            if (excludedCount > 0) {
+                log(`🚫 تم استبعاد ${excludedCount} صفحة بناءً على رغبتك (مثل الفهرس أو المراجع).`);
+            }
+            log(`تم فتح الكتاب. سيتم استخراج ${totalToProcess} صفحة مطلوبة من نطاق (${fromPage} إلى ${toPage}).`);
 
             startTime = Date.now();
             let completedCount = 0;
@@ -362,13 +424,14 @@
                 }
             }, 1000);
 
-            for (let pageNum = fromPage; pageNum <= toPage; pageNum++) {
+            for (let i = 0; i < pagesToProcess.length; i++) {
+                const pageNum = pagesToProcess[i];
                 if (isStopped) {
                     log('\nتم إيقاف المعالجة بناءً على طلبك.');
                     break;
                 }
 
-                statusEl.textContent = `جاري استخراج الصفحة ${pageNum} من ${toPage}...`;
+                statusEl.textContent = `جاري استخراج صفحة ${pageNum} (${i + 1} من ${totalToProcess} مطلوبة)...`;
                 log(`\nمعالجة الصفحة ${pageNum}...`);
 
                 const page = await pdf.getPage(pageNum);
@@ -441,7 +504,7 @@
                     downloadNowBtn.style.display = 'block';
                 }
 
-                if (pageNum < toPage && !isStopped) {
+                if (i < pagesToProcess.length - 1 && !isStopped) {
                     log('انتظار 3 ثوان لحماية الاتصال...');
                     await new Promise(r => setTimeout(r, 3000));
                 }
