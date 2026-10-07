@@ -453,24 +453,27 @@ window.AudioChaptersView = function(props) {
               title: "تشغيل ملف الصوت للفصل"
             }, isThisPlaying ? "⏸️ إيقاف" : "▶️ استماع") : null,
 
-            // 4. زر رفع / تعديل ملف الصوت للفصل للأدمن
+            // 4. زر تعديل بيانات الفصل للأدمن (متاح دائماً لتعديل العنوان وأرقام الصفحات والصوت)
             currentUser && currentUser.role === "admin" && React.createElement("button", {
               type: "button",
               onClick: function() { handleOpenEditChapter(chap); },
-              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700",
-              title: chap.audioUrl ? "تعديل بيانات الفصل أو الصوت" : "رفع ملف صوت الفصل (MP3)"
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700",
+              title: "تعديل اسم الفصل أو أرقام صفحاته أو الصوت"
             },
-            React.createElement("span", null, chap.audioUrl ? "✏️" : "🎵"),
-            React.createElement("span", null, chap.audioUrl ? "تعديل" : "رفع الصوت (MP3)")
+            React.createElement("span", null, "✏️"),
+            React.createElement("span", null, "تعديل")
             ),
 
-            // 5. زر حذف الفصل
-            currentUser && currentUser.role === "admin" ? React.createElement("button", {
+            // 5. زر حذف الفصل واضح ومميز للأدمن
+            currentUser && currentUser.role === "admin" && React.createElement("button", {
               type: "button",
               onClick: function() { handleDeleteChapter(chap.id); },
-              className: "p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs transition-all",
-              title: "حذف هذا الفصل من القائمة"
-            }, "🗑️") : null
+              className: "px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all flex items-center gap-1 border border-rose-200 dark:border-rose-800/60 shadow-xs",
+              title: "حذف هذا الفصل من القائمة نهائياً"
+            },
+            React.createElement("span", null, "🗑️"),
+            React.createElement("span", null, "حذف")
+            )
           )
         );
       })

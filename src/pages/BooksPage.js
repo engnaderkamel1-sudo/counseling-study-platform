@@ -52,6 +52,7 @@ window.BooksPage = function(props) {
   var [editingChapter, setEditingChapter] = React.useState(null);
   var [chapTitle, setChapTitle] = React.useState("");
   var [chapStartPage, setChapStartPage] = React.useState(1);
+  var [chapEndPage, setChapEndPage] = React.useState("");
   var [chapAudioUrl, setChapAudioUrl] = React.useState("");
   var [chapAudioFile, setChapAudioFile] = React.useState(null);
   var [chapText, setChapText] = React.useState("");
@@ -740,15 +741,16 @@ window.BooksPage = function(props) {
 
       var promptVision = "أنت خبير فحص وفهرسة كتب محترف. أمامك صور صفحات البداية من الكتاب (تتضمن الغلاف وصفحة المحتويات / الفهرس كاملة).\n" +
         "المطلوب بشكل حاسم: اقرأ صفحة (المحتويات / الفهرس / Table of Contents) واقرأ كل بند فيها بدقة شديدة.\n" +
-        "استخرج قائمة الفصول كاملة بصيغة JSON:\n" +
+        "استخرج قائمة الفصول الفعلية للقراءة الصوتية بصيغة JSON:\n" +
         "1. ابدأ بـ 'المقدمة' أو 'التمهيد' مع رقم صفحتها الحقيقية في الـ PDF.\n" +
-        "2. استخرج جميع الفصول والأبواب المذكورة في الفهرس بدون استثناء (الفصل 1، الفصل 2، الفصل 3... إلخ) وعناوينها وأرقام صفحاتها.\n" +
+        "2. استخرج فقط الفصول الفعلية (الفصل 1، الفصل 2، الفصل 3... إلخ) مع عناوينها وأرقام صفحات بدايتها.\n" +
+        "3. تنبيه صارم جداً: لا تستخرج عناوين الأجزاء الرئيسية المجردة (مثل: 'الجزء الأول'، 'الجزء الثاني') إذا كانت في نفس صفحة الفصل الذي يليها، بل استخرج فقط اسم الفصل الفعلي حتى لا تتكرر الفصول بنفس رقم الصفحة إطلاقاً.\n" +
         "تنسيق الـ JSON المطلوب بدقة:\n" +
         "{\n" +
         "  \"chapters\": [\n" +
         "    {\"title\": \"المقدمة\", \"pdfStartPage\": 5},\n" +
-        "    {\"title\": \"الفصل الأول: ...\", \"pdfStartPage\": 15},\n" +
-        "    {\"title\": \"الفصل الثاني: ...\", \"pdfStartPage\": 35}\n" +
+        "    {\"title\": \"الفصل 1: ...\", \"pdfStartPage\": 15},\n" +
+        "    {\"title\": \"الفصل 2: ...\", \"pdfStartPage\": 35}\n" +
         "  ]\n" +
         "}";
 

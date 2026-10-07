@@ -1,4 +1,4 @@
-// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ
+﻿// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ
 window.ChapterEditModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
@@ -7,6 +7,8 @@ window.ChapterEditModal = function(props) {
   var setChapTitle = props.setChapTitle;
   var chapStartPage = props.chapStartPage;
   var setChapStartPage = props.setChapStartPage;
+  var chapEndPage = props.chapEndPage;
+  var setChapEndPage = props.setChapEndPage;
   var chapAudioUrl = props.chapAudioUrl;
   var setChapAudioUrl = props.setChapAudioUrl;
   var setChapAudioFile = props.setChapAudioFile;
@@ -36,7 +38,7 @@ window.ChapterEditModal = function(props) {
         "div",
         { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800" },
         React.createElement("h3", { className: "font-black text-base text-slate-900 dark:text-white flex items-center gap-2" },
-          editingChapter ? "✏️ تعديل بيانات الفصل الصوتي" : "➕ إضافة فصل صوتي جديد للكتاب"
+          editingChapter ? "✏️ تعديل بيانات الفصل وصفحاته" : "➕ إضافة فصل جديد للكتاب"
         ),
         !isSavingChapter ? React.createElement("button", { type: "button", onClick: onClose, className: "text-slate-400 hover:text-slate-600 text-lg" }, "✕") : null
       ),
@@ -45,37 +47,56 @@ window.ChapterEditModal = function(props) {
       React.createElement(
         "div",
         { className: "space-y-1" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم الفصل أو الجزء * :"),
+        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "اسم أو عنوان الفصل * :"),
         React.createElement("input", {
           type: "text",
           required: true,
           value: chapTitle,
           onChange: function(e) { setChapTitle(e.target.value); },
-          placeholder: "مثال: المقدمة: مدخل لدراسة المشورة، أو الفصل الأول...",
-          className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+          placeholder: "مثال: الفصل الأول: إدراك روحانية قمة جبل الجليد...",
+          className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold"
         })
       ),
 
-      // صفحة البداية
+      // نطاق الصفحات في الـ PDF (بداية ونهاية)
       React.createElement(
         "div",
-        { className: "space-y-1" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "رقم صفحة بداية الفصل في ملف الـ PDF:"),
-        React.createElement("input", {
-          type: "number",
-          min: 1,
-          value: chapStartPage,
-          onChange: function(e) { setChapStartPage(e.target.value); },
-          className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        })
+        { className: "grid grid-cols-2 gap-3" },
+        React.createElement(
+          "div",
+          { className: "space-y-1" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "صفحة البداية في PDF * :"),
+          React.createElement("input", {
+            type: "number",
+            min: 1,
+            required: true,
+            value: chapStartPage,
+            onChange: function(e) { setChapStartPage(e.target.value); },
+            className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold text-center"
+          })
+        ),
+        React.createElement(
+          "div",
+          { className: "space-y-1" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "صفحة النهاية في PDF:"),
+          React.createElement("input", {
+            type: "number",
+            min: 1,
+            value: chapEndPage || "",
+            onChange: function(e) { setChapEndPage(e.target.value); },
+            placeholder: "تلقائي للفصل التالي",
+            className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold text-center"
+          })
+        )
       ),
 
-      // ملف الصوت
+      // ملف الصوت (اختياري)
       React.createElement(
         "div",
         { className: "space-y-1 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5" },
-          "🎵 ملف الصوت للفصل (MP3):"
+        React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center justify-between" },
+          React.createElement("span", { className: "flex items-center gap-1.5" }, "🎵 ملف الصوت للفصل (MP3):"),
+          React.createElement("span", { className: "text-[11px] text-slate-400 font-normal" }, "(اختياري)")
         ),
         React.createElement("input", {
           type: "file",
@@ -87,18 +108,19 @@ window.ChapterEditModal = function(props) {
           type: "url",
           value: chapAudioUrl,
           onChange: function(e) { setChapAudioUrl(e.target.value); },
-          placeholder: "أو الصق رابط الصوت المباشر / جوجل درايف إذا كان مرفوعاً",
+          placeholder: "أو الصق رابط الصوت المباشر / جوجل درايف إذا كان متاحاً",
           className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
         }),
-        React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "💡 اختر ملف الصوت الذي حملته من Edge-TTS وسيتم رفعه لجوجل درايف تلقائياً.")
+        React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "💡 يمكنك ترك الصوت فارغاً والتركيز على ضبط الصفحات واستخراج النصوص أولاً.")
       ),
 
-      // ملف النص
+      // ملف النص (اختياري)
       React.createElement(
         "div",
         { className: "space-y-1 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700" },
-        React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5" },
-          "📄 النص المفرغ للفصل (اختياري للقراءة والنسخ):"
+        React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-white flex items-center justify-between" },
+          React.createElement("span", { className: "flex items-center gap-1.5" }, "📄 النص المفرغ للفصل:"),
+          React.createElement("span", { className: "text-[11px] text-slate-400 font-normal" }, "(اختياري - يتم تفريغه بالـ AI)")
         ),
         React.createElement("input", {
           type: "file",
@@ -107,13 +129,12 @@ window.ChapterEditModal = function(props) {
           className: "block w-full text-xs text-slate-500 mb-2"
         }),
         React.createElement("textarea", {
-          rows: 4,
+          rows: 3,
           value: chapText,
           onChange: function(e) { setChapText(e.target.value); },
-          placeholder: "أو الصق النص المفرغ هنا...",
+          placeholder: "النص المفرغ يظهر هنا ويمكنك تعديله يدوياً أو استخراجه بالذكاء الاصطناعي...",
           className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-sans"
-        }),
-        React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" }, "💡 يمكنك اختيار ملف الـ .txt الذي قمت بتحميله من أداة الاستخراج وسيتم قراءته تلقائياً!")
+        })
       ),
 
       // حالة الحفظ
@@ -135,7 +156,7 @@ window.ChapterEditModal = function(props) {
           type: "submit",
           disabled: isSavingChapter,
           className: "px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95 disabled:opacity-50"
-        }, isSavingChapter ? "جاري الرفع والحفظ..." : "حفظ الفصل ✓")
+        }, isSavingChapter ? "جاري الحفظ..." : "حفظ التعديلات ✓")
       )
     )
   );
