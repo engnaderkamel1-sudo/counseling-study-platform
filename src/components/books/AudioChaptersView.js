@@ -16,9 +16,21 @@ window.AudioChaptersView = function(props) {
   var extractingChapterId = props.extractingChapterId;
   var extractStatusText = props.extractStatusText;
   var handleClearAllChapters = props.handleClearAllChapters;
+  var handleBatchExtractAllChapters = props.handleBatchExtractAllChapters;
+  var handleStopBatchExtraction = props.handleStopBatchExtraction;
+  var batchProgress = props.batchProgress;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
+
+  var formatSecs = function(sec) {
+    if (!sec || isNaN(sec) || sec <= 0) return "0 ثانية";
+    var s = Math.round(sec);
+    var mins = Math.floor(s / 60);
+    var remainingS = s % 60;
+    if (mins > 0) return mins + " دقيقة و " + remainingS + " ثانية";
+    return remainingS + " ثانية";
+  };
 
   return React.createElement(
     "div",
@@ -49,12 +61,22 @@ window.AudioChaptersView = function(props) {
           {
             type: "button",
             onClick: handleAutoScanActiveBookChapters,
-            disabled: isAiAnalyzingBook,
+            disabled: isAiAnalyzingBook || !!batchProgress,
             className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
           },
           isAiAnalyzingBook ? "⏳ جاري فحص الفهرس..." : "🪄 فحص الفهرس بالـ AI"
         ),
-        chaps.length > 0 && typeof handleClearAllChapters === "function" ? React.createElement(
+        chaps.length > 0 && typeof handleBatchExtractAllChapters === "function" ? React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleBatchExtractAllChapters,
+            disabled: isAiAnalyzingBook || !!batchProgress,
+            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition-all"
+          },
+          batchProgress ? "⏳ جاري الاستخراج الجماعي..." : "📦 استخراج كل الفصول دفعة واحدة"
+        ) : null,
+        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress ? React.createElement(
           "button",
           {
             type: "button",
@@ -68,12 +90,81 @@ window.AudioChaptersView = function(props) {
           {
             type: "button",
             onClick: handleOpenAddChapter,
-            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+            disabled: !!batchProgress,
+            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition-all"
           },
           "➕ إضافة فصل يدوي"
         )
       ) : null
     ),
+
+    // لوحة شريط التقدم والوقت للاستخراج الجماعي (Batch Progress Dashboard)
+    batchProgress ? React.createElement(
+      "div",
+      { className: "p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 to-slate-900 text-white border border-emerald-500/40 shadow-xl space-y-3 animate-fade-in" },
+      React.createElement(
+        "div",
+        { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2" },
+        React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
+          React.createElement("span", { className: "text-lg animate-spin" }, "⚙️"),
+          React.createElement("div", null,
+            React.createElement("h5", { className: "font-black text-xs sm:text-sm text-emerald-300 truncate" },
+              "استخراج جماعي: فصل (" + batchProgress.currentChapterIndex + " من " + batchProgress.totalChapters + ") - " + batchProgress.currentChapterTitle
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-300" },
+              "جاري معالجة صفحة PDF رقم " + batchProgress.currentPage + "..."
+            )
+          )
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleStopBatchExtraction,
+            className: "px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 self-start sm:self-auto"
+          },
+          "⏹️ إيقاف وحفظ ما تم"
+        )
+      ),
+
+      // شريط النسبة المئوية
+      React.createElement(
+        "div",
+        { className: "space-y-1.5" },
+        React.createElement(
+          "div",
+          { className: "flex justify-between text-[11px] font-bold" },
+          React.createElement("span", { className: "text-emerald-400" }, "التقدم الكلي: " + batchProgress.percent + "% (" + batchProgress.pagesDone + " / " + batchProgress.totalPages + " صفحة)"),
+          React.createElement("span", { className: "text-slate-300" }, "متبقي حوالي: " + formatSecs(batchProgress.remainingSeconds))
+        ),
+        React.createElement(
+          "div",
+          { className: "w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700" },
+          React.createElement("div", {
+            className: "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300",
+            style: { width: Math.max(3, batchProgress.percent) + "%" }
+          })
+        )
+      ),
+
+      // بطاقات إحصائيات الوقت
+      React.createElement(
+        "div",
+        { className: "grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-[11px]" },
+        React.createElement("div", { className: "p-2 rounded-xl bg-slate-800/80 border border-slate-700/60" },
+          React.createElement("span", { className: "text-slate-400 block text-[10px]" }, "⏱️ الوقت المستغرق:"),
+          React.createElement("span", { className: "font-bold text-white font-mono" }, formatSecs(batchProgress.elapsedSeconds))
+        ),
+        React.createElement("div", { className: "p-2 rounded-xl bg-slate-800/80 border border-slate-700/60" },
+          React.createElement("span", { className: "text-slate-400 block text-[10px]" }, "⏳ الوقت المتبقي المقدر:"),
+          React.createElement("span", { className: "font-bold text-emerald-300 font-mono" }, formatSecs(batchProgress.remainingSeconds))
+        ),
+        React.createElement("div", { className: "p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 col-span-2 sm:col-span-1" },
+          React.createElement("span", { className: "text-slate-400 block text-[10px]" }, "💾 الحفظ السحابي:"),
+          React.createElement("span", { className: "font-bold text-teal-300" }, "تلقائي وفوري لكل فصل ✓")
+        )
+      )
+    ) : null,
 
     // مشغل الصوت للفصل النشط (مع وضع عائم أنيق للموبايل)
     playingChapterId && (function() {
