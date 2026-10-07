@@ -10,19 +10,7 @@ window.BooksPage = function(props) {
     return utils.getLocal(cfg.storageKeys.books, []);
   });
 
-  var [activeBook, setActiveBook] = React.useState(function() {
-    var localList = utils.getLocal(cfg.storageKeys.books, []);
-    var savedId = utils.getLocal("counsel_active_book_id");
-    if (savedId && localList && localList.length > 0) {
-      var found = localList.find(function(b) { return b.id === savedId; });
-      if (found) {
-        var savedPage = utils.getLocal("counsel_book_page_" + found.id);
-        var page = savedPage ? Number(savedPage) : (found.currentPage || 1);
-        return Object.assign({}, found, { currentPage: page });
-      }
-    }
-    return null;
-  });
+  var [activeBook, setActiveBook] = React.useState(null);
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
@@ -141,12 +129,11 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, cloudList);
         if (cloudList.length > 0) {
           setActiveBook(function(prev) {
-            var targetId = prev ? prev.id : utils.getLocal("counsel_active_book_id");
-            if (!targetId) return null;
-            var found = cloudList.find(function(b) { return b.id === targetId; });
+            if (!prev) return null;
+            var found = cloudList.find(function(b) { return b.id === prev.id; });
             if (!found) return null;
             var savedPage = utils.getLocal("counsel_book_page_" + found.id);
-            var page = savedPage ? Number(savedPage) : (found.currentPage || (prev ? prev.currentPage : 1));
+            var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
             return Object.assign({}, found, { currentPage: page });
           });
         } else {
