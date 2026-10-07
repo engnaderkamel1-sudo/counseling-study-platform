@@ -107,8 +107,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791317189",
-  buildTime: "2026-10-06T20:06:29",
+  version: "1.2.1791362965",
+  buildTime: "2026-10-07T08:49:25",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -451,7 +451,7 @@ window.GeminiAIService = {
         {
           role: "user",
           parts: [
-            { text: "قم باستخراج جميع النصوص العربية من هذه الصورة بدقة شديدة كما هي مكتوبة تماماً. قم بإرجاع النص المكتوب فقط بدون أي مقدمات أو تعليقات خارجية." },
+            { text: "قم باستخراج جميع النصوص العربية من هذه الصورة بدقة شديدة كما هي مكتوبة تماماً. احرص تماماً على كتابة الكلمات العربية متصلة وبشكل سليم ككلمات كاملة بدون أي مسافات بين حروف الكلمة الواحدة (بحيث تكون كلمات وجمل طبيعية صالحة للقراءة الصوتية وليست حروفاً متباعدة). قم بإرجاع النص المكتوب فقط بدون أي مقدمات أو تعليقات خارجية." },
             {
               inlineData: {
                 mimeType: "image/jpeg",
@@ -2876,7 +2876,19 @@ window.BooksPage = function(props) {
     return utils.getLocal(cfg.storageKeys.books, []);
   });
 
-  var [activeBook, setActiveBook] = React.useState(null);
+  var [activeBook, setActiveBook] = React.useState(function() {
+    var localList = utils.getLocal(cfg.storageKeys.books, []);
+    var savedId = utils.getLocal("counsel_active_book_id");
+    if (savedId && localList && localList.length > 0) {
+      var found = localList.find(function(b) { return b.id === savedId; });
+      if (found) {
+        var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+        var page = savedPage ? Number(savedPage) : (found.currentPage || 1);
+        return Object.assign({}, found, { currentPage: page });
+      }
+    }
+    return null;
+  });
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
@@ -2884,7 +2896,14 @@ window.BooksPage = function(props) {
   
   // حالات عارض الـ PDF بدون إنترنت وحفظ الصفحة
   var [pdfDoc, setPdfDoc] = React.useState(null);
-  var [pdfCurrentPage, setPdfCurrentPage] = React.useState(1);
+  var [pdfCurrentPage, setPdfCurrentPage] = React.useState(function() {
+    var savedId = utils.getLocal("counsel_active_book_id");
+    if (savedId) {
+      var savedPage = utils.getLocal("counsel_book_page_" + savedId);
+      if (savedPage) return Number(savedPage);
+    }
+    return 1;
+  });
   var [pdfTotalPages, setPdfTotalPages] = React.useState(0);
   var [isPdfLoading, setIsPdfLoading] = React.useState(false);
   var [isSavedOffline, setIsSavedOffline] = React.useState(false);
@@ -2917,15 +2936,6 @@ window.BooksPage = function(props) {
   var [bookmarkTitle, setBookmarkTitle] = React.useState("");
   var [bookmarkTimeStr, setBookmarkTimeStr] = React.useState("00:00");
 
-  // مشغل القراءة الصوتية الآلية المباشرة لصفحات الكتاب (Smart Auto Reader)
-  var [isTtsReading, setIsTtsReading] = React.useState(false);
-  var [isTtsPaused, setIsTtsPaused] = React.useState(false);
-  var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
-  var [ttsStatusMsg, setTtsStatusMsg] = React.useState("");
-  var isTtsActiveRef = React.useRef(false);
-  var ttsAudioObjRef = React.useRef(null);
-
-
   // حقل تعديل غلاف الكتاب للكتاب الحالي
   var [showCoverEditModal, setShowCoverEditModal] = React.useState(false);
   var [editingCoverUrl, setEditingCoverUrl] = React.useState("");
@@ -2939,32 +2949,28 @@ window.BooksPage = function(props) {
       setIsTrack1Playing(false);
       var allAudios = document.querySelectorAll("audio");
       allAudios.forEach(function(a) { a.pause(); });
-      if (window.speechSynthesis) {
-        isTtsActiveRef.current = false;
-        window.speechSynthesis.cancel();
-        setIsTtsReading(false);
-        setIsTtsPaused(false);
-      }
+      
+      
+      
+      
     } catch (e) {}
   };
 
   // حقول الإضافة للكتاب الجديد
   var [selectedFile, setSelectedFile] = React.useState(null);
   var [selectedCoverFile, setSelectedCoverFile] = React.useState(null);
+  var [selectedAudioFile, setSelectedAudioFile] = React.useState(null);
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
-  var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
-  var [isBatchConverting, setIsBatchConverting] = React.useState(false);
-  var [batchConvertProgress, setBatchConvertProgress] = React.useState({ current: 0, total: 0, msg: "" });
-
+      
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
   var [newCoverUrl, setNewCoverUrl] = React.useState("");
   var [newTotalPages, setNewTotalPages] = React.useState(350);
   var [newDriveUrl, setNewDriveUrl] = React.useState("");
   var [newChaptersCount, setNewChaptersCount] = React.useState(8);
-  var [includeIntro, setIncludeIntro] = React.useState(true);
+  var [newTrack1Url, setNewTrack1Url] = React.useState("");
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
@@ -2973,7 +2979,13 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, cloudList);
         if (cloudList.length > 0) {
           setActiveBook(function(prev) {
-            return prev ? (cloudList.find(function(b) { return b.id === prev.id; }) || null) : null;
+            var targetId = prev ? prev.id : utils.getLocal("counsel_active_book_id");
+            if (!targetId) return null;
+            var found = cloudList.find(function(b) { return b.id === targetId; });
+            if (!found) return null;
+            var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+            var page = savedPage ? Number(savedPage) : (found.currentPage || (prev ? prev.currentPage : 1));
+            return Object.assign({}, found, { currentPage: page });
           });
         } else {
           setActiveBook(null);
@@ -2985,7 +2997,7 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت
+  // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت واسترجاع الصفحة المحفوظة
   React.useEffect(function() {
     if (!activeBook) {
       setIsSavedOffline(false);
@@ -2993,7 +3005,9 @@ window.BooksPage = function(props) {
       setPdfTotalPages(0);
       return;
     }
-    setPdfCurrentPage(activeBook.currentPage || 1);
+    var savedPage = utils.getLocal("counsel_book_page_" + activeBook.id);
+    var pageToOpen = savedPage ? Number(savedPage) : (activeBook.currentPage || 1);
+    setPdfCurrentPage(pageToOpen);
     setPdfTotalPages(0);
     utils.getOfflinePdf(activeBook.id).then(function(data) {
       setIsSavedOffline(!!data);
@@ -3014,7 +3028,10 @@ window.BooksPage = function(props) {
       setPdfDoc(loadedDoc);
       setPdfTotalPages(loadedDoc.numPages);
       setIsPdfLoading(false);
-      renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+      var targetPage = (activeBook && activeBook.id)
+        ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
+        : 1;
+      renderPdfPage(loadedDoc, targetPage);
     }).catch(function(err) {
       console.warn("PDF load error:", err);
       setIsPdfLoading(false);
@@ -3089,7 +3106,10 @@ window.BooksPage = function(props) {
           setPdfDoc(loadedDoc);
           setPdfTotalPages(loadedDoc.numPages);
           setIsPdfLoading(false);
-          renderPdfPage(loadedDoc, activeBook ? (activeBook.currentPage || 1) : 1);
+          var targetPage = (activeBook && activeBook.id)
+            ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
+            : 1;
+          renderPdfPage(loadedDoc, targetPage);
         }).catch(function(e) {
           console.warn("Direct PDF.js load error:", e);
           setIsPdfLoading(false);
@@ -3230,12 +3250,16 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً
-  var handlePageChange = function(newPage) {
+  // تغيير الصفحة في قارئ الـ PDF وحفظها سحابياً ومحلياً تلقائياً مع حماية تداخل الصوت
+  var handlePageChange = function(newPage, fromTtsAutoAdvance) {
     if (!activeBook) return Promise.resolve(false);
     var maxPages = getMaxPages();
     var validPage = Math.max(1, Math.min(Number(newPage) || 1, maxPages));
     setPdfCurrentPage(validPage);
+    if (activeBook && activeBook.id) {
+      utils.setLocal("counsel_book_page_" + activeBook.id, validPage);
+      utils.setLocal("counsel_active_book_id", activeBook.id);
+    }
     var p = Promise.resolve(true);
     if (pdfDoc) {
       p = renderPdfPage(pdfDoc, validPage, pdfRotation);
@@ -3243,305 +3267,22 @@ window.BooksPage = function(props) {
     var updated = Object.assign({}, activeBook, { currentPage: validPage });
     setActiveBook(updated);
     cloud.updateBookPage(activeBook.id, validPage);
-    return p;
-  };
 
-  // تشغيل النطق الصوتي العربي بدقة عالية ودون الاعتماد على روابط خارجية محظورة
-  var playCloudTtsAudio = function(text, onFinished) {
-    if (!text || !text.trim()) {
-      if (typeof onFinished === "function") onFinished();
-      return;
-    }
-
-    if (!window.speechSynthesis) {
-      alert("المتصفح لا يدعم تشغيل الصوت.");
-      if (typeof onFinished === "function") onFinished();
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    // استخراج أفضل صوت عربي متاح في المتصفح أو الجهاز (مثل صوت هدى، نايف، سلمى أو أي صوت عربي)
-    var voices = window.speechSynthesis.getVoices() || [];
-    var arVoice = voices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      var n = (v.name || "").toLowerCase();
-      return l.startsWith("ar-eg") || l.includes("egypt") || n.includes("salma") || n.includes("shakir");
-    }) || voices.find(function(v) {
-      var l = (v.lang || "").toLowerCase();
-      var n = (v.name || "").toLowerCase();
-      return l.startsWith("ar") || n.includes("arabic") || n.includes("عربي") || n.includes("hoda") || n.includes("naayf") || n.includes("tarik");
-    });
-
-    // تقسيم النص لجمل واضحة لضمان عدم توقف المتصفح
-    var sentences = text.match(/[^.،؟!\n]+[.،؟!\n]?/g) || [text];
-    var chunks = [];
-    var current = "";
-
-    sentences.forEach(function(s) {
-      var trimmed = s.trim();
-      if (!trimmed) return;
-      if ((current + " " + trimmed).length <= 150) {
-        current = current ? (current + " " + trimmed) : trimmed;
-      } else {
-        if (current) chunks.push(current);
-        current = trimmed;
-      }
-    });
-    if (current) chunks.push(current);
-
-    if (chunks.length === 0) {
-      if (typeof onFinished === "function") onFinished();
-      return;
-    }
-
-    var chunkIdx = 0;
-    var speakNextChunk = function() {
-      if (!isTtsActiveRef.current || chunkIdx >= chunks.length) {
-        if (isTtsActiveRef.current && typeof onFinished === "function") {
-          onFinished();
-        }
-        return;
-      }
-
-      if (isTtsPaused) {
-        setTimeout(speakNextChunk, 400);
-        return;
-      }
-
-      var textChunk = chunks[chunkIdx];
-      chunkIdx++;
-
-      var utterance = new SpeechSynthesisUtterance(textChunk);
-      utterance.rate = ttsSpeed || 1.0;
-      utterance.lang = arVoice ? arVoice.lang : "ar-EG";
-      if (arVoice) utterance.voice = arVoice;
-
-      utterance.onend = function() {
-        if (isTtsActiveRef.current && !isTtsPaused) {
-          speakNextChunk();
-        }
-      };
-
-      utterance.onerror = function(err) {
-        console.warn("Speech utterance error, moving to next:", err);
-        if (isTtsActiveRef.current && !isTtsPaused) {
-          speakNextChunk();
-        }
-      };
-
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
-      }
-
-      window.speechSynthesis.speak(utterance);
-    };
-
-    speakNextChunk();
-  };
-
-  // استخراج النص الهجين السريع (الكاش السحابي أولاً، ثم نص الـ PDF المباشر 0.01s، ثم Gemini للصور فقط)
-  var extractPageTextHybrid = async function(doc, bookId, pageNum) {
-    // 1. فحص الكاش السحابي أولاً (Zero Quota - فوري 0 ثانية)
-    if (bookId && cloud.getCachedPageText) {
-      var cached = await cloud.getCachedPageText(bookId, pageNum);
-      if (cached && cached.trim()) return { text: cached.trim(), source: "cloud" };
-    }
-
-    try {
-      var page = await doc.getPage(pageNum);
-      // 2. محاولة استخراج النص المباشر من ملف الـ PDF (سرعة فائقة جداً في أجزاء من الثانية)
-      try {
-        var content = await page.getTextContent();
-        var rawStr = (content.items || []).map(function(item) { return item.str; }).join(" ").trim();
-        var cleanAr = rawStr.replace(/[^\u0600-\u06FF0-9\s.,?!،؛:\-]/g, " ").replace(/\s+/g, " ").trim();
-        if (cleanAr.length >= 35) {
-          if (bookId && cloud.saveCachedPageText) {
-            cloud.saveCachedPageText(bookId, pageNum, cleanAr).catch(function() {});
-          }
-          return { text: cleanAr, source: "direct" };
-        }
-      } catch (eText) {}
-
-      // 3. إذا كانت الصفحة صورة سكانر بدون نص، نلجأ إلى Gemini Vision
-      var viewport = page.getViewport({ scale: 1.0 });
-      var tempCanvas = document.createElement("canvas");
-      tempCanvas.width = viewport.width;
-      tempCanvas.height = viewport.height;
-      var ctx = tempCanvas.getContext("2d");
-      await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-      var base64Img = tempCanvas.toDataURL("image/jpeg", 0.6);
-
-      var aiText = await ai.extractTextFromImage(base64Img);
-      if (aiText && aiText.trim()) {
-        var resText = aiText.trim();
-        if (bookId && cloud.saveCachedPageText) {
-          cloud.saveCachedPageText(bookId, pageNum, resText).catch(function() {});
-        }
-        return { text: resText, source: "ai" };
-      }
-    } catch (err) {
-      console.warn("extractPageTextHybrid error on p " + pageNum, err);
-      throw err;
-    }
-    return { text: "", source: "empty" };
-  };
-
-  // التحويل والتجهيز التلقائي لجميع صفحات الكتاب مسبقاً في الخلفية
-  var startAutoPreConvertBook = async function(loadedDoc, bookObj) {
-    if (!loadedDoc || !bookObj) return;
-    var total = Math.min(loadedDoc.numPages || (bookObj.totalPages || 10), 100);
-    setIsBatchConverting(true);
-    setBatchConvertProgress({ current: 0, total: total, msg: "بدء تجهيز صفحات الكتاب صوتياً..." });
-
-    for (var p = 1; p <= total; p++) {
-      try {
-        setBatchConvertProgress({
-          current: p,
-          total: total,
-          msg: "جاري تجهيز وتحويل صفحة " + p + " من " + total + "..."
-        });
-        await extractPageTextHybrid(loadedDoc, bookObj.id, p);
-      } catch (e) {
-        console.warn("Batch page " + p + " notice:", e);
-      }
-    }
-
-    setBatchConvertProgress({
-      current: total,
-      total: total,
-      msg: "تم تجهيز جميع صفحات الكتاب صوتياً بنجاح! جاهز للاستماع الفوري الآن 🎧"
-    });
-    setTimeout(function() {
-      setIsBatchConverting(false);
-    }, 4000);
-  };
-
-  // القراءة الذكية الفائقة لصفحة الـ PDF
-  var readPageTextWithTts = async function(doc, pageNum) {
-    if (!doc) {
-      alert("يرجى الانتظار حتى اكتمال تحميل ملف الكتاب.");
-      return;
-    }
-
-    var maxP = getMaxPages();
-    if (pageNum > maxP) {
-      setTtsStatusMsg("تم الوصول لنهاية الكتاب بنجاح ✓");
-      stopTtsReaderCompletely();
-      return;
-    }
-
-    var bookId = activeBook && activeBook.id;
-    setTtsStatusMsg("جاري جلب نص صفحة " + pageNum + "... ⚡");
-
-    if (pdfCurrentPage !== pageNum) {
-      await handlePageChange(pageNum);
-    }
-
-    try {
-      var result = await extractPageTextHybrid(doc, bookId, pageNum);
-      if (!isTtsActiveRef.current) return;
-
-      var textToRead = result.text;
-      if (!textToRead || textToRead.length < 5) {
-        setTtsStatusMsg("الصفحة " + pageNum + " لا تحتوي على نصوص، جاري تخطيها...");
-        setTimeout(function() {
-          if (isTtsActiveRef.current) {
-            readPageTextWithTts(doc, pageNum + 1);
-          }
-        }, 1000);
-        return;
-      }
-
-      var statusBadge = result.source === "cloud"
-        ? "⚡ قراءة فورية من السحابة"
-        : (result.source === "direct" ? "📖 قراءة مباشرة فائقة السرعة" : "🧠 قراءة ذكية (Gemini)");
+    // إذا قام المستخدم بتغيير الصفحة يدوياً وكان القارئ الصوتي شغالاً:
+    // نوقف فوراً أي صوت للصفحة السابقة ونبدأ قراءة الصفحة الجديدة بدون أي تداخل أصوات!
+    if (!fromTtsAutoAdvance && isTtsActiveRef.current) {
       
-      setTtsStatusMsg(statusBadge + " (صفحة " + pageNum + " من " + maxP + ") 🔊");
-      setIsTtsReading(true);
-      setIsTtsPaused(false);
-
-      playCloudTtsAudio(textToRead, function() {
-        if (!isTtsActiveRef.current) return;
-        var nextP = pageNum + 1;
-        if (nextP <= maxP) {
-          setTtsStatusMsg("تمت الصفحة! جاري الانتقال لصفحة " + nextP + "...");
-          readPageTextWithTts(doc, nextP);
-        } else {
-          setTtsStatusMsg("تم إنهاء قراءة الكتاب بالكامل ✓");
-          stopTtsReaderCompletely();
-        }
-      });
-
-    } catch (err) {
-      console.warn("Hybrid read error:", err);
-      var msg = err.message || "تعذر استخراج النص بالذكاء الاصطناعي، يرجى التأكد من إضافة مفتاح Gemini صالح في الإعدادات.";
-      setTtsStatusMsg("فشل القارئ: " + msg);
-      setIsTtsReading(false);
-      isTtsActiveRef.current = false;
-      alert("تنبيه القارئ الذكي:\n" + msg);
-    }
-  };
-
-  // زر بدء / إيقاف القراءة الصوتية بالذكاء الاصطناعي
-  var toggleTtsAutoReader = function() {
-    if (isTtsReading) {
-      if (isTtsPaused) {
-        if (window.speechSynthesis) {
-          window.speechSynthesis.resume();
-        }
-        setIsTtsPaused(false);
-        setTtsStatusMsg("تم استئناف القراءة");
-      } else {
-        if (window.speechSynthesis) {
-          window.speechSynthesis.pause();
-        }
-        setIsTtsPaused(true);
-        setTtsStatusMsg("تم الإيقاف المؤقت للقارئ");
+      if (pdfDoc) {
+        setTtsStatusMsg("تم الانتقال لصفحة " + validPage + "، جاري قراءتها... 🎧");
+        setTimeout(function() {
+          if (isTtsActiveRef.current && pdfDoc) {
+            readPageTextWithTts(pdfDoc, validPage);
+          }
+        }, 80);
       }
-    } else {
-      if (!pdfDoc) {
-        if (activeBook && activeBook.driveUrl) {
-          setTtsStatusMsg("جاري تحميل ملف الكتاب للبدء في القراءة الصوتية... ⏳");
-          loadPdfFromUrl(activeBook.driveUrl);
-          alert("جاري جلب صفحات الكتاب الآن، بمجرد ظهورها اضغط على 'اقرأ لي الكتاب مسموعاً' لتبدأ ✓");
-        } else {
-          alert("يرجى التأكد من إضافة رابط الـ PDF للكتاب أولاً.");
-        }
-        return;
-      }
-      if (track1AudioRef.current) {
-        track1AudioRef.current.pause();
-        setIsTrack1Playing(false);
-      }
-      isTtsActiveRef.current = true;
-      setIsTtsReading(true);
-      setIsTtsPaused(false);
-      var currentP = (activeBook && activeBook.currentPage) ? Number(activeBook.currentPage) : 1;
-      readPageTextWithTts(pdfDoc, currentP);
     }
-  };
 
-  // إيقاف القارئ الصوتي الذكي تماماً
-  var stopTtsReaderCompletely = function() {
-    isTtsActiveRef.current = false;
-    if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setIsTtsReading(false);
-    setIsTtsPaused(false);
-    setTtsStatusMsg("");
-  };
-
-  // تغيير سرعة القراءة الصوتية الآلية
-  var handleChangeTtsSpeed = function() {
-    var speeds = [1.0, 1.25, 1.5, 0.9];
-    var nextIdx = (speeds.indexOf(ttsSpeed) + 1) % speeds.length;
-    var newSpeed = speeds[nextIdx];
-    setTtsSpeed(newSpeed);
-    if (ttsAudioObjRef.current) {
-      ttsAudioObjRef.current.playbackRate = newSpeed;
-    }
+    return p;
   };
 
   // حفظ الكتاب للقراءة أوفلاين (بدون إنترنت) داخل ذاكرة الجهاز
@@ -3955,6 +3696,40 @@ window.BooksPage = function(props) {
       }
     }
 
+    var finalAudioUrl = newTrack1Url.trim();
+    if (selectedAudioFile) {
+      try {
+        setIsUploading(true);
+        setUploadStatusText("جاري رفع الملف الصوتي...");
+        var audioBase64 = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var result = reader.result;
+            resolve(typeof result === "string" && result.includes(",") ? result.split(",")[1] : result);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedAudioFile);
+        });
+
+        var audioRes = await fetch(cfg.driveUploadEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            fileName: selectedAudioFile.name,
+            mimeType: selectedAudioFile.type || "audio/mpeg",
+            base64Data: audioBase64
+          })
+        });
+
+        var aData = await audioRes.json();
+        if (aData.status === "success" && (aData.fileUrl || aData.fileId)) {
+          finalAudioUrl = aData.fileUrl || ("https://drive.google.com/file/d/" + aData.fileId + "/view");
+        }
+      } catch (errA) {
+        console.warn("Audio upload err:", errA);
+      }
+    }
+
     var finalCoverUrl = utils.getDriveImageUrl((newCoverUrl || "").trim());
     if (selectedCoverFile) {
       try {
@@ -3971,7 +3746,8 @@ window.BooksPage = function(props) {
       totalPages: parseInt(newTotalPages) || 300,
       currentPage: 1,
       driveUrl: finalDriveUrl,
-      chapters: []
+      chapters: Array.from({ length: parseInt(newChaptersCount) || 1 }, function(_, i) { return { title: 'فصل ' + (i + 1), time: 0, page: 1 }; }),
+      audioUrl: finalAudioUrl
     };
 
     cloud.saveBook(newB);
@@ -3985,7 +3761,7 @@ window.BooksPage = function(props) {
           window.pdfjsLib.getDocument({ data: fileBuf }).promise.then(function(loadedDoc) {
             setPdfDoc(loadedDoc);
             setPdfTotalPages(loadedDoc.numPages);
-            startAutoPreConvertBook(loadedDoc, newB);
+            
           }).catch(function() {});
         }
       } catch (eBuf) {}
@@ -4040,7 +3816,10 @@ window.BooksPage = function(props) {
             key: b.id,
             onClick: function() {
               stopAudioPlayback();
-              setActiveBook(b);
+              var savedPage = utils.getLocal("counsel_book_page_" + b.id);
+              var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
+              utils.setLocal("counsel_active_book_id", b.id);
+              setActiveBook(targetBook);
             },
             className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
               (isSelected
@@ -4072,6 +3851,7 @@ window.BooksPage = function(props) {
               type: "button",
               onClick: function() {
                 stopAudioPlayback();
+                utils.setLocal("counsel_active_book_id", null);
                 setActiveBook(null);
               },
               title: "الرجوع لقائمة الكتب والمراجع",
@@ -4205,68 +3985,6 @@ window.BooksPage = function(props) {
             "div",
             { className: "flex items-center gap-2 mr-auto" },
 
-            // كبسولة القارئ الصوتي الآلي التلقائي لصفحات الكتاب (Hands-Free Smart Auto Reader)
-            React.createElement(
-              "div",
-              {
-                className: "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs transition-all " +
-                  (isTtsReading
-                    ? "bg-teal-950/80 border-teal-500/70 text-teal-200 shadow-lg shadow-teal-950/50"
-                    : "bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600")
-              },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: toggleTtsAutoReader,
-                  title: isTtsReading ? (isTtsPaused ? "استئناف القراءة الصوتية" : "إيقاف مؤقت للقراءة الصوتية") : "بدء قراءة الكتاب بصوت مسموع تلقائياً مع تقليب الصفحات",
-                  className: "flex items-center gap-1.5 font-bold active:scale-95 transition-all text-xs"
-                },
-                React.createElement("span", { className: isTtsReading && !isTtsPaused ? "animate-pulse text-sm" : "text-sm" }, isTtsReading ? (isTtsPaused ? "▶" : "⏸") : "🔊"),
-                React.createElement("span", null, isTtsReading ? (isTtsPaused ? "استئناف" : "إيقاف مؤقت") : "اقرأ لي الكتاب مسموعاً")
-              ),
-              isTtsReading ? React.createElement(
-                "div",
-                { className: "flex items-center gap-1 border-r border-teal-800 pr-1 mr-1" },
-                // زر تغيير السرعة
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: handleChangeTtsSpeed,
-                    title: "تغيير سرعة القراءة",
-                    className: "px-1.5 py-0.5 rounded bg-teal-900 hover:bg-teal-800 text-[11px] font-mono font-bold text-teal-300 transition-all"
-                  },
-                  ttsSpeed + "x"
-                ),
-                // زر إيقاف القارئ تماماً
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: stopTtsReaderCompletely,
-                    title: "إيقاف القارئ الآلي تماماً",
-                    className: "px-1.5 py-0.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 text-[11px] font-bold transition-all"
-                  },
-                  "✕"
-                )
-              ) : null
-            ),
-
-            // زر التجهيز الصوتي المسبق لجميع صفحات الكتاب دفعة واحدة
-            currentUser.role === "admin" && pdfDoc && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { startAutoPreConvertBook(pdfDoc, activeBook); },
-                disabled: isBatchConverting,
-                title: "تجهيز وتحويل جميع صفحات الكتاب صوتياً مسبقاً للاستماع الفوري دون أي انتظار",
-                className: "px-2.5 py-1.5 rounded-xl bg-teal-900/80 hover:bg-teal-800 text-teal-200 font-bold text-xs flex items-center gap-1.5 border border-teal-700 shadow-sm active:scale-95 transition-all disabled:opacity-50"
-              },
-              React.createElement("span", null, isBatchConverting ? "⏳" : "⚡"),
-              React.createElement("span", { className: "hidden sm:inline" }, isBatchConverting ? "جاري التجهيز..." : "تجهيز الصوت للكل")
-            ),
-
             // أزرار التنقل السريع بين الصفحات أثناء وضع ملء الشاشة
             isFullScreen && React.createElement(
               "div",
@@ -4382,205 +4100,6 @@ window.BooksPage = function(props) {
               "إلغاء الحفظ"
             )
           )
-        ),
-
-        // شريط تقدم التحويل والتجهيز الصوتي التلقائي المسبق لصفحات الكتاب
-        isBatchConverting && React.createElement(
-          "div",
-          { className: "p-3 rounded-2xl bg-slate-950 border border-teal-500/60 text-white space-y-2 shadow-xl shrink-0 animate-fade-in" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs font-bold" },
-            React.createElement("div", { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "text-base animate-pulse" }, "🎧"),
-              React.createElement("span", { className: "text-teal-300" }, batchConvertProgress.msg || "جاري تجهيز صفحات الكتاب صوتياً...")
-            ),
-            React.createElement("span", { className: "font-mono text-teal-400 bg-teal-950 px-2 py-0.5 rounded-md border border-teal-800" },
-              batchConvertProgress.total > 0 ? (Math.round((batchConvertProgress.current / batchConvertProgress.total) * 100) + "%") : ""
-            )
-          ),
-          React.createElement(
-            "div",
-            { className: "w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700" },
-            React.createElement("div", {
-              className: "bg-gradient-to-r from-teal-500 via-emerald-400 to-teal-400 h-full rounded-full transition-all duration-300",
-              style: { width: (batchConvertProgress.total > 0 ? Math.round((batchConvertProgress.current / batchConvertProgress.total) * 100) : 0) + "%" }
-            })
-          )
-        ),
-
-        offlineSaveMsg && React.createElement(
-          "div",
-          { className: "p-2 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-center text-xs font-semibold shrink-0" },
-          offlineSaveMsg
-        ),
-
-        // شريط تحكم القارئ الصوتي المتطور (Audio Player Bar: Seek Bar, Speed, Next/Prev Page, Voice)
-        (isTtsReading || isTtsPaused) && React.createElement(
-          "div",
-          { className: "p-3 rounded-2xl bg-slate-950/95 border border-teal-500/40 text-white space-y-2.5 shadow-xl shrink-0 animate-fade-in" },
-          React.createElement(
-            "div",
-            { className: "flex flex-wrap items-center justify-between gap-2" },
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2" },
-              React.createElement("span", { className: isTtsReading && !isTtsPaused ? "animate-pulse text-teal-400 text-base" : "text-slate-400 text-base" }, "🎙️"),
-              React.createElement(
-                "span",
-                { className: "text-xs font-bold text-teal-200" },
-                ttsStatusMsg || ("قراءة صوتية لصفحة " + (activeBook.currentPage || 1))
-              )
-            ),
-            React.createElement(
-              "span",
-              { className: "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800 flex items-center gap-1 shadow-sm" },
-              React.createElement("span", null, "🟢"),
-              React.createElement("span", null, "صوت عربي / مصري")
-            )
-          ),
-
-          // شريط التنقل الزمني والصفحات (Seek Bar for Pages)
-          React.createElement(
-            "div",
-            { className: "space-y-1" },
-            React.createElement(
-              "div",
-              { className: "flex items-center justify-between text-[11px] font-mono text-slate-400 px-1" },
-              React.createElement("span", { className: "text-teal-400 font-bold" }, "صفحة " + (activeBook.currentPage || 1)),
-              React.createElement("span", null, "من إجمالي " + getMaxPages() + " صفحة")
-            ),
-            React.createElement("input", {
-              type: "range",
-              min: 1,
-              max: getMaxPages(),
-              value: activeBook.currentPage || 1,
-              onChange: function(e) {
-                var p = parseInt(e.target.value) || 1;
-                handlePageChange(p);
-                if (pdfDoc && isTtsReading) {
-                  readPageTextWithTts(pdfDoc, p);
-                }
-              },
-              className: "w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400"
-            })
-          ),
-
-          // أزرار التحكم: -1 صفحة، تشغيل/إيقاف، +1 صفحة، والسرعات
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between gap-2 pt-1" },
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2" },
-              // زر الصفحة السابقة
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() {
-                    var prevP = Math.max(1, (activeBook.currentPage || 1) - 1);
-                    handlePageChange(prevP);
-                    if (pdfDoc && isTtsReading) readPageTextWithTts(pdfDoc, prevP);
-                  },
-                  disabled: (activeBook.currentPage || 1) <= 1,
-                  title: "الصفحة السابقة",
-                  className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-bold text-slate-200 border border-slate-700 flex items-center gap-1 active:scale-95 transition-all"
-                },
-                "◀ الصفحة السابقة"
-              ),
-              // زر تشغيل / إيقاف مؤقت
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: toggleTtsAutoReader,
-                  className: "px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
-                },
-                React.createElement("span", null, isTtsPaused ? "▶" : "⏸"),
-                React.createElement("span", null, isTtsPaused ? "استئناف" : "إيقاف مؤقت")
-              ),
-              // زر الصفحة التالية
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() {
-                    var nextP = Math.min(getMaxPages(), (activeBook.currentPage || 1) + 1);
-                    handlePageChange(nextP);
-                    if (pdfDoc && isTtsReading) readPageTextWithTts(pdfDoc, nextP);
-                  },
-                  disabled: (activeBook.currentPage || 1) >= getMaxPages(),
-                  title: "الصفحة التالية",
-                  className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-bold text-slate-200 border border-slate-700 flex items-center gap-1 active:scale-95 transition-all"
-                },
-                "الصفحة التالية ▶"
-              )
-            ),
-
-            // أزرار السرعة وإلغاء القراءة
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleChangeTtsSpeed,
-                  title: "تغيير سرعة الصوت",
-                  className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-mono font-bold text-xs border border-slate-700 active:scale-95 transition-all"
-                },
-                "السرعة: " + ttsSpeed + "x"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: stopTtsReaderCompletely,
-                  title: "إنهاء القراءة الصوتية تماماً",
-                  className: "px-3 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 text-rose-300 font-bold text-xs border border-rose-800/80 active:scale-95 transition-all"
-                },
-                "إغلاق المشغل ✕"
-              )
-            )
-          )
-        ),
-
-        ttsStatusMsg && !(isTtsReading || isTtsPaused) && React.createElement(
-          "div",
-          { className: "p-2.5 rounded-xl bg-teal-950/90 text-teal-200 border border-teal-700/80 text-center text-xs font-bold flex flex-wrap items-center justify-center gap-2 shrink-0 animate-fade-in shadow-md" },
-          React.createElement("span", null, "🎙️"),
-          React.createElement("span", null, ttsStatusMsg),
-          !pdfDoc ? React.createElement(
-            "label",
-            {
-              className: "inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded-lg cursor-pointer text-xs font-extrabold shadow active:scale-95 transition-all ml-1"
-            },
-            React.createElement("span", null, "📂"),
-            React.createElement("span", null, "اختر ملف الـ PDF الآن"),
-            React.createElement("input", {
-              type: "file",
-              accept: "application/pdf",
-              className: "hidden",
-              onChange: function(e) {
-                var file = e.target.files && e.target.files[0];
-                if (!file) return;
-                var reader = new FileReader();
-                reader.onload = function(evt) {
-                  var buffer = evt.target.result;
-                  loadPdfFromData(buffer);
-                  if (activeBook && activeBook.id) {
-                    utils.saveOfflinePdf(activeBook.id, buffer).then(function() {
-                      setIsSavedOffline(true);
-                      setOfflineSaveMsg("تم حفظ الكتاب في جهازك بنجاح! متاح للقراءة والاستماع دائماً بدون إنترنت ✓");
-                      setTimeout(function() { setOfflineSaveMsg(""); }, 4000);
-                    }).catch(function() {});
-                  }
-                };
-                reader.readAsArrayBuffer(file);
-              }
-            })
-          ) : null
         ),
 
         // لوحة عرض الصفحة (PDF Canvas Viewer)
@@ -5064,7 +4583,10 @@ window.BooksPage = function(props) {
               key: b.id,
               onClick: function() {
                 stopAudioPlayback();
-                setActiveBook(b);
+                var savedPage = utils.getLocal("counsel_book_page_" + b.id);
+                var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
+                utils.setLocal("counsel_active_book_id", b.id);
+                setActiveBook(targetBook);
               },
               className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs hover:shadow-xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between"
             },
@@ -5331,6 +4853,29 @@ window.BooksPage = function(props) {
               })
             )
           ),
+          React.createElement(
+            "div",
+            { className: "mt-4 p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2" }, "ملف الصوت (ارفع من الجهاز أو ضع الرابط)"),
+            React.createElement("input", {
+              type: "file",
+              accept: "audio/*",
+              onChange: function(e) { setSelectedAudioFile(e.target.files && e.target.files[0]); },
+              className: "block w-full text-xs text-slate-500 mb-2"
+            }),
+            React.createElement("input", {
+              type: "url",
+              value: newTrack1Url,
+              onChange: function(e) { setNewTrack1Url(e.target.value); },
+              placeholder: "أو رابط جوجل درايف لملف الصوت",
+              className: "w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-mono"
+            })
+          ),
+          React.createElement("div", {className: "hidden"}, 
+                className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
+              })
+            )
+          ),
 
           React.createElement(
             "div",
@@ -5458,7 +5003,7 @@ window.BooksPage = function(props) {
       ),
 
       // Modal 1: تعديل رابط تراك 1
-      showTrackModal ? React.createElement(
+      false ? React.createElement(
         "div",
         { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setShowTrackModal(false); } },
         React.createElement(
@@ -5493,7 +5038,7 @@ window.BooksPage = function(props) {
       ) : null,
 
       // Modal 2: إضافة / تعديل Bookmark
-      showBookmarkModal ? React.createElement(
+      false ? React.createElement(
         "div",
         { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", onClick: function() { setShowBookmarkModal(false); } },
         React.createElement(
@@ -6193,6 +5738,18 @@ window.SettingsPage = function() {
       )
     ),
 
+    // أداة استخراج النصوص المخفية
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3" },
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "أداة استخراج النصوص من الكتب"),
+      React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4" }, "أداة خاصة ومخفية لرفع الكتاب واستخراج النص منه أوتوماتيكيا."),
+      React.createElement("a", {
+        href: "/ocr-tool.html",
+        target: "_blank",
+        className: "inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 text-center w-full sm:w-auto"
+      }, "فتح أداة الاستخراج الآلي")
+    ),
     // إرشادات ربط جوجل درايف
     React.createElement(
       "div",
@@ -6216,7 +5773,36 @@ function App() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
 
-  var [activeTab, setActiveTab] = React.useState("lectures");
+  var [activeTab, setActiveTab] = React.useState(function() {
+    var hash = (window.location.hash || "").replace("#", "").trim();
+    var saved = utils.getLocal("counsel_active_tab");
+    var validTabs = ["lectures", "books", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "error_reports", "settings"];
+    if (hash && validTabs.indexOf(hash) !== -1) return hash;
+    if (saved && validTabs.indexOf(saved) !== -1) return saved;
+    return "lectures";
+  });
+
+  React.useEffect(function() {
+    utils.setLocal("counsel_active_tab", activeTab);
+    if (window.location.hash !== "#" + activeTab) {
+      try {
+        history.replaceState(null, "", "#" + activeTab);
+      } catch (e) {
+        window.location.hash = activeTab;
+      }
+    }
+  }, [activeTab]);
+
+  React.useEffect(function() {
+    var handleHash = function() {
+      var h = (window.location.hash || "").replace("#", "").trim();
+      if (h && h !== activeTab) {
+        setActiveTab(h);
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    return function() { window.removeEventListener("hashchange", handleHash); };
+  }, [activeTab]);
   var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);

@@ -3,7 +3,36 @@ function App() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
 
-  var [activeTab, setActiveTab] = React.useState("lectures");
+  var [activeTab, setActiveTab] = React.useState(function() {
+    var hash = (window.location.hash || "").replace("#", "").trim();
+    var saved = utils.getLocal("counsel_active_tab");
+    var validTabs = ["lectures", "books", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "error_reports", "settings"];
+    if (hash && validTabs.indexOf(hash) !== -1) return hash;
+    if (saved && validTabs.indexOf(saved) !== -1) return saved;
+    return "lectures";
+  });
+
+  React.useEffect(function() {
+    utils.setLocal("counsel_active_tab", activeTab);
+    if (window.location.hash !== "#" + activeTab) {
+      try {
+        history.replaceState(null, "", "#" + activeTab);
+      } catch (e) {
+        window.location.hash = activeTab;
+      }
+    }
+  }, [activeTab]);
+
+  React.useEffect(function() {
+    var handleHash = function() {
+      var h = (window.location.hash || "").replace("#", "").trim();
+      if (h && h !== activeTab) {
+        setActiveTab(h);
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    return function() { window.removeEventListener("hashchange", handleHash); };
+  }, [activeTab]);
   var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);

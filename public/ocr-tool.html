@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة استخراج نصوص الكتب</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+        body { font-family: Tahoma, Arial, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        h1 { font-size: 1.5rem; color: #1e293b; margin-top: 0; }
+        p { color: #64748b; font-size: 0.9rem; }
+        input[type="file"], input[type="text"], button { width: 100%; box-sizing: border-box; margin-bottom: 15px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+        input[type="text"] { font-family: monospace; text-align: left; direction: ltr; }
+        button { background: #0ea5e9; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; padding: 15px; }
+        button:hover { background: #0284c7; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        #progress-container { display: none; margin-top: 20px; }
+        .progress-bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; background: #10b981; width: 0%; transition: width 0.3s ease; }
+        #log { margin-top: 20px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 0.85rem; color: #475569; height: 150px; overflow-y: auto; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>أداة استخراج النصوص الآلية</h1>
+    <p>هذه الأداة صُممت خصيصاً لتقرأ ملفات الكتاب الممسوحة ضوئياً صفحة بصفحة وتحويلها إلى ملف نصي واحد، وتعمل بالكامل داخل جهازك لحفظ باقة الإنترنت الخاصة بك.</p>
+
+    <label for="apiKey">مفتاح جوجل:</label>
+    <input type="text" id="apiKey" placeholder="ضع المفتاح هنا..." />
+
+    <label for="pdfFile">اختر ملف الكتاب:</label>
+    <input type="file" id="pdfFile" accept="application/pdf" />
+
+    <button id="startBtn">بدء الاستخراج الآلي</button>
+
+    <div id="progress-container">
+        <div id="status">جاري التجهيز...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    const savedKey = localStorage.getItem('COUNSEL_API_KEY') || localStorage.getItem('APP_CONFIG_API_KEY');
+    if (savedKey) document.getElementById('apiKey').value = savedKey.replace(/"/g, '');
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+    const logEl = document.getElementById('log');
+    const startBtn = document.getElementById('startBtn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressFill = document.getElementById('progressFill');
+    const statusEl = document.getElementById('status');
+
+    function log(msg) {
+        logEl.textContent += msg + '\n';
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function extractTextFromBase64(base64Image, apiKey) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const payload = {
+            contents: [{
+                parts: [
+                    { text: "استخرج النص العربي من هذه الصفحة بدقة متناهية كما هو مكتوب حرفيا وبدون أي تلخيص." },
+                    { inline_data: { mime_type: "image/jpeg", data: base64Image } }
+                ]
+            }],
+            generationConfig: { temperature: 0.1 }
+        };
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            if (res.status === 429) throw new Error('RATE_LIMIT');
+            throw new Error(`API Error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        return data.candidates[0].content.parts[0].text;
+    }
+
+    startBtn.addEventListener('click', async () => {
+        const file = document.getElementById('pdfFile').files[0];
+        const apiKey = document.getElementById('apiKey').value.trim();
+
+        if (!file) return alert('الرجاء اختيار ملف الكتاب أولا');
+        if (!apiKey) return alert('الرجاء وضع مفتاح جوجل');
+
+        startBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        logEl.textContent = '';
+        
+        let fullText = '';
+        
+        try {
+            log('جاري فتح ملف الكتاب...');
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const totalPages = pdf.numPages;
+            log(`تم فتح الكتاب بنجاح. عدد الصفحات هو ${totalPages}`);
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                statusEl.textContent = `جاري قراءة الصفحة ${pageNum} من ${totalPages}...`;
+                progressFill.style.width = `${(pageNum / totalPages) * 100}%`;
+                log(`\nمعالجة الصفحة ${pageNum}...`);
+
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                
+                const base64Full = canvas.toDataURL('image/jpeg', 0.8);
+                const base64Data = base64Full.split(',')[1];
+
+                let text = '';
+                let success = false;
+                let retries = 3;
+
+                while (!success && retries > 0) {
+                    try {
+                        text = await extractTextFromBase64(base64Data, apiKey);
+                        success = true;
+                        log(`تم الاستخراج بنجاح للصفحة ${pageNum}`);
+                    } catch (err) {
+                        if (err.message === 'RATE_LIMIT') {
+                            log(`تم الوصول للحد الأقصى للطلبات. جاري الانتظار 15 ثانية...`);
+                            await new Promise(r => setTimeout(r, 15000));
+                            retries--;
+                        } else {
+                            log(`خطأ في الصفحة ${pageNum}: ${err.message}. جاري المحاولة مجددا...`);
+                            await new Promise(r => setTimeout(r, 5000));
+                            retries--;
+                        }
+                    }
+                }
+
+                if (success) {
+                    fullText += `\n\n--- الصفحة ${pageNum} ---\n\n` + text;
+                } else {
+                    fullText += `\n\n--- الصفحة ${pageNum} ---\n\n(فشل استخراج نص هذه الصفحة)\n`;
+                    log(`تجاوز الصفحة ${pageNum} بسبب الأخطاء المتكررة.`);
+                }
+
+                if (pageNum < totalPages) {
+                    log('انتظار 4 ثواني لحماية المفتاح من الحظر...');
+                    await new Promise(r => setTimeout(r, 4000));
+                }
+            }
+
+            statusEl.textContent = 'اكتمل الاستخراج بنجاح!';
+            log('\nتم الانتهاء من قراءة الكتاب بالكامل. جاري تحميل الملف...');
+
+            const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `كتاب_مستخرج_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            log(`حدث خطأ قاتل: ${error.message}`);
+            statusEl.textContent = 'حدث خطأ، راجع السجل.';
+        } finally {
+            startBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// شاشة الإعدادات وربط المفاتيح السحابية
+﻿// شاشة الإعدادات وربط المفاتيح السحابية
 window.SettingsPage = function() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
@@ -73,6 +73,18 @@ window.SettingsPage = function() {
       )
     ),
 
+    // أداة استخراج النصوص المخفية
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3" },
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "أداة استخراج النصوص من الكتب"),
+      React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4" }, "أداة خاصة ومخفية لرفع الكتاب واستخراج النص منه أوتوماتيكيا."),
+      React.createElement("a", {
+        href: "/ocr-tool.html",
+        target: "_blank",
+        className: "inline-block bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-md shadow-blue-600/20 text-center w-full sm:w-auto"
+      }, "فتح أداة الاستخراج الآلي")
+    ),
     // إرشادات ربط جوجل درايف
     React.createElement(
       "div",
