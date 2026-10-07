@@ -717,6 +717,22 @@ window.BooksPage = function(props) {
     }
   };
 
+  // تغيير ترتيب فصل أو جزء للأعلى أو للأسفل بحرية تامة
+  var handleMoveChapter = async function(idx, direction) {
+    if (!activeBook) return;
+    var currentChaps = (activeBook.audioChapters || []).slice();
+    var targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= currentChaps.length) return;
+
+    var temp = currentChaps[idx];
+    currentChaps[idx] = currentChaps[targetIdx];
+    currentChaps[targetIdx] = temp;
+
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+  };
+
   var handleAutoScanActiveBookChapters = async function() {
     if (!activeBook || !pdfDoc) return alert("يرجى فتح ملف الـ PDF للكتاب أولاً");
     var key = await window.GeminiAIService.getApiKey();
