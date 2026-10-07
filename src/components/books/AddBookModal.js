@@ -27,6 +27,8 @@ window.AddBookModal = function(props) {
   var setSelectedAudioFile = props.setSelectedAudioFile;
   var newTrack1Url = props.newTrack1Url;
   var setNewTrack1Url = props.setNewTrack1Url;
+  var newIsPublished = props.newIsPublished;
+  var setNewIsPublished = props.setNewIsPublished;
   var onSubmit = props.onSubmit;
 
   var isEditing = props.isEditing;
@@ -250,7 +252,29 @@ window.AddBookModal = function(props) {
               placeholder: "https://drive.google.com/file/d/... رابط ملف الـ PDF",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
             })
-          )
+          ),
+          // خيار حالة النشر (مسودة أم منشور)
+          typeof setNewIsPublished === "function" ? React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3" },
+            React.createElement("div", { className: "space-y-0.5" },
+              React.createElement("div", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5" },
+                React.createElement("span", null, newIsPublished ? "🌍 منشور للدارسين" : "🔒 مسودة خاصة (قيد الإعداد)"),
+                React.createElement("span", { className: "text-[10px] px-2 py-0.5 rounded-full font-bold " + (newIsPublished ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300") },
+                  newIsPublished ? "مرئي للجميع" : "مخفي عن الطلاب"
+                )
+              ),
+              React.createElement("div", { className: "text-[11px] text-slate-500 dark:text-slate-400" },
+                newIsPublished ? "الكتاب سيظهر لجميع الطلاب في المكتبة فور حفظه." : "الكتاب سيكون مخفياً عن الطلاب حتى تنتهي من استخراج فصوله ونشره."
+              )
+            ),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setNewIsPublished(!newIsPublished); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 " +
+                (newIsPublished ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200" : "bg-emerald-600 hover:bg-emerald-500 text-white")
+            }, newIsPublished ? "إخفاء كمسودة 🔒" : "نشر للجميع 🌍")
+          ) : null
         ),
         React.createElement(
           "div",

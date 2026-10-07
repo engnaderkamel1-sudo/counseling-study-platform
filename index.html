@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791400307",
-  buildTime: "2026-10-07T19:11:47",
+  version: "1.2.1791401916",
+  buildTime: "2026-10-07T19:38:36",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -1638,6 +1638,8 @@ window.AddBookModal = function(props) {
   var setSelectedAudioFile = props.setSelectedAudioFile;
   var newTrack1Url = props.newTrack1Url;
   var setNewTrack1Url = props.setNewTrack1Url;
+  var newIsPublished = props.newIsPublished;
+  var setNewIsPublished = props.setNewIsPublished;
   var onSubmit = props.onSubmit;
 
   var isEditing = props.isEditing;
@@ -1861,7 +1863,29 @@ window.AddBookModal = function(props) {
               placeholder: "https://drive.google.com/file/d/... رابط ملف الـ PDF",
               className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
             })
-          )
+          ),
+          // خيار حالة النشر (مسودة أم منشور)
+          typeof setNewIsPublished === "function" ? React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3" },
+            React.createElement("div", { className: "space-y-0.5" },
+              React.createElement("div", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5" },
+                React.createElement("span", null, newIsPublished ? "🌍 منشور للدارسين" : "🔒 مسودة خاصة (قيد الإعداد)"),
+                React.createElement("span", { className: "text-[10px] px-2 py-0.5 rounded-full font-bold " + (newIsPublished ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300") },
+                  newIsPublished ? "مرئي للجميع" : "مخفي عن الطلاب"
+                )
+              ),
+              React.createElement("div", { className: "text-[11px] text-slate-500 dark:text-slate-400" },
+                newIsPublished ? "الكتاب سيظهر لجميع الطلاب في المكتبة فور حفظه." : "الكتاب سيكون مخفياً عن الطلاب حتى تنتهي من استخراج فصوله ونشره."
+              )
+            ),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setNewIsPublished(!newIsPublished); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 " +
+                (newIsPublished ? "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-200" : "bg-emerald-600 hover:bg-emerald-500 text-white")
+            }, newIsPublished ? "إخفاء كمسودة 🔒" : "نشر للجميع 🌍")
+          ) : null
         ),
         React.createElement(
           "div",
@@ -4779,6 +4803,16 @@ window.BooksPage = function(props) {
   var [detectedChaptersList, setDetectedChaptersList] = React.useState([]);
   var [isAiAnalyzingBook, setIsAiAnalyzingBook] = React.useState(false);
   var [editingBookId, setEditingBookId] = React.useState(null);
+  var [newIsPublished, setNewIsPublished] = React.useState(false);
+  var [previewAsStudent, setPreviewAsStudent] = React.useState(function() {
+    return utils.getLocal("counsel_preview_as_student", false);
+  });
+
+  var isRealAdmin = currentUser && currentUser.role === "admin";
+  var effectiveUser = (isRealAdmin && previewAsStudent)
+    ? Object.assign({}, currentUser, { role: "student" })
+    : currentUser;
+  var isAdmin = effectiveUser && effectiveUser.role === "admin";
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
@@ -6300,10 +6334,43 @@ window.BooksPage = function(props) {
     setNewCoverUrl(book.coverUrl || "");
     setNewDriveUrl(book.driveUrl || "");
     setNewTrack1Url(book.audioUrl || "");
+    setNewIsPublished(book.isPublished !== false);
     setSelectedFile(null);
     setSelectedCoverFile(null);
     setSelectedAudioFile(null);
     setShowAddModal(true);
+  };
+
+  // تبديل حالة نشر الكتاب (بين مسودة ومنشور للدارسين)
+  var handleToggleBookPublish = async function() {
+    if (!activeBook) return;
+    var currentPub = activeBook.isPublished !== false;
+    var nextPub = !currentPub;
+    var confirmMsg = nextPub
+      ? "🚀 هل تريد نشر كتاب «" + activeBook.title + "» الآن للدارسين؟\nسيكون مرئياً ومتاحاً لجميع المستخدمين فوراً."
+      : "🔒 هل تريد تحويل كتاب «" + activeBook.title + "» إلى مسودة؟\nسيصبح مخفياً عن جميع الدارسين والطلاب لحين إعادة نشره بعد استكمال الفصول والصوتيات.";
+    if (!window.confirm(confirmMsg)) return;
+
+    var updatedBook = Object.assign({}, activeBook, { isPublished: nextPub });
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    else allBooks.push(updatedBook);
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    setActiveBook(updatedBook);
+    setBooks(allBooks);
+    try {
+      await cloud.saveBook(updatedBook);
+    } catch (saveErr) {
+      console.warn("Save publish status error:", saveErr);
+    }
+
+    if (nextPub) {
+      alert("🎉 تم نشر الكتاب بنجاح!\nأصبح متاحاً ومرئياً الآن لجميع الطلاب والدارسين في المكتبة.");
+    } else {
+      alert("🔒 تم تحويل الكتاب إلى مسودة خاصة بنجاح!\nأصبح مخفياً عن جميع الطلاب، ويمكنك استكمال رفع الصوتيات والفصول براحتك.");
+    }
   };
 
   var handleAddBook = async function(e) {
@@ -6405,7 +6472,8 @@ window.BooksPage = function(props) {
       driveUrl: finalDriveUrl || (existingBook ? existingBook.driveUrl : ""),
       audioUrl: finalAudioUrl || (existingBook ? existingBook.audioUrl : ""),
       uploadedAt: (existingBook && (existingBook.uploadedAt || existingBook.createdAt)) ? (existingBook.uploadedAt || existingBook.createdAt) : nowTimestamp,
-      createdAt: (existingBook && existingBook.createdAt) ? existingBook.createdAt : nowTimestamp
+      createdAt: (existingBook && existingBook.createdAt) ? existingBook.createdAt : nowTimestamp,
+      isPublished: newIsPublished
     });
 
     if (!existingBook) {
@@ -6461,44 +6529,97 @@ window.BooksPage = function(props) {
         React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المراجع والكتب الدراسية"),
         React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "مطالعة كتب الـ PDF مع حفظ الصفحة والملخصات الصوتية والنصية لكل فصل")
       ),
-      currentUser.role === "admin" && React.createElement(
-        "button",
-        {
-          onClick: function() { setShowAddModal(true); },
-          className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
-        },
-        React.createElement("span", null, "📕"),
-        React.createElement("span", null, "رفع كتاب أو مرجع جديد (PDF)")
+      isRealAdmin && React.createElement(
+        "div",
+        { className: "flex items-center gap-2 flex-wrap" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              var nextVal = !previewAsStudent;
+              setPreviewAsStudent(nextVal);
+              utils.setLocal("counsel_preview_as_student", nextVal);
+            },
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 " +
+              (previewAsStudent
+                ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-amber-500/30"
+                : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700")
+          },
+          React.createElement("span", null, previewAsStudent ? "🔙 إنهاء معاينة الطالب" : "👁️ معاينة كطالب")
+        ),
+        isAdmin && React.createElement(
+          "button",
+          {
+            onClick: function() {
+              setEditingBookId(null);
+              setNewIsPublished(false);
+              setShowAddModal(true);
+            },
+            className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
+          },
+          React.createElement("span", null, "📕"),
+          React.createElement("span", null, "رفع كتاب جديد (PDF)")
+        )
       )
     ),
 
-    // شريط اختيار الكتاب السريع في حال كان هناك كتاب مفتوح ويوجد عدة مراجع
-    activeBook && books.length > 1 && React.createElement(
+    // شريط إشعار وضع المعاينة كطالب للأدمن
+    previewAsStudent && isRealAdmin && React.createElement(
       "div",
-      { className: "flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin" },
-      books.map(function(b) {
-        var isSelected = activeBook && activeBook.id === b.id;
-        return React.createElement(
-          "button",
-          {
-            key: b.id,
-            onClick: function() {
-              stopAudioPlayback();
-              var savedPage = utils.getLocal("counsel_book_page_" + b.id);
-              var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
-              utils.setLocal("counsel_active_book_id", b.id);
-              setActiveBook(targetBook);
-            },
-            className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
-              (isSelected
-                ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
-                : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50")
-          },
-          React.createElement("span", null, "📖"),
-          React.createElement("span", null, b.title)
-        );
-      })
+      { className: "p-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-transparent border-2 border-amber-500/50 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-md animate-fade-in" },
+      React.createElement("div", { className: "flex items-center gap-2.5" },
+        React.createElement("span", { className: "text-lg animate-pulse" }, "👁️"),
+        React.createElement("div", null,
+          React.createElement("div", { className: "font-black text-amber-900 dark:text-amber-100 text-sm" }, "أنت الآن في وضع «معاينة كطالب»"),
+          React.createElement("div", { className: "text-[11px] text-amber-800/90 dark:text-amber-300/90 font-normal mt-0.5" }, "جميع أدوات الإدارة، التعديل، والحذف والكتب المسودة مخفية تماماً بنفس مظهر حساب الطالب.")
+        )
+      ),
+      React.createElement("button", {
+        type: "button",
+        onClick: function() {
+          setPreviewAsStudent(false);
+          utils.setLocal("counsel_preview_as_student", false);
+        },
+        className: "px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition-all shadow-sm active:scale-95 shrink-0 self-start sm:self-auto"
+      }, "🔙 العودة لوضع المسؤول")
     ),
+
+    // شريط اختيار الكتاب السريع في حال كان هناك كتاب مفتوح ويوجد عدة مراجع
+    activeBook && (function() {
+      var switcherBooks = books.filter(function(b) {
+        if (isAdmin) return true;
+        return b.isPublished !== false;
+      });
+      if (switcherBooks.length <= 1) return null;
+      return React.createElement(
+        "div",
+        { className: "flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin" },
+        switcherBooks.map(function(b) {
+          var isSelected = activeBook && activeBook.id === b.id;
+          return React.createElement(
+            "button",
+            {
+              key: b.id,
+              onClick: function() {
+                stopAudioPlayback();
+                var savedPage = utils.getLocal("counsel_book_page_" + b.id);
+                var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
+                utils.setLocal("counsel_active_book_id", b.id);
+                setActiveBook(targetBook);
+              },
+              className: "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all " +
+                (isSelected
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
+                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50")
+            },
+            React.createElement("span", null, b.isPublished === false ? "🔒" : "📖"),
+            React.createElement("span", null, b.title),
+            b.isPublished === false && isAdmin ? React.createElement("span", { className: "text-[9px] px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black" }, "مسودة") : null
+          );
+        })
+      );
+    })(),
 
     // الكتاب النشط أو معرض الكتب والمراجع
     activeBook ? React.createElement(
@@ -6563,9 +6684,29 @@ window.BooksPage = function(props) {
             null,
             React.createElement("div", { className: "flex items-center flex-wrap gap-2" },
               React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeBook.title),
-              currentUser.role === "admin" && React.createElement(
+              // شارة حالة النشر
+              React.createElement("span", {
+                className: "text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs " +
+                  (activeBook.isPublished === false
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                    : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800")
+              }, activeBook.isPublished === false ? "🔒 مسودة خاصة (مخفي عن الطلاب)" : "🌍 منشور للدارسين ✓"),
+              isAdmin && React.createElement(
                 "div",
                 { className: "flex items-center gap-1.5 flex-wrap" },
+                // زر تبديل النشر السريع للأدمن
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleToggleBookPublish,
+                    className: "px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all shadow-2xs active:scale-95 " +
+                      (activeBook.isPublished === false
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20"
+                        : "bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+                  },
+                  React.createElement("span", null, activeBook.isPublished === false ? "🚀 نشر الكتاب للدارسين" : "🔒 تحويل إلى مسودة")
+                ),
                 React.createElement(
                   "button",
                   {
@@ -6761,7 +6902,7 @@ window.BooksPage = function(props) {
 
         bookStudyTab === "chapters" ? React.createElement(window.AudioChaptersView, {
           activeBook: activeBook,
-          currentUser: currentUser,
+          currentUser: effectiveUser,
           playingChapterId: playingChapterId,
           setPlayingChapterId: setPlayingChapterId,
           chapterAudioRef: chapterAudioRef,
@@ -7160,25 +7301,45 @@ window.BooksPage = function(props) {
           )
         )
       )
-    ) : books.length > 0 ? React.createElement(
-      "div",
-      { className: "space-y-4" },
-      // ترويسة رف الكتب
-      React.createElement(
-        "div",
-        { className: "flex items-center justify-between px-1" },
-        React.createElement("h3", { className: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2" },
-          React.createElement("span", null, "📚"),
-          React.createElement("span", null, "رف الكتب والمراجع المعتمدة (" + books.length + ")")
-        ),
-        React.createElement("span", { className: "text-xs text-slate-400" }, "اضغط على أي كتاب لفتحه وبدء القراءة والاستماع")
-      ),
+    ) : (function() {
+      var visibleBooks = books.filter(function(b) {
+        if (isAdmin) return true;
+        return b.isPublished !== false;
+      });
 
-      // شبكة بطاقات الكتب (Book Cover Cards Grid بتصميم شيك ومرتب يسهل التصفح)
-      React.createElement(
+      if (visibleBooks.length === 0) {
+        return React.createElement(
+          "div",
+          { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
+          React.createElement("div", { className: "text-3xl" }, "📚"),
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+            previewAsStudent ? "لا توجد مراجع منشورة للطلاب حالياً" : "المكتبة جاهزة لاستقبال الكتب والمراجع"
+          ),
+          React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" },
+            previewAsStudent ? "جميع الكتب الحالية في وضع المسودة (قيد الإعداد) ومخفية عن الطلاب لحين نشرها." : "اضغط على زر 'رفع كتاب جديد' لإضافة مرجع دراسي بصيغة PDF."
+          )
+        );
+      }
+
+      return React.createElement(
         "div",
-        { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5" },
-        books.map(function(b, bIdx) {
+        { className: "space-y-4" },
+        // ترويسة رف الكتب
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between px-1" },
+          React.createElement("h3", { className: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2" },
+            React.createElement("span", null, "📚"),
+            React.createElement("span", null, "رف الكتب والمراجع المعتمدة (" + visibleBooks.length + ")")
+          ),
+          React.createElement("span", { className: "text-xs text-slate-400" }, "اضغط على أي كتاب لفتحه وبدء القراءة والاستماع")
+        ),
+
+        // شبكة بطاقات الكتب (Book Cover Cards Grid بتصميم شيك ومرتب يسهل التصفح)
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5" },
+          visibleBooks.map(function(b, bIdx) {
           var coverPalettes = [
             "from-emerald-800 via-teal-900 to-slate-900",
             "from-indigo-800 via-purple-900 to-slate-900",
@@ -7261,8 +7422,16 @@ window.BooksPage = function(props) {
                 React.createElement("span", null, (b.totalPages || 0) + " ص")
               ),
 
+              // شارة مسودة إذا كان الكتاب غير منشور (تظهر للأدمن فقط)
+              b.isPublished === false && React.createElement(
+                "div",
+                { className: "absolute bottom-2 inset-x-2 bg-amber-500/90 backdrop-blur-md text-slate-950 px-2 py-0.5 rounded-xl text-[10px] font-black text-center shadow-md flex items-center justify-center gap-1 border border-amber-300 z-10" },
+                React.createElement("span", null, "🔒"),
+                React.createElement("span", null, "مسودة (مخفي)")
+              ),
+
               // أزرار التحكم للأدمن (تعديل وحذف)
-              currentUser.role === "admin" && React.createElement(
+              isAdmin && React.createElement(
                 "div",
                 { className: "absolute top-2 right-2 flex items-center gap-1 z-10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" },
                 React.createElement(
@@ -7338,13 +7507,8 @@ window.BooksPage = function(props) {
           );
         })
       )
-    ) : React.createElement(
-      "div",
-      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
-      React.createElement("div", { className: "text-3xl" }, "📚"),
-      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "المكتبة جاهزة لاستقبال الكتب والمراجع"),
-      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "اضغط على زر 'إضافة مرجع جديد' لرفع كتابك الأول بصيغة PDF وتجهيز فصوله.")
-    ),
+    );
+  })(),
 
     // نافذة إضافة مرجع جديد (مكون مستقل)
     React.createElement(window.AddBookModal, {
@@ -7376,6 +7540,8 @@ window.BooksPage = function(props) {
       setSelectedAudioFile: setSelectedAudioFile,
       newTrack1Url: newTrack1Url,
       setNewTrack1Url: setNewTrack1Url,
+      newIsPublished: newIsPublished,
+      setNewIsPublished: setNewIsPublished,
       onSubmit: handleAddBook
     }),
 
