@@ -1,4 +1,4 @@
-﻿// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
+// شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var utils = window.APP_UTILS;
@@ -48,6 +48,13 @@ window.BooksPage = function(props) {
   var pdfCanvasRef = React.useRef(null);
   var pdfViewerContainerRef = React.useRef(null);
   var pdfRenderTaskRef = React.useRef(null);
+
+  // وضع العرض المريح لصفحات الـ PDF (عادي normal, بيج مريح sepia, ليلي عاكس dark)
+  var [pdfTheme, setPdfTheme] = React.useState(function() {
+    return utils.getLocal("counsel_pdf_theme", "normal");
+  });
+  // التبويب النشط للشاشات الصغيرة في صفحة المرجع ("pdf" للقراءة أو "study" للفصول والاستماع)
+  var [mobileSectionTab, setMobileSectionTab] = React.useState("pdf");
 
   // التبويب النشط لمحتوى الكتاب الدراسي (تراك 1 الشامل أو ملخص الكتاب)
   var [bookStudyTab, setBookStudyTab] = React.useState("chapters");
@@ -1375,6 +1382,28 @@ window.BooksPage = function(props) {
         )
       ),
 
+      // تبويبات التنقل الخاصة بالموبايل (للتبديل السريع بين قارئ الـ PDF وقسم الفصول والاستماع بدون تمرير طويل)
+      React.createElement(
+        "div",
+        { className: "flex sm:hidden items-center justify-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner" },
+        React.createElement("button", {
+          type: "button",
+          onClick: function() { setMobileSectionTab("pdf"); },
+          className: "flex-1 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
+            (mobileSectionTab === "pdf"
+              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+              : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+        }, "📖 عرض صفحات الـ PDF"),
+        React.createElement("button", {
+          type: "button",
+          onClick: function() { setMobileSectionTab("study"); },
+          className: "flex-1 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
+            (mobileSectionTab === "study"
+              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm"
+              : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+        }, "🎧 الفصول والاستماع")
+      ),
+
       // عارض الـ PDF التفاعلي المدمج (Native PDF Reader) الداعم للقراءة بدون إنترنت ووضع ملء الشاشة والتدوير
       (activeBook.driveUrl || isSavedOffline) && React.createElement(
         "div",
@@ -1383,7 +1412,8 @@ window.BooksPage = function(props) {
           className: "w-full overflow-hidden bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md space-y-2 transition-all " +
             (isFullScreen
               ? "fixed inset-0 z-[9999] rounded-0 p-3 h-screen w-screen flex flex-col justify-between bg-slate-950"
-              : "rounded-2xl p-3")
+              : "rounded-2xl p-3 ") +
+            (!isFullScreen && mobileSectionTab !== "pdf" ? "hidden sm:block" : "block")
         },
         
         // شريط أدوات قارئ الكتاب وحالة الأوفلاين وأزرار ملء الشاشة والتدوير
@@ -1408,6 +1438,33 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center gap-2 mr-auto" },
+
+            // أزرار نمط القراءة المريح (عادي / حماية عين بيج Sepia / ليلي عاكس Dark)
+            React.createElement(
+              "div",
+              { className: "flex items-center bg-slate-800/90 rounded-xl p-0.5 border border-slate-700" },
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setPdfTheme("normal"); utils.setLocal("counsel_pdf_theme", "normal"); },
+                title: "وضع القراءة العادي (أبيض)",
+                className: "px-2 py-1 rounded-lg text-[11px] font-bold transition-all " +
+                  (pdfTheme === "normal" ? "bg-white text-slate-900 shadow-xs" : "text-slate-400 hover:text-white")
+              }, "☀️ عادي"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setPdfTheme("sepia"); utils.setLocal("counsel_pdf_theme", "sepia"); },
+                title: "وضع القراءة المريح للعين (بيج / Sepia)",
+                className: "px-2 py-1 rounded-lg text-[11px] font-bold transition-all " +
+                  (pdfTheme === "sepia" ? "bg-[#fbf0d9] text-[#5f4b32] shadow-xs font-black" : "text-amber-200/60 hover:text-amber-200")
+              }, "📜 بيج"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setPdfTheme("dark"); utils.setLocal("counsel_pdf_theme", "dark"); },
+                title: "وضع القراءة الليلي العاكس للألوان (Dark Invert)",
+                className: "px-2 py-1 rounded-lg text-[11px] font-bold transition-all " +
+                  (pdfTheme === "dark" ? "bg-slate-950 text-emerald-400 border border-emerald-500/30 shadow-xs font-black" : "text-slate-400 hover:text-white")
+              }, "🌙 ليلي")
+            ),
 
             // أزرار التنقل السريع بين الصفحات أثناء وضع ملء الشاشة
             isFullScreen && React.createElement(
@@ -1541,13 +1598,29 @@ window.BooksPage = function(props) {
           ),
           pdfDoc ? React.createElement("canvas", {
             ref: pdfCanvasRef,
-            className: "max-w-full shadow-2xl rounded-lg bg-white transition-transform duration-300"
+            className: "max-w-full shadow-2xl rounded-lg transition-transform duration-300 " +
+              (pdfTheme === "sepia" ? "bg-[#fbf0d9]" : pdfTheme === "dark" ? "bg-slate-950" : "bg-white"),
+            style: {
+              filter: pdfTheme === "sepia"
+                ? "sepia(0.4) contrast(0.95) brightness(0.95)"
+                : pdfTheme === "dark"
+                  ? "invert(0.9) hue-rotate(180deg) contrast(1.1)"
+                  : "none"
+            }
           }) : React.createElement(
             "iframe",
             {
               src: utils.getDrivePreviewUrl(activeBook.driveUrl),
               className: "w-full h-full min-h-[480px] border-0 rounded-lg transition-transform duration-300",
-              style: pdfRotation ? { transform: "rotate(" + pdfRotation + "deg)" } : {},
+              style: Object.assign(
+                {},
+                pdfRotation ? { transform: "rotate(" + pdfRotation + "deg)" } : {},
+                pdfTheme === "sepia"
+                  ? { filter: "sepia(0.4) contrast(0.95) brightness(0.95)" }
+                  : pdfTheme === "dark"
+                    ? { filter: "invert(0.9) hue-rotate(180deg) contrast(1.1)" }
+                    : {}
+              ),
               title: activeBook.title
             }
           )
@@ -1557,7 +1630,10 @@ window.BooksPage = function(props) {
       // قسم دراسة ومراجعة الكتاب (زرارين رئيسيين: تراك 1 والملخص)
       React.createElement(
         "div",
-        { className: "space-y-4 pt-3 border-t border-slate-200 dark:border-slate-800" },
+        {
+          className: "space-y-4 pt-3 border-t border-slate-200 dark:border-slate-800 transition-all " +
+            (mobileSectionTab === "pdf" ? "hidden sm:block" : "block")
+        },
 
         // شريط التبديل بين الزرارين الرئيسيين
         React.createElement(
