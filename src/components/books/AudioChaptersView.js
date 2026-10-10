@@ -21,6 +21,12 @@ window.AudioChaptersView = function(props) {
   var batchProgress = props.batchProgress;
   var singleExtractProgress = props.singleExtractProgress;
   var handleMoveChapter = props.handleMoveChapter;
+  var handleGenerateChapterAudio = props.handleGenerateChapterAudio;
+  var handleBatchGenerateAllAudio = props.handleBatchGenerateAllAudio;
+  var handleStopBatchAudio = props.handleStopBatchAudio;
+  var generatingAudioChapterId = props.generatingAudioChapterId;
+  var audioBatchProgress = props.audioBatchProgress;
+  var audioStatusText = props.audioStatusText;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -46,6 +52,7 @@ window.AudioChaptersView = function(props) {
     audio.addEventListener("pause", updatePlayState);
     audio.addEventListener("ratechange", updateSpeed);
 
+    setAudioHasError(false);
     return function() {
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("loadedmetadata", updateDuration);
@@ -53,7 +60,6 @@ window.AudioChaptersView = function(props) {
       audio.removeEventListener("pause", updatePlayState);
       audio.removeEventListener("ratechange", updateSpeed);
     };
-      setAudioHasError(false);
   }, [playingChapterId, chapterAudioRef]);
 
   var formatTime = function(sec) {
@@ -119,13 +125,32 @@ window.AudioChaptersView = function(props) {
             {
               type: "button",
               onClick: function() { handleBatchExtractAllChapters(); },
-              disabled: isAiAnalyzingBook || !!batchProgress,
+              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress,
               className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition-all"
             },
             btnLabel
           );
         })() : null,
-        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress ? React.createElement(
+        chaps.length > 0 && typeof handleBatchGenerateAllAudio === "function" ? (function() {
+          var textReadyCount = chaps.filter(function(c) { return c.text && c.text.trim(); }).length;
+          var missingAudioCount = chaps.filter(function(c) { return c.text && c.text.trim() && (!c.audioUrl || !c.audioUrl.trim()); }).length;
+          if (textReadyCount === 0) return null;
+          var audioBtnLabel = audioBatchProgress ? "⏳ جاري توليد الصوت..."
+            : (missingAudioCount > 0)
+              ? ("🎙️ توليد الصوت للفصول (" + missingAudioCount + " متبقية)")
+              : "🎙️ إعادة توليد صوت الفصول";
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleBatchGenerateAllAudio,
+              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress,
+              className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/25 active:scale-95 transition-all"
+            },
+            audioBtnLabel
+          );
+        })() : null,
+        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress && !audioBatchProgress ? React.createElement(
           "button",
           {
             type: "button",
@@ -139,13 +164,51 @@ window.AudioChaptersView = function(props) {
           {
             type: "button",
             onClick: handleOpenAddChapter,
-            disabled: !!batchProgress,
+            disabled: !!batchProgress || !!audioBatchProgress,
             className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition-all"
           },
           "➕ إضافة فصل يدوي"
         )
       ) : null
     ),
+
+    // لوحة شريط تقدم توليد الصوت الجماعي (Batch Audio Progress)
+    audioBatchProgress ? React.createElement(
+      "div",
+      { className: "p-4 rounded-2xl bg-gradient-to-r from-purple-950/90 to-slate-900 text-white border border-purple-500/40 shadow-xl space-y-3 animate-fade-in" },
+      React.createElement(
+        "div",
+        { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2" },
+        React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
+          React.createElement("span", { className: "text-lg animate-pulse" }, "🎙️"),
+          React.createElement("div", null,
+            React.createElement("h5", { className: "font-black text-xs sm:text-sm text-purple-300 truncate" },
+              "توليد الصوت: فصل (" + audioBatchProgress.currentIndex + " من " + audioBatchProgress.total + ") - " + audioBatchProgress.currentTitle
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-300" },
+              audioStatusText || "جاري المعالجة وإنشاء الملف الصوتي..."
+            )
+          )
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleStopBatchAudio,
+            className: "px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 self-start sm:self-auto"
+          },
+          "⏹️ إيقاف وحفظ ما تم"
+        )
+      ),
+      React.createElement(
+        "div",
+        { className: "w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700" },
+        React.createElement("div", {
+          className: "bg-gradient-to-r from-purple-500 to-indigo-400 h-full rounded-full transition-all duration-300",
+          style: { width: Math.max(5, audioBatchProgress.percent) + "%" }
+        })
+      )
+    ) : null,
 
     // لوحة شريط التقدم والوقت للاستخراج الجماعي (Batch Progress Dashboard)
     batchProgress ? React.createElement(
@@ -538,6 +601,26 @@ window.AudioChaptersView = function(props) {
             React.createElement("span", null, "📄"),
             React.createElement("span", null, "عرض ونسخ النص")
             ) : null,
+
+            // 2.5 زر توليد صوت الفصل
+            currentUser && currentUser.role === "admin" && chap.text && typeof handleGenerateChapterAudio === "function" ? (function() {
+              var isThisGenerating = (generatingAudioChapterId === chap.id);
+              return React.createElement("button", {
+                type: "button",
+                onClick: function() { handleGenerateChapterAudio(chap); },
+                disabled: isThisGenerating || !!audioBatchProgress,
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border " +
+                  (isThisGenerating
+                    ? "bg-purple-600 text-white border-purple-600 shadow-md animate-pulse"
+                    : chap.audioUrl
+                      ? "bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                      : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-transparent shadow-md shadow-purple-600/20 active:scale-95"),
+                title: chap.audioUrl ? "إعادة توليد صوت الفصل" : "توليد تسجيل صوتي للفصل"
+              },
+              React.createElement("span", null, isThisGenerating ? "⏳" : "🎙️"),
+              React.createElement("span", null, isThisGenerating ? (audioStatusText || "جاري التوليد...") : (chap.audioUrl ? "إعادة توليد الصوت" : "توليد الصوت"))
+              );
+            })() : null,
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
             chap.audioUrl ? React.createElement("button", {

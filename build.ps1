@@ -23,6 +23,7 @@ function Build-App {
         "services/geminiService.js",
         "services/notificationService.js",
         "services/errorReportService.js",
+        "services/edgeTtsService.js",
         "utils/helpers.js",
         "utils/embedHelpers.js",
         "components/Sidebar.js",

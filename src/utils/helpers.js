@@ -3,11 +3,20 @@ window.APP_UTILS = {
   // استخراج المعرف المباشر من رابط جوجل درايف
   extractDriveId: function(url) {
     if (!url) return "";
-    var match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    var str = String(url).trim();
+    var match = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (match && match[1]) return match[1];
-    match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    match = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (match && match[1]) return match[1];
-    return url.trim();
+    // إذا كان الرابط رابط ويب كامل وليس درايف (مثل Hugging Face, Firebase, أو رابط MP3 خارجي)، ليس درايف
+    if (str.indexOf("http://") === 0 || str.indexOf("https://") === 0 || str.indexOf("blob:") === 0 || str.indexOf("data:") === 0) {
+      return "";
+    }
+    // إذا كان معرف خام (Drive ID) بدون بروتوكول
+    if (str.length >= 15 && str.length <= 60 && !/\s/.test(str)) {
+      return str;
+    }
+    return "";
   },
 
   // تحويل رابط جوجل درايف إلى رابط تشغيل وتضمين مباشر

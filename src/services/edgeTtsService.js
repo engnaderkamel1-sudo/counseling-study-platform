@@ -1,4 +1,4 @@
-// خدمة توليد الصوت الطبيعي بالذكاء الاصطناعي (Edge-TTS Service - بصوت سلمى)
+// خدمة تحويل النص إلى صوت (Text-to-Speech Service)
 window.EdgeTtsService = {
   DEFAULT_VOICE: "ar-EG-SalmaNeural - ar-EG (Female)",
   API_ENDPOINT: "https://innoai-edge-tts-text-to-speech.hf.space/gradio_api/call/tts_interface",
@@ -13,7 +13,7 @@ window.EdgeTtsService = {
     }
 
     if (typeof onProgress === "function") {
-      onProgress("جاري إرسال النص لمحرك الصوت...");
+      onProgress("جاري معالجة النص...");
     }
 
     // 1. استدعاء نقطة النهاية (Gradio Call Endpoint)
@@ -45,10 +45,10 @@ window.EdgeTtsService = {
     }
 
     if (typeof onProgress === "function") {
-      onProgress("جاري توليد الصوت بصوت سلمى النقي...");
+      onProgress("جاري إنشاء الملف الصوتي...");
     }
 
-    // 2. الاستماع للنتيجة عبر مسار الحدث (SSE / Polling fallback)
+    // 2. الاستماع للنتيجة عبر مسار الحدث
     var sseUrl = self.API_ENDPOINT + "/" + eventId;
     var maxAttempts = 45; // أقصى مهلة 45 ثانية
     var audioUrl = null;
@@ -93,43 +93,5 @@ window.EdgeTtsService = {
     }
 
     return audioUrl;
-  },
-
-  // تقسيم النص الطويل لأجزاء منطقية إذا لزم الأمر
-  splitTextIntoChunks: function(text, maxChars) {
-    var limit = maxChars || 3000;
-    if (text.length <= limit) return [text];
-    var paragraphs = text.split(/\n+/);
-    var chunks = [];
-    var current = "";
-
-    for (var i = 0; i < paragraphs.length; i++) {
-      var p = paragraphs[i].trim();
-      if (!p) continue;
-      if ((current.length + p.length + 2) <= limit) {
-        current += (current ? "\n\n" : "") + p;
-      } else {
-        if (current) chunks.push(current);
-        if (p.length > limit) {
-          // تقسيم حسب علامات الترقيم والجمل
-          var sentences = p.split(/([.!?\n]+)/);
-          var subChunk = "";
-          for (var s = 0; s < sentences.length; s++) {
-            if ((subChunk.length + sentences[s].length) <= limit) {
-              subChunk += sentences[s];
-            } else {
-              if (subChunk) chunks.push(subChunk);
-              subChunk = sentences[s];
-            }
-          }
-          if (subChunk) current = subChunk;
-          else current = "";
-        } else {
-          current = p;
-        }
-      }
-    }
-    if (current) chunks.push(current);
-    return chunks;
   }
 };
