@@ -145,6 +145,11 @@ window.APP_UTILS = {
     if (!eP) eP = sP;
     var lastP = Number(c.lastExtractedPage);
     if (lastP && eP && lastP < eP) return false;
+    if (eP > sP) {
+      if (lastP && lastP >= eP) return true;
+      var totalPages = eP - sP + 1;
+      if (c.text.trim().length < totalPages * 120) return false;
+    }
     return true;
   },
 
