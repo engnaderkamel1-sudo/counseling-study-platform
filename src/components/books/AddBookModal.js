@@ -255,7 +255,13 @@ window.AddBookModal = function(props) {
                     accept: "image/*",
                     onChange: function(e) {
                       if (e.target.files && e.target.files[0]) {
-                        setSelectedCoverFile(e.target.files[0]);
+                        var file = e.target.files[0];
+                        if (utils && utils.compressImageFile) {
+                          utils.compressImageFile(file, 350, 500, 0.7).then(function(compressed) {
+                            if (compressed) setNewCoverUrl(compressed);
+                          });
+                        }
+                        setSelectedCoverFile(file);
                       }
                     },
                     className: "hidden"

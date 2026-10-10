@@ -153,6 +153,31 @@ window.BooksPage = function(props) {
     : currentUser;
   var isAdmin = effectiveUser && effectiveUser.role === "admin";
 
+  // نظام الإشعار والتنبيه الصريح للمزامنة السحابية (No Silent Failures)
+  var [cloudSyncError, setCloudSyncError] = React.useState(null);
+  var [cloudSyncStatus, setCloudSyncStatus] = React.useState("synced"); // "synced" | "saving" | "error"
+
+  var safeCloudSaveBook = async function(bookToSave, options) {
+    if (!bookToSave) return true;
+    setCloudSyncStatus("saving");
+    try {
+      await cloud.saveBook(bookToSave);
+      setCloudSyncStatus("synced");
+      setCloudSyncError(null);
+      return true;
+    } catch (err) {
+      console.error("Cloud save failed:", err);
+      setCloudSyncStatus("error");
+      var errorDetails = err && err.message ? err.message : String(err);
+      var msg = "تعذر الحفظ السحابي لكتاب «" + (bookToSave.title || "") + "»: " + errorDetails;
+      setCloudSyncError(msg);
+      if (!options || options.silent !== true) {
+        alert("⚠️ تنبيه هام للمسؤول:\nتعذر حفظ وتحديث الكتاب على السيرفر السحابي!\nالسبب: " + errorDetails + "\n\n(ملاحظة: كافة النصوص والبيانات محفوظة محلياً على جهازك بأمان 100%).");
+      }
+      return false;
+    }
+  };
+
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
       if (cloudList) {
@@ -191,9 +216,7 @@ window.BooksPage = function(props) {
             // إذا كان المتصفح المحلي يحتوي على نصوص أكثر من السحابة، نرفعها فوراً للسحابة لتحديث الموبايل!
             if (needCloudSync) {
               console.log("Auto-syncing locally completed chapters to cloud for book:", cb.id);
-              cloud.saveBook(updatedBook).catch(function(err) {
-                console.warn("Auto cloud sync notice:", err);
-              });
+              safeCloudSaveBook(updatedBook, { silent: true });
             }
             return updatedBook;
           }
@@ -207,7 +230,7 @@ window.BooksPage = function(props) {
           if (!inCloud) {
             mergedList.push(lb);
             console.log("Auto-uploading missing local book to cloud:", lb.id);
-            cloud.saveBook(lb).catch(function(err) { console.warn("Error auto-uploading local book:", err); });
+            safeCloudSaveBook(lb, { silent: true });
           }
         });
 
@@ -631,7 +654,7 @@ window.BooksPage = function(props) {
     if (!activeBook) return;
     var finalCover = utils.getDriveImageUrl(coverUrlToSave);
     var updated = Object.assign({}, activeBook, { coverUrl: finalCover });
-    cloud.saveBook(updated);
+    safeCloudSaveBook(updated);
     setActiveBook(updated);
     setShowCoverEditModal(false);
   };
@@ -737,7 +760,7 @@ window.BooksPage = function(props) {
     currentBookmarks.sort(function(a, b) { return (a.time || 0) - (b.time || 0); });
 
     var updatedBook = Object.assign({}, activeBook, { bookmarks: currentBookmarks });
-    cloud.saveBook(updatedBook);
+    safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     setShowBookmarkModal(false);
   };
@@ -747,7 +770,7 @@ window.BooksPage = function(props) {
     var currentBookmarks = (activeBook.bookmarks || []).slice();
     currentBookmarks.splice(idx, 1);
     var updatedBook = Object.assign({}, activeBook, { bookmarks: currentBookmarks });
-    cloud.saveBook(updatedBook);
+    safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
   };
 
@@ -755,7 +778,7 @@ window.BooksPage = function(props) {
     if (!activeBook) return;
     var finalUrl = (editTrackUrl || "").trim();
     var updatedBook = Object.assign({}, activeBook, { audioUrl: finalUrl });
-    cloud.saveBook(updatedBook);
+    safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     setShowTrackModal(false);
   };
@@ -763,7 +786,7 @@ window.BooksPage = function(props) {
   var handleSaveSummary = function() {
     if (!activeBook) return;
     var updatedBook = Object.assign({}, activeBook, { summaryText: editSummaryContent });
-    cloud.saveBook(updatedBook);
+    safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     setShowSummaryModal(false);
   };
@@ -796,7 +819,7 @@ window.BooksPage = function(props) {
     if (!activeBook || !window.confirm("هل أنت متأكد من رغبتك في حذف هذا الفصل الصوتي؟")) return;
     var currentChaps = (activeBook.audioChapters || []).filter(function(c) { return c.id !== chapId; });
     var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     if (playingChapterId === chapId) {
       if (chapterAudioRef.current) chapterAudioRef.current.pause();
@@ -816,7 +839,7 @@ window.BooksPage = function(props) {
     currentChaps[targetIdx] = temp;
 
     var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
   };
 
@@ -949,7 +972,7 @@ window.BooksPage = function(props) {
       };
     });
     var updatedBook = Object.assign({}, activeBook, { audioChapters: formattedChaps });
-    cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -975,7 +998,7 @@ window.BooksPage = function(props) {
       publishStatus: newStatus,
       isPublished: isPub
     });
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1026,7 +1049,7 @@ window.BooksPage = function(props) {
       publishStatus: anyPublished ? "published" : "draft"
     });
 
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1048,7 +1071,7 @@ window.BooksPage = function(props) {
     chaps[idx] = chap;
     var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
 
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1087,7 +1110,7 @@ window.BooksPage = function(props) {
       publishStatus: "published"
     });
 
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1104,7 +1127,7 @@ window.BooksPage = function(props) {
     if (!activeBook) return;
     if (!window.confirm("هل أنت متأكد من مسح جميع فصول هذا الكتاب وإعادة الفحص من البداية؟")) return;
     var updatedBook = Object.assign({}, activeBook, { audioChapters: [] });
-    await cloud.saveBook(updatedBook);
+    await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     if (chapterAudioRef.current) chapterAudioRef.current.pause();
     setPlayingChapterId(null);
@@ -1349,7 +1372,7 @@ window.BooksPage = function(props) {
             utils.setLocal("counsel_book_data_" + updatedBookMid.id, updatedBookMid);
             setActiveBook(updatedBookMid);
             setBooks(allBooksMid);
-            cloud.saveBook(updatedBookMid).catch(function(e) { console.warn("Per-page cloud sync notice:", e); });
+            safeCloudSaveBook(updatedBookMid, { silent: true });
           }
         }
       }
@@ -1367,7 +1390,7 @@ window.BooksPage = function(props) {
             excludePages: excludeStr
           });
           var updatedBook2 = Object.assign({}, activeBook, { audioChapters: currentChaps });
-          await cloud.saveBook(updatedBook2);
+          await safeCloudSaveBook(updatedBook2);
           setActiveBook(updatedBook2);
           setViewingChapterText(currentChaps[chapIdx]);
           alert("✨ تم استخراج النص بنجاح وتصفيته من أرقام الصفحات والترويسات! (" + accumulated.length + " حرف).\nتم فتح النص لتتمكن من نسخه الآن.");
@@ -1690,21 +1713,15 @@ window.BooksPage = function(props) {
         // مزامنة سحابية دورية ذكية (كل 6 صفحات أو عند اكتمال الفصل) لمنع ثقل الشبكة والكوتا
         if (isThisChapComplete || pagesSinceLastCloudSave >= 6) {
           pagesSinceLastCloudSave = 0;
-          cloud.saveBook(latestBookData).catch(function(err) {
-            console.warn("Batch page cloud sync notice:", err);
-          });
+          safeCloudSaveBook(latestBookData, { silent: true });
         }
 
         p = lastProcessedPage + 1;
       }
 
-      // حفظ الفصل المنجز سحابياً وتأكيده عند الاكتمال أو التوقف
+      // حفظ الفصل المنجز سحابياً وتأكيده عند الاكتمال أو التوقف مع تنبيه فوري لو تعثر
       if (accumulated.trim()) {
-        try {
-          await cloud.saveBook(latestBookData);
-        } catch (saveErr) {
-          console.warn("Cloud save error after chapter:", saveErr);
-        }
+        await safeCloudSaveBook(latestBookData, { silent: false });
       }
     }
 
@@ -1763,7 +1780,7 @@ window.BooksPage = function(props) {
         var allB = utils.getLocal(cfg.storageKeys.books, []) || [];
         var bIdx = allB.findIndex(function(b) { return b.id === latestBook.id; });
         if (bIdx >= 0) { allB[bIdx] = latestBook; utils.setLocal(cfg.storageKeys.books, allB); }
-        await cloud.saveBook(latestBook);
+        await safeCloudSaveBook(latestBook);
       }
 
       alert("🎉 تم توليد صوت «" + chap.title + "» بنجاح! يمكنك الاستماع إليه الآن في المشغل.");
@@ -1831,7 +1848,7 @@ window.BooksPage = function(props) {
             var allBooksList = utils.getLocal(cfg.storageKeys.books, []) || [];
             var bkIdx = allBooksList.findIndex(function(b) { return b.id === workingBook.id; });
             if (bkIdx >= 0) { allBooksList[bkIdx] = workingBook; utils.setLocal(cfg.storageKeys.books, allBooksList); }
-            await cloud.saveBook(workingBook);
+            await safeCloudSaveBook(workingBook);
           }
         }
       } catch (genErr) {
@@ -1947,7 +1964,7 @@ window.BooksPage = function(props) {
       utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
       setBooks(allBooks);
 
-      await cloud.saveBook(updatedBook);
+      await safeCloudSaveBook(updatedBook);
 
       setIsSavingChapter(false);
       setShowChapterModal(false);
@@ -2130,7 +2147,7 @@ window.BooksPage = function(props) {
   var processSelectedFile = function(file) {
     if (!file) return;
     setSelectedFile(file);
-    // استخراج صورة الصفحة الأولى للمعاينة فوراً بدون كتابة اسم الملف الخام كاسم للكتاب
+    // استخراج صورة الصفحة الأولى للمعاينة بدقة محسوبة وبحجم خفيف جداً (أقل من 20KB) لمنع أي تضخم مستقبلاً
     if (window.pdfjsLib) {
       file.arrayBuffer().then(function(buf) {
         return window.pdfjsLib.getDocument({ data: buf }).promise;
@@ -2138,13 +2155,16 @@ window.BooksPage = function(props) {
         setNewTotalPages(doc.numPages || 1);
         return doc.getPage(1);
       }).then(function(page) {
-        var vp = page.getViewport({ scale: 0.8 });
+        var unscaledVp = page.getViewport({ scale: 1 });
+        var targetWidth = 350;
+        var scale = Math.min(1, targetWidth / (unscaledVp.width || 600));
+        var vp = page.getViewport({ scale: scale });
         var canvas = document.createElement("canvas");
         canvas.width = vp.width;
         canvas.height = vp.height;
         var ctx = canvas.getContext("2d");
         return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
-          setNewCoverUrl(canvas.toDataURL("image/jpeg", 0.8));
+          setNewCoverUrl(canvas.toDataURL("image/jpeg", 0.7));
         });
       }).catch(function() {});
     }
@@ -2211,11 +2231,7 @@ window.BooksPage = function(props) {
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     setActiveBook(updatedBook);
     setBooks(allBooks);
-    try {
-      await cloud.saveBook(updatedBook);
-    } catch (saveErr) {
-      console.warn("Save publish status error:", saveErr);
-    }
+    await safeCloudSaveBook(updatedBook, { silent: false });
 
     if (nextPub) {
       alert("🎉 تم نشر الكتاب بنجاح!\nأصبح متاحاً ومرئياً الآن لجميع الطلاب والدارسين في المكتبة.");
@@ -2304,7 +2320,7 @@ window.BooksPage = function(props) {
       newB.audioChapters = (detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : [];
     }
 
-    cloud.saveBook(newB);
+    await safeCloudSaveBook(newB, { silent: false });
     setActiveBook(newB);
     if (selectedFile) {
       try {
@@ -2342,6 +2358,7 @@ window.BooksPage = function(props) {
   var [isForcingSync, setIsForcingSync] = React.useState(false);
   var handleForceCloudSync = async function() {
     setIsForcingSync(true);
+    setCloudSyncError(null);
     try {
       var all = utils.getLocal(cfg.storageKeys.books, []) || [];
       if (all.length === 0) {
@@ -2350,14 +2367,23 @@ window.BooksPage = function(props) {
         return;
       }
       var syncedCount = 0;
+      var failedBooks = [];
       for (var i = 0; i < all.length; i++) {
         var b = all[i];
         var cached = utils.getLocal("counsel_book_data_" + b.id);
         var toSave = cached ? Object.assign({}, b, cached) : b;
-        await cloud.saveBook(toSave);
-        syncedCount++;
+        var ok = await safeCloudSaveBook(toSave, { silent: true });
+        if (ok) {
+          syncedCount++;
+        } else {
+          failedBooks.push(toSave.title || b.id);
+        }
       }
-      alert("🎉 تم تأكيد ومزامنة " + syncedCount + " مرجع وكافة فصولهم مع السحابة بنجاح!\nالكتاب متاح الآن لجميع الأجهزة والموبايل.");
+      if (failedBooks.length > 0) {
+        alert("⚠️ تنبيه: تم مزامنة " + syncedCount + " مرجع، ولكن تعذر مزامنة (" + failedBooks.join("، ") + ") مع السحابة!\nراجع تفاصيل الخطأ في الشريط التحذيري بالأعلى.");
+      } else {
+        alert("🎉 تم تأكيد ومزامنة " + syncedCount + " مرجع وكافة فصولهم مع السحابة بنجاح!\nالكتاب متاح الآن لجميع الأجهزة والموبايل.");
+      }
     } catch (err) {
       alert("تنبيه أثناء المزامنة: " + (err.message || err));
     } finally {
@@ -2423,6 +2449,33 @@ window.BooksPage = function(props) {
           React.createElement("span", null, "📕"),
           React.createElement("span", null, "رفع كتاب جديد (PDF)")
         )
+      )
+    ),
+
+    // شريط تحذير في حال وجود خطأ في المزامنة السحابية (No Silent Failures)
+    cloudSyncError && React.createElement(
+      "div",
+      { className: "p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border-2 border-rose-500 text-rose-900 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-md animate-fade-in" },
+      React.createElement("div", { className: "flex items-start sm:items-center gap-2.5" },
+        React.createElement("span", { className: "text-xl shrink-0" }, "⚠️"),
+        React.createElement("div", null,
+          React.createElement("div", { className: "font-black text-rose-700 dark:text-rose-300 text-sm" }, "تنبيه: فشلت المزامنة مع السحابة"),
+          React.createElement("div", { className: "text-[11px] text-rose-600 dark:text-rose-400 font-normal mt-0.5" }, cloudSyncError),
+          React.createElement("div", { className: "text-[10px] text-rose-500 font-semibold mt-1" }, "💡 بياناتك محفوظة بالكامل محلياً على جهازك ولن تفقد أي نص. اضغط زر إعادة المحاولة لمزامنتها مع الموبايل.")
+        )
+      ),
+      React.createElement("div", { className: "flex items-center gap-2 shrink-0 self-end sm:self-auto" },
+        React.createElement("button", {
+          type: "button",
+          onClick: handleForceCloudSync,
+          disabled: isForcingSync,
+          className: "px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50"
+        }, isForcingSync ? "جاري المحاولة..." : "🔄 إعادة المحاولة الآن"),
+        React.createElement("button", {
+          type: "button",
+          onClick: function() { setCloudSyncError(null); },
+          className: "px-2.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all"
+        }, "إغلاق ✕")
       )
     ),
 
