@@ -1077,27 +1077,34 @@ window.BooksPage = function(props) {
           percent: chapPct
         });
         setExtractStatusText("جاري قراءة صفحة " + pageNum + " (" + (pi + 1) + " من " + pagesToExtract.length + ")...");
-        try {
-          var pageObj = await pdfDoc.getPage(pageNum);
-          var vp = pageObj.getViewport({ scale: 1.4 });
-          var c = document.createElement("canvas");
-          c.width = vp.width;
-          c.height = vp.height;
-          var cx = c.getContext("2d");
-          await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-          var b64 = c.toDataURL("image/jpeg", 0.8).split("base64,")[1];
+        // فحص الكاش المحلي المسبق لتوفير الكوتا والوقت
+        var cachedSinglePage = utils.getCachedPageText(activeBook.id, pageNum);
+        if (cachedSinglePage && cachedSinglePage.trim()) {
+          accumulated += (accumulated ? "\n\n" : "") + cachedSinglePage.trim();
+        } else {
+          try {
+            var pageObj = await pdfDoc.getPage(pageNum);
+            var vp = pageObj.getViewport({ scale: 1.4 });
+            var c = document.createElement("canvas");
+            c.width = vp.width;
+            c.height = vp.height;
+            var cx = c.getContext("2d");
+            await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
+            var b64 = c.toDataURL("image/jpeg", 0.8).split("base64,")[1];
 
-          var pageText = await extractTextFromPageBase64(b64, key, pageNum);
-          if (pageText && pageText !== "[صفحة_غير_نصية]") {
-            if (cleanHeadersFooters) {
-              pageText = cleanTextRegex(pageText);
+            var pageText = await extractTextFromPageBase64(b64, key, pageNum);
+            if (pageText && pageText !== "[صفحة_غير_نصية]") {
+              if (cleanHeadersFooters) {
+                pageText = cleanTextRegex(pageText);
+              }
+              if (pageText) {
+                utils.setCachedPageText(activeBook.id, pageNum, pageText);
+                accumulated += (accumulated ? "\n\n" : "") + pageText;
+              }
             }
-            if (pageText) {
-              accumulated += (accumulated ? "\n\n" : "") + pageText;
-            }
+          } catch (pageErr) {
+            console.warn("OCR error on page " + pageNum, pageErr);
           }
-        } catch (pageErr) {
-          console.warn("OCR error on page " + pageNum, pageErr);
         }
 
         // حفظ محلي وسحابي فوري بعد كل صفحة لضمان عدم ضياع أي صفحة عند الإغلاق ومزامنة الموبايل لحظياً
@@ -1308,9 +1315,14 @@ window.BooksPage = function(props) {
           chapterRemainingPages: Math.max(0, ePage - p + 1)
         });
 
-        // استخراج نصوص صفحات الدفعة بالتوازي (4 صفحات متزامنة)
+        // استخراج نصوص صفحات الدفعة بالتوازي (4 صفحات متزامنة مع فحص الكاش الفوري)
         var chunkResults = await Promise.all(batchChunk.map(async function(targetP) {
           if (batchCancelledRef.current) return { page: targetP, text: "" };
+          // 1. فحص الكاش المحلي المسبق لتوفير الكوتا والوقت
+          var cachedPage = utils.getCachedPageText(latestBookData.id, targetP);
+          if (cachedPage && cachedPage.trim()) {
+            return { page: targetP, text: cachedPage.trim() };
+          }
           try {
             var pageObj = await pdfDoc.getPage(targetP);
             var vp = pageObj.getViewport({ scale: 1.4 });
@@ -1324,6 +1336,10 @@ window.BooksPage = function(props) {
             var pageText = await extractTextFromPageBase64(b64, key, targetP, batchCancelledRef);
             if (pageText && pageText !== "[صفحة_غير_نصية]") {
               pageText = cleanTextRegex(pageText);
+              if (pageText) {
+                // حفظ الصفحة فورياً في الكاش
+                utils.setCachedPageText(latestBookData.id, targetP, pageText);
+              }
               return { page: targetP, text: pageText || "" };
             }
           } catch (pageErr) {

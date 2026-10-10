@@ -132,5 +132,24 @@ window.APP_UTILS = {
     var lastP = Number(c.lastExtractedPage);
     if (lastP && eP && lastP < eP) return false;
     return true;
+  },
+
+  // كاش النصوص المستخرجة لكل صفحة لتوفير الـ Quota وتسريع الاستئناف الفوري
+  getCachedPageText: function(bookId, pageNum) {
+    if (!bookId || !pageNum) return null;
+    try {
+      var key = "counsel_ocr_p_" + bookId + "_" + pageNum;
+      var cached = localStorage.getItem(key);
+      if (cached && cached.trim()) return cached;
+    } catch (e) {}
+    return null;
+  },
+
+  setCachedPageText: function(bookId, pageNum, text) {
+    if (!bookId || !pageNum || !text) return;
+    try {
+      var key = "counsel_ocr_p_" + bookId + "_" + pageNum;
+      localStorage.setItem(key, text);
+    } catch (e) {}
   }
 };
