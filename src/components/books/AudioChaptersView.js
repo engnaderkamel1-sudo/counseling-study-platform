@@ -32,6 +32,9 @@ window.AudioChaptersView = function(props) {
   var setIsPlaylistModeProp = props.setIsPlaylistMode;
   var onOpenQualityAudit = props.onOpenQualityAudit;
   var handlePublishToggle = props.handlePublishToggle;
+  var handleToggleChapterPublish = props.handleToggleChapterPublish;
+  var handleToggleChapterOverride = props.handleToggleChapterOverride;
+  var handlePublishReadyChapters = props.handlePublishReadyChapters;
 
   var utils = window.APP_UTILS || {};
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -50,6 +53,15 @@ window.AudioChaptersView = function(props) {
     return (utils.auditBookQuality && activeBook) ? utils.auditBookQuality(activeBook) : null;
   }, [activeBook, chaps]);
   var isPublished = !!(activeBook && (activeBook.publishStatus === "published" || activeBook.isPublished === true));
+  var isAdmin = currentUser && currentUser.role === "admin";
+
+  // الفصول المعروضة: للأدمن تظهر كافة الفصول، وللطالب تظهر الفصول المنشورة فقط
+  var visibleChaps = React.useMemo(function() {
+    if (isAdmin) return chaps;
+    return chaps.filter(function(c) {
+      return (c.isPublished === true) || (isPublished && c.isPublished !== false);
+    });
+  }, [chaps, isAdmin, isPublished]);
 
   // خريطة مدد الفصول الصوتية بالثواني مع تخزين محلي سريع
   var [durationsMap, setDurationsMap] = React.useState(function() {
@@ -59,8 +71,8 @@ window.AudioChaptersView = function(props) {
 
   // قائمة الفصول التي تحتوي على تسجيلات صوتية جاهزة
   var audioChaptersList = React.useMemo(function() {
-    return chaps.filter(function(c) { return c.audioUrl && c.audioUrl.trim(); });
-  }, [chaps]);
+    return visibleChaps.filter(function(c) { return c.audioUrl && c.audioUrl.trim(); });
+  }, [visibleChaps]);
 
   // استكشاف مدد ملفات الصوت تلقائياً في الخلفية لحساب وقت التراكات والـ Playlist
   React.useEffect(function() {
@@ -396,20 +408,33 @@ window.AudioChaptersView = function(props) {
             className: "flex-1 md:flex-initial px-3.5 py-2 rounded-xl text-xs font-black bg-rose-600/80 hover:bg-rose-600 text-white border border-rose-500/40 active:scale-95 transition-all flex items-center justify-center gap-1.5"
           },
           "🔒 إلغاء النشر مؤقتاً"
+        ) : audit.isPublishable ? React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { handlePublishToggle && handlePublishToggle("published"); },
+            className: "flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          },
+          "🚀 اعتماد ونشر الكتاب كاملاً"
+        ) : (audit.readyCount > 0 ? React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handlePublishReadyChapters,
+            className: "flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 shadow-md shadow-teal-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+            title: "نشر الفصول الجاهزة والمعتمدة فقط حالياً للدارسين وإبقاء الباقي مسودة"
+          },
+          "🚀 نشر الفصول الجاهزة (" + audit.readyCount + " من " + audit.totalChapters + ")"
         ) : React.createElement(
           "button",
           {
             type: "button",
-            disabled: !audit.isPublishable,
-            onClick: function() { handlePublishToggle && handlePublishToggle("published"); },
-            className: "flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 " +
-              (audit.isPublishable
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
-                : "bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-70"),
-            title: audit.isPublishable ? "اعتماد ونشر الكتاب للطلبة" : "لا يمكن النشر حتى تكتمل جميع الفصول بالصوت والنص 100%"
+            disabled: true,
+            className: "flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-black bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-70 transition-all flex items-center justify-center gap-1.5",
+            title: "لا توجد فصول جاهزة أو معتمدة للنشر بعد"
           },
-          audit.isPublishable ? "🚀 اعتماد ونشر للدارسين" : "🔒 غير مؤهل للنشر"
-        )
+          "🔒 غير مؤهل للنشر"
+        ))
       )
     ) : null,
 
@@ -751,15 +776,19 @@ window.AudioChaptersView = function(props) {
     })(),
 
     // قائمة الفصول
-    chaps.length === 0 ? React.createElement(
+    visibleChaps.length === 0 ? React.createElement(
       "div",
       { className: "text-center py-10 px-4 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
       React.createElement("span", { className: "text-4xl block" }, "📁"),
-      React.createElement("h5", { className: "font-bold text-slate-700 dark:text-slate-200 text-sm" }, "لم يتم إضافة فصول صوتية لهذا الكتاب حتى الآن"),
-      React.createElement("p", { className: "text-xs text-slate-500 max-w-md mx-auto" },
-        "يمكن للمسؤول استخراج نص المقدمة أو أي فصل عبر الأداة، وتحويله لصوت ثم رفعه هنا ليظهر للدارسين كقائمة متسلسلة."
+      React.createElement("h5", { className: "font-bold text-slate-700 dark:text-slate-200 text-sm" },
+        isAdmin ? "لم يتم إضافة فصول لهذا الكتاب حتى الآن" : "فصول هذا الكتاب قيد الإعداد والمراجعة حالياً"
       ),
-      currentUser && currentUser.role === "admin" ? React.createElement(
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-md mx-auto" },
+        isAdmin
+          ? "يمكن للمسؤول استخراج نص المقدمة أو أي فصل عبر الأداة، وتحويله لصوت ثم رفعه هنا ليظهر للدارسين كقائمة متسلسلة."
+          : "ستكون الفصول الصوتية والنصوص المعتمدة متاحة هنا للدارسين فور نشرها من قبل المشرف ⏳"
+      ),
+      isAdmin ? React.createElement(
         "button",
         {
           type: "button",
@@ -771,7 +800,7 @@ window.AudioChaptersView = function(props) {
     ) : React.createElement(
       "div",
       { className: "space-y-3" },
-      chaps.map(function(chap, idx) {
+      visibleChaps.map(function(chap, idx) {
         var isThisPlaying = playingChapterId === chap.id;
         var isExtractingThis = extractingChapterId === chap.id;
 
@@ -883,7 +912,19 @@ window.AudioChaptersView = function(props) {
                       className: "text-blue-600 dark:text-blue-400 font-medium text-[11px] flex items-center gap-1"
                     }, "📖 نص مفرغ متاح للقراءة ✓") : null;
                   }
-                })()
+                })(),
+                // شارة حالة نشر هذا الفصل للأدمن
+                currentUser && currentUser.role === "admin" ? React.createElement("span", {
+                  className: "text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 " +
+                    (chap.isPublished === true
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700")
+                },
+                  chap.isPublished === true ? "🟢 متاح للدارسين" : "🔒 مسودة (مخفي)"
+                ) : null,
+                currentUser && currentUser.role === "admin" && chap.adminOverride ? React.createElement("span", {
+                  className: "text-[11px] font-black px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 flex items-center gap-1"
+                }, "🛡️ معتمد يدوياً (Override)") : null
               ),
 
               // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية
@@ -927,6 +968,36 @@ window.AudioChaptersView = function(props) {
           React.createElement(
             "div",
             { className: "flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0" },
+
+            // أزرار النشر الفردي والاعتماد اليدوي للأدمن (Override & Progressive Publishing)
+            currentUser && currentUser.role === "admin" ? React.createElement("button", {
+              type: "button",
+              onClick: function() {
+                handleToggleChapterPublish && handleToggleChapterPublish(chap.id, !chap.isPublished);
+              },
+              className: "px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border shadow-xs " +
+                (chap.isPublished
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black border-emerald-400"
+                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700"),
+              title: chap.isPublished ? "إخفاء الفصل عن الدارسين وإرجاعه لمسودة" : "إتاحة ونشر هذا الفصل للدارسين"
+            },
+              React.createElement("span", null, chap.isPublished ? "🚀 متاح للطلبة" : "🔒 إتاحة للطلبة")
+            ) : null,
+
+            currentUser && currentUser.role === "admin" ? React.createElement("button", {
+              type: "button",
+              onClick: function() {
+                handleToggleChapterOverride && handleToggleChapterOverride(chap.id);
+              },
+              className: "px-2 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border " +
+                (chap.adminOverride
+                  ? "bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border-indigo-400"
+                  : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"),
+              title: chap.adminOverride ? "إلغاء الاعتماد اليدوي للأدمن" : "اعتماد وتجاوز يدوي للأدمن لهذا الفصل (Override)"
+            },
+              React.createElement("span", null, "🛡️"),
+              React.createElement("span", null, chap.adminOverride ? "معتمد يدوياً" : "تجاوز يدوي")
+            ) : null,
 
             // 1. زر استخراج أو استئناف النص بالذكاء الاصطناعي للأدمن
             currentUser && currentUser.role === "admin" && (function() {

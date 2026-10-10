@@ -202,10 +202,14 @@ window.APP_UTILS = {
     var totalChapters = chaps.length;
     var completedCount = 0;
     var audioReadyCount = 0;
+    var readyCount = 0;
+    var publishedCount = 0;
+    var overrideCount = 0;
     var chaptersAudit = [];
     var globalIssues = [];
     var totalPagesInBook = 0;
     var totalExtractedPages = 0;
+    var bookIsPublished = !!(book.publishStatus === "published" || book.isPublished === true);
 
     for (var i = 0; i < chaps.length; i++) {
       var c = chaps[i];
@@ -231,17 +235,28 @@ window.APP_UTILS = {
       var isComplete = (pagesDone >= totalPages) && (textLen > 100);
       if (isComplete) completedCount++;
 
-      var chapIssues = [];
-      if (pagesDone === 0) {
-        chapIssues.push("لم يتم استخراج نصوص هذا الفصل نهائياً");
-      } else if (pagesDone < totalPages) {
-        chapIssues.push("مستخرج جزئياً فقط (" + pagesDone + " من " + totalPages + " صفحة - متبقي " + (totalPages - pagesDone) + " صفحة)");
-      } else if (!isDenseEnough && totalPages > 1) {
-        chapIssues.push("حجم النص قليل جداً مقارنة بعدد صفحات الفصل (" + textLen + " حرف لـ " + totalPages + " صفحة)");
-      }
+      var adminOverride = !!c.adminOverride;
+      if (adminOverride) overrideCount++;
 
-      if (!hasAudio) {
-        chapIssues.push("لا يوجد تسجيل صوتي (MP3) لهذا الفصل بعد");
+      var isReady = (isComplete && hasAudio) || adminOverride;
+      if (isReady) readyCount++;
+
+      var isChapPublished = (c.isPublished === true) || (bookIsPublished && c.isPublished !== false);
+      if (isChapPublished) publishedCount++;
+
+      var chapIssues = [];
+      if (!adminOverride) {
+        if (pagesDone === 0) {
+          chapIssues.push("لم يتم استخراج نصوص هذا الفصل نهائياً");
+        } else if (pagesDone < totalPages) {
+          chapIssues.push("مستخرج جزئياً فقط (" + pagesDone + " من " + totalPages + " صفحة - متبقي " + (totalPages - pagesDone) + " صفحة)");
+        } else if (!isDenseEnough && totalPages > 1) {
+          chapIssues.push("حجم النص قليل جداً مقارنة بعدد صفحات الفصل (" + textLen + " حرف لـ " + totalPages + " صفحة)");
+        }
+
+        if (!hasAudio) {
+          chapIssues.push("لا يوجد تسجيل صوتي (MP3) لهذا الفصل بعد");
+        }
       }
 
       chaptersAudit.push({
@@ -257,6 +272,9 @@ window.APP_UTILS = {
         hasAudio: hasAudio,
         audioDuration: c.audioDuration || 0,
         isComplete: isComplete,
+        adminOverride: adminOverride,
+        isReady: isReady,
+        isPublished: isChapPublished,
         issues: chapIssues
       });
     }
@@ -268,14 +286,19 @@ window.APP_UTILS = {
       globalIssues.push("يوجد " + (totalChapters - audioReadyCount) + " فصول ينقصها التسجيل الصوتي.");
     }
 
-    var isPublishable = (completedCount === totalChapters) && (audioReadyCount === totalChapters) && (totalChapters > 0);
+    var isPublishable = (readyCount === totalChapters) && (totalChapters > 0);
+    var isPartiallyPublishable = (readyCount > 0);
     var overallPercent = Math.round((totalExtractedPages / Math.max(1, totalPagesInBook)) * 100);
 
     return {
       isPublishable: isPublishable,
+      isPartiallyPublishable: isPartiallyPublishable,
       totalChapters: totalChapters,
       completedCount: completedCount,
       audioReadyCount: audioReadyCount,
+      readyCount: readyCount,
+      publishedCount: publishedCount,
+      overrideCount: overrideCount,
       totalPagesInBook: totalPagesInBook,
       totalExtractedPages: totalExtractedPages,
       overallPercent: overallPercent,

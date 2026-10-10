@@ -943,6 +943,113 @@ window.BooksPage = function(props) {
     }
   };
 
+  // تفعيل أو إلغاء نشر فصل محدد للدارسين
+  var handleToggleChapterPublish = async function(chapterId, shouldPublish) {
+    if (!activeBook || !chapterId) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapterId; });
+    if (idx === -1) return;
+
+    var chap = Object.assign({}, chaps[idx]);
+    if (shouldPublish) {
+      var sP = Number(chap.startPage) || 1;
+      var nextC = chaps[idx + 1];
+      var eP = Number(chap.endPage) || (nextC && nextC.startPage ? (Number(nextC.startPage) - 1) : sP);
+      var totalPages = Math.max(1, eP - sP + 1);
+      var lastP = Number(chap.lastExtractedPage) || (chap.isComplete ? eP : 0);
+      var pagesDone = chap.isComplete ? totalPages : (lastP >= sP ? Math.min(totalPages, lastP - sP + 1) : 0);
+      var hasAudio = !!(chap.audioUrl && chap.audioUrl.trim());
+      var isReady = (pagesDone >= totalPages && (chap.text || "").trim().length > 100 && hasAudio) || !!chap.adminOverride;
+
+      if (!isReady) {
+        var proceed = window.confirm("⚠️ تنبيه: هذا الفصل غير مكتمل كلياً بعد!\nهل ترغب في اعتماده يدوياً ونشره للدارسين كـ Override؟");
+        if (!proceed) return;
+        chap.adminOverride = true;
+      }
+    }
+
+    chap.isPublished = shouldPublish;
+    chaps[idx] = chap;
+    var anyPublished = chaps.some(function(c) { return c.isPublished === true; });
+    var updatedBook = Object.assign({}, activeBook, {
+      audioChapters: chaps,
+      isPublished: anyPublished,
+      publishStatus: anyPublished ? "published" : "draft"
+    });
+
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+  };
+
+  // تبديل حالة الاستثناء والاعتماد اليدوي للأدمن لفصل معين (Admin Override)
+  var handleToggleChapterOverride = async function(chapterId) {
+    if (!activeBook || !chapterId) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapterId; });
+    if (idx === -1) return;
+
+    var chap = Object.assign({}, chaps[idx]);
+    chap.adminOverride = !chap.adminOverride;
+    chaps[idx] = chap;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
+
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+  };
+
+  // نشر جميع الفصول الجاهزة والمعتمدة دفعة واحدة وترك الباقي مسودة
+  var handlePublishReadyChapters = async function() {
+    if (!activeBook) return;
+    var audit = utils.auditBookQuality ? utils.auditBookQuality(activeBook) : null;
+    if (!audit || audit.readyCount === 0) {
+      alert("⚠️ لا توجد فصول جاهزة أو معتمدة للنشر حالياً!");
+      return;
+    }
+
+    var auditMap = {};
+    (audit.chaptersAudit || []).forEach(function(ca) { auditMap[ca.id] = ca; });
+
+    var chaps = (activeBook.audioChapters || []).slice();
+    var publishedCount = 0;
+    var newChaps = chaps.map(function(c) {
+      var ca = auditMap[c.id];
+      if (ca && ca.isReady) {
+        publishedCount++;
+        return Object.assign({}, c, { isPublished: true });
+      }
+      return c;
+    });
+
+    var updatedBook = Object.assign({}, activeBook, {
+      audioChapters: newChaps,
+      isPublished: true,
+      publishStatus: "published"
+    });
+
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+
+    alert("🎉 تم اعتماد ونشر (" + publishedCount + " فصول جاهزة) للدارسين بنجاح!\nالفصول المتبقية غير المكتملة بقيت مخفية كمسودة.");
+  };
+
   // وظيفة مسح قائمة الفصول الحالية للبدء من جديد
   var handleClearAllChapters = async function() {
     if (!activeBook) return;
@@ -2603,9 +2710,11 @@ window.BooksPage = function(props) {
           handleStopBatchAudio: handleStopBatchAudio,
           generatingAudioChapterId: generatingAudioChapterId,
           audioBatchProgress: audioBatchProgress,
-          audioStatusText: audioStatusText,
           onOpenQualityAudit: function() { setIsQualityAuditOpen(true); },
-          handlePublishToggle: handlePublishToggle
+          handlePublishToggle: handlePublishToggle,
+          handleToggleChapterPublish: handleToggleChapterPublish,
+          handleToggleChapterOverride: handleToggleChapterOverride,
+          handlePublishReadyChapters: handlePublishReadyChapters
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
@@ -3319,6 +3428,9 @@ window.BooksPage = function(props) {
       onClose: function() { setIsQualityAuditOpen(false); },
       book: activeBook,
       onPublishToggle: handlePublishToggle,
+      onToggleChapterPublish: handleToggleChapterPublish,
+      onToggleChapterOverride: handleToggleChapterOverride,
+      onPublishReadyChapters: handlePublishReadyChapters,
       onStartBatchExtract: handleBatchExtractAllChapters,
       onStartBatchAudio: handleBatchGenerateAllAudio
     })
