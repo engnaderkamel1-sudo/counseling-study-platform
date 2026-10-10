@@ -10,7 +10,7 @@
   <meta http-equiv="Expires" content="0">
   
   <!-- PWA Manifest & Mobile App Capabilities -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -45,9 +45,19 @@
     }
   </script>
 
-  <!-- مكتبات الواجهة الأساسية (ملفات محلية لضمان عدم الحظر من برامج الحماية) -->
-  <script src="/lib/react.production.min.js"></script>
-  <script src="/lib/react-dom.production.min.js"></script>
+  <!-- مكتبات الواجهة الأساسية (Google Hosted Libraries مع Fallback محلي نسبي) -->
+  <script src="https://ajax.googleapis.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script>
+    if (!window.React) {
+      document.write('<script src="./lib/react.production.min.js"><\/script>');
+    }
+  </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script>
+    if (!window.ReactDOM) {
+      document.write('<script src="./lib/react-dom.production.min.js"><\/script>');
+    }
+  </script>
 
   <!-- مكتبات فايربيز السحابية المستقرة من خوادم جوجل الرسمية Gstatic -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
