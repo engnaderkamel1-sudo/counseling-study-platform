@@ -209,7 +209,20 @@ window.AudioChaptersView = function(props) {
     var audio = chapterAudioRef.current;
     if (!audio) return;
 
-    var updateProgress = function() { setAudioProgress(audio.currentTime); };
+    var updateProgress = function() {
+      setAudioProgress(audio.currentTime);
+      if ("mediaSession" in navigator && "setPositionState" in navigator.mediaSession) {
+        try {
+          if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+            navigator.mediaSession.setPositionState({
+              duration: audio.duration,
+              playbackRate: audio.playbackRate || 1,
+              position: Math.min(audio.currentTime, audio.duration)
+            });
+          }
+        } catch (posErr) {}
+      }
+    };
     var updateDuration = function() {
       if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
         setAudioDuration(audio.duration);
@@ -223,7 +236,15 @@ window.AudioChaptersView = function(props) {
         }
       }
     };
-    var updatePlayState = function() { setIsAudioPlaying(!audio.paused); };
+    var updatePlayState = function() {
+      var isPlaying = !audio.paused;
+      setIsAudioPlaying(isPlaying);
+      if ("mediaSession" in navigator) {
+        try {
+          navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+        } catch (e) {}
+      }
+    };
     var updateSpeed = function() { setAudioSpeed(audio.playbackRate); };
 
     // الانتقال التلقائي للتراك التالي في الـ Playlist عند انتهاء الفصل الحالي
@@ -246,9 +267,11 @@ window.AudioChaptersView = function(props) {
           }, 150);
         } else {
           setIsAudioPlaying(false);
+          if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
         }
       } else {
         setIsAudioPlaying(false);
+        if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
       }
     };
 
@@ -259,7 +282,7 @@ window.AudioChaptersView = function(props) {
     audio.addEventListener("ratechange", updateSpeed);
     audio.addEventListener("ended", onTrackEnded);
 
-    // ربط شاشة القفل وسماعات البلوتوث (MediaSession API للموبايل)
+    // ربط شاشة القفل وسماعات البلوتوث (MediaSession API للموبايل والخلفية)
     var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
     if ("mediaSession" in navigator && activeChap) {
       try {
@@ -267,14 +290,22 @@ window.AudioChaptersView = function(props) {
           title: activeChap.title,
           artist: (activeBook && activeBook.title) || "المنصة الدراسية",
           album: "فصول الكتاب الصوتية (Playlist)",
-          artwork: activeBook && activeBook.coverUrl ? [{ src: utils.getDriveImageUrl(activeBook.coverUrl), sizes: "512x512", type: "image/jpeg" }] : []
+          artwork: activeBook && activeBook.coverUrl ? [
+            { src: utils.getDriveImageUrl(activeBook.coverUrl), sizes: "512x512", type: "image/jpeg" }
+          ] : []
         });
+        navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing";
         navigator.mediaSession.setActionHandler("play", function() { if (audio) audio.play(); });
         navigator.mediaSession.setActionHandler("pause", function() { if (audio) audio.pause(); });
         navigator.mediaSession.setActionHandler("seekbackward", function() { if (audio) audio.currentTime -= 10; });
         navigator.mediaSession.setActionHandler("seekforward", function() { if (audio) audio.currentTime += 10; });
         navigator.mediaSession.setActionHandler("previoustrack", handlePlayPrev);
         navigator.mediaSession.setActionHandler("nexttrack", handlePlayNext);
+        try {
+          navigator.mediaSession.setActionHandler("seekto", function(details) {
+            if (details.seekTime !== undefined && audio) audio.currentTime = details.seekTime;
+          });
+        } catch (seekErr) {}
       } catch (msErr) {}
     }
 
