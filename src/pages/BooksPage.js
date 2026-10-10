@@ -65,6 +65,7 @@ window.BooksPage = function(props) {
   var [chapterSaveStatus, setChapterSaveStatus] = React.useState("");
   var [viewingChapterText, setViewingChapterText] = React.useState(null);
   var [configuringChapterForExtract, setConfiguringChapterForExtract] = React.useState(null);
+  var [reviewingScannedChapters, setReviewingScannedChapters] = React.useState(null);
   var [chapterTextFontSize, setChapterTextFontSize] = React.useState(15); // 13, 15, 17, 20
   var [playingChapterId, setPlayingChapterId] = React.useState(null);
   var [isPlaylistMode, setIsPlaylistMode] = React.useState(true);
@@ -856,12 +857,9 @@ window.BooksPage = function(props) {
                     text: ""
                   };
                 });
-                var updatedBook = Object.assign({}, activeBook, { audioChapters: newChaps });
-                cloud.saveBook(updatedBook);
-                setActiveBook(updatedBook);
+                setReviewingScannedChapters(newChaps);
                 scanSuccess = true;
                 setIsAiAnalyzingBook(false);
-                alert("✨ تم فحص الفهرس بنجاح!\n\nتم استخراج " + newChaps.length + " فصول (تشمل المقدمة وكافة فصول الكتاب).");
                 break;
               }
             }
@@ -884,6 +882,33 @@ window.BooksPage = function(props) {
     } finally {
       setIsAiAnalyzingBook(false);
     }
+  };
+
+  // اعتماد وحفظ الفصول المستخرجة بعد مراجعتها وتعديلها من المستخدم
+  var handleConfirmScannedChapters = async function(confirmedChapters) {
+    if (!activeBook) return;
+    var formattedChaps = confirmedChapters.map(function(c, cIdx) {
+      return {
+        id: c.id || ("chap_" + Date.now() + "_" + cIdx),
+        title: (c.title || "").trim(),
+        startPage: Number(c.startPage) || 1,
+        endPage: Number(c.endPage) || (Number(c.startPage) || 1),
+        audioUrl: c.audioUrl || "",
+        text: c.text || ""
+      };
+    });
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: formattedChaps });
+    cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    else allBooks.push(updatedBook);
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks);
+    setReviewingScannedChapters(null);
+    alert("🎉 تم اعتماد وحفظ فهرس الكتاب بنجاح (" + formattedChaps.length + " فصول).\nيمكنك الآن استخراج النصوص أو الصوت بأمان تام.");
   };
 
   // وظيفة مسح قائمة الفصول الحالية للبدء من جديد
@@ -3256,6 +3281,15 @@ window.BooksPage = function(props) {
       chap: configuringChapterForExtract,
       onClose: function() { setConfiguringChapterForExtract(null); },
       onConfirm: executeExtractChapterText,
+      totalPages: pdfDoc ? pdfDoc.numPages : 500
+    }),
+    // نافذة مراجعة واعتماد الفهرس المستخرج بالذكاء الاصطناعي مع إمكانية التعديل والإزاحة الموحدة
+    React.createElement(window.ChaptersReviewModal, {
+      isOpen: !!reviewingScannedChapters,
+      onClose: function() { setReviewingScannedChapters(null); },
+      initialChapters: reviewingScannedChapters || [],
+      onConfirm: handleConfirmScannedChapters,
+      handlePageChange: handlePageChange,
       totalPages: pdfDoc ? pdfDoc.numPages : 500
     }),
     // نافذة عرض النص المفرغ للفصل (تدعم الاستماع والقراءة المتزامنة والتحكم بحجم الخط للموبايل)
