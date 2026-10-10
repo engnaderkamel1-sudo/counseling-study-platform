@@ -119,6 +119,7 @@ window.BooksPage = function(props) {
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
+  var [uploadProgress, setUploadProgress] = React.useState(null);
       
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
@@ -2076,31 +2077,15 @@ window.BooksPage = function(props) {
     if (selectedFile) {
       try {
         setIsUploading(true);
-        setUploadStatusText("جاري حفظ ورفع ملف الكتاب...");
-
-        var base64Data = await new Promise(function(resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function() {
-            var result = reader.result;
-            var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
-            resolve(base64);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedFile);
-        });
-
-        var response = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            mimeType: selectedFile.type || "application/pdf",
-            base64Data: base64Data
-          })
-        });
-
-        var resData = await response.json();
-        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+        var resData = await utils.uploadToDriveWithProgress(
+          cfg.driveUploadEndpoint,
+          selectedFile,
+          function(p) {
+            setUploadProgress(p);
+            setUploadStatusText(p.message);
+          }
+        );
+        if (resData && (resData.fileUrl || resData.fileId)) {
           finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
         }
       } catch (err) {
@@ -2112,29 +2097,15 @@ window.BooksPage = function(props) {
     if (selectedAudioFile) {
       try {
         setIsUploading(true);
-        setUploadStatusText("جاري رفع الملف الصوتي...");
-        var audioBase64 = await new Promise(function(resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function() {
-            var result = reader.result;
-            resolve(typeof result === "string" && result.includes(",") ? result.split(",")[1] : result);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedAudioFile);
-        });
-
-        var audioRes = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: selectedAudioFile.name,
-            mimeType: selectedAudioFile.type || "audio/mpeg",
-            base64Data: audioBase64
-          })
-        });
-
-        var aData = await audioRes.json();
-        if (aData.status === "success" && (aData.fileUrl || aData.fileId)) {
+        var aData = await utils.uploadToDriveWithProgress(
+          cfg.driveUploadEndpoint,
+          selectedAudioFile,
+          function(p) {
+            setUploadProgress(p);
+            setUploadStatusText(p.message);
+          }
+        );
+        if (aData && (aData.fileUrl || aData.fileId)) {
           finalAudioUrl = aData.fileUrl || ("https://drive.google.com/file/d/" + aData.fileId + "/view");
         }
       } catch (errA) {
@@ -2198,6 +2169,8 @@ window.BooksPage = function(props) {
 
     setShowAddModal(false);
     setIsUploading(false);
+    setUploadProgress(null);
+    setUploadStatusText("");
     setSelectedFile(null);
     setSelectedCoverFile(null);
     setNewTitle("");
@@ -3226,9 +3199,10 @@ window.BooksPage = function(props) {
     React.createElement(window.AddBookModal, {
       isOpen: showAddModal,
       isEditing: !!editingBookId,
-      onClose: function() { setShowAddModal(false); setEditingBookId(null); },
+      onClose: function() { setShowAddModal(false); setEditingBookId(null); setUploadProgress(null); setUploadStatusText(""); },
       isUploading: isUploading,
       uploadStatusText: uploadStatusText,
+      uploadProgress: uploadProgress,
       isDraggingFile: isDraggingFile,
       setIsDraggingFile: setIsDraggingFile,
       selectedFile: selectedFile,

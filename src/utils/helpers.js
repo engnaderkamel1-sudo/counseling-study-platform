@@ -282,5 +282,125 @@ window.APP_UTILS = {
       globalIssues: globalIssues,
       chaptersAudit: chaptersAudit
     };
+  },
+
+  // دالة رفع الملفات إلى درايف مع حساب دقيق لنسبة التحميل المئوية وشريط التقدم
+  uploadToDriveWithProgress: function(endpoint, file, onProgress, customFileName) {
+    return new Promise(function(resolve, reject) {
+      if (!file) return reject(new Error("No file provided"));
+      var fileName = customFileName || file.name;
+      var totalFileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+
+      if (onProgress) {
+        onProgress({
+          percent: 5,
+          loadedMB: "0.0",
+          totalMB: totalFileSizeMB,
+          stage: "reading",
+          message: "⏳ جاري قراءة وتجهيز الملف (" + totalFileSizeMB + " MB)..."
+        });
+      }
+
+      var reader = new FileReader();
+      reader.onprogress = function(e) {
+        if (e.lengthComputable && onProgress) {
+          var rPct = Math.min(15, Math.max(5, Math.round((e.loaded / e.total) * 15)));
+          onProgress({
+            percent: rPct,
+            loadedMB: (e.loaded / (1024 * 1024)).toFixed(1),
+            totalMB: totalFileSizeMB,
+            stage: "reading",
+            message: "⏳ جاري قراءة الملف وتجهيزه: " + Math.round((e.loaded / e.total) * 100) + "%"
+          });
+        }
+      };
+
+      reader.onerror = function(err) {
+        reject(err);
+      };
+
+      reader.onload = function() {
+        var result = reader.result;
+        var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+
+        if (onProgress) {
+          onProgress({
+            percent: 15,
+            loadedMB: "0.0",
+            totalMB: totalFileSizeMB,
+            stage: "uploading",
+            message: "🚀 بدء الرفع السحابي (0%)..."
+          });
+        }
+
+        var payload = JSON.stringify({
+          fileName: fileName,
+          mimeType: file.type || "application/pdf",
+          base64Data: base64
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", endpoint);
+        xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+
+        xhr.upload.onprogress = function(e) {
+          if (e.lengthComputable && onProgress) {
+            var rawRatio = e.loaded / e.total;
+            var uploadPct = 15 + Math.round(rawRatio * 80); // من 15% إلى 95%
+            var lMB = (e.loaded / (1024 * 1024)).toFixed(1);
+            var tMB = (e.total / (1024 * 1024)).toFixed(1);
+            onProgress({
+              percent: Math.min(95, uploadPct),
+              loadedMB: lMB,
+              totalMB: tMB,
+              stage: "uploading",
+              message: "🚀 جاري الرفع السحابي: " + Math.min(95, uploadPct) + "% (" + lMB + " من " + tMB + " MB)"
+            });
+          }
+        };
+
+        xhr.upload.onload = function() {
+          if (onProgress) {
+            onProgress({
+              percent: 96,
+              loadedMB: totalFileSizeMB,
+              totalMB: totalFileSizeMB,
+              stage: "processing",
+              message: "☁️ اكتمل الرفع 100%! جاري الحفظ والتأكيد في Google Drive ⏳"
+            });
+          }
+        };
+
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 400) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              if (onProgress) {
+                onProgress({
+                  percent: 100,
+                  loadedMB: totalFileSizeMB,
+                  totalMB: totalFileSizeMB,
+                  stage: "done",
+                  message: "🎉 اكتمل الرفع والحفظ بنجاح!"
+                });
+              }
+              resolve(data);
+            } catch (err) {
+              resolve({ status: "success", raw: xhr.responseText });
+            }
+          } else {
+            reject(new Error("Server returned status " + xhr.status));
+          }
+        };
+
+        xhr.onerror = function(err) {
+          reject(new Error("Network error during file upload: " + (err && err.message)));
+        };
+
+        xhr.send(payload);
+      };
+
+      reader.readAsDataURL(file);
+    });
   }
 };

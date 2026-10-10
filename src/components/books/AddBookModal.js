@@ -4,6 +4,7 @@ window.AddBookModal = function(props) {
   var onClose = props.onClose;
   var isUploading = props.isUploading;
   var uploadStatusText = props.uploadStatusText;
+  var uploadProgress = props.uploadProgress;
   var isDraggingFile = props.isDraggingFile;
   var setIsDraggingFile = props.setIsDraggingFile;
   var selectedFile = props.selectedFile;
@@ -114,7 +115,45 @@ window.AddBookModal = function(props) {
             }, "إلغاء الملف")
           )
         ),
-        isUploading && React.createElement("div", { className: "p-2.5 bg-slate-900 text-white text-center text-xs rounded-xl animate-pulse" }, uploadStatusText),
+        (isUploading || uploadProgress) && React.createElement(
+          "div",
+          { className: "p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-700/80 shadow-xl space-y-2.5 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs font-bold gap-2" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 truncate" },
+              React.createElement("span", { className: "animate-spin text-sm shrink-0" }, "⏳"),
+              React.createElement("span", { className: "truncate text-slate-200" }, 
+                uploadProgress && uploadProgress.message ? uploadProgress.message : (uploadStatusText || "جاري حفظ ورفع الملف...")
+              )
+            ),
+            uploadProgress && uploadProgress.percent !== undefined && React.createElement(
+              "span",
+              { className: "font-mono font-black text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg shrink-0 text-xs shadow-xs" },
+              uploadProgress.percent + "%"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700 p-0.5" },
+            React.createElement("div", {
+              className: "bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-300 relative shadow-xs",
+              style: { width: Math.max(5, (uploadProgress ? uploadProgress.percent : 40)) + "%" }
+            })
+          ),
+          uploadProgress && uploadProgress.totalMB && React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-mono" },
+            React.createElement("span", null, "الحجم المنقول: " + (uploadProgress.loadedMB || "0") + " من " + uploadProgress.totalMB + " MB"),
+            React.createElement("span", { className: "text-emerald-300 font-sans font-bold" }, 
+              uploadProgress.percent >= 96 
+                ? "جاري التأكيد في Google Drive..." 
+                : ("متبقي " + Math.max(0, ((Number(uploadProgress.totalMB) || 0) - (Number(uploadProgress.loadedMB) || 0)).toFixed(1)) + " MB")
+            )
+          )
+        ),
 
         // زر التحليل والاستخراج التلقائي بالذكاء الاصطناعي
         React.createElement(
@@ -288,7 +327,7 @@ window.AddBookModal = function(props) {
             type: "submit",
             disabled: isUploading,
             className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95 disabled:opacity-50 transition-all"
-          }, isUploading ? (uploadStatusText || "جاري الحفظ...") : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
+          }, isUploading ? (uploadProgress && uploadProgress.percent !== undefined ? ("جاري الرفع (" + uploadProgress.percent + "%)...") : (uploadStatusText || "جاري الحفظ...")) : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
         )
       )
     )

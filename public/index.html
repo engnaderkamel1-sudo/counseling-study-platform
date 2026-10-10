@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791651511",
-  buildTime: "2026-10-10T16:58:31",
+  version: "1.2.1791652124",
+  buildTime: "2026-10-10T17:08:44",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -1082,6 +1082,126 @@ window.APP_UTILS = {
       globalIssues: globalIssues,
       chaptersAudit: chaptersAudit
     };
+  },
+
+  // دالة رفع الملفات إلى درايف مع حساب دقيق لنسبة التحميل المئوية وشريط التقدم
+  uploadToDriveWithProgress: function(endpoint, file, onProgress, customFileName) {
+    return new Promise(function(resolve, reject) {
+      if (!file) return reject(new Error("No file provided"));
+      var fileName = customFileName || file.name;
+      var totalFileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+
+      if (onProgress) {
+        onProgress({
+          percent: 5,
+          loadedMB: "0.0",
+          totalMB: totalFileSizeMB,
+          stage: "reading",
+          message: "⏳ جاري قراءة وتجهيز الملف (" + totalFileSizeMB + " MB)..."
+        });
+      }
+
+      var reader = new FileReader();
+      reader.onprogress = function(e) {
+        if (e.lengthComputable && onProgress) {
+          var rPct = Math.min(15, Math.max(5, Math.round((e.loaded / e.total) * 15)));
+          onProgress({
+            percent: rPct,
+            loadedMB: (e.loaded / (1024 * 1024)).toFixed(1),
+            totalMB: totalFileSizeMB,
+            stage: "reading",
+            message: "⏳ جاري قراءة الملف وتجهيزه: " + Math.round((e.loaded / e.total) * 100) + "%"
+          });
+        }
+      };
+
+      reader.onerror = function(err) {
+        reject(err);
+      };
+
+      reader.onload = function() {
+        var result = reader.result;
+        var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+
+        if (onProgress) {
+          onProgress({
+            percent: 15,
+            loadedMB: "0.0",
+            totalMB: totalFileSizeMB,
+            stage: "uploading",
+            message: "🚀 بدء الرفع السحابي (0%)..."
+          });
+        }
+
+        var payload = JSON.stringify({
+          fileName: fileName,
+          mimeType: file.type || "application/pdf",
+          base64Data: base64
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", endpoint);
+        xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+
+        xhr.upload.onprogress = function(e) {
+          if (e.lengthComputable && onProgress) {
+            var rawRatio = e.loaded / e.total;
+            var uploadPct = 15 + Math.round(rawRatio * 80); // من 15% إلى 95%
+            var lMB = (e.loaded / (1024 * 1024)).toFixed(1);
+            var tMB = (e.total / (1024 * 1024)).toFixed(1);
+            onProgress({
+              percent: Math.min(95, uploadPct),
+              loadedMB: lMB,
+              totalMB: tMB,
+              stage: "uploading",
+              message: "🚀 جاري الرفع السحابي: " + Math.min(95, uploadPct) + "% (" + lMB + " من " + tMB + " MB)"
+            });
+          }
+        };
+
+        xhr.upload.onload = function() {
+          if (onProgress) {
+            onProgress({
+              percent: 96,
+              loadedMB: totalFileSizeMB,
+              totalMB: totalFileSizeMB,
+              stage: "processing",
+              message: "☁️ اكتمل الرفع 100%! جاري الحفظ والتأكيد في Google Drive ⏳"
+            });
+          }
+        };
+
+        xhr.onload = function() {
+          if (xhr.status >= 200 && xhr.status < 400) {
+            try {
+              var data = JSON.parse(xhr.responseText);
+              if (onProgress) {
+                onProgress({
+                  percent: 100,
+                  loadedMB: totalFileSizeMB,
+                  totalMB: totalFileSizeMB,
+                  stage: "done",
+                  message: "🎉 اكتمل الرفع والحفظ بنجاح!"
+                });
+              }
+              resolve(data);
+            } catch (err) {
+              resolve({ status: "success", raw: xhr.responseText });
+            }
+          } else {
+            reject(new Error("Server returned status " + xhr.status));
+          }
+        };
+
+        xhr.onerror = function(err) {
+          reject(new Error("Network error during file upload: " + (err && err.message)));
+        };
+
+        xhr.send(payload);
+      };
+
+      reader.readAsDataURL(file);
+    });
   }
 };
 
@@ -1892,6 +2012,7 @@ window.AddBookModal = function(props) {
   var onClose = props.onClose;
   var isUploading = props.isUploading;
   var uploadStatusText = props.uploadStatusText;
+  var uploadProgress = props.uploadProgress;
   var isDraggingFile = props.isDraggingFile;
   var setIsDraggingFile = props.setIsDraggingFile;
   var selectedFile = props.selectedFile;
@@ -2002,7 +2123,45 @@ window.AddBookModal = function(props) {
             }, "إلغاء الملف")
           )
         ),
-        isUploading && React.createElement("div", { className: "p-2.5 bg-slate-900 text-white text-center text-xs rounded-xl animate-pulse" }, uploadStatusText),
+        (isUploading || uploadProgress) && React.createElement(
+          "div",
+          { className: "p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-700/80 shadow-xl space-y-2.5 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs font-bold gap-2" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 truncate" },
+              React.createElement("span", { className: "animate-spin text-sm shrink-0" }, "⏳"),
+              React.createElement("span", { className: "truncate text-slate-200" }, 
+                uploadProgress && uploadProgress.message ? uploadProgress.message : (uploadStatusText || "جاري حفظ ورفع الملف...")
+              )
+            ),
+            uploadProgress && uploadProgress.percent !== undefined && React.createElement(
+              "span",
+              { className: "font-mono font-black text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2 py-0.5 rounded-lg shrink-0 text-xs shadow-xs" },
+              uploadProgress.percent + "%"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700 p-0.5" },
+            React.createElement("div", {
+              className: "bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 h-full rounded-full transition-all duration-300 relative shadow-xs",
+              style: { width: Math.max(5, (uploadProgress ? uploadProgress.percent : 40)) + "%" }
+            })
+          ),
+          uploadProgress && uploadProgress.totalMB && React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-[11px] text-slate-400 pt-0.5 font-mono" },
+            React.createElement("span", null, "الحجم المنقول: " + (uploadProgress.loadedMB || "0") + " من " + uploadProgress.totalMB + " MB"),
+            React.createElement("span", { className: "text-emerald-300 font-sans font-bold" }, 
+              uploadProgress.percent >= 96 
+                ? "جاري التأكيد في Google Drive..." 
+                : ("متبقي " + Math.max(0, ((Number(uploadProgress.totalMB) || 0) - (Number(uploadProgress.loadedMB) || 0)).toFixed(1)) + " MB")
+            )
+          )
+        ),
 
         // زر التحليل والاستخراج التلقائي بالذكاء الاصطناعي
         React.createElement(
@@ -2176,7 +2335,7 @@ window.AddBookModal = function(props) {
             type: "submit",
             disabled: isUploading,
             className: "px-6 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md active:scale-95 disabled:opacity-50 transition-all"
-          }, isUploading ? (uploadStatusText || "جاري الحفظ...") : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
+          }, isUploading ? (uploadProgress && uploadProgress.percent !== undefined ? ("جاري الرفع (" + uploadProgress.percent + "%)...") : (uploadStatusText || "جاري الحفظ...")) : (isEditing ? "حفظ التعديلات ✓" : "حفظ الكتاب في المكتبة ✓"))
         )
       )
     )
@@ -6292,6 +6451,7 @@ window.BooksPage = function(props) {
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
   var [isUploading, setIsUploading] = React.useState(false);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
+  var [uploadProgress, setUploadProgress] = React.useState(null);
       
   var [newTitle, setNewTitle] = React.useState("");
   var [newAuthor, setNewAuthor] = React.useState("");
@@ -8249,31 +8409,15 @@ window.BooksPage = function(props) {
     if (selectedFile) {
       try {
         setIsUploading(true);
-        setUploadStatusText("جاري حفظ ورفع ملف الكتاب...");
-
-        var base64Data = await new Promise(function(resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function() {
-            var result = reader.result;
-            var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
-            resolve(base64);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedFile);
-        });
-
-        var response = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: selectedFile.name,
-            mimeType: selectedFile.type || "application/pdf",
-            base64Data: base64Data
-          })
-        });
-
-        var resData = await response.json();
-        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+        var resData = await utils.uploadToDriveWithProgress(
+          cfg.driveUploadEndpoint,
+          selectedFile,
+          function(p) {
+            setUploadProgress(p);
+            setUploadStatusText(p.message);
+          }
+        );
+        if (resData && (resData.fileUrl || resData.fileId)) {
           finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
         }
       } catch (err) {
@@ -8285,29 +8429,15 @@ window.BooksPage = function(props) {
     if (selectedAudioFile) {
       try {
         setIsUploading(true);
-        setUploadStatusText("جاري رفع الملف الصوتي...");
-        var audioBase64 = await new Promise(function(resolve, reject) {
-          var reader = new FileReader();
-          reader.onload = function() {
-            var result = reader.result;
-            resolve(typeof result === "string" && result.includes(",") ? result.split(",")[1] : result);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedAudioFile);
-        });
-
-        var audioRes = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: selectedAudioFile.name,
-            mimeType: selectedAudioFile.type || "audio/mpeg",
-            base64Data: audioBase64
-          })
-        });
-
-        var aData = await audioRes.json();
-        if (aData.status === "success" && (aData.fileUrl || aData.fileId)) {
+        var aData = await utils.uploadToDriveWithProgress(
+          cfg.driveUploadEndpoint,
+          selectedAudioFile,
+          function(p) {
+            setUploadProgress(p);
+            setUploadStatusText(p.message);
+          }
+        );
+        if (aData && (aData.fileUrl || aData.fileId)) {
           finalAudioUrl = aData.fileUrl || ("https://drive.google.com/file/d/" + aData.fileId + "/view");
         }
       } catch (errA) {
@@ -8371,6 +8501,8 @@ window.BooksPage = function(props) {
 
     setShowAddModal(false);
     setIsUploading(false);
+    setUploadProgress(null);
+    setUploadStatusText("");
     setSelectedFile(null);
     setSelectedCoverFile(null);
     setNewTitle("");
@@ -9399,9 +9531,10 @@ window.BooksPage = function(props) {
     React.createElement(window.AddBookModal, {
       isOpen: showAddModal,
       isEditing: !!editingBookId,
-      onClose: function() { setShowAddModal(false); setEditingBookId(null); },
+      onClose: function() { setShowAddModal(false); setEditingBookId(null); setUploadProgress(null); setUploadStatusText(""); },
       isUploading: isUploading,
       uploadStatusText: uploadStatusText,
+      uploadProgress: uploadProgress,
       isDraggingFile: isDraggingFile,
       setIsDraggingFile: setIsDraggingFile,
       selectedFile: selectedFile,
