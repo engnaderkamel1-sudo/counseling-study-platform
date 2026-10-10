@@ -147,8 +147,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791638277",
-  buildTime: "2026-10-10T13:17:57",
+  version: "1.2.1791638448",
+  buildTime: "2026-10-10T13:20:48",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -697,143 +697,6 @@ window.ErrorReportService = {
 };
 
 window.ErrorReportService.initGlobalErrorHandler();
-
-// Module: services/edgeTtsService.js
-// خدمة توليد الصوت الطبيعي بالذكاء الاصطناعي (Edge-TTS Service - بصوت سلمى)
-window.EdgeTtsService = {
-  DEFAULT_VOICE: "ar-EG-SalmaNeural - ar-EG (Female)",
-  API_ENDPOINT: "https://innoai-edge-tts-text-to-speech.hf.space/gradio_api/call/tts_interface",
-
-  // توليد مقطع صوتي لنص معين
-  generateAudioForText: async function(text, voiceKey, onProgress) {
-    var self = this;
-    var voice = voiceKey || self.DEFAULT_VOICE;
-    var cleanedText = (text || "").trim();
-    if (!cleanedText) {
-      throw new Error("لا يوجد نص لتوليد الصوت منه.");
-    }
-
-    if (typeof onProgress === "function") {
-      onProgress("جاري إرسال النص لمحرك الصوت...");
-    }
-
-    // 1. استدعاء نقطة النهاية (Gradio Call Endpoint)
-    var payload = {
-      data: [
-        cleanedText,
-        voice,
-        0, // Rate (السرعة الطبيعية)
-        0  // Pitch (النبرة الطبيعية)
-      ]
-    };
-
-    var postResp = await fetch(self.API_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!postResp.ok) {
-      throw new Error("فشل الاتصال بخدمة تحويل الصوت (" + postResp.status + ")");
-    }
-
-    var callData = await postResp.json();
-    var eventId = callData.event_id;
-    if (!eventId) {
-      throw new Error("لم يتم استلام معرف العملية من السيرفر.");
-    }
-
-    if (typeof onProgress === "function") {
-      onProgress("جاري توليد الصوت بصوت سلمى النقي...");
-    }
-
-    // 2. الاستماع للنتيجة عبر مسار الحدث (SSE / Polling fallback)
-    var sseUrl = self.API_ENDPOINT + "/" + eventId;
-    var maxAttempts = 45; // أقصى مهلة 45 ثانية
-    var audioUrl = null;
-
-    for (var attempt = 0; attempt < maxAttempts; attempt++) {
-      await new Promise(function(resolve) {
-        setTimeout(resolve, 1000);
-      });
-
-      try {
-        var sseResp = await fetch(sseUrl);
-        if (!sseResp.ok) continue;
-        var sseText = await sseResp.text();
-
-        // فحص حدث الاكتمال
-        if (sseText.indexOf("event: complete") !== -1 || sseText.indexOf("event: error") !== -1) {
-          if (sseText.indexOf("event: error") !== -1) {
-            throw new Error("حدث خطأ أثناء معالجة الصوت في السيرفر.");
-          }
-
-          // استخراج رابط الملف
-          var matchUrl = sseText.match(/"url":\s*"([^"]+)"/);
-          if (matchUrl && matchUrl[1]) {
-            audioUrl = matchUrl[1];
-          } else {
-            var matchPath = sseText.match(/"path":\s*"([^"]+)"/);
-            if (matchPath && matchPath[1]) {
-              audioUrl = "https://innoai-edge-tts-text-to-speech.hf.space/gradio_api/file=" + matchPath[1];
-            }
-          }
-          break;
-        }
-      } catch (pollErr) {
-        if (pollErr.message && pollErr.message.indexOf("خطأ أثناء معالجة") !== -1) {
-          throw pollErr;
-        }
-      }
-    }
-
-    if (!audioUrl) {
-      throw new Error("استغرقت معالجة الصوت وقتاً أطول من المتوقع، يرجى المحاولة ثانية.");
-    }
-
-    return audioUrl;
-  },
-
-  // تقسيم النص الطويل لأجزاء منطقية إذا لزم الأمر
-  splitTextIntoChunks: function(text, maxChars) {
-    var limit = maxChars || 3000;
-    if (text.length <= limit) return [text];
-    var paragraphs = text.split(/\n+/);
-    var chunks = [];
-    var current = "";
-
-    for (var i = 0; i < paragraphs.length; i++) {
-      var p = paragraphs[i].trim();
-      if (!p) continue;
-      if ((current.length + p.length + 2) <= limit) {
-        current += (current ? "\n\n" : "") + p;
-      } else {
-        if (current) chunks.push(current);
-        if (p.length > limit) {
-          // تقسيم حسب علامات الترقيم والجمل
-          var sentences = p.split(/([.!?\n]+)/);
-          var subChunk = "";
-          for (var s = 0; s < sentences.length; s++) {
-            if ((subChunk.length + sentences[s].length) <= limit) {
-              subChunk += sentences[s];
-            } else {
-              if (subChunk) chunks.push(subChunk);
-              subChunk = sentences[s];
-            }
-          }
-          if (subChunk) current = subChunk;
-          else current = "";
-        } else {
-          current = p;
-        }
-      }
-    }
-    if (current) chunks.push(current);
-    return chunks;
-  }
-};
 
 // Module: utils/helpers.js
 // دوال مساعدة عامة للتعامل مع التخزين المحلي، روابط جوجل درايف، وتنسيق الوقت
@@ -2999,12 +2862,6 @@ window.AudioChaptersView = function(props) {
   var batchProgress = props.batchProgress;
   var singleExtractProgress = props.singleExtractProgress;
   var handleMoveChapter = props.handleMoveChapter;
-  var handleGenerateChapterAudio = props.handleGenerateChapterAudio;
-  var handleBatchGenerateAllAudio = props.handleBatchGenerateAllAudio;
-  var handleStopBatchAudio = props.handleStopBatchAudio;
-  var generatingAudioChapterId = props.generatingAudioChapterId;
-  var audioBatchProgress = props.audioBatchProgress;
-  var audioStatusText = props.audioStatusText;
 
   var utils = window.APP_UTILS;
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -3103,32 +2960,13 @@ window.AudioChaptersView = function(props) {
             {
               type: "button",
               onClick: function() { handleBatchExtractAllChapters(); },
-              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress,
+              disabled: isAiAnalyzingBook || !!batchProgress,
               className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 active:scale-95 transition-all"
             },
             btnLabel
           );
         })() : null,
-        chaps.length > 0 && typeof handleBatchGenerateAllAudio === "function" ? (function() {
-          var textReadyCount = chaps.filter(function(c) { return c.text && c.text.trim(); }).length;
-          var missingAudioCount = chaps.filter(function(c) { return c.text && c.text.trim() && (!c.audioUrl || !c.audioUrl.trim()); }).length;
-          if (textReadyCount === 0) return null;
-          var audioBtnLabel = audioBatchProgress ? "⏳ جاري توليد الأصوات..."
-            : (missingAudioCount > 0)
-              ? ("🎙️ توليد صوت الفصول (" + missingAudioCount + " بصوت سلمى)")
-              : "🎙️ إعادة توليد أصوات كل الفصول";
-          return React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: handleBatchGenerateAllAudio,
-              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress,
-              className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/25 active:scale-95 transition-all"
-            },
-            audioBtnLabel
-          );
-        })() : null,
-        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress && !audioBatchProgress ? React.createElement(
+        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress ? React.createElement(
           "button",
           {
             type: "button",
@@ -3142,51 +2980,13 @@ window.AudioChaptersView = function(props) {
           {
             type: "button",
             onClick: handleOpenAddChapter,
-            disabled: !!batchProgress || !!audioBatchProgress,
+            disabled: !!batchProgress,
             className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition-all"
           },
           "➕ إضافة فصل يدوي"
         )
       ) : null
     ),
-
-    // لوحة شريط تقدم توليد الصوت الجماعي (Batch Audio Generation Dashboard)
-    audioBatchProgress ? React.createElement(
-      "div",
-      { className: "p-4 rounded-2xl bg-gradient-to-r from-purple-950/90 to-slate-900 text-white border border-purple-500/40 shadow-xl space-y-3 animate-fade-in" },
-      React.createElement(
-        "div",
-        { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2" },
-        React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
-          React.createElement("span", { className: "text-lg animate-pulse" }, "🎙️"),
-          React.createElement("div", null,
-            React.createElement("h5", { className: "font-black text-xs sm:text-sm text-purple-300 truncate" },
-              "توليد صوت جماعي (سلمى): فصل (" + audioBatchProgress.currentIndex + " من " + audioBatchProgress.total + ") - " + audioBatchProgress.currentTitle
-            ),
-            React.createElement("p", { className: "text-[11px] text-slate-300" },
-              audioStatusText || "جاري المعالجة وتحويل النص إلى نبرة طبيعية نقية..."
-            )
-          )
-        ),
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleStopBatchAudio,
-            className: "px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 self-start sm:self-auto"
-          },
-          "⏹️ إيقاف وحفظ ما تم"
-        )
-      ),
-      React.createElement(
-        "div",
-        { className: "w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700" },
-        React.createElement("div", {
-          className: "bg-gradient-to-r from-purple-500 to-indigo-400 h-full rounded-full transition-all duration-300",
-          style: { width: Math.max(5, audioBatchProgress.percent) + "%" }
-        })
-      )
-    ) : null,
 
     // لوحة شريط التقدم والوقت للاستخراج الجماعي (Batch Progress Dashboard)
     batchProgress ? React.createElement(
@@ -3579,26 +3379,6 @@ window.AudioChaptersView = function(props) {
             React.createElement("span", null, "📄"),
             React.createElement("span", null, "عرض ونسخ النص")
             ) : null,
-
-            // 2.5 زر توليد صوت الفصل بصوت سلمى (Edge-TTS) للأدمن
-            currentUser && currentUser.role === "admin" && chap.text && typeof handleGenerateChapterAudio === "function" ? (function() {
-              var isThisGenerating = (generatingAudioChapterId === chap.id);
-              return React.createElement("button", {
-                type: "button",
-                onClick: function() { handleGenerateChapterAudio(chap); },
-                disabled: isThisGenerating || !!audioBatchProgress,
-                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border " +
-                  (isThisGenerating
-                    ? "bg-purple-600 text-white border-purple-600 shadow-md animate-pulse"
-                    : chap.audioUrl
-                      ? "bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
-                      : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white border-transparent shadow-md shadow-purple-600/20 active:scale-95"),
-                title: chap.audioUrl ? "إعادة توليد صوت الفصل بصوت سلمى النقي" : "توليد تسجيل صوتي طبيعي للفصل بصوت سلمى"
-              },
-              React.createElement("span", null, isThisGenerating ? "⏳" : "🎙️"),
-              React.createElement("span", null, isThisGenerating ? (audioStatusText || "جاري التوليد...") : (chap.audioUrl ? "إعادة توليد (سلمى)" : "توليد صوت (سلمى)"))
-              );
-            })() : null,
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
             chap.audioUrl ? React.createElement("button", {
@@ -6429,139 +6209,6 @@ window.BooksPage = function(props) {
     }
   };
 
-  // توليد الصوت بالذكاء الاصطناعي (Edge-TTS بصوت سلمى) لفصل مفرد أو لكافة الفصول
-  var [generatingAudioChapterId, setGeneratingAudioChapterId] = React.useState(null);
-  var [audioBatchProgress, setAudioBatchProgress] = React.useState(null);
-  var [audioStatusText, setAudioStatusText] = React.useState("");
-  var audioCancelledRef = React.useRef(false);
-
-  var handleStopBatchAudio = function() {
-    audioCancelledRef.current = true;
-    setAudioStatusText("جاري إيقاف توليد الصوت وحفظ ما تم...");
-  };
-
-  // توليد صوت فصل فردي بصوت سلمى
-  var handleGenerateChapterAudio = async function(chap) {
-    if (!chap || !chap.text || !chap.text.trim()) {
-      alert("عذراً، هذا الفصل لا يحتوي على نص مفرغ لتوليد الصوت منه. يرجى استخراج النص أولاً.");
-      return;
-    }
-    if (generatingAudioChapterId || audioBatchProgress) {
-      alert("هناك عملية توليد صوت جارية بالفعل. يرجى الانتظار لحين اكتمالها.");
-      return;
-    }
-
-    setGeneratingAudioChapterId(chap.id);
-    setAudioStatusText("جاري الاتصال بمحرك الصوت بصوت سلمى النقي...");
-
-    try {
-      var audioUrl = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
-        setAudioStatusText(msg);
-      });
-
-      if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
-
-      // حفظ رابط الصوت الجديد في الفصل محلياً وسحابياً
-      var latestBook = Object.assign({}, activeBook);
-      var chaps = (latestBook.audioChapters || []).slice();
-      var cIdx = chaps.findIndex(function(c) { return c.id === chap.id; });
-      if (cIdx >= 0) {
-        chaps[cIdx] = Object.assign({}, chaps[cIdx], { audioUrl: audioUrl });
-        latestBook.audioChapters = chaps;
-        setActiveBook(latestBook);
-        utils.setLocal("counsel_book_data_" + latestBook.id, latestBook);
-        var allB = utils.getLocal(cfg.storageKeys.books, []) || [];
-        var bIdx = allB.findIndex(function(b) { return b.id === latestBook.id; });
-        if (bIdx >= 0) { allB[bIdx] = latestBook; utils.setLocal(cfg.storageKeys.books, allB); }
-        await cloud.saveBook(latestBook);
-      }
-
-      alert("🎉 تم توليد صوت «" + chap.title + "» بنجاح بصوت سلمى! يمكنك الاستماع إليه الآن في المشغل.");
-    } catch (audioErr) {
-      console.error("Audio generation error:", audioErr);
-      alert("حدث خطأ أثناء توليد الصوت: " + (audioErr.message || audioErr));
-    } finally {
-      setGeneratingAudioChapterId(null);
-      setAudioStatusText("");
-    }
-  };
-
-  // توليد صوت كافة فصول الكتاب دفعة واحدة بصوت سلمى
-  var handleBatchGenerateAllAudio = async function() {
-    if (!activeBook) return;
-    var chaps = (activeBook.audioChapters || []);
-    if (chaps.length === 0) return alert("لا توجد فصول مضافة في هذا الكتاب.");
-
-    // تصفية الفصول التي لها نصوص ومستعدة للتوليد
-    var readyChaps = chaps.filter(function(c) { return c.text && c.text.trim(); });
-    if (readyChaps.length === 0) {
-      alert("لا توجد فصول تحتوي على نصوص مفرغة بعد!\nيرجى استخراج نصوص الفصول أولاً.");
-      return;
-    }
-
-    var pendingAudioChaps = readyChaps.filter(function(c) { return !c.audioUrl || !c.audioUrl.trim(); });
-    if (pendingAudioChaps.length === 0) {
-      if (!window.confirm("✓ كافة الفصول المفرغة لديها تسجيل صوتي بالفعل!\nهل تريد إعادة توليد الصوت لجميع الفصول وتحديثها بصوت سلمى؟")) {
-        return;
-      }
-      pendingAudioChaps = readyChaps;
-    }
-
-    if (!window.confirm("🎙️ هل تريد بدء توليد الصوت تلقائياً لكافة فصول الكتاب المفرغة (" + pendingAudioChaps.length + " فصول) بصوت سلمى؟\nسيتم حفظ كل فصل فور اكتمال صوته.")) {
-      return;
-    }
-
-    audioCancelledRef.current = false;
-    var workingBook = Object.assign({}, activeBook);
-    var workingChapters = (workingBook.audioChapters || []).slice();
-
-    for (var ai = 0; ai < pendingAudioChaps.length; ai++) {
-      if (audioCancelledRef.current) break;
-      var curTarget = pendingAudioChaps[ai];
-
-      setAudioBatchProgress({
-        currentIndex: ai + 1,
-        total: pendingAudioChaps.length,
-        currentTitle: curTarget.title,
-        percent: Math.round(((ai) / pendingAudioChaps.length) * 100)
-      });
-      setGeneratingAudioChapterId(curTarget.id);
-
-      try {
-        var generatedUrl = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
-          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + status);
-        });
-
-        if (generatedUrl) {
-          // تحديث الفصل بالصوت الجديد وحفظه فوراً
-          var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
-          if (chapIdx >= 0) {
-            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], { audioUrl: generatedUrl });
-            workingBook = Object.assign({}, workingBook, { audioChapters: workingChapters.slice() });
-            setActiveBook(workingBook);
-            utils.setLocal("counsel_book_data_" + workingBook.id, workingBook);
-            var allBooksList = utils.getLocal(cfg.storageKeys.books, []) || [];
-            var bkIdx = allBooksList.findIndex(function(b) { return b.id === workingBook.id; });
-            if (bkIdx >= 0) { allBooksList[bkIdx] = workingBook; utils.setLocal(cfg.storageKeys.books, allBooksList); }
-            await cloud.saveBook(workingBook);
-          }
-        }
-      } catch (genErr) {
-        console.warn("Failed generating audio for chapter " + curTarget.title, genErr);
-      }
-    }
-
-    setGeneratingAudioChapterId(null);
-    setAudioBatchProgress(null);
-    setAudioStatusText("");
-
-    if (audioCancelledRef.current) {
-      alert("تم إيقاف توليد الصوت بناءً على طلبك، وتم حفظ الفصول التي اكتمل توليدها.");
-    } else {
-      alert("🎉 اكتمل توليد الصوت لكافة الفصول بنجاح بصوت سلمى! يمكنك الاستماع إليها الآن.");
-    }
-  };
-
   var handleChapterTextFileChange = function(e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -7490,13 +7137,7 @@ window.BooksPage = function(props) {
           extractingChapterId: extractingChapterId,
           extractStatusText: extractStatusText,
           handleClearAllChapters: handleClearAllChapters,
-          handleStopBatchExtraction: handleStopBatchExtraction,
-          handleGenerateChapterAudio: handleGenerateChapterAudio,
-          handleBatchGenerateAllAudio: handleBatchGenerateAllAudio,
-          handleStopBatchAudio: handleStopBatchAudio,
-          generatingAudioChapterId: generatingAudioChapterId,
-          audioBatchProgress: audioBatchProgress,
-          audioStatusText: audioStatusText
+          handleStopBatchExtraction: handleStopBatchExtraction
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
