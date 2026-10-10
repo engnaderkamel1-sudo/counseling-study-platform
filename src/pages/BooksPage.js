@@ -1261,22 +1261,24 @@ window.BooksPage = function(props) {
       setExtractingChapterId(currentChap.id);
       var lastOcrError = null;
 
-      // معالجة صفحات الفصل بنظام دفعات سريعة (صفحتين بالتوازي لتحقيق أقصى سرعة)
+      // معالجة صفحات الفصل بنظام دفعات سريعة (4 صفحات بالتوازي لتحقيق أقصى سرعة ممكنة بأمان)
       var p = fromPage;
+      var pagesSinceLastCloudSave = 0;
       while (p <= ePage) {
         if (batchCancelledRef.current) break;
         var batchChunk = [];
-        batchChunk.push(p);
-        if (p + 1 <= ePage) batchChunk.push(p + 1);
+        for (var off = 0; off < 4 && (p + off <= ePage); off++) {
+          batchChunk.push(p + off);
+        }
 
         var chunkStart = Date.now();
         var elapsedSec = (Date.now() - startTime) / 1000;
 
         // حساب الوقت المتبقي الواقعي بمتوسط متحرك ذكي يمنع تماماً الأرقام الفلكية
-        var avgSec = 4.5;
+        var avgSec = 2.5;
         if (recentPageDurations.length > 0) {
           var sumD = recentPageDurations.reduce(function(a, b) { return a + b; }, 0);
-          avgSec = Math.min(10, Math.max(2, sumD / recentPageDurations.length));
+          avgSec = Math.min(8, Math.max(1.2, sumD / recentPageDurations.length));
         }
         var remainingPagesCount = Math.max(0, totalPagesToProcess - processedPagesCount);
         var remainingSec = Math.round(remainingPagesCount * avgSec);
@@ -1306,7 +1308,7 @@ window.BooksPage = function(props) {
           chapterRemainingPages: Math.max(0, ePage - p + 1)
         });
 
-        // استخراج نصوص صفحات الدفعة بالتوازي
+        // استخراج نصوص صفحات الدفعة بالتوازي (4 صفحات متزامنة)
         var chunkResults = await Promise.all(batchChunk.map(async function(targetP) {
           if (batchCancelledRef.current) return { page: targetP, text: "" };
           try {
@@ -1350,6 +1352,7 @@ window.BooksPage = function(props) {
         if (recentPageDurations.length > 5) recentPageDurations.shift();
 
         processedPagesCount += batchChunk.length;
+        pagesSinceLastCloudSave += batchChunk.length;
         var isThisChapComplete = (lastSuccessPage >= ePage);
 
         // حماية تامة لملفات الصوت والتعديلات الحية من الضياع أثناء الاستخراج (Live Merge Protection)
@@ -1378,7 +1381,7 @@ window.BooksPage = function(props) {
                              || (workingChaps[ci].audioUrl && workingChaps[ci].audioUrl.trim())
                              || "";
 
-        // حفظ محلي وسحابي فوري وتحديث الحالة بعد كل دفعة مع ضمان بقاء الصوت دون حذف
+        // حفظ محلي فوري وتحديث الحالة في الواجهة فورياً بدون أي تأخير
         workingChaps[ci] = Object.assign({}, workingChaps[ci], {
           text: accumulated.trim(),
           startPage: sPage,
@@ -1398,10 +1401,13 @@ window.BooksPage = function(props) {
         setActiveBook(latestBookData);
         setBooks(allBooks);
         
-        // مزامنة فورية في السحابة ليرى الموبايل التقدم اللحظي دون انتظار نهاية الفصل
-        cloud.saveBook(latestBookData).catch(function(err) {
-          console.warn("Batch page cloud sync notice:", err);
-        });
+        // مزامنة سحابية دورية ذكية (كل 8 صفحات أو عند اكتمال الفصل) لمنع ثقل الشبكة والكوتا
+        if (isThisChapComplete || pagesSinceLastCloudSave >= 8) {
+          pagesSinceLastCloudSave = 0;
+          cloud.saveBook(latestBookData).catch(function(err) {
+            console.warn("Batch page cloud sync notice:", err);
+          });
+        }
 
         p += batchChunk.length;
       }
