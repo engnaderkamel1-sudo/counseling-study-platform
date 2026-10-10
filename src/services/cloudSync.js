@@ -106,6 +106,12 @@ window.CloudSyncService = {
       if (cleanBook.coverUrl && typeof cleanBook.coverUrl === "string" && cleanBook.coverUrl.indexOf("data:") === 0) {
         cleanBook.coverUrl = "";
       }
+      // مزامنة حالة النشر بدقة لمنع إخفاء الكتاب عن الطلبة بالخطأ
+      if (cleanBook.publishStatus === "published") {
+        cleanBook.isPublished = true;
+      } else if (cleanBook.publishStatus === "draft") {
+        cleanBook.isPublished = false;
+      }
       return window.db.collection("books").doc(docId).set(cleanBook, { merge: true }).catch(function(err) {
         console.error("Firestore saveBook error for " + docId + ":", err);
         throw err;

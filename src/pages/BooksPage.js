@@ -248,6 +248,16 @@ window.BooksPage = function(props) {
                   return Object.assign({}, foundSaved, { currentPage: pNum });
                 }
               }
+              // إذا لم يكن هناك كتاب نشط محفوظ مسبقاً (مثل فتح الموبايل لأول مرة)، فتح أول كتاب منشور تلقائياً
+              var publishedOnly = mergedList.filter(function(b) {
+                return b.publishStatus === "published" || (b.isPublished === true && b.publishStatus !== "draft");
+              });
+              if (publishedOnly.length > 0) {
+                var defaultBook = publishedOnly[0];
+                var sPageDef = utils.getLocal("counsel_book_page_" + defaultBook.id);
+                var pNumDef = sPageDef ? Number(sPageDef) : (defaultBook.currentPage || 1);
+                return Object.assign({}, defaultBook, { currentPage: pNumDef });
+              }
               return null;
             }
             var found = mergedList.find(function(b) { return b.id === prev.id; });
@@ -2504,7 +2514,7 @@ window.BooksPage = function(props) {
     activeBook && (function() {
       var switcherBooks = books.filter(function(b) {
         if (isAdmin) return true;
-        return b.isPublished !== false;
+        return b.publishStatus === "published" || (b.isPublished === true && b.publishStatus !== "draft");
       });
       if (switcherBooks.length <= 1) return null;
       return React.createElement(
@@ -3246,7 +3256,7 @@ window.BooksPage = function(props) {
     ) : (function() {
       var visibleBooks = books.filter(function(b) {
         if (isAdmin) return true;
-        return b.isPublished !== false;
+        return b.publishStatus === "published" || (b.isPublished === true && b.publishStatus !== "draft");
       });
 
       if (visibleBooks.length === 0) {
