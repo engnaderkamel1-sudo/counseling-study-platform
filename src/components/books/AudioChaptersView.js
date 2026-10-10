@@ -514,8 +514,8 @@ window.AudioChaptersView = function(props) {
                 }, "📖 صفحة PDF رقم " + (chap.startPage || 1)),
                 chap.audioUrl ? React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "• أوديو MP3 متاح ✓") : null,
                 chap.text ? (
-                  !utils.isChapterComplete(chap) ? React.createElement("span", { className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800" },
-                    "• استخراج جزئي (صفحة " + (chap.lastExtractedPage || chap.startPage) + " من " + (chap.endPage || chap.startPage) + ") ⚠️"
+                  !utils.isChapterComplete(chap, chaps[idx + 1]) ? React.createElement("span", { className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800" },
+                    "• استخراج جزئي (صفحة " + (chap.lastExtractedPage || chap.startPage) + " من " + (chap.endPage || (chaps[idx + 1] && chaps[idx + 1].startPage ? (chaps[idx + 1].startPage - 1) : chap.startPage)) + ") ⚠️"
                   ) : React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" },
                     "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓"
                   )
@@ -566,8 +566,11 @@ window.AudioChaptersView = function(props) {
 
             // 1. زر استخراج أو استئناف النص بالذكاء الاصطناعي للأدمن
             currentUser && currentUser.role === "admin" && (function() {
-              var isComplete = utils.isChapterComplete(chap);
-              var isPartial = !isComplete && chap.lastExtractedPage && chap.lastExtractedPage >= (chap.startPage || 1);
+              var nextCh = chaps[idx + 1];
+              var isComplete = utils.isChapterComplete(chap, nextCh);
+              var effectiveEnd = Number(chap.endPage) || (nextCh && nextCh.startPage ? (Number(nextCh.startPage) - 1) : (chap.startPage || 1));
+              var hasMeaningfulText = chap.text && chap.text.trim().length > 30;
+              var isPartial = !isComplete && hasMeaningfulText && chap.lastExtractedPage && chap.lastExtractedPage >= (chap.startPage || 1) && chap.lastExtractedPage < effectiveEnd;
               var btnTitle = isPartial
                 ? ("▶️ استئناف من صفحة " + (chap.lastExtractedPage + 1))
                 : (chap.text ? "إعادة استخراج النص" : "استخراج نص الفصل بالـ AI");

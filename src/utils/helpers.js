@@ -134,10 +134,15 @@ window.APP_UTILS = {
   },
 
   // التحقق مما إذا كان الفصل مكتملاً استخراجه بالكامل
-  isChapterComplete: function(c) {
+  isChapterComplete: function(c, nextChap) {
     if (!c || !c.text || c.text.trim().length < 30) return false;
+    if (c.isComplete) return true;
     var sP = Number(c.startPage) || 1;
-    var eP = Number(c.endPage) || sP;
+    var eP = Number(c.endPage) || 0;
+    if (!eP && nextChap && nextChap.startPage) {
+      eP = Math.max(sP, Number(nextChap.startPage) - 1);
+    }
+    if (!eP) eP = sP;
     var lastP = Number(c.lastExtractedPage);
     if (lastP && eP && lastP < eP) return false;
     return true;

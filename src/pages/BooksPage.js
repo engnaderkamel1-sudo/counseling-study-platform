@@ -1188,13 +1188,13 @@ window.BooksPage = function(props) {
     if (startFromChapId) {
       startIdx = Math.max(0, chaps.findIndex(function(c) { return c.id === startFromChapId; }));
     } else {
-      var firstUnfinishedIdx = chaps.findIndex(function(c) { return !utils.isChapterComplete(c); });
+      var firstUnfinishedIdx = chaps.findIndex(function(c, idx, arr) { return !utils.isChapterComplete(c, arr[idx + 1]); });
       if (firstUnfinishedIdx >= 0) {
         startIdx = firstUnfinishedIdx;
       }
     }
 
-    var pendingChaps = chaps.slice(startIdx).filter(function(c) { return !utils.isChapterComplete(c); });
+    var pendingChaps = chaps.slice(startIdx).filter(function(c, idx, arr) { return !utils.isChapterComplete(c, arr[idx + 1]); });
     var isFullRestart = false;
 
     if (pendingChaps.length === 0) {
@@ -1220,7 +1220,7 @@ window.BooksPage = function(props) {
     var totalPagesToProcess = 0;
     for (var k = startIdx; k < chaps.length; k++) {
       var curC = chaps[k];
-      if (!isFullRestart && utils.isChapterComplete(curC)) continue;
+      if (!isFullRestart && utils.isChapterComplete(curC, chaps[k + 1])) continue;
       var sP = Number(curC.startPage) || 1;
       var eP = Number(curC.endPage) || sP;
       if (eP <= sP) {
@@ -1254,24 +1254,29 @@ window.BooksPage = function(props) {
       }
 
       // تخطي الفصول المستخرجة بالكامل مسبقاً إذا لم يكن إعادة تشغيل كامل
-      if (!isFullRestart && utils.isChapterComplete(currentChap)) {
+      if (!isFullRestart && utils.isChapterComplete(currentChap, workingChaps[ci + 1])) {
         continue;
       }
 
       var fromPage = sPage;
       var accumulated = (currentChap.text || "").trim();
-      if (!isFullRestart && currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage < ePage) {
+      var hasValidText = accumulated.length > 30;
+      if (!isFullRestart && currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage < ePage && hasValidText) {
         fromPage = currentChap.lastExtractedPage + 1;
-        // إذا كان النص النهائي غير مكتمل في السحابة، نجمع النصوص المستخرجة سابقاً من الكاش المحلي
-        if (!accumulated) {
-          var recoveredPieces = [];
-          for (var recP = sPage; recP <= currentChap.lastExtractedPage; recP++) {
-            var cText = utils.getCachedPageText(latestBookData.id, recP);
-            if (cText && cText.trim()) recoveredPieces.push(cText.trim());
-          }
-          if (recoveredPieces.length > 0) {
-            accumulated = recoveredPieces.join("\n\n");
-          }
+      } else if (!hasValidText) {
+        // إذا كان النص غير موجود، نحاول استرجاع الصفحات المتتالية من الكاش المحلي
+        var recoveredPieces = [];
+        var maxRecP = (currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage <= ePage) ? currentChap.lastExtractedPage : (sPage + 10);
+        for (var recP = sPage; recP <= maxRecP; recP++) {
+          var cText = utils.getCachedPageText(latestBookData.id, recP);
+          if (cText && cText.trim()) recoveredPieces.push(cText.trim());
+          else break;
+        }
+        if (recoveredPieces.length > 0) {
+          accumulated = recoveredPieces.join("\n\n");
+          fromPage = sPage + recoveredPieces.length;
+        } else {
+          fromPage = sPage;
         }
       }
 
@@ -1284,7 +1289,7 @@ window.BooksPage = function(props) {
       while (p <= ePage) {
         if (batchCancelledRef.current) break;
         var batchChunk = [];
-        for (var off = 0; off < 4 && (p + off <= ePage); off++) {
+        for (var off = 0; off < 2 && (p + off <= ePage); off++) {
           batchChunk.push(p + off);
         }
 
@@ -1325,13 +1330,13 @@ window.BooksPage = function(props) {
           chapterRemainingPages: Math.max(0, ePage - p + 1)
         });
 
-        // استخراج نصوص صفحات الدفعة بالتوازي (4 صفحات متزامنة مع فحص الكاش الفوري)
+        // استخراج نصوص صفحات الدفعة بالتوازي مع فحص الكاش الفوري
         var chunkResults = await Promise.all(batchChunk.map(async function(targetP) {
-          if (batchCancelledRef.current) return { page: targetP, text: "" };
+          if (batchCancelledRef.current) return { page: targetP, text: "", success: false, cancelled: true };
           // 1. فحص الكاش المحلي المسبق لتوفير الكوتا والوقت
           var cachedPage = utils.getCachedPageText(latestBookData.id, targetP);
           if (cachedPage && cachedPage.trim()) {
-            return { page: targetP, text: cachedPage.trim() };
+            return { page: targetP, text: cachedPage.trim(), success: true };
           }
           try {
             var pageObj = await pdfDoc.getPage(targetP);
@@ -1350,36 +1355,57 @@ window.BooksPage = function(props) {
                 // حفظ الصفحة فورياً في الكاش
                 utils.setCachedPageText(latestBookData.id, targetP, pageText);
               }
-              return { page: targetP, text: pageText || "" };
+              return { page: targetP, text: pageText || "", success: true };
+            } else if (pageText === "[صفحة_غير_نصية]") {
+              return { page: targetP, text: "", isNonText: true, success: true };
             }
           } catch (pageErr) {
-            if (pageErr.message === "CANCELLED") return { page: targetP, text: "" };
+            if (pageErr.message === "CANCELLED") return { page: targetP, text: "", success: false, cancelled: true };
             console.warn("Batch OCR error on page " + targetP, pageErr);
+            return { page: targetP, text: "", success: false, error: pageErr };
           }
-          return { page: targetP, text: "" };
+          return { page: targetP, text: "", success: false };
         }));
 
         if (batchCancelledRef.current) break;
 
-        // دمج النصوص بالترتيب السليم لأرقام الصفحات
+        // دمج النصوص بالترتيب السليم مع التأكد الصارم من النجاح الفعلي
         chunkResults.sort(function(a, b) { return a.page - b.page; });
-        var lastSuccessPage = p;
-        chunkResults.forEach(function(res) {
-          if (res.text) {
-            accumulated += (accumulated ? "\n\n" : "") + res.text;
+        var chunkAllSucceeded = true;
+        var newLastExtractedPage = (currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage) ? currentChap.lastExtractedPage : (sPage - 1);
+        var newlyAddedPagesCount = 0;
+
+        for (var cri = 0; cri < chunkResults.length; cri++) {
+          var res = chunkResults[cri];
+          if (res.success) {
+            if (res.text && res.text.trim()) {
+              accumulated += (accumulated ? "\n\n" : "") + res.text.trim();
+            }
+            newLastExtractedPage = Math.max(newLastExtractedPage, res.page);
+            newlyAddedPagesCount++;
+          } else {
+            chunkAllSucceeded = false;
+            break; // توقف فوراً عند أول صفحة لم تنجح لمنع تخطي أي صفحة
           }
-          lastSuccessPage = res.page;
-        });
+        }
+
+        // في حال فشل استخراج الصفحة (مثلاً Rate Limit مؤقت): ننتظر ونهدئ الاستعلام ونعيد المحاولة
+        if (!chunkAllSucceeded && newlyAddedPagesCount === 0) {
+          setExtractStatusText("⏳ تهدئة مؤقتة لمعدل استعلامات الـ AI (صفحة " + p + ")... إعادة محاولة تلقائية");
+          await new Promise(function(r) { setTimeout(r, 7000); });
+          continue;
+        }
+
+        processedPagesCount += newlyAddedPagesCount;
+        pagesSinceLastCloudSave += newlyAddedPagesCount;
 
         // قياس وقت هذه الدفعة وتحديث المتوسط المتحرك بدقة
         var chunkSec = (Date.now() - chunkStart) / 1000;
-        var perPageSec = chunkSec / batchChunk.length;
+        var perPageSec = chunkSec / Math.max(1, newlyAddedPagesCount);
         recentPageDurations.push(perPageSec);
         if (recentPageDurations.length > 5) recentPageDurations.shift();
 
-        processedPagesCount += batchChunk.length;
-        pagesSinceLastCloudSave += batchChunk.length;
-        var isThisChapComplete = (lastSuccessPage >= ePage);
+        var isThisChapComplete = (newLastExtractedPage >= ePage) && (accumulated.trim().length > 30);
 
         // حماية تامة لملفات الصوت والتعديلات الحية من الضياع أثناء الاستخراج (Live Merge Protection)
         var liveActiveBook = activeBookRef.current || latestBookData;
@@ -1413,7 +1439,7 @@ window.BooksPage = function(props) {
           startPage: sPage,
           endPage: ePage,
           audioUrl: preservedAudioUrl,
-          lastExtractedPage: lastSuccessPage,
+          lastExtractedPage: newLastExtractedPage,
           isComplete: isThisChapComplete
         });
         latestBookData = Object.assign({}, latestBookData, { audioChapters: workingChaps.slice() });
@@ -1427,15 +1453,15 @@ window.BooksPage = function(props) {
         setActiveBook(latestBookData);
         setBooks(allBooks);
         
-        // مزامنة سحابية دورية ذكية (كل 8 صفحات أو عند اكتمال الفصل) لمنع ثقل الشبكة والكوتا
-        if (isThisChapComplete || pagesSinceLastCloudSave >= 8) {
+        // مزامنة سحابية دورية ذكية (كل 6 صفحات أو عند اكتمال الفصل) لمنع ثقل الشبكة والكوتا
+        if (isThisChapComplete || pagesSinceLastCloudSave >= 6) {
           pagesSinceLastCloudSave = 0;
           cloud.saveBook(latestBookData).catch(function(err) {
             console.warn("Batch page cloud sync notice:", err);
           });
         }
 
-        p += batchChunk.length;
+        p = newLastExtractedPage + 1;
       }
 
       // حفظ الفصل المنجز سحابياً وتأكيده عند الاكتمال أو التوقف
