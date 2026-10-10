@@ -63,6 +63,27 @@ window.PdfReaderView = function(props) {
           : "rounded-2xl p-3 ") +
         (!isFullScreen && mobileSectionTab !== "pdf" ? "hidden sm:block" : "block")
     },
+
+    // تنبيه بالمواد المفرغة سحابياً على شاشات الموبايل لتسهيل الوصول المباشر
+    (function() {
+      var readyList = (activeBook.audioChapters || []).filter(function(c) { return c.text && c.text.trim().length > 30; });
+      if (readyList.length > 0 && mobileSectionTab === "pdf") {
+        return React.createElement(
+          "div",
+          { className: "sm:hidden p-3 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white text-xs font-bold flex items-center justify-between shadow-lg border border-blue-500/40" },
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-base animate-bounce" }, "🎧"),
+            React.createElement("span", null, "تم تفريغ " + readyList.length + " فصول سحابياً جاهزة")
+          ),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { if (setMobileSectionTab) setMobileSectionTab("study"); },
+            className: "px-3 py-1.5 bg-white text-blue-900 hover:bg-blue-50 font-black rounded-lg text-xs shadow-md active:scale-95 transition-all whitespace-nowrap"
+          }, "عرض الفصول ◀")
+        );
+      }
+      return null;
+    })(),
     
     // شريط أدوات قارئ الكتاب وحالة الأوفلاين وأزرار ملء الشاشة والتدوير
     React.createElement(

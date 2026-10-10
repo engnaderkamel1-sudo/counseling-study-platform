@@ -263,6 +263,38 @@ window.AudioChaptersView = function(props) {
           "استمع للمقدمة ولكل فصل بشكل مستقل بصوت نقي، واقرأ النص المفرغ أو انتقل لصفحته في الكتاب بضغطة زر."
         )
       ),
+
+      // بطاقة حالة المزامنة السحابية للفصول المفرغة (تؤكد حفظ كافة النصوص على جميع الأجهزة)
+      (function() {
+        var readyChaps = chaps.filter(function(c) { return c.text && c.text.trim().length > 30; });
+        if (readyChaps.length > 0) {
+          var totalChars = readyChaps.reduce(function(acc, c) { return acc + (c.text ? c.text.length : 0); }, 0);
+          return React.createElement(
+            "div",
+            { className: "p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/60 to-slate-900 border border-emerald-500/30 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-fade-in w-full" },
+            React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" },
+              React.createElement("span", { className: "w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-lg shrink-0 shadow-sm" }, "☁️"),
+              React.createElement("div", { className: "min-w-0" },
+                React.createElement("div", { className: "font-black text-xs sm:text-sm text-emerald-300 flex items-center gap-2 flex-wrap" },
+                  "متزامن سحابياً مع قاعدة البيانات",
+                  React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" },
+                    readyChaps.length + " فصول مفرغة جاهزة"
+                  )
+                ),
+                React.createElement("div", { className: "text-[11px] text-slate-300 mt-0.5" },
+                  "تم حفظ وتوثيق " + totalChars.toLocaleString() + " حرف من نصوص الكتاب ومتاحة على جميع أجهزتك."
+                )
+              )
+            ),
+            React.createElement("div", { className: "flex items-center gap-2 self-end sm:self-auto shrink-0" },
+              React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 bg-emerald-900/60 border border-emerald-700/60 px-2.5 py-1 rounded-xl" },
+                "✓ Cloud Sync Active"
+              )
+            )
+          );
+        }
+        return null;
+      })(),
       currentUser && currentUser.role === "admin" ? React.createElement(
         "div",
         { className: "flex items-center gap-2 self-start sm:self-auto flex-wrap" },

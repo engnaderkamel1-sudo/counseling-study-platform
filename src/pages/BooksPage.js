@@ -177,7 +177,18 @@ window.BooksPage = function(props) {
         utils.setLocal(cfg.storageKeys.books, mergedList);
         if (mergedList.length > 0) {
           setActiveBook(function(prev) {
-            if (!prev) return null;
+            if (!prev) {
+              var savedActiveId = utils.getLocal("counsel_active_book_id");
+              if (savedActiveId) {
+                var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
+                if (foundSaved) {
+                  var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
+                  var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
+                  return Object.assign({}, foundSaved, { currentPage: pNum });
+                }
+              }
+              return null;
+            }
             var found = mergedList.find(function(b) { return b.id === prev.id; });
             if (!found) return null;
             var savedPage = utils.getLocal("counsel_book_page_" + found.id);
@@ -206,6 +217,15 @@ window.BooksPage = function(props) {
     var pageToOpen = savedPage ? Number(savedPage) : (activeBook.currentPage || 1);
     setPdfCurrentPage(pageToOpen);
     setPdfTotalPages(0);
+
+    // ذكاء واجهة الموبايل الفوري: التبديل مباشرة لتبويب الفصول والاستماع لرؤية النصوص المفرغة
+    try {
+      var hasExtracted = activeBook.audioChapters && activeBook.audioChapters.some(function(c) { return c.text && c.text.trim().length > 30; });
+      if (hasExtracted || (typeof window !== "undefined" && window.innerWidth < 640 && !activeBook.driveUrl)) {
+        setMobileSectionTab("study");
+      }
+    } catch (eTab) {}
+
     utils.getOfflinePdf(activeBook.id).then(function(data) {
       setIsSavedOffline(!!data);
       if (data) {
@@ -214,15 +234,6 @@ window.BooksPage = function(props) {
         // محاولة تحميل من الرابط إن توفر
         loadPdfFromUrl(activeBook.driveUrl);
       }
-      // ذكاء واجهة الموبايل: إذا فتح المستخدم الكتاب على الموبايل وكانت الفصول مستخرجة أو لا يوجد PDF
-      try {
-        if (typeof window !== "undefined" && window.innerWidth < 640) {
-          var hasExtractedChaps = activeBook.audioChapters && activeBook.audioChapters.some(function(c) { return !!c.text; });
-          if (hasExtractedChaps || (!data && !activeBook.driveUrl)) {
-            setMobileSectionTab("study");
-          }
-        }
-      } catch (eTab) {}
     });
   }, [activeBook && activeBook.id]);
 
@@ -2575,27 +2586,34 @@ window.BooksPage = function(props) {
       // تبويبات التنقل الخاصة بالموبايل (للتبديل السريع بين قارئ الـ PDF وقسم الفصول والاستماع بدون تمرير طويل)
       React.createElement(
         "div",
-        { className: "flex sm:hidden items-center justify-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner" },
+        { className: "flex sm:hidden items-center justify-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-inner gap-1.5" },
         React.createElement("button", {
           type: "button",
           onClick: function() { setMobileSectionTab("pdf"); },
-          className: "flex-1 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
+          className: "flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
             (mobileSectionTab === "pdf"
-              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm"
+              ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-md font-bold scale-[1.02]"
               : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
         }, "📖 عرض صفحات الـ PDF"),
         React.createElement("button", {
           type: "button",
           onClick: function() { setMobileSectionTab("study"); },
-          className: "flex-1 py-2 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
+          className: "flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all " +
             (mobileSectionTab === "study"
-              ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm"
-              : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+              ? "bg-blue-600 text-white shadow-md font-bold scale-[1.02]"
+              : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white/60 dark:bg-slate-900/60")
         },
           React.createElement("span", null, "🎧 الفصول والاستماع"),
-          (activeBook.audioChapters || []).some(function(c) { return !!c.text; })
-            ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse", title: "توجد نصوص مفرغة متاحة" })
-            : null
+          (function() {
+            var readyCount = (activeBook.audioChapters || []).filter(function(c) { return c.text && c.text.trim().length > 30; }).length;
+            if (readyCount > 0) {
+              return React.createElement("span", {
+                className: "px-2 py-0.5 rounded-full text-[10px] font-black " +
+                  (mobileSectionTab === "study" ? "bg-white text-blue-700 shadow-xs" : "bg-emerald-500 text-slate-950 animate-pulse")
+              }, readyCount + " جاهز ✓");
+            }
+            return null;
+          })()
         )
       ),
 
@@ -3163,6 +3181,12 @@ window.BooksPage = function(props) {
             }
           }
 
+          var totalChaps = (b.audioChapters || []).length;
+          var extractedChapsList = (b.audioChapters || []).filter(function(c) { return c.text && c.text.trim().length > 30; });
+          var extractedCount = extractedChapsList.length;
+          var totalExtractedChars = extractedChapsList.reduce(function(sum, c) { return sum + (c.text ? c.text.length : 0); }, 0);
+          var extractPercent = totalChaps > 0 ? Math.round((extractedCount / totalChaps) * 100) : 0;
+
           return React.createElement(
             "div",
             {
@@ -3172,6 +3196,11 @@ window.BooksPage = function(props) {
                 var savedPage = utils.getLocal("counsel_book_page_" + b.id);
                 var targetBook = savedPage ? Object.assign({}, b, { currentPage: Number(savedPage) }) : b;
                 utils.setLocal("counsel_active_book_id", b.id);
+                // ذكاء واجهة الموبايل: التبديل مباشرة لتبويب الفصول والاستماع لرؤية ما تم إنجازه فوراً
+                var hasExtracted = (b.audioChapters || []).some(function(c) { return c.text && c.text.trim().length > 30; });
+                if (hasExtracted || (typeof window !== "undefined" && window.innerWidth < 640)) {
+                  setMobileSectionTab("study");
+                }
                 setActiveBook(targetBook);
               },
               className: "group cursor-pointer bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-3 shadow-sm hover:shadow-xl hover:border-teal-500/60 dark:hover:border-teal-500/60 transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col justify-between relative overflow-hidden"
@@ -3279,6 +3308,35 @@ window.BooksPage = function(props) {
                   React.createElement("span", { className: "truncate", title: "ترجمة: " + displayTranslator }, "ترجمة: " + displayTranslator)
                 ) : null
               ),
+
+              // بطاقة تقدم التفريغ السحابي للفصول (تظهر بوضوح على اللاب والموبايل)
+              extractedCount > 0 ? React.createElement(
+                "div",
+                { className: "mt-2 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] space-y-1" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between font-bold text-emerald-800 dark:text-emerald-300" },
+                  React.createElement("span", { className: "flex items-center gap-1 text-[11px]" },
+                    React.createElement("span", null, "✨"),
+                    React.createElement("span", null, "تفريغ " + extractedCount + " من " + totalChaps + " فصول")
+                  ),
+                  React.createElement("span", { className: "font-mono text-[10px]" }, extractPercent + "%")
+                ),
+                React.createElement(
+                  "div",
+                  { className: "w-full bg-emerald-200 dark:bg-emerald-900 rounded-full h-1.5 overflow-hidden" },
+                  React.createElement("div", {
+                    className: "bg-emerald-600 dark:bg-emerald-400 h-full rounded-full transition-all",
+                    style: { width: extractPercent + "%" }
+                  })
+                ),
+                React.createElement(
+                  "div",
+                  { className: "text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between" },
+                  React.createElement("span", null, "☁️ متزامن سحابياً"),
+                  React.createElement("span", { className: "font-mono font-bold" }, totalExtractedChars.toLocaleString() + " حرف")
+                )
+              ) : null,
 
               // الفوتر: تاريخ الرفع وزر الفتح
               React.createElement(
