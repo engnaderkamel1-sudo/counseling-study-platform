@@ -921,8 +921,18 @@ window.BooksPage = function(props) {
 
   // دالة مساعدة قوية لاستخراج نص صفحة مفردة مع معالجة الـ Rate Limit وإعادة المحاولة
   var extractTextFromPageBase64 = async function(base64Image, key, pageNum, isBatchCancelledRef) {
-    // استخدام أسرع موديلات معالجة الرؤية مباشرة لتوفير وقت استعلام الشبكة المكرر في كل ورقة
-    var candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
+    // اكتشاف أسرع الموديلات المتاحة تلقائياً في حساب المستخدم مع التخزين المؤقت بالذاكرة
+    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
+    var candidateModels = [];
+    if (autoModels && autoModels.length > 0) {
+      var flashModels = autoModels.filter(function(m) {
+        return m.indexOf("flash") !== -1 && m.indexOf("tts") === -1 && m.indexOf("image") === -1;
+      });
+      candidateModels = [].concat(flashModels, autoModels);
+    }
+    if (candidateModels.length === 0) {
+      candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+    }
     var prompt = "أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).\n" +
       "المهمة: استخرج متن نص هذه الصفحة العربية رقم " + pageNum + " بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.\n\n" +
       "قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:\n" +
@@ -1389,10 +1399,17 @@ window.BooksPage = function(props) {
 
         // في حال فشل استخراج الصفحة (مثلاً Rate Limit مؤقت): ننتظر ونهدئ الاستعلام ونعيد المحاولة
         if (!chunkAllSucceeded && newlyAddedPagesCount === 0) {
-          setExtractStatusText("⏳ تهدئة مؤقتة لمعدل استعلامات الـ AI (صفحة " + p + ")... إعادة محاولة تلقائية");
-          await new Promise(function(r) { setTimeout(r, 7000); });
+          consecutiveFailures = (consecutiveFailures || 0) + 1;
+          if (consecutiveFailures >= 3) {
+            batchCancelledRef.current = true;
+            alert("⏳ تم إيقاف الاستخراج مؤقتاً عند صفحة " + p + " للحفاظ على التقدم.\nيرجى التأكد من اتصال الإنترنت أو الانتظار دقيقة، ثم استئناف الاستخراج بضغطة زر.");
+            break;
+          }
+          setExtractStatusText("⏳ تهدئة مؤقتة لمعدل استعلامات الـ AI (صفحة " + p + ")... إعادة محاولة تلقائية (" + consecutiveFailures + "/3)");
+          await new Promise(function(r) { setTimeout(r, 6000); });
           continue;
         }
+        consecutiveFailures = 0;
 
         processedPagesCount += newlyAddedPagesCount;
         pagesSinceLastCloudSave += newlyAddedPagesCount;
