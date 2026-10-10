@@ -143,15 +143,22 @@ window.BooksPage = function(props) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
           if (cached && cached.audioChapters) {
             var mergedChaps = (cb.audioChapters || []).map(function(ch) {
-              var cachedCh = cached.audioChapters.find(function(cc) { return cc.id === ch.id; });
-              if (cachedCh && cachedCh.text && (!ch.text || ch.text.length < cachedCh.text.length)) {
-                return Object.assign({}, ch, {
-                  text: cachedCh.text,
-                  lastExtractedPage: cachedCh.lastExtractedPage !== undefined ? cachedCh.lastExtractedPage : ch.lastExtractedPage,
-                  isComplete: cachedCh.isComplete !== undefined ? cachedCh.isComplete : ch.isComplete
-                });
-              }
-              return ch;
+              var cachedCh = cached.audioChapters.find(function(cc) {
+                return cc.id === ch.id || (cc.title && ch.title && cc.title.trim() === ch.title.trim());
+              });
+              var bestAudio = (ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
+              var bestText = (ch.text && ch.text.length >= (cachedCh && cachedCh.text ? cachedCh.text.length : 0))
+                ? ch.text
+                : (cachedCh && cachedCh.text ? cachedCh.text : "");
+              var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
+              var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
+
+              return Object.assign({}, ch, {
+                audioUrl: bestAudio,
+                text: bestText,
+                lastExtractedPage: bestLastPage,
+                isComplete: bestIsComplete
+              });
             });
             return Object.assign({}, cb, { audioChapters: mergedChaps });
           }
@@ -1476,6 +1483,14 @@ window.BooksPage = function(props) {
       var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
       await cloud.saveBook(updatedBook);
       setActiveBook(updatedBook);
+
+      var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+      var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+      if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+      else allBooks.push(updatedBook);
+      utils.setLocal(cfg.storageKeys.books, allBooks);
+      utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+      setBooks(allBooks);
 
       setIsSavingChapter(false);
       setShowChapterModal(false);

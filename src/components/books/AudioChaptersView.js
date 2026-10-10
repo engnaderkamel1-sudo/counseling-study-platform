@@ -555,15 +555,15 @@ window.AudioChaptersView = function(props) {
               title: "تشغيل ملف الصوت للفصل"
             }, isThisPlaying ? "⏸️ إيقاف" : "▶️ استماع") : null,
 
-            // 4. زر تعديل بيانات الفصل للأدمن (متاح دائماً لتعديل العنوان وأرقام الصفحات والصوت)
+            // 4. زر تعديل بيانات الفصل للأدمن (متاح دائماً لتعديل العنوان وأرقام الصفحات أو رفع الصوت)
             currentUser && currentUser.role === "admin" && React.createElement("button", {
               type: "button",
               onClick: function() { handleOpenEditChapter(chap); },
               className: "px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition-all flex items-center gap-1 border border-slate-200 dark:border-slate-700",
-              title: "تعديل اسم الفصل أو أرقام صفحاته أو الصوت"
+              title: chap.audioUrl ? "تعديل اسم الفصل أو أرقام صفحاته أو الصوت" : "رفع أو ربط ملف صوت الفصل (MP3)"
             },
-            React.createElement("span", null, "✏️"),
-            React.createElement("span", null, "تعديل")
+            React.createElement("span", null, chap.audioUrl ? "✏️" : "🎵"),
+            React.createElement("span", null, chap.audioUrl ? "تعديل" : "رفع صوت (MP3)")
             ),
 
             // 5. زر حذف الفصل واضح ومميز للأدمن
