@@ -69,6 +69,7 @@ window.BooksPage = function(props) {
   var [chapterTextFontSize, setChapterTextFontSize] = React.useState(15); // 13, 15, 17, 20
   var [playingChapterId, setPlayingChapterId] = React.useState(null);
   var [isPlaylistMode, setIsPlaylistMode] = React.useState(true);
+  var [isQualityAuditOpen, setIsQualityAuditOpen] = React.useState(false);
   var chapterAudioRef = React.useRef(null);
 
   // مشغل تراك 1 الشامل (Master NotebookLM Podcast Track) واستئناف التشغيل التلقائي
@@ -909,6 +910,36 @@ window.BooksPage = function(props) {
     setBooks(allBooks);
     setReviewingScannedChapters(null);
     alert("🎉 تم اعتماد وحفظ فهرس الكتاب بنجاح (" + formattedChaps.length + " فصول).\nيمكنك الآن استخراج النصوص أو الصوت بأمان تام.");
+  };
+
+  // اعتماد ونشر الكتاب أو إلغاء نشره وإرجاعه لمسودة
+  var handlePublishToggle = async function(newStatus) {
+    if (!activeBook) return;
+    var audit = utils.auditBookQuality ? utils.auditBookQuality(activeBook) : { isPublishable: true };
+    if (newStatus === "published" && !audit.isPublishable) {
+      alert("⛔ عذراً، لا يمكن نشر هذا الكتاب لوجود فصول غير مكتملة!\nيرجى استكمال استخراج كافة الصفحات والأصوات أولاً.");
+      return;
+    }
+    var isPub = (newStatus === "published");
+    var updatedBook = Object.assign({}, activeBook, {
+      publishStatus: newStatus,
+      isPublished: isPub
+    });
+    await cloud.saveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    else allBooks.push(updatedBook);
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks);
+
+    if (newStatus === "published") {
+      alert("🎉 مبارك! تم اعتماد الكتاب ونشره رسمياً لجميع الدارسين والطلبة بالمنصة بنجاح!");
+    } else {
+      alert("🔒 تم إلغاء نشر الكتاب وإعادته إلى مسودة قيد التجهيز (أصبح مخفياً عن الدارسين).");
+    }
   };
 
   // وظيفة مسح قائمة الفصول الحالية للبدء من جديد
@@ -2347,8 +2378,8 @@ window.BooksPage = function(props) {
             null,
             React.createElement("div", { className: "flex items-center flex-wrap gap-2" },
               React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeBook.title),
-              // شارة حالة النشر
-              React.createElement("span", {
+              // شارة حالة النشر (للإدارة فقط حتى لا تظهر للطلاب أو في وضع المعاينة)
+              isAdmin && React.createElement("span", {
                 className: "text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs " +
                   (activeBook.isPublished === false
                     ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
@@ -2599,7 +2630,9 @@ window.BooksPage = function(props) {
           handleStopBatchAudio: handleStopBatchAudio,
           generatingAudioChapterId: generatingAudioChapterId,
           audioBatchProgress: audioBatchProgress,
-          audioStatusText: audioStatusText
+          audioStatusText: audioStatusText,
+          onOpenQualityAudit: function() { setIsQualityAuditOpen(true); },
+          handlePublishToggle: handlePublishToggle
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
@@ -3305,6 +3338,15 @@ window.BooksPage = function(props) {
       setViewingChapterText: setViewingChapterText,
       isPlaylistMode: isPlaylistMode,
       setIsPlaylistMode: setIsPlaylistMode
+    }),
+    // نافذة فحص الجودة الشامل واعتماد النشر للدارسين (Quality Gate)
+    React.createElement(window.BookQualityAuditModal, {
+      isOpen: isQualityAuditOpen,
+      onClose: function() { setIsQualityAuditOpen(false); },
+      book: activeBook,
+      onPublishToggle: handlePublishToggle,
+      onStartBatchExtract: handleBatchExtractAllChapters,
+      onStartBatchAudio: handleBatchGenerateAllAudio
     })
   );
 };

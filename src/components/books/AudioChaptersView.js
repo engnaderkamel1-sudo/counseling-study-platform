@@ -30,6 +30,8 @@ window.AudioChaptersView = function(props) {
   var audioStatusText = props.audioStatusText;
   var isPlaylistModeProp = props.isPlaylistMode;
   var setIsPlaylistModeProp = props.setIsPlaylistMode;
+  var onOpenQualityAudit = props.onOpenQualityAudit;
+  var handlePublishToggle = props.handlePublishToggle;
 
   var utils = window.APP_UTILS || {};
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -42,6 +44,12 @@ window.AudioChaptersView = function(props) {
   var [localPlaylistMode, setLocalPlaylistMode] = React.useState(true);
   var isPlaylistMode = isPlaylistModeProp !== undefined ? isPlaylistModeProp : localPlaylistMode;
   var setIsPlaylistMode = setIsPlaylistModeProp || setLocalPlaylistMode;
+
+  // فحص جودة الكتاب لحارس النشر
+  var audit = React.useMemo(function() {
+    return (utils.auditBookQuality && activeBook) ? utils.auditBookQuality(activeBook) : null;
+  }, [activeBook, chaps]);
+  var isPublished = !!(activeBook && (activeBook.publishStatus === "published" || activeBook.isPublished === true));
 
   // خريطة مدد الفصول الصوتية بالثواني مع تخزين محلي سريع
   var [durationsMap, setDurationsMap] = React.useState(function() {
@@ -315,6 +323,95 @@ window.AudioChaptersView = function(props) {
         )
       ) : null
     ),
+
+    // لوحة بوابة الجودة واعتماد النشر للدارسين (Quality Gate Card)
+    currentUser && currentUser.role === "admin" && audit ? React.createElement(
+      "div",
+      {
+        className: "p-4 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 " +
+          (isPublished
+            ? "bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border-emerald-500/40 text-white shadow-lg shadow-emerald-950/20"
+            : audit.isPublishable
+              ? "bg-gradient-to-r from-blue-950/80 via-slate-900 to-indigo-950/80 border-blue-500/40 text-white shadow-lg shadow-blue-950/20"
+              : "bg-gradient-to-r from-amber-950/60 via-slate-900 to-rose-950/60 border-amber-500/40 text-white shadow-lg")
+      },
+      React.createElement(
+        "div",
+        { className: "flex items-start sm:items-center gap-3 min-w-0 flex-1" },
+        React.createElement("span", { className: "text-2xl p-2.5 rounded-2xl bg-white/10 shrink-0" },
+          isPublished ? "🌟" : audit.isPublishable ? "✅" : "🛡️"
+        ),
+        React.createElement(
+          "div",
+          { className: "space-y-1 min-w-0" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 flex-wrap" },
+            React.createElement("h4", { className: "font-black text-sm sm:text-base text-white" },
+              isPublished
+                ? "الكتاب منشور رسمياً للدارسين"
+                : audit.isPublishable
+                  ? "الكتاب مكتمل 100% ومؤهل للنشر"
+                  : "بوابة فحص الجودة (مسودة قيد الإعداد)"
+            ),
+            React.createElement("span", {
+              className: "text-[11px] font-black px-2 py-0.5 rounded-full border " +
+                (isPublished
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : audit.isPublishable
+                    ? "bg-blue-500/20 text-blue-300 border-blue-500/40"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/40")
+            },
+              isPublished ? "🚀 منشور للطلبة" : "🔒 مخفي عن الطلبة"
+            )
+          ),
+          React.createElement(
+            "p",
+            { className: "text-xs text-slate-300 flex items-center gap-2 flex-wrap" },
+            React.createElement("span", null, "نسبة الإنجاز الإجمالية: " + audit.overallPercent + "%"),
+            React.createElement("span", { className: "text-slate-500" }, "•"),
+            React.createElement("span", null, "فصول تامة: " + audit.completedCount + " من " + audit.totalChapters),
+            React.createElement("span", { className: "text-slate-500" }, "•"),
+            React.createElement("span", null, "تراكات صوتية: " + audit.audioReadyCount + " من " + audit.totalChapters)
+          )
+        )
+      ),
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-2 w-full md:w-auto shrink-0 justify-end flex-wrap" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onOpenQualityAudit,
+            className: "flex-1 md:flex-initial px-3.5 py-2 rounded-xl text-xs font-black bg-white/10 hover:bg-white/20 text-white border border-white/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+          },
+          "🔍 فحص الجودة والتفاصيل"
+        ),
+        isPublished ? React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { handlePublishToggle && handlePublishToggle("draft"); },
+            className: "flex-1 md:flex-initial px-3.5 py-2 rounded-xl text-xs font-black bg-rose-600/80 hover:bg-rose-600 text-white border border-rose-500/40 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+          },
+          "🔒 إلغاء النشر مؤقتاً"
+        ) : React.createElement(
+          "button",
+          {
+            type: "button",
+            disabled: !audit.isPublishable,
+            onClick: function() { handlePublishToggle && handlePublishToggle("published"); },
+            className: "flex-1 md:flex-initial px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 " +
+              (audit.isPublishable
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                : "bg-slate-800 text-slate-500 border border-slate-700/50 cursor-not-allowed opacity-70"),
+            title: audit.isPublishable ? "اعتماد ونشر الكتاب للطلبة" : "لا يمكن النشر حتى تكتمل جميع الفصول بالصوت والنص 100%"
+          },
+          audit.isPublishable ? "🚀 اعتماد ونشر للدارسين" : "🔒 غير مؤهل للنشر"
+        )
+      )
+    ) : null,
 
     // لوحة شريط تقدم توليد الصوت الجماعي (Batch Audio Progress)
     audioBatchProgress ? React.createElement(
@@ -743,16 +840,50 @@ window.AudioChaptersView = function(props) {
                   return React.createElement("span", {
                     className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 text-[11px]"
                   },
-                    "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "أوديو MP3 متاح ✓")
+                    "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "صوت MP3 جاهز ✓")
                   );
-                })() : null,
-                chap.text ? (
-                  !utils.isChapterComplete(chap, chaps[idx + 1]) ? React.createElement("span", { className: "text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800" },
-                    "• استخراج جزئي (صفحة " + (chap.lastExtractedPage || chap.startPage) + " من " + (chap.endPage || (chaps[idx + 1] && chaps[idx + 1].startPage ? (chaps[idx + 1].startPage - 1) : chap.startPage)) + ") ⚠️"
-                  ) : React.createElement("span", { className: "text-blue-600 dark:text-blue-400 font-bold" },
-                    "• نص مفرغ متاح (" + (chap.text.length) + " حرف) ✓"
-                  )
-                ) : null
+                })() : (currentUser && currentUser.role === "admin" ? React.createElement(
+                  "span",
+                  { className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1" },
+                  "⚠️ بدون صوت MP3"
+                ) : null),
+                (function() {
+                  var sP = Number(chap.startPage) || 1;
+                  var nextC = chaps[idx + 1];
+                  var defaultEnd = nextC && nextC.startPage ? (Number(nextC.startPage) - 1) : sP;
+                  var eP = Number(chap.endPage) || defaultEnd;
+                  var totalChapPages = Math.max(1, eP - sP + 1);
+                  var lastP = Number(chap.lastExtractedPage) || (chap.isComplete ? eP : 0);
+                  var pagesDone = chap.isComplete ? totalChapPages : (lastP >= sP ? Math.min(totalChapPages, lastP - sP + 1) : ((chap.text && chap.text.trim().length > 100) ? totalChapPages : 0));
+                  var textLen = (chap.text || "").trim().length;
+                  var isDone = (pagesDone >= totalChapPages) && (textLen > 100);
+
+                  if (currentUser && currentUser.role === "admin") {
+                    if (isDone) {
+                      return React.createElement("span", {
+                        className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
+                      },
+                        "✅ مكتمل 100% (" + totalChapPages + " ص • " + textLen.toLocaleString() + " حرف)"
+                      );
+                    } else if (textLen > 0 || pagesDone > 0) {
+                      return React.createElement("span", {
+                        className: "text-amber-700 dark:text-amber-300 font-black bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1 animate-pulse"
+                      },
+                        "⚠️ غير مكتمل (" + pagesDone + " من " + totalChapPages + " ص • " + textLen.toLocaleString() + " حرف)"
+                      );
+                    } else {
+                      return React.createElement("span", {
+                        className: "text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1"
+                      },
+                        "⚪ لم يستخرج بعد (" + totalChapPages + " ص)"
+                      );
+                    }
+                  } else {
+                    return textLen > 0 ? React.createElement("span", {
+                      className: "text-blue-600 dark:text-blue-400 font-medium text-[11px] flex items-center gap-1"
+                    }, "📖 نص مفرغ متاح للقراءة ✓") : null;
+                  }
+                })()
               ),
 
               // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية

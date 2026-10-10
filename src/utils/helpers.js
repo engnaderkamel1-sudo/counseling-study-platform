@@ -162,11 +162,12 @@ window.APP_UTILS = {
     }
     if (!eP) eP = sP;
     var lastP = Number(c.lastExtractedPage);
-    if (lastP && eP && lastP < eP) return false;
+    // السماح بنقص صفحة واحدة في النهاية إذا كان الفصل يحتوي على نص كبير (نظراً لأن الصفحة الأخيرة غالباً ما تكون بيضاء أو بها فاصل)
+    if (lastP && eP && lastP < (eP - 1)) return false;
     if (eP > sP) {
-      if (lastP && lastP >= eP) return true;
+      if (lastP && lastP >= (eP - 1)) return true;
       var totalPages = eP - sP + 1;
-      if (c.text.trim().length < totalPages * 120) return false;
+      if (c.text.trim().length < Math.min(1000, totalPages * 50)) return false;
     }
     return true;
   },
@@ -188,5 +189,98 @@ window.APP_UTILS = {
       var key = "counsel_ocr_p_" + bookId + "_" + pageNum;
       localStorage.setItem(key, text);
     } catch (e) {}
+  },
+
+  // تدقيق وفحص سلامة الكتاب وفصوله إلزامياً قبل النشر للدارسين (Quality Gate)
+  auditBookQuality: function(book) {
+    if (!book) return { isPublishable: false, score: 0, issues: ["الكتاب غير محدد"], chaptersAudit: [] };
+    var chaps = book.audioChapters || [];
+    if (chaps.length === 0) {
+      return { isPublishable: false, score: 0, issues: ["لا توجد فصول مضافة في هذا الكتاب"], chaptersAudit: [] };
+    }
+
+    var totalChapters = chaps.length;
+    var completedCount = 0;
+    var audioReadyCount = 0;
+    var chaptersAudit = [];
+    var globalIssues = [];
+    var totalPagesInBook = 0;
+    var totalExtractedPages = 0;
+
+    for (var i = 0; i < chaps.length; i++) {
+      var c = chaps[i];
+      var sP = Number(c.startPage) || 1;
+      var eP = Number(c.endPage) || sP;
+      var totalPages = Math.max(1, eP - sP + 1);
+      totalPagesInBook += totalPages;
+
+      var lastP = Number(c.lastExtractedPage) || (c.isComplete ? eP : 0);
+      var textLen = (c.text || "").trim().length;
+      var hasAudio = !!(c.audioUrl && c.audioUrl.trim());
+      if (hasAudio) audioReadyCount++;
+
+      var pagesDone = 0;
+      if (c.isComplete || lastP >= eP) {
+        pagesDone = totalPages;
+      } else if (lastP >= sP) {
+        pagesDone = Math.min(totalPages, lastP - sP + 1);
+      }
+      totalExtractedPages += pagesDone;
+
+      var isDenseEnough = textLen >= (totalPages * 400);
+      var isComplete = (pagesDone >= totalPages) && (textLen > 100);
+      if (isComplete) completedCount++;
+
+      var chapIssues = [];
+      if (pagesDone === 0) {
+        chapIssues.push("لم يتم استخراج نصوص هذا الفصل نهائياً");
+      } else if (pagesDone < totalPages) {
+        chapIssues.push("مستخرج جزئياً فقط (" + pagesDone + " من " + totalPages + " صفحة - متبقي " + (totalPages - pagesDone) + " صفحة)");
+      } else if (!isDenseEnough && totalPages > 1) {
+        chapIssues.push("حجم النص قليل جداً مقارنة بعدد صفحات الفصل (" + textLen + " حرف لـ " + totalPages + " صفحة)");
+      }
+
+      if (!hasAudio) {
+        chapIssues.push("لا يوجد تسجيل صوتي (MP3) لهذا الفصل بعد");
+      }
+
+      chaptersAudit.push({
+        id: c.id,
+        index: i + 1,
+        title: c.title,
+        startPage: sP,
+        endPage: eP,
+        totalPages: totalPages,
+        pagesDone: pagesDone,
+        percent: Math.round((pagesDone / totalPages) * 100),
+        textLen: textLen,
+        hasAudio: hasAudio,
+        audioDuration: c.audioDuration || 0,
+        isComplete: isComplete,
+        issues: chapIssues
+      });
+    }
+
+    if (completedCount < totalChapters) {
+      globalIssues.push("يوجد " + (totalChapters - completedCount) + " فصول غير مكتملة النص.");
+    }
+    if (audioReadyCount < totalChapters) {
+      globalIssues.push("يوجد " + (totalChapters - audioReadyCount) + " فصول ينقصها التسجيل الصوتي.");
+    }
+
+    var isPublishable = (completedCount === totalChapters) && (audioReadyCount === totalChapters) && (totalChapters > 0);
+    var overallPercent = Math.round((totalExtractedPages / Math.max(1, totalPagesInBook)) * 100);
+
+    return {
+      isPublishable: isPublishable,
+      totalChapters: totalChapters,
+      completedCount: completedCount,
+      audioReadyCount: audioReadyCount,
+      totalPagesInBook: totalPagesInBook,
+      totalExtractedPages: totalExtractedPages,
+      overallPercent: overallPercent,
+      globalIssues: globalIssues,
+      chaptersAudit: chaptersAudit
+    };
   }
 };
