@@ -1228,7 +1228,7 @@ window.BooksPage = function(props) {
         else eP = Math.min(sP + 15, pdfDoc.numPages || sP);
       }
       var fromP = sP;
-      if (!isFullRestart && curC.lastExtractedPage && curC.lastExtractedPage >= sP && curC.lastExtractedPage < eP && curC.text) {
+      if (!isFullRestart && curC.lastExtractedPage && curC.lastExtractedPage >= sP && curC.lastExtractedPage < eP) {
         fromP = curC.lastExtractedPage + 1;
       }
       totalPagesToProcess += Math.max(1, (eP - fromP + 1));
@@ -1259,10 +1259,20 @@ window.BooksPage = function(props) {
       }
 
       var fromPage = sPage;
-      var accumulated = "";
-      if (!isFullRestart && currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage < ePage && currentChap.text) {
+      var accumulated = (currentChap.text || "").trim();
+      if (!isFullRestart && currentChap.lastExtractedPage && currentChap.lastExtractedPage >= sPage && currentChap.lastExtractedPage < ePage) {
         fromPage = currentChap.lastExtractedPage + 1;
-        accumulated = currentChap.text;
+        // إذا كان النص النهائي غير مكتمل في السحابة، نجمع النصوص المستخرجة سابقاً من الكاش المحلي
+        if (!accumulated) {
+          var recoveredPieces = [];
+          for (var recP = sPage; recP <= currentChap.lastExtractedPage; recP++) {
+            var cText = utils.getCachedPageText(latestBookData.id, recP);
+            if (cText && cText.trim()) recoveredPieces.push(cText.trim());
+          }
+          if (recoveredPieces.length > 0) {
+            accumulated = recoveredPieces.join("\n\n");
+          }
+        }
       }
 
       setExtractingChapterId(currentChap.id);
@@ -2376,7 +2386,8 @@ window.BooksPage = function(props) {
           singleExtractProgress: singleExtractProgress,
           extractingChapterId: extractingChapterId,
           extractStatusText: extractStatusText,
-          handleClearAllChapters: handleClearAllChapters
+          handleClearAllChapters: handleClearAllChapters,
+          handleStopBatchExtraction: handleStopBatchExtraction
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
