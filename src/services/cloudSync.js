@@ -37,23 +37,65 @@ window.CloudSyncService = {
     }, { merge: true });
   },
 
-  // الاشتراك اللحظي في الكتب مع جلب مباشر فوري (Direct HTTP Fetch + Realtime Listener)
+  // تحويل كائنات Firestore REST إلى كائنات JavaScript عادية
+  parseFirestoreValue: function(val) {
+    if (!val || typeof val !== "object") return val;
+    if ("stringValue" in val) return val.stringValue;
+    if ("booleanValue" in val) return val.booleanValue;
+    if ("integerValue" in val) return parseInt(val.integerValue, 10);
+    if ("doubleValue" in val) return parseFloat(val.doubleValue);
+    if ("nullValue" in val) return null;
+    if ("arrayValue" in val) {
+      var arr = (val.arrayValue && val.arrayValue.values) || [];
+      var self = this;
+      return arr.map(function(item) { return self.parseFirestoreValue(item); });
+    }
+    if ("mapValue" in val) {
+      var res = {};
+      var fields = (val.mapValue && val.mapValue.fields) || {};
+      var self = this;
+      Object.keys(fields).forEach(function(k) {
+        res[k] = self.parseFirestoreValue(fields[k]);
+      });
+      return res;
+    }
+    return val;
+  },
+
+  parseFirestoreDoc: function(doc) {
+    var fields = doc.fields || {};
+    var res = {};
+    var self = this;
+    Object.keys(fields).forEach(function(k) {
+      res[k] = self.parseFirestoreValue(fields[k]);
+    });
+    if (!res.id && doc.name) {
+      var parts = doc.name.split("/");
+      res.id = parts[parts.length - 1];
+    }
+    return res;
+  },
+
+  // الاشتراك اللحظي في الكتب مع جلب مباشر فوري ومضمون (Direct REST Fetch + Realtime Listener)
   subscribeBooks: function(onUpdate) {
-    if (!window.db) return function() {};
-    try {
-      // 1. جلب فوري ومباشر أولاً عبر HTTP لضمان التحميل على الموبايل والـ Incognito بدون انتظار
-      window.db.collection("books").get().then(function(snapshot) {
-        var list = [];
-        snapshot.forEach(function(doc) {
-          list.push(Object.assign({ id: doc.id }, doc.data()));
-        });
-        if (list.length > 0 && typeof onUpdate === "function") {
-          onUpdate(list);
+    var self = this;
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو تعليق الـ WebSockets
+    fetch("https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?nocache=" + Date.now())
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.documents && Array.isArray(data.documents)) {
+          var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+          if (restList.length > 0 && typeof onUpdate === "function") {
+            onUpdate(restList);
+          }
         }
-      }).catch(function(err) {
-        console.warn("Direct books HTTP get notice:", err);
+      })
+      .catch(function(errRest) {
+        console.warn("Direct REST books fetch notice:", errRest);
       });
 
+    if (!window.db) return function() {};
+    try {
       // 2. الاستماع اللحظي المستمر لأي تحديث جديد
       return window.db.collection("books").onSnapshot(function(snapshot) {
         var list = [];
