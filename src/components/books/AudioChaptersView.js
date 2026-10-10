@@ -19,6 +19,7 @@ window.AudioChaptersView = function(props) {
   var handleBatchExtractAllChapters = props.handleBatchExtractAllChapters;
   var handleStopBatchExtraction = props.handleStopBatchExtraction;
   var batchProgress = props.batchProgress;
+  var singleExtractProgress = props.singleExtractProgress;
   var handleMoveChapter = props.handleMoveChapter;
   var handleGenerateChapterAudio = props.handleGenerateChapterAudio;
   var handleBatchGenerateAllAudio = props.handleBatchGenerateAllAudio;
