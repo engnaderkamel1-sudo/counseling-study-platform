@@ -83,6 +83,16 @@ window.ChapterTextViewerModal = function(props) {
     }
   };
 
+  var cycleSpeed = function() {
+    var speeds = [1, 1.25, 1.5, 1.75, 2, 0.8];
+    var curIdx = speeds.findIndex(function(s) { return Math.abs(s - localSpeed) < 0.05; });
+    var nextSpeed = speeds[(curIdx + 1) % speeds.length] || 1;
+    setLocalSpeed(nextSpeed);
+    if (chapterAudioRef && chapterAudioRef.current) {
+      chapterAudioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
   var formatTime = function(sec) {
     if (!sec || isNaN(sec)) return "00:00";
     var m = Math.floor(sec / 60);
@@ -157,32 +167,20 @@ window.ChapterTextViewerModal = function(props) {
               React.createElement("span", null, "🎧 استماع وقراءة متزامنة:"),
               curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300" }, "تراك (" + (curAudioIdx + 1) + " من " + allAudioChaps.length + ")") : null
             ),
-            React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("div", { className: "flex items-center gap-1.5" },
               setIsPlaylistMode ? React.createElement("button", {
                 type: "button",
                 onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
-                className: "px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 " +
-                  (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
+                className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                  (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
                 title: isPlaylistMode ? "التشغيل المتتالي مفعل" : "التشغيل المتتالي متوقف"
-              }, "🔁 " + (isPlaylistMode ? "قائمة متتالية" : "فردي")) : null,
-              React.createElement("div", { className: "flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-lg border border-slate-700/60 text-[10px] text-slate-300" },
-                React.createElement("span", null, localSpeed.toFixed(1) + "x"),
-                React.createElement("input", {
-                  type: "range",
-                  min: 0.5,
-                  max: 2,
-                  step: 0.1,
-                  value: localSpeed,
-                  onChange: function(e) {
-                    var sp = parseFloat(e.target.value);
-                    if (chapterAudioRef && chapterAudioRef.current) {
-                      chapterAudioRef.current.playbackRate = sp;
-                      setLocalSpeed(sp);
-                    }
-                  },
-                  className: "w-12 h-1 bg-slate-700 rounded appearance-none cursor-pointer accent-amber-500"
-                })
-              )
+              }, "🔁 " + (isPlaylistMode ? "قائمة متتالية ✓" : "فردي")) : null,
+              React.createElement("button", {
+                type: "button",
+                onClick: cycleSpeed,
+                className: "px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-mono font-bold active:scale-95 transition-all shadow-xs",
+                title: "تغيير سرعة الصوت"
+              }, localSpeed.toFixed(1) + "x")
             )
           ),
 
@@ -205,6 +203,11 @@ window.ChapterTextViewerModal = function(props) {
               },
               className: "flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
             }),
+            canGoNext && isPlaylistMode && allAudioChaps[curAudioIdx + 1] ? React.createElement(
+              "span",
+              { className: "text-[10px] text-teal-300 truncate max-w-[140px] sm:max-w-xs font-sans" },
+              "⏭️ التالي: " + allAudioChaps[curAudioIdx + 1].title
+            ) : null,
             React.createElement("span", { className: "text-slate-400 tabular-nums text-[11px]" }, formatTime(localDuration))
           ),
 

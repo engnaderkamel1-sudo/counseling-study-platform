@@ -68,7 +68,17 @@ window.BooksPage = function(props) {
   var [reviewingScannedChapters, setReviewingScannedChapters] = React.useState(null);
   var [chapterTextFontSize, setChapterTextFontSize] = React.useState(15); // 13, 15, 17, 20
   var [playingChapterId, setPlayingChapterId] = React.useState(null);
-  var [isPlaylistMode, setIsPlaylistMode] = React.useState(true);
+  var [isPlaylistMode, setIsPlaylistModeState] = React.useState(function() {
+    var saved = localStorage.getItem("counsel_audio_playlist_mode");
+    return saved !== null ? (saved === "true" || saved === true) : true;
+  });
+  var setIsPlaylistMode = function(val) {
+    var nextVal = typeof val === "function" ? val(isPlaylistMode) : val;
+    setIsPlaylistModeState(nextVal);
+    try {
+      localStorage.setItem("counsel_audio_playlist_mode", nextVal ? "true" : "false");
+    } catch (e) {}
+  };
   var [isQualityAuditOpen, setIsQualityAuditOpen] = React.useState(false);
   var chapterAudioRef = React.useRef(null);
 
