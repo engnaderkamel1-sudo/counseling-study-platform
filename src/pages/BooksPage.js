@@ -11,6 +11,10 @@ window.BooksPage = function(props) {
   });
 
   var [activeBook, setActiveBook] = React.useState(null);
+  var activeBookRef = React.useRef(activeBook);
+  React.useEffect(function() {
+    activeBookRef.current = activeBook;
+  }, [activeBook]);
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
   var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
@@ -1348,11 +1352,38 @@ window.BooksPage = function(props) {
         processedPagesCount += batchChunk.length;
         var isThisChapComplete = (lastSuccessPage >= ePage);
 
-        // حفظ محلي وسحابي فوري وتحديث الحالة بعد كل دفعة
+        // حماية تامة لملفات الصوت والتعديلات الحية من الضياع أثناء الاستخراج (Live Merge Protection)
+        var liveActiveBook = activeBookRef.current || latestBookData;
+        var liveChapters = (liveActiveBook && liveActiveBook.audioChapters) || [];
+        var cachedBook = utils.getLocal("counsel_book_data_" + latestBookData.id);
+        var cachedChapters = (cachedBook && cachedBook.audioChapters) || [];
+
+        // مزامنة حالة كافة الفصول الأخرى أولاً تحسباً لأي تعديل تم في الخلفية
+        for (var mi = 0; mi < workingChaps.length; mi++) {
+          if (mi === ci) continue;
+          var liveOther = liveChapters.find(function(lc) { return lc.id === workingChaps[mi].id; })
+                       || cachedChapters.find(function(cc) { return cc.id === workingChaps[mi].id; });
+          if (liveOther) {
+            workingChaps[mi] = Object.assign({}, workingChaps[mi], {
+              audioUrl: (liveOther.audioUrl && liveOther.audioUrl.trim()) || (workingChaps[mi].audioUrl || ""),
+              title: liveOther.title || workingChaps[mi].title
+            });
+          }
+        }
+
+        // جلب أحدث رابط صوت للفصل الحالي سواء من الـ State أو من الذاكرة المحلية
+        var liveCurChap = liveChapters.find(function(lc) { return lc.id === currentChap.id; })
+                       || cachedChapters.find(function(cc) { return cc.id === currentChap.id; });
+        var preservedAudioUrl = (liveCurChap && liveCurChap.audioUrl && liveCurChap.audioUrl.trim())
+                             || (workingChaps[ci].audioUrl && workingChaps[ci].audioUrl.trim())
+                             || "";
+
+        // حفظ محلي وسحابي فوري وتحديث الحالة بعد كل دفعة مع ضمان بقاء الصوت دون حذف
         workingChaps[ci] = Object.assign({}, workingChaps[ci], {
           text: accumulated.trim(),
           startPage: sPage,
           endPage: ePage,
+          audioUrl: preservedAudioUrl,
           lastExtractedPage: lastSuccessPage,
           isComplete: isThisChapComplete
         });
@@ -1451,7 +1482,8 @@ window.BooksPage = function(props) {
         }
       }
 
-      var currentChaps = (activeBook.audioChapters || []).slice();
+      var baseBook = activeBookRef.current || activeBook;
+      var currentChaps = (baseBook.audioChapters || []).slice();
       var chapterObj = {
         id: editingChapter ? editingChapter.id : ("ch_" + Date.now()),
         title: chapTitle.trim(),
@@ -1480,8 +1512,8 @@ window.BooksPage = function(props) {
         }
       }
 
-      var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
-      await cloud.saveBook(updatedBook);
+      var updatedBook = Object.assign({}, baseBook, { audioChapters: currentChaps });
+      activeBookRef.current = updatedBook;
       setActiveBook(updatedBook);
 
       var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1491,6 +1523,8 @@ window.BooksPage = function(props) {
       utils.setLocal(cfg.storageKeys.books, allBooks);
       utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
       setBooks(allBooks);
+
+      await cloud.saveBook(updatedBook);
 
       setIsSavingChapter(false);
       setShowChapterModal(false);
