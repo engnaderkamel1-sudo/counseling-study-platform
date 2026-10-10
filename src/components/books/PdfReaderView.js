@@ -23,10 +23,34 @@ window.PdfReaderView = function(props) {
   var pdfCanvasRef = props.pdfCanvasRef;
   var pdfViewerContainerRef = props.pdfViewerContainerRef;
 
+  var setMobileSectionTab = props.setMobileSectionTab;
+
   var utils = window.APP_UTILS;
 
-  if (!activeBook || (!activeBook.driveUrl && !isSavedOffline)) {
+  if (!activeBook) {
     return null;
+  }
+
+  if (!activeBook.driveUrl && !isSavedOffline) {
+    return React.createElement(
+      "div",
+      {
+        className: "p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3 " +
+          (mobileSectionTab !== "pdf" ? "hidden sm:block" : "block")
+      },
+      React.createElement("span", { className: "text-3xl block" }, "📖"),
+      React.createElement("h5", { className: "font-bold text-sm text-slate-800 dark:text-slate-200" }, "ملف الـ PDF غير مخزن أوفلاين على هذا الجهاز"),
+      React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto" }, "يمكنك قراءة نصوص فصول الكتاب المستخرجة والاستماع للملخص الصوتي مباشرة من تبويب الفصول."),
+      setMobileSectionTab ? React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function() { setMobileSectionTab("study"); },
+          className: "mt-1 inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 active:scale-95 transition-all"
+        },
+        "🎧 الانتقال لفصول الكتاب والنصوص المفرغة"
+      ) : null
+    );
   }
 
   return React.createElement(

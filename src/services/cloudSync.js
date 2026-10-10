@@ -1,4 +1,4 @@
-﻿// خدمة المزامنة السحابية اللحظية مع فايربيز
+// خدمة المزامنة السحابية اللحظية مع فايربيز
 window.CloudSyncService = {
   // الاشتراك اللحظي في المحاضرات
   subscribeLectures: function(onUpdate) {
@@ -53,11 +53,39 @@ window.CloudSyncService = {
     }
   },
 
-  // حفظ أو تعديل كتاب
+  // تنقية الكائنات من أي قيم undefined أو دوال لمنع رفض فايربيز الصامت
+  sanitizeForFirestore: function(obj) {
+    if (obj === null || obj === undefined) return null;
+    if (typeof obj !== "object") return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(function(item) {
+        return window.CloudSyncService.sanitizeForFirestore(item);
+      });
+    }
+    var cleaned = {};
+    Object.keys(obj).forEach(function(key) {
+      var val = obj[key];
+      if (val !== undefined && typeof val !== "function") {
+        cleaned[key] = window.CloudSyncService.sanitizeForFirestore(val);
+      }
+    });
+    return cleaned;
+  },
+
+  // حفظ أو تعديل كتاب مع تنقية سحابية آمنة
   saveBook: function(book) {
-    if (!window.db) return Promise.resolve();
+    if (!window.db || !book) return Promise.resolve();
     var docId = book.id || ("book-" + Date.now());
-    return window.db.collection("books").doc(docId).set(book, { merge: true });
+    try {
+      var cleanBook = this.sanitizeForFirestore(book);
+      return window.db.collection("books").doc(docId).set(cleanBook, { merge: true }).catch(function(err) {
+        console.error("Firestore saveBook error for " + docId + ":", err);
+        throw err;
+      });
+    } catch (e) {
+      console.error("Error sanitizing book for Firestore:", e);
+      return Promise.reject(e);
+    }
   },
 
   // حفظ موضع الصفحة فقط في الكتاب
