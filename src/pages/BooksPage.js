@@ -1084,13 +1084,13 @@ window.BooksPage = function(props) {
         } else {
           try {
             var pageObj = await pdfDoc.getPage(pageNum);
-            var vp = pageObj.getViewport({ scale: 1.4 });
+            var vp = pageObj.getViewport({ scale: 1.15 });
             var c = document.createElement("canvas");
             c.width = vp.width;
             c.height = vp.height;
             var cx = c.getContext("2d");
             await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-            var b64 = c.toDataURL("image/jpeg", 0.8).split("base64,")[1];
+            var b64 = c.toDataURL("image/jpeg", 0.75).split("base64,")[1];
 
             var pageText = await extractTextFromPageBase64(b64, key, pageNum);
             if (pageText && pageText !== "[صفحة_غير_نصية]") {
@@ -1325,13 +1325,13 @@ window.BooksPage = function(props) {
           }
           try {
             var pageObj = await pdfDoc.getPage(targetP);
-            var vp = pageObj.getViewport({ scale: 1.4 });
+            var vp = pageObj.getViewport({ scale: 1.15 });
             var c = document.createElement("canvas");
             c.width = vp.width;
             c.height = vp.height;
             var cx = c.getContext("2d");
             await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-            var b64 = c.toDataURL("image/jpeg", 0.8).split("base64,")[1];
+            var b64 = c.toDataURL("image/jpeg", 0.75).split("base64,")[1];
 
             var pageText = await extractTextFromPageBase64(b64, key, targetP, batchCancelledRef);
             if (pageText && pageText !== "[صفحة_غير_نصية]") {
