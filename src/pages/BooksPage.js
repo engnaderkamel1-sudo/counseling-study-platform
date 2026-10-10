@@ -156,31 +156,59 @@ window.BooksPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
       if (cloudList) {
-        // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي (Zero Data Loss Protection)
+        // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
         var mergedList = cloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
           if (cached && cached.audioChapters) {
+            var needCloudSync = false;
             var mergedChaps = (cb.audioChapters || []).map(function(ch) {
               var cachedCh = cached.audioChapters.find(function(cc) {
                 return cc.id === ch.id || (cc.title && ch.title && cc.title.trim() === ch.title.trim());
               });
+              var cachedTextLen = cachedCh && cachedCh.text ? cachedCh.text.length : 0;
+              var cloudTextLen = ch.text ? ch.text.length : 0;
+              if (cachedTextLen > cloudTextLen) {
+                needCloudSync = true;
+              }
               var bestAudio = (ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
-              var bestText = (ch.text && ch.text.length >= (cachedCh && cachedCh.text ? cachedCh.text.length : 0))
-                ? ch.text
-                : (cachedCh && cachedCh.text ? cachedCh.text : "");
+              var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
+              var bestIsPub = (cachedCh && cachedCh.isPublished !== undefined) ? cachedCh.isPublished : ch.isPublished;
+              var bestOverride = (cachedCh && cachedCh.adminOverride !== undefined) ? cachedCh.adminOverride : ch.adminOverride;
 
               return Object.assign({}, ch, {
                 audioUrl: bestAudio,
                 text: bestText,
                 lastExtractedPage: bestLastPage,
-                isComplete: bestIsComplete
+                isComplete: bestIsComplete,
+                isPublished: bestIsPub,
+                adminOverride: bestOverride
               });
             });
-            return Object.assign({}, cb, { audioChapters: mergedChaps });
+
+            var updatedBook = Object.assign({}, cb, { audioChapters: mergedChaps });
+            // إذا كان المتصفح المحلي يحتوي على نصوص أكثر من السحابة، نرفعها فوراً للسحابة لتحديث الموبايل!
+            if (needCloudSync) {
+              console.log("Auto-syncing locally completed chapters to cloud for book:", cb.id);
+              cloud.saveBook(updatedBook).catch(function(err) {
+                console.warn("Auto cloud sync notice:", err);
+              });
+            }
+            return updatedBook;
           }
           return cb;
+        });
+
+        // وإذا كان هناك كتاب مخزن محلياً غير موجود نهائياً في السحابة، نضيفه ونرفعه للسحابة فوراً!
+        var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+        localBooks.forEach(function(lb) {
+          var inCloud = mergedList.some(function(mb) { return mb.id === lb.id; });
+          if (!inCloud) {
+            mergedList.push(lb);
+            console.log("Auto-uploading missing local book to cloud:", lb.id);
+            cloud.saveBook(lb).catch(function(err) { console.warn("Error auto-uploading local book:", err); });
+          }
         });
 
         setBooks(mergedList);
@@ -2310,6 +2338,33 @@ window.BooksPage = function(props) {
     setEditingBookId(null);
   };
 
+  // زر وإجراء المزامنة السحابية الفورية الإجبارية لكافة الكتب والفصول المحلية
+  var [isForcingSync, setIsForcingSync] = React.useState(false);
+  var handleForceCloudSync = async function() {
+    setIsForcingSync(true);
+    try {
+      var all = utils.getLocal(cfg.storageKeys.books, []) || [];
+      if (all.length === 0) {
+        alert("لا توجد كتب محلية للمزامنة.");
+        setIsForcingSync(false);
+        return;
+      }
+      var syncedCount = 0;
+      for (var i = 0; i < all.length; i++) {
+        var b = all[i];
+        var cached = utils.getLocal("counsel_book_data_" + b.id);
+        var toSave = cached ? Object.assign({}, b, cached) : b;
+        await cloud.saveBook(toSave);
+        syncedCount++;
+      }
+      alert("🎉 تم تأكيد ومزامنة " + syncedCount + " مرجع وكافة فصولهم مع السحابة بنجاح!\nالكتاب متاح الآن لجميع الأجهزة والموبايل.");
+    } catch (err) {
+      alert("تنبيه أثناء المزامنة: " + (err.message || err));
+    } finally {
+      setIsForcingSync(false);
+    }
+  };
+
   return React.createElement(
     "div",
     { className: "space-y-6 pb-12" },
@@ -2342,6 +2397,18 @@ window.BooksPage = function(props) {
                 : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700")
           },
           React.createElement("span", null, previewAsStudent ? "🔙 إنهاء معاينة الطالب" : "👁️ معاينة كطالب")
+        ),
+        isAdmin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleForceCloudSync,
+            disabled: isForcingSync,
+            title: "رفع وتأكيد مزامنة كافة الفصول والكتب المخزنة على هذا الجهاز إلى السحابة فوراً",
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition-all flex items-center gap-1.5 active:scale-95 shadow-xs disabled:opacity-50"
+          },
+          React.createElement("span", null, isForcingSync ? "⏳" : "☁️"),
+          React.createElement("span", null, isForcingSync ? "جاري المزامنة..." : "مزامنة السحابة الآن")
         ),
         isAdmin && React.createElement(
           "button",
@@ -3149,12 +3216,28 @@ window.BooksPage = function(props) {
         // ترويسة رف الكتب
         React.createElement(
           "div",
-          { className: "flex items-center justify-between px-1" },
+          { className: "flex items-center justify-between px-1 flex-wrap gap-2" },
           React.createElement("h3", { className: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2" },
             React.createElement("span", null, "📚"),
             React.createElement("span", null, "رف الكتب والمراجع المعتمدة (" + visibleBooks.length + ")")
           ),
-          React.createElement("span", { className: "text-xs text-slate-400" }, "اضغط على أي كتاب لفتحه وبدء القراءة والاستماع")
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            isAdmin ? React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleForceCloudSync,
+                disabled: isForcingSync,
+                className: "px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50",
+                title: "مزامنة كافة الكتب والفصول المحلية مع السحابة فوراً"
+              },
+              React.createElement("span", null, isForcingSync ? "⏳" : "☁️"),
+              React.createElement("span", null, isForcingSync ? "جاري المزامنة..." : "مزامنة السحابة الآن")
+            ) : null,
+            React.createElement("span", { className: "text-xs text-slate-400 hidden sm:inline" }, "اضغط على أي كتاب لفتحه")
+          )
         ),
 
         // شبكة بطاقات الكتب (Book Cover Cards Grid بتصميم شيك ومرتب يسهل التصفح)
