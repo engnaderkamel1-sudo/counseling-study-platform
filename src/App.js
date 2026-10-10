@@ -123,13 +123,15 @@ function App() {
   };
 
   var [currentUser, setCurrentUser] = React.useState(function() {
-    return utils.getLocal("counsel_current_user", {
+    var saved = utils.getLocal("counsel_current_user", null);
+    if (saved && typeof saved === "object") return saved;
+    return {
       fullName: "الأدمن",
       email: "eng.nader.reda@gmail.com",
       phone: "01275571569",
       role: "admin",
       status: "approved"
-    });
+    };
   });
 
   var [theme, setTheme] = React.useState(function() {

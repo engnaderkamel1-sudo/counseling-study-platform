@@ -427,6 +427,38 @@ window.APP_UTILS = {
     });
   },
 
+  // رفع ملف صوتي من رابط URL مؤقت إلى Google Drive تلقائياً لحفظه دائماً وملكاً للمستخدم
+  uploadAudioUrlToDrive: async function(audioUrl, customFileName, onStatus) {
+    if (!audioUrl || typeof audioUrl !== "string") return audioUrl;
+    if (audioUrl.indexOf("drive.google.com") !== -1 || audioUrl.indexOf("lh3.googleusercontent.com") !== -1 || audioUrl.indexOf("docs.google.com") !== -1) {
+      return audioUrl;
+    }
+    try {
+      if (typeof onStatus === "function") {
+        onStatus("جاري نقل وحفظ الصوت تلقائياً إلى Google Drive الخاص بك...");
+      }
+      var resp = await fetch(audioUrl);
+      if (!resp.ok) return audioUrl;
+      var blob = await resp.blob();
+      var rawName = customFileName || ("audio_" + Date.now());
+      var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".mp3";
+      var audioFile = new File([blob], cleanFileName, { type: "audio/mp3" });
+
+      var endpoint = window.APP_CONFIG && window.APP_CONFIG.driveUploadEndpoint;
+      if (!endpoint) return audioUrl;
+
+      var resData = await window.APP_UTILS.uploadToDriveWithProgress(endpoint, audioFile, null, cleanFileName);
+      if (resData && (resData.fileUrl || resData.fileId)) {
+        var finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
+        console.log("Successfully auto-uploaded audio to Google Drive:", finalDriveUrl);
+        return finalDriveUrl;
+      }
+    } catch (err) {
+      console.warn("Auto-upload audio to Drive notice (fallback to generated url):", err);
+    }
+    return audioUrl;
+  },
+
   // ضغط وتصغير صور الأغلفة تلقائياً لمنع أي تضخم أو بطء في قاعدة البيانات
   compressImageFile: function(file, maxWidth, maxHeight, quality) {
     maxWidth = maxWidth || 450;

@@ -15,7 +15,8 @@ window.Sidebar = function(props) {
     { id: "notes", label: "ملاحظاتي الدراسية", icon: "📝" }
   ];
 
-  if (currentUser.role === "admin") {
+  var isAdmin = !!(currentUser && currentUser.role === "admin");
+  if (isAdmin) {
     menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
   }
@@ -70,10 +71,10 @@ window.Sidebar = function(props) {
             "div",
             null,
             React.createElement("span", { className: "text-xs text-slate-500 block" }, "الحساب الحالي:"),
-            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, currentUser.fullName || "الأدمن")
+            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, (currentUser && currentUser.fullName) || "الأدمن")
           ),
-          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (currentUser.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700") },
-            currentUser.role === "admin" ? "مسؤول" : "دارس"
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700") },
+            isAdmin ? "مسؤول" : "دارس"
           )
         ),
         React.createElement(

@@ -45,7 +45,7 @@ window.UsersManagementPage = function(props) {
   var approvedUsers = users.filter(function(u) { return u.status === "approved"; });
   var rejectedUsers = users.filter(function(u) { return u.status === "rejected"; });
 
-  if (currentUser.role !== "admin") {
+  if (!currentUser || currentUser.role !== "admin") {
     return React.createElement("div", { className: "p-8 text-center text-slate-500 text-sm" },
       "عفواً، هذه الشاشة مخصصة للمسؤول (الأدمن) فقط لإدارة طلبات الانضمام."
     );

@@ -41,7 +41,7 @@ window.ErrorReportsAdminPage = function(props) {
     }
   };
 
-  if (currentUser.role !== "admin") return null;
+  if (!currentUser || currentUser.role !== "admin") return null;
 
   var openReports = reports.filter(function(r) { return r.status !== "resolved"; });
   var resolvedReports = reports.filter(function(r) { return r.status === "resolved"; });

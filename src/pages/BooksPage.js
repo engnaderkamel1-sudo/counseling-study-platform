@@ -1778,6 +1778,14 @@ window.BooksPage = function(props) {
 
       if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
 
+      // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
+      setAudioStatusText("☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive...");
+      var safeAudioName = (activeBook.title || "كتاب") + " - " + chap.title;
+      var driveAudioUrl = await utils.uploadAudioUrlToDrive(audioUrl, safeAudioName, function(s) {
+        setAudioStatusText(s);
+      });
+      if (driveAudioUrl) audioUrl = driveAudioUrl;
+
       // حفظ رابط الصوت الجديد في الفصل محلياً وسحابياً
       var latestBook = Object.assign({}, activeBook);
       var chaps = (latestBook.audioChapters || []).slice();
@@ -1849,9 +1857,15 @@ window.BooksPage = function(props) {
         });
 
         if (generatedUrl) {
+          // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
+          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): ☁️ جاري الحفظ في Google Drive...");
+          var safeName = (workingBook.title || "كتاب") + " - " + curTarget.title;
+          var driveAudioUrl = await utils.uploadAudioUrlToDrive(generatedUrl, safeName);
+          var finalUrl = driveAudioUrl || generatedUrl;
+
           var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
           if (chapIdx >= 0) {
-            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], { audioUrl: generatedUrl });
+            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], { audioUrl: finalUrl });
             workingBook = Object.assign({}, workingBook, { audioChapters: workingChapters.slice() });
             setActiveBook(workingBook);
             utils.setLocal("counsel_book_data_" + workingBook.id, workingBook);
@@ -2382,6 +2396,33 @@ window.BooksPage = function(props) {
         var b = all[i];
         var cached = utils.getLocal("counsel_book_data_" + b.id);
         var toSave = cached ? Object.assign({}, b, cached) : b;
+
+        // تأمين ونقل أي تسجيلات صوتية تلقائياً إلى Google Drive لحفظها دائماً وملكاً للمستخدم
+        if (toSave.audioChapters && toSave.audioChapters.length > 0) {
+          var chs = toSave.audioChapters.slice();
+          var audioBackedUp = false;
+          for (var ci = 0; ci < chs.length; ci++) {
+            var ch = chs[ci];
+            if (ch.audioUrl && ch.audioUrl.trim() && ch.audioUrl.indexOf("drive.google.com") === -1 && ch.audioUrl.indexOf("lh3.googleusercontent.com") === -1) {
+              try {
+                var safeChName = (toSave.title || "كتاب") + " - " + (ch.title || ("فصل " + (ci + 1)));
+                var dUrl = await utils.uploadAudioUrlToDrive(ch.audioUrl, safeChName);
+                if (dUrl && dUrl !== ch.audioUrl) {
+                  chs[ci] = Object.assign({}, ch, { audioUrl: dUrl });
+                  audioBackedUp = true;
+                }
+              } catch (eDrive) {}
+            }
+          }
+          if (audioBackedUp) {
+            toSave = Object.assign({}, toSave, { audioChapters: chs });
+            utils.setLocal("counsel_book_data_" + toSave.id, toSave);
+            all[i] = toSave;
+            utils.setLocal(cfg.storageKeys.books, all);
+            if (activeBook && activeBook.id === toSave.id) setActiveBook(toSave);
+          }
+        }
+
         var ok = await safeCloudSaveBook(toSave, { silent: true });
         if (ok) {
           syncedCount++;
@@ -2589,7 +2630,7 @@ window.BooksPage = function(props) {
                 }
               }
             }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕"),
-            currentUser.role === "admin" && React.createElement(
+            isAdmin && React.createElement(
               "button",
               {
                 type: "button",
@@ -2962,7 +3003,7 @@ window.BooksPage = function(props) {
                     { className: "text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2.5 py-1 rounded-xl animate-fade-in" },
                     "⚡ " + resumedNotice
                   ) : null,
-                  currentUser.role === "admin" ? React.createElement(
+                  isAdmin ? React.createElement(
                     "button",
                     {
                       type: "button",
@@ -3067,7 +3108,7 @@ window.BooksPage = function(props) {
                 ),
 
                 // زر إضافة علامة فصل / Bookmark عند الموضع الحالي
-                currentUser.role === "admin" ? React.createElement(
+                isAdmin ? React.createElement(
                   "button",
                   {
                     type: "button",
@@ -3095,7 +3136,7 @@ window.BooksPage = function(props) {
                   React.createElement("span", null, "فصول وعلامات التراك (Bookmarks)"),
                   React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold" }, bookmarks.length)
                 ),
-                currentUser.role === "admin" ? React.createElement(
+                isAdmin ? React.createElement(
                   "button",
                   {
                     type: "button",
@@ -3110,7 +3151,7 @@ window.BooksPage = function(props) {
                 "div",
                 { className: "py-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800" },
                 React.createElement("p", null, "لا توجد علامات فصول مضافة بعد لهذا التراك."),
-                currentUser.role === "admin" ? React.createElement(
+                isAdmin ? React.createElement(
                   "p",
                   { className: "mt-1 text-[11px] text-teal-600 dark:text-teal-400" },
                   "يمكنك الضغط على زر (إضافة علامة) لتقسيم التراك إلى الشابتر الأول، الثاني، الخ بالدقائق."
@@ -3150,7 +3191,7 @@ window.BooksPage = function(props) {
                       ),
                       isCurrent ? React.createElement("span", { className: "text-emerald-500 text-xs shrink-0", title: "جاري الاستماع الآن" }, "🔊") : null
                     ),
-                    currentUser.role === "admin" ? React.createElement(
+                    isAdmin ? React.createElement(
                       "div",
                       { className: "flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mr-1" },
                       React.createElement(
@@ -3211,7 +3252,7 @@ window.BooksPage = function(props) {
                   },
                   "📋 نسخ"
                 ) : null,
-                currentUser.role === "admin" ? React.createElement(
+                isAdmin ? React.createElement(
                   "button",
                   {
                     type: "button",
@@ -3235,7 +3276,7 @@ window.BooksPage = function(props) {
                   "div",
                   { className: "py-8 text-center text-slate-400 space-y-2" },
                   React.createElement("p", null, "لم يتم كتابة ملخص لهذا الكتاب حتى الآن."),
-                  currentUser.role === "admin" ? React.createElement(
+                  isAdmin ? React.createElement(
                     "button",
                     {
                       type: "button",
