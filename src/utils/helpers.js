@@ -46,6 +46,24 @@ window.APP_UTILS = {
     return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
   },
 
+  // تنسيق المدة الزمنية بنص عربي واضح ومريح للموبايل
+  formatArabicDuration: function(seconds) {
+    if (!seconds || isNaN(seconds) || seconds <= 0) return "0 ثانية";
+    var totalSec = Math.round(seconds);
+    var hours = Math.floor(totalSec / 3600);
+    var mins = Math.floor((totalSec % 3600) / 60);
+    var secs = totalSec % 60;
+    if (hours > 0) {
+      if (mins > 0) return hours + " ساعة و " + mins + " دقيقة";
+      return hours + " ساعة";
+    }
+    if (mins > 0) {
+      if (secs > 0) return mins + " دقيقة و " + secs + " ثانية";
+      return mins + " دقيقة";
+    }
+    return secs + " ثانية";
+  },
+
   // حفظ واسترجاع من التخزين المحلي
   getLocal: function(key, defaultValue) {
     try {

@@ -67,6 +67,7 @@ window.BooksPage = function(props) {
   var [configuringChapterForExtract, setConfiguringChapterForExtract] = React.useState(null);
   var [chapterTextFontSize, setChapterTextFontSize] = React.useState(15); // 13, 15, 17, 20
   var [playingChapterId, setPlayingChapterId] = React.useState(null);
+  var [isPlaylistMode, setIsPlaylistMode] = React.useState(true);
   var chapterAudioRef = React.useRef(null);
 
   // مشغل تراك 1 الشامل (Master NotebookLM Podcast Track) واستئناف التشغيل التلقائي
@@ -2555,7 +2556,10 @@ window.BooksPage = function(props) {
           handleOpenEditChapter: handleOpenEditChapter,
           handleDeleteChapter: handleDeleteChapter,
           handleMoveChapter: handleMoveChapter,
+          viewingChapterText: viewingChapterText,
           setViewingChapterText: setViewingChapterText,
+          isPlaylistMode: isPlaylistMode,
+          setIsPlaylistMode: setIsPlaylistMode,
           isAiAnalyzingBook: isAiAnalyzingBook,
           handleExtractChapterText: handleExtractChapterText,
           handleBatchExtractAllChapters: handleBatchExtractAllChapters,
@@ -3254,12 +3258,19 @@ window.BooksPage = function(props) {
       onConfirm: executeExtractChapterText,
       totalPages: pdfDoc ? pdfDoc.numPages : 500
     }),
-    // نافذة عرض النص المفرغ للفصل (مكون مستقل يدعم التحكم بحجم الخط للموبايل)
+    // نافذة عرض النص المفرغ للفصل (تدعم الاستماع والقراءة المتزامنة والتحكم بحجم الخط للموبايل)
     React.createElement(window.ChapterTextViewerModal, {
       viewingChapterText: viewingChapterText,
       onClose: function() { setViewingChapterText(null); },
       fontSize: chapterTextFontSize,
-      onFontSizeChange: setChapterTextFontSize
+      onFontSizeChange: setChapterTextFontSize,
+      activeBook: activeBook,
+      playingChapterId: playingChapterId,
+      setPlayingChapterId: setPlayingChapterId,
+      chapterAudioRef: chapterAudioRef,
+      setViewingChapterText: setViewingChapterText,
+      isPlaylistMode: isPlaylistMode,
+      setIsPlaylistMode: setIsPlaylistMode
     })
   );
 };
