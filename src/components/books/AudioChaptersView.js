@@ -247,7 +247,11 @@ window.AudioChaptersView = function(props) {
           "div",
           { className: "flex justify-between text-[11px] font-bold" },
           React.createElement("span", { className: "text-emerald-400" }, "التقدم الكلي: " + batchProgress.percent + "% (" + batchProgress.pagesDone + " / " + batchProgress.totalPages + " صفحة)"),
-          React.createElement("span", { className: "text-slate-300" }, "متبقي حوالي: " + formatSecs(batchProgress.remainingSeconds))
+          React.createElement("span", { className: "text-slate-300" }, 
+            batchProgress.isBenchmarking 
+              ? ("⏳ جاري قياس سرعة المعالجة الفعلية (صفحة " + (batchProgress.benchmarkPage || 1) + " من 4)...")
+              : ("متبقي حوالي: " + formatSecs(batchProgress.remainingSeconds))
+          )
         ),
         React.createElement(
           "div",
@@ -269,7 +273,11 @@ window.AudioChaptersView = function(props) {
         ),
         React.createElement("div", { className: "p-2 rounded-xl bg-slate-800/80 border border-slate-700/60" },
           React.createElement("span", { className: "text-slate-400 block text-[10px]" }, "⏳ الوقت المتبقي المقدر:"),
-          React.createElement("span", { className: "font-bold text-emerald-300 font-mono" }, formatSecs(batchProgress.remainingSeconds))
+          React.createElement("span", { className: "font-bold text-emerald-300 font-mono text-[11px]" }, 
+            batchProgress.isBenchmarking 
+              ? "جاري القياس (أول 4 صفحات)..."
+              : formatSecs(batchProgress.remainingSeconds)
+          )
         ),
         React.createElement("div", { className: "p-2 rounded-xl bg-slate-800/80 border border-slate-700/60 col-span-2 sm:col-span-1" },
           React.createElement("span", { className: "text-slate-400 block text-[10px]" }, "💾 الحفظ السحابي:"),

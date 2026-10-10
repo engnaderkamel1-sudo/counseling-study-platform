@@ -921,13 +921,8 @@ window.BooksPage = function(props) {
 
   // دالة مساعدة قوية لاستخراج نص صفحة مفردة مع معالجة الـ Rate Limit وإعادة المحاولة
   var extractTextFromPageBase64 = async function(base64Image, key, pageNum, isBatchCancelledRef) {
-    var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-    var validVisionModels = autoModels.filter(function(m) { return m.indexOf("flash") !== -1 || m.indexOf("pro") !== -1 || m.indexOf("vision") !== -1; }).filter(function(m) { return m !== "gemini-pro"; });
-    var flash2Models = validVisionModels.filter(function(m) { return m.indexOf("2.0-flash") !== -1; });
-    var flash15Models = validVisionModels.filter(function(m) { return m.indexOf("1.5-flash") !== -1; });
-    var otherVisionModels = validVisionModels.filter(function(m) { return m.indexOf("flash") === -1; });
-    var candidateModels = [].concat(flash2Models, flash15Models, otherVisionModels);
-    if (candidateModels.length === 0) candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    // استخدام أسرع موديلات معالجة الرؤية مباشرة لتوفير وقت استعلام الشبكة المكرر في كل ورقة
+    var candidateModels = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"];
     var prompt = "أنت مفرغ محتوى صوتي احترافي (Audiobook Transcriber).\n" +
       "المهمة: استخرج متن نص هذه الصفحة العربية رقم " + pageNum + " بدقة وأمانة تامة 100% كما هي مكتوبة حرفياً وبدون أي تلخيص.\n\n" +
       "قواعد صارمة جداً لقراءة صوتية نقية بدون مقاطعة:\n" +
@@ -1084,13 +1079,13 @@ window.BooksPage = function(props) {
         } else {
           try {
             var pageObj = await pdfDoc.getPage(pageNum);
-            var vp = pageObj.getViewport({ scale: 1.15 });
+            var vp = pageObj.getViewport({ scale: 1.0 });
             var c = document.createElement("canvas");
             c.width = vp.width;
             c.height = vp.height;
             var cx = c.getContext("2d");
             await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-            var b64 = c.toDataURL("image/jpeg", 0.75).split("base64,")[1];
+            var b64 = c.toDataURL("image/jpeg", 0.6).split("base64,")[1];
 
             var pageText = await extractTextFromPageBase64(b64, key, pageNum);
             if (pageText && pageText !== "[صفحة_غير_نصية]") {
@@ -1295,15 +1290,16 @@ window.BooksPage = function(props) {
 
         var chunkStart = Date.now();
         var elapsedSec = (Date.now() - startTime) / 1000;
-
-        // حساب الوقت المتبقي الواقعي بمتوسط متحرك ذكي يمنع تماماً الأرقام الفلكية
-        var avgSec = 2.5;
-        if (recentPageDurations.length > 0) {
-          var sumD = recentPageDurations.reduce(function(a, b) { return a + b; }, 0);
-          avgSec = Math.min(8, Math.max(1.2, sumD / recentPageDurations.length));
-        }
         var remainingPagesCount = Math.max(0, totalPagesToProcess - processedPagesCount);
-        var remainingSec = Math.round(remainingPagesCount * avgSec);
+        var isBenchmarking = (processedPagesCount < 4);
+        var benchmarkPage = Math.min(4, processedPagesCount + 1);
+        var remainingSec = null;
+
+        if (!isBenchmarking && processedPagesCount > 0) {
+          // بعد اكتمال أول 4 صفحات: حساب واقعي ودقيق 100% بناءً على الوقت الفعلي المستغرق في التجربة
+          var measuredAvgSecPerPage = elapsedSec / processedPagesCount;
+          remainingSec = Math.round(remainingPagesCount * measuredAvgSecPerPage);
+        }
         var pct = Math.round((processedPagesCount / Math.max(1, totalPagesToProcess)) * 100);
 
         var chapTotalPages = Math.max(1, (ePage - sPage + 1));
@@ -1321,6 +1317,8 @@ window.BooksPage = function(props) {
           percent: pct,
           elapsedSeconds: elapsedSec,
           remainingSeconds: remainingSec,
+          isBenchmarking: isBenchmarking,
+          benchmarkPage: benchmarkPage,
           chapterStartPage: sPage,
           chapterEndPage: ePage,
           chapterTotalPages: chapTotalPages,
@@ -1340,13 +1338,13 @@ window.BooksPage = function(props) {
           }
           try {
             var pageObj = await pdfDoc.getPage(targetP);
-            var vp = pageObj.getViewport({ scale: 1.15 });
+            var vp = pageObj.getViewport({ scale: 1.0 });
             var c = document.createElement("canvas");
             c.width = vp.width;
             c.height = vp.height;
             var cx = c.getContext("2d");
             await pageObj.render({ canvasContext: cx, viewport: vp }).promise;
-            var b64 = c.toDataURL("image/jpeg", 0.75).split("base64,")[1];
+            var b64 = c.toDataURL("image/jpeg", 0.6).split("base64,")[1];
 
             var pageText = await extractTextFromPageBase64(b64, key, targetP, batchCancelledRef);
             if (pageText && pageText !== "[صفحة_غير_نصية]") {
