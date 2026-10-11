@@ -223,14 +223,13 @@ window.BooksPage = function(props) {
           return cb;
         });
 
-        // وإذا كان هناك كتاب مخزن محلياً غير موجود نهائياً في السحابة، نضيفه ونرفعه للسحابة فوراً!
+        // تنظيف أي مخلفات لكتب محذوفة من التخزين المحلي
         var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
         localBooks.forEach(function(lb) {
           var inCloud = mergedList.some(function(mb) { return mb.id === lb.id; });
           if (!inCloud) {
-            mergedList.push(lb);
-            console.log("Auto-uploading missing local book to cloud:", lb.id);
-            safeCloudSaveBook(lb, { silent: true });
+            utils.removeLocal("counsel_book_data_" + lb.id);
+            utils.removeLocal("counsel_book_page_" + lb.id);
           }
         });
 
@@ -2208,6 +2207,10 @@ window.BooksPage = function(props) {
         setActiveBook(null);
         utils.removeLocal("counsel_active_book_id");
       }
+      var currentLocalBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+      utils.setLocal(cfg.storageKeys.books, currentLocalBooks.filter(function(b) { return b.id !== bookId; }));
+      utils.removeLocal("counsel_book_data_" + bookId);
+      utils.removeLocal("counsel_book_page_" + bookId);
       alert("🗑️ تم نقل الكتاب إلى سلة المحذوفات بنجاح. يمكنك استرجاعه خلال 7 أيام من سلة المحذوفات.");
     } catch(err) {
       alert("خطأ أثناء النقل لسلة المحذوفات: " + err.message);

@@ -303,6 +303,8 @@ window.CloudSyncService = {
         if (type === "book") {
           var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
           utils.setLocal(window.APP_CONFIG.storageKeys.books, allB.filter(function(b) { return b.id !== item.id; }));
+          utils.removeLocal("counsel_book_data_" + item.id);
+          utils.removeLocal("counsel_book_page_" + item.id);
         } else if (type === "lecture") {
           var allL = utils.getLocal(window.APP_CONFIG.storageKeys.lectures, []) || [];
           utils.setLocal(window.APP_CONFIG.storageKeys.lectures, allL.filter(function(l) { return l.id !== item.id; }));
