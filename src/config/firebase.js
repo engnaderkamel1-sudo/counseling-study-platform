@@ -15,15 +15,9 @@ window.FIREBASE_CONFIG = {
     }
     window.db = firebase.firestore();
     
-    // محاولة تفعيل التخزين المؤقت دون التأثير على وضع التصفح الخفي (Incognito Resilient)
-    if (window.db && typeof window.db.enablePersistence === "function") {
-      window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-        // في المتصفح الخفي يرفض المتصفح IndexedDB وهذا طبيعي، نكمل الاتصال الشبكي المباشر بسلاسة
-        console.warn("Firebase persistence notice (safe in incognito):", err.code || err.message);
-      });
-    }
-    
-    console.log("Firebase connected successfully to counseling-study-app");
+    // تم تعطيل enablePersistence لحماية الأجهزة من التخزين المؤقت القديم (IndexedDB Cache Poisoning)
+    // التطبيق يعتمد على التخزين المحلي النظيف localStorage مع المزامنة المباشرة
+    console.log("Firebase connected successfully to counseling-study-app (direct realtime mode)");
   } catch (e) {
     console.error("Firebase init error:", e);
   }

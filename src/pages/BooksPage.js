@@ -6,11 +6,34 @@ window.BooksPage = function(props) {
   var cloud = window.CloudSyncService;
   var ai = window.GeminiAIService;
 
+  // تنقية الكتب من أي كتب محذوفة أو بقايا تجريبية لضمان عدم عودتها نهائياً على أي جهاز
+  var sanitizeBooksList = function(list) {
+    if (!list || !Array.isArray(list)) return [];
+    return list.filter(function(b) {
+      if (!b) return false;
+      var id = String(b.id || "").trim();
+      var title = String(b.title || "").trim();
+      if (id === "book-1791664075112" || title === "تتت" || title === "ت ت ت" || title === "ت ت" || b.isDeleted) {
+        try {
+          utils.removeLocal("counsel_book_data_" + id);
+          utils.removeLocal("counsel_book_page_" + id);
+        } catch (e) {}
+        return false;
+      }
+      return true;
+    });
+  };
+
   var [books, setBooks] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.books, []);
+    var rawCached = utils.getLocal(cfg.storageKeys.books, []);
+    var cleaned = sanitizeBooksList(rawCached);
+    if (cleaned.length !== rawCached.length) {
+      utils.setLocal(cfg.storageKeys.books, cleaned);
+    }
+    return cleaned;
   });
   var [isLoadingBooks, setIsLoadingBooks] = React.useState(function() {
-    var cached = utils.getLocal(cfg.storageKeys.books, []);
+    var cached = sanitizeBooksList(utils.getLocal(cfg.storageKeys.books, []));
     return !cached || cached.length === 0;
   });
 
@@ -185,8 +208,9 @@ window.BooksPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
       if (cloudList) {
+        var cleanCloudList = sanitizeBooksList(cloudList);
         // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
-        var mergedList = cloudList.map(function(cb) {
+        var mergedList = cleanCloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
           if (cached && cached.audioChapters) {
             var needCloudSync = false;
@@ -226,6 +250,7 @@ window.BooksPage = function(props) {
           }
           return cb;
         });
+        mergedList = sanitizeBooksList(mergedList);
 
         // تنظيف أي مخلفات لكتب محذوفة من التخزين المحلي
         var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -1783,7 +1808,10 @@ window.BooksPage = function(props) {
       var driveAudioUrl = await utils.uploadAudioUrlToDrive(audioUrl, safeAudioName, function(s) {
         setAudioStatusText(s);
       });
-      if (driveAudioUrl) audioUrl = driveAudioUrl;
+      if (!driveAudioUrl || (driveAudioUrl.indexOf("drive.google.com") === -1 && driveAudioUrl.indexOf("docs.google.com") === -1)) {
+        throw new Error("تعذر حفظ الصوت على Google Drive، تم إلغاء حفظ الرابط المؤقت لمنع المشاكل لاحقاً.");
+      }
+      audioUrl = driveAudioUrl;
 
       // حفظ رابط الصوت الجديد في الفصل محلياً وسحابياً
       var latestBook = Object.assign({}, activeBook);
@@ -1860,7 +1888,10 @@ window.BooksPage = function(props) {
           setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): ☁️ جاري الحفظ في Google Drive...");
           var safeName = (workingBook.title || "كتاب") + " - " + curTarget.title;
           var driveAudioUrl = await utils.uploadAudioUrlToDrive(generatedUrl, safeName);
-          var finalUrl = driveAudioUrl || generatedUrl;
+          if (!driveAudioUrl || (driveAudioUrl.indexOf("drive.google.com") === -1 && driveAudioUrl.indexOf("docs.google.com") === -1)) {
+            throw new Error("تعذر حفظ الصوت على Google Drive، تم إلغاء حفظ الرابط المؤقت.");
+          }
+          var finalUrl = driveAudioUrl;
 
           var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
           if (chapIdx >= 0) {
@@ -2394,45 +2425,54 @@ window.BooksPage = function(props) {
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
       var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
       var cloudBooks = [];
+      var pullError = null;
       try {
         var resp = await fetch(restUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" } });
         if (resp.ok) {
           var cData = await resp.json();
           if (cData && cData.documents && Array.isArray(cData.documents)) {
-            cloudBooks = cData.documents.map(function(d) { return cloud.parseFirestoreDoc(d); }).filter(function(b) { return !b.isDeleted; });
+            cloudBooks = sanitizeBooksList(cData.documents.map(function(d) { return cloud.parseFirestoreDoc(d); }));
           }
+        } else {
+          pullError = "تعذر الاتصال بالسحابة (" + resp.status + ")";
         }
       } catch (ePull) {
         console.warn("Pull from cloud error during force sync:", ePull);
+        pullError = ePull.message || "خطأ في الاتصال بالسيرفر";
       }
 
       // 2. تنظيف التخزين المحلي فوراً من أي كتاب محذوف أو غير موجود في السحابة
-      var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+      var localBooks = sanitizeBooksList(utils.getLocal(cfg.storageKeys.books, []) || []);
       localBooks.forEach(function(lb) {
         var inCloud = cloudBooks.some(function(cb) { return cb.id === lb.id; });
-        if (!inCloud) {
+        if (!inCloud && cloudBooks.length > 0) {
           utils.removeLocal("counsel_book_data_" + lb.id);
           utils.removeLocal("counsel_book_page_" + lb.id);
         }
       });
       var savedActiveId = utils.getLocal("counsel_active_book_id");
-      if (savedActiveId && !cloudBooks.some(function(cb) { return cb.id === savedActiveId; })) {
+      if (savedActiveId && cloudBooks.length > 0 && !cloudBooks.some(function(cb) { return cb.id === savedActiveId; })) {
         utils.removeLocal("counsel_active_book_id");
       }
 
-      // 3. اعتماد القائمة السحابية كمرجع وحيد وتحديث الحالة والتخزين
-      var finalBooks = cloudBooks.length > 0 ? cloudBooks : localBooks;
+      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين
+      var finalBooks = cloudBooks.length > 0 ? cloudBooks : (pullError ? localBooks : []);
+      finalBooks = sanitizeBooksList(finalBooks);
       utils.setLocal(cfg.storageKeys.books, finalBooks);
       setBooks(finalBooks);
 
       // تحديث الكتاب النشط
       if (activeBook && !finalBooks.some(function(b) { return b.id === activeBook.id; })) {
-        setActiveBook(null);
+        setActiveBook(finalBooks.length > 0 ? finalBooks[0] : null);
       } else if (!activeBook && finalBooks.length > 0) {
         setActiveBook(finalBooks[0]);
       }
 
-      alert("🎉 تم تحديث ومزامنة الكتب بنجاح مع السحابة!\nتم تنظيف الكاش وإزالة أي كتب محذوفة من هذا الجهاز.");
+      if (pullError && cloudBooks.length === 0) {
+        alert("⚠️ تنبيه أثناء الاتصال بالسحابة: " + pullError + "\nتم تنظيف الكاش المحلي للجهاز.");
+      } else {
+        alert("🎉 تم تحديث ومزامنة الكتب بنجاح مع السحابة!\nتم تنظيف الكاش وإزالة أي كتب محذوفة من هذا الجهاز.");
+      }
     } catch (err) {
       alert("تنبيه أثناء المزامنة: " + (err.message || err));
     } finally {

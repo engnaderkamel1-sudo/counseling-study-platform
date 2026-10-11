@@ -23,6 +23,29 @@ function App() {
     }
   }, [activeTab]);
 
+  // تنظيف فوري ومضمون عند إقلاع التطبيق لأي مخلفات لكتب محذوفة (Zero Ghost Books)
+  React.useEffect(function() {
+    try {
+      localStorage.removeItem("counsel_book_data_book-1791664075112");
+      localStorage.removeItem("counsel_book_page_book-1791664075112");
+      var rawB = localStorage.getItem("counsel_books_data");
+      if (rawB) {
+        var parsed = JSON.parse(rawB);
+        if (Array.isArray(parsed)) {
+          var cleaned = parsed.filter(function(b) {
+            if (!b) return false;
+            var id = String(b.id || "").trim();
+            var title = String(b.title || "").trim();
+            return id !== "book-1791664075112" && title !== "تتت" && title !== "ت ت ت" && title !== "ت ت" && !b.isDeleted;
+          });
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem("counsel_books_data", JSON.stringify(cleaned));
+          }
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   React.useEffect(function() {
     var handleHash = function() {
       var h = (window.location.hash || "").replace("#", "").trim();
@@ -206,7 +229,8 @@ function App() {
                     for (var i = 0; i < names.length; i++) caches.delete(names[i]);
                   });
                 }
-                window.location.reload(true);
+                var cleanUrl = window.location.href.split("?")[0].split("#")[0] + "?v=" + Date.now() + (window.location.hash || "");
+                window.location.href = cleanUrl;
               },
               className: "bg-white text-orange-600 hover:text-orange-700 px-3.5 py-1.5 rounded-xl text-xs font-black hover:bg-orange-50 shadow-md transition-all active:scale-95 whitespace-nowrap shrink-0 border border-orange-200"
             },

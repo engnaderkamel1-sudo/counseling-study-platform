@@ -434,6 +434,7 @@ window.APP_UTILS = {
   },
 
   // رفع ملف صوتي من رابط URL مؤقت إلى Google Drive تلقائياً لحفظه دائماً وملكاً للمستخدم
+  // رفع ملف صوتي من رابط URL مؤقت إلى Google Drive تلقائياً لحفظه دائماً وملكاً للمستخدم
   uploadAudioUrlToDrive: async function(audioUrl, customFileName, onStatus) {
     if (!audioUrl || typeof audioUrl !== "string") return audioUrl;
     if (audioUrl.indexOf("drive.google.com") !== -1 || audioUrl.indexOf("lh3.googleusercontent.com") !== -1 || audioUrl.indexOf("docs.google.com") !== -1) {
@@ -443,26 +444,47 @@ window.APP_UTILS = {
       if (typeof onStatus === "function") {
         onStatus("جاري نقل وحفظ الصوت تلقائياً إلى Google Drive الخاص بك...");
       }
-      var resp = await fetch(audioUrl);
-      if (!resp.ok) return audioUrl;
+
+      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل
+      var proxyUrl = "/api/download-audio?url=" + encodeURIComponent(audioUrl);
+      var resp = null;
+      try {
+        resp = await fetch(proxyUrl);
+      } catch (eProxy) {
+        console.warn("Proxy download attempt error, falling back to direct fetch:", eProxy);
+      }
+
+      if (!resp || !resp.ok) {
+        resp = await fetch(audioUrl);
+      }
+
+      if (!resp.ok) {
+        throw new Error("تعذر تحميل الملف الصوتي من السيرفر المصدر (" + resp.status + ")");
+      }
+
       var blob = await resp.blob();
       var rawName = customFileName || ("audio_" + Date.now());
       var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".mp3";
       var audioFile = new File([blob], cleanFileName, { type: "audio/mp3" });
 
       var endpoint = window.APP_CONFIG && window.APP_CONFIG.driveUploadEndpoint;
-      if (!endpoint) return audioUrl;
+      if (!endpoint) {
+        throw new Error("رابط رفع جوجل درايف غير معرف في إعدادات التطبيق.");
+      }
 
       var resData = await window.APP_UTILS.uploadToDriveWithProgress(endpoint, audioFile, null, cleanFileName);
       if (resData && (resData.fileUrl || resData.fileId)) {
         var finalDriveUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
-        console.log("Successfully auto-uploaded audio to Google Drive:", finalDriveUrl);
+        console.log("Successfully auto-uploaded audio to Google Drive permanently:", finalDriveUrl);
         return finalDriveUrl;
+      } else {
+        throw new Error("لم يتم استلام رابط تأكيد الحفظ من Google Drive.");
       }
     } catch (err) {
-      console.warn("Auto-upload audio to Drive notice (fallback to generated url):", err);
+      console.error("Critical: Failed to upload audio to Google Drive:", err);
+      // حظر قاطع لحفظ أي روابط مؤقتة لتجنب موتها بعد ساعات
+      throw new Error("فشل تأمين الملف الصوتي بشكل دائم على Google Drive: " + (err.message || err));
     }
-    return audioUrl;
   },
 
   // ضغط وتصغير صور الأغلفة تلقائياً لمنع أي تضخم أو بطء في قاعدة البيانات

@@ -19,7 +19,7 @@ window.APP_UTILS.getAudioStreamUrl = function(url) {
   if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    return "https://docs.google.com/uc?export=download&id=" + driveId;
+    return "/api/audio-proxy?id=" + driveId;
   }
   return url;
 };
@@ -30,8 +30,9 @@ window.APP_UTILS.getAudioStreamCandidates = function(url) {
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
     return [
-      "https://docs.google.com/uc?export=download&id=" + driveId,
+      "/api/audio-proxy?id=" + driveId,
       "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t",
+      "https://docs.google.com/uc?export=download&id=" + driveId,
       "https://drive.google.com/uc?export=download&id=" + driveId
     ];
   }
