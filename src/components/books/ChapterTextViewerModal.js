@@ -26,6 +26,25 @@ window.ChapterTextViewerModal = function(props) {
   var [localIsPlaying, setLocalIsPlaying] = React.useState(false);
   var [localSpeed, setLocalSpeed] = React.useState(1);
   var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
+  var [isAudioCollapsed, setIsAudioCollapsed] = React.useState(function() {
+    try {
+      var saved = localStorage.getItem("counsel_reader_audio_collapsed");
+      return saved !== null ? saved === "true" : false;
+    } catch (e) {
+      return false;
+    }
+  });
+
+  var toggleAudioCollapse = function() {
+    setIsAudioCollapsed(function(prev) {
+      var nextVal = !prev;
+      try {
+        localStorage.setItem("counsel_reader_audio_collapsed", nextVal ? "true" : "false");
+      } catch (e) {}
+      return nextVal;
+    });
+  };
+
   var textContainerRef = React.useRef(null);
 
   // تقسيم نص الفصل إلى جُمل وعبارات دقيقة وقصيرة (سطر بسطر) للحفاظ على تركيز القارئ ودقة المتابعة
@@ -260,162 +279,252 @@ window.ChapterTextViewerModal = function(props) {
 
       // مشغل الصوت المدمج المتزامن داخل شاشة القراءة (Audio-Reader Toolbar)
       hasAudio ? (
-        isPlayingThis ? React.createElement(
-          "div",
-          { className: "p-3 rounded-2xl bg-slate-950 text-white border border-indigo-500/40 shadow-lg space-y-2.5 shrink-0" },
-          // السطر العلوي: رقم التراك وحالة الـ Playlist المتتالية
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs gap-2 flex-wrap" },
-            React.createElement("div", { className: "flex items-center gap-2 font-bold text-indigo-300 text-[11px] sm:text-xs" },
-              React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
-              React.createElement("span", null, "🎧 استماع وقراءة متزامنة:"),
-              curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300" }, "تراك (" + (curAudioIdx + 1) + " من " + allAudioChaps.length + ")") : null
-            ),
-            React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
-              React.createElement("button", {
-                type: "button",
-                onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
-                className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
-                  (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
-                title: autoScrollEnabled ? "المتابعة التلقائية وتمرير الشاشة مع الصوت مفعلة (اضغط للإيقاف)" : "المتابعة التلقائية متوقفة (اضغط للتفعيل)"
-              }, autoScrollEnabled ? "📍 متابعة تلقائية ✓" : "📍 متابعة متوقفة"),
-              setIsPlaylistMode ? React.createElement("button", {
-                type: "button",
-                onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
-                className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
-                  (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
-                title: isPlaylistMode ? "التشغيل المتتالي مفعل" : "التشغيل المتتالي متوقف"
-              }, "🔁 " + (isPlaylistMode ? "قائمة متتالية ✓" : "فردي")) : null,
-              React.createElement("button", {
-                type: "button",
-                onClick: cycleSpeed,
-                className: "px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-mono font-bold active:scale-95 transition-all shadow-xs",
-                title: "تغيير سرعة الصوت"
-              }, localSpeed.toFixed(1) + "x")
-            )
-          ),
+        isPlayingThis ? (
+          isAudioCollapsed ? (
+            // وضع المشغل المطوي المصغر (بار نحيف جداً بارتفاع ~40px يوفر أقصى مساحة للقراءة)
+            React.createElement(
+              "div",
+              { className: "px-3 py-1.5 rounded-xl bg-slate-950/95 text-white border border-indigo-500/40 shadow-md flex items-center justify-between gap-2 shrink-0 animate-fade-in" },
+              
+              // زر التشغيل المصغر والتوقيت
+              React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: handleTogglePlay,
+                  className: "w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all",
+                  title: localIsPlaying ? "إيقاف مؤقت" : "تشغيل"
+                },
+                  localIsPlaying
+                    ? React.createElement("svg", { className: "w-3.5 h-3.5 fill-current", viewBox: "0 0 24 24" },
+                        React.createElement("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" })
+                      )
+                    : React.createElement("svg", { className: "w-3.5 h-3.5 fill-current ml-0.5", viewBox: "0 0 24 24" },
+                        React.createElement("path", { d: "M8 5v14l11-7z" })
+                      )
+                ),
+                React.createElement("div", { className: "flex items-center gap-1.5 text-xs min-w-0" },
+                  React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" }),
+                  React.createElement("span", { className: "font-mono font-bold text-indigo-300 text-[11px]" }, formatTime(localProgress)),
+                  React.createElement("span", { className: "text-slate-500 text-[10px]" }, "/"),
+                  React.createElement("span", { className: "font-mono text-slate-400 text-[11px]" }, formatTime(localDuration)),
+                  curAudioIdx >= 0 ? React.createElement("span", { className: "text-[10px] text-amber-300 font-bold hidden sm:inline" }, "(" + (curAudioIdx + 1) + "/" + allAudioChaps.length + ")") : null
+                )
+              ),
 
-          // شريط التقدم والوقت
-          React.createElement(
-            "div",
-            { className: "flex items-center gap-2 text-xs" },
-            React.createElement("span", { className: "text-indigo-200 tabular-nums text-[11px]" }, formatTime(localProgress)),
-            React.createElement("input", {
-              type: "range",
-              min: 0,
-              max: localDuration || 100,
-              value: localProgress || 0,
-              onChange: function(e) {
-                var pos = parseFloat(e.target.value);
-                if (chapterAudioRef && chapterAudioRef.current) {
-                  chapterAudioRef.current.currentTime = pos;
-                  setLocalProgress(pos);
-                }
-              },
-              className: "flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-            }),
-            canGoNext && isPlaylistMode && allAudioChaps[curAudioIdx + 1] ? React.createElement(
-              "span",
-              { className: "text-[10px] text-teal-300 truncate max-w-[140px] sm:max-w-xs font-sans" },
-              "⏭️ التالي: " + allAudioChaps[curAudioIdx + 1].title
-            ) : null,
-            React.createElement("span", { className: "text-slate-400 tabular-nums text-[11px]" }, formatTime(localDuration))
-          ),
+              // شريط التقدم النحيف في المنتصف
+              React.createElement("div", { className: "flex-1 max-w-xs mx-2 hidden sm:block" },
+                React.createElement("input", {
+                  type: "range",
+                  min: 0,
+                  max: localDuration || 100,
+                  value: localProgress || 0,
+                  onChange: function(e) {
+                    var pos = parseFloat(e.target.value);
+                    if (chapterAudioRef && chapterAudioRef.current) {
+                      chapterAudioRef.current.currentTime = pos;
+                      setLocalProgress(pos);
+                    }
+                  },
+                  className: "w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                })
+              ),
 
-          // أزرار التحكم بالصوت والتنقل بين التراكات (توزيع LTR قياسي ثابت)
-          React.createElement(
-            "div",
-            {
-              dir: "ltr",
-              className: "flex items-center justify-center gap-1.5 sm:gap-2.5 bg-slate-900/90 px-2 py-0.5 rounded-full border border-slate-800 shadow-inner"
-            },
-            // السابق
-            React.createElement("button", {
-              type: "button",
-              onClick: handlePrevTrack,
-              disabled: !canGoPrev,
-              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
-              title: "الفصل الصوتي السابق"
-            },
-              React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
-                React.createElement("path", { d: "M6 6h2v12H6zm3.5 6l8.5 6V6z" })
+              // أزرار التحكم السريعة وزر التوسيع
+              React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
+                  className: "px-2 py-1 rounded-lg text-[10px] font-bold border transition-all " +
+                    (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
+                  title: autoScrollEnabled ? "المتابعة التلقائية مفعلة" : "المتابعة التلقائية متوقفة"
+                }, autoScrollEnabled ? "📍 متابعة" : "📍 متوقفة"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: cycleSpeed,
+                  className: "px-1.5 py-1 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-mono font-bold",
+                  title: "سرعة الصوت"
+                }, localSpeed.toFixed(1) + "x"),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: toggleAudioCollapse,
+                  className: "px-2 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-bold transition-all flex items-center gap-1 active:scale-95",
+                  title: "توسيع المشغل وعرض باقي الأزرار"
+                },
+                  React.createElement("span", null, "توسيع"),
+                  React.createElement("span", { className: "text-[10px]" }, "▼")
+                )
               )
-            ),
-            // تأخير 10 ثوان
-            React.createElement("button", {
-              type: "button",
-              onClick: function() {
-                if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10;
-              },
-              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
-              title: "تأخير 10 ثوان (رجوع للخلف)"
-            },
-              React.createElement("svg", {
-                className: "w-5 h-5 stroke-current fill-none",
-                viewBox: "0 0 24 24",
-                strokeWidth: "2",
-                strokeLinecap: "round",
-                strokeLinejoin: "round"
-              },
-                React.createElement("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }),
-                React.createElement("path", { d: "M3 3v5h5" })
-              ),
-              React.createElement("span", {
-                className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
-              }, "10")
-            ),
-            // تشغيل / إيقاف
-            React.createElement("button", {
-              type: "button",
-              onClick: handleTogglePlay,
-              className: "w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-base sm:text-lg shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
-              title: localIsPlaying ? "إيقاف مؤقت" : "متابعة التشغيل"
-            },
-              localIsPlaying
-                ? React.createElement("svg", { className: "w-5 h-5 fill-current", viewBox: "0 0 24 24" },
-                    React.createElement("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" })
+            )
+          ) : (
+            // وضع المشغل الموسع (مع زر الطي)
+            React.createElement(
+              "div",
+              { className: "p-2.5 sm:p-3 rounded-2xl bg-slate-950 text-white border border-indigo-500/40 shadow-lg space-y-2 shrink-0 animate-fade-in" },
+              // السطر العلوي: رقم التراك وحالة الـ Playlist المتتالية وزر الطي
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between text-xs gap-2 flex-wrap" },
+                React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-indigo-300 text-[11px] sm:text-xs" },
+                  React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
+                  React.createElement("span", null, "🎧 تراك"),
+                  curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300" }, "(" + (curAudioIdx + 1) + " من " + allAudioChaps.length + ")") : null
+                ),
+                React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
+                    className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                      (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
+                    title: autoScrollEnabled ? "المتابعة التلقائية وتمرير الشاشة مع الصوت مفعلة (اضغط للإيقاف)" : "المتابعة التلقائية متوقفة (اضغط للتفعيل)"
+                  }, autoScrollEnabled ? "📍 متابعة ✓" : "📍 متوقفة"),
+                  setIsPlaylistMode ? React.createElement("button", {
+                    type: "button",
+                    onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
+                    className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                      (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
+                    title: isPlaylistMode ? "التشغيل المتتالي مفعل" : "التشغيل المتتالي متوقف"
+                  }, "🔁 " + (isPlaylistMode ? "متتالي ✓" : "فردي")) : null,
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: cycleSpeed,
+                    className: "px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-mono font-bold active:scale-95 transition-all shadow-xs",
+                    title: "تغيير سرعة الصوت"
+                  }, localSpeed.toFixed(1) + "x"),
+                  React.createElement("button", {
+                    type: "button",
+                    onClick: toggleAudioCollapse,
+                    className: "px-2 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-bold border border-slate-700 flex items-center gap-1 transition-all active:scale-95",
+                    title: "طي المشغل لإتاحة مساحة أكبر لقراءة النص"
+                  },
+                    React.createElement("span", null, "طي"),
+                    React.createElement("span", { className: "text-[10px]" }, "▲")
                   )
-                : React.createElement("svg", { className: "w-5 h-5 fill-current ml-0.5", viewBox: "0 0 24 24" },
-                    React.createElement("path", { d: "M8 5v14l11-7z" })
-                  )
-            ),
-            // تقديم 10 ثوان
-            React.createElement("button", {
-              type: "button",
-              onClick: function() {
-                if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime += 10;
-              },
-              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
-              title: "تقديم 10 ثوان (تقدم للأمام)"
-            },
-              React.createElement("svg", {
-                className: "w-5 h-5 stroke-current fill-none",
-                viewBox: "0 0 24 24",
-                strokeWidth: "2",
-                strokeLinecap: "round",
-                strokeLinejoin: "round"
-              },
-                React.createElement("path", { d: "M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
-                React.createElement("path", { d: "M21 3v5h-5" })
+                )
               ),
-              React.createElement("span", {
-                className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
-              }, "10")
-            ),
-            // التالي
-            React.createElement("button", {
-              type: "button",
-              onClick: handleNextTrack,
-              disabled: !canGoNext,
-              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
-              title: "الفصل الصوتي التالي"
-            },
-              React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
-                React.createElement("path", { d: "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" })
+
+              // شريط التقدم والوقت
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-xs" },
+                React.createElement("span", { className: "text-indigo-200 tabular-nums text-[11px]" }, formatTime(localProgress)),
+                React.createElement("input", {
+                  type: "range",
+                  min: 0,
+                  max: localDuration || 100,
+                  value: localProgress || 0,
+                  onChange: function(e) {
+                    var pos = parseFloat(e.target.value);
+                    if (chapterAudioRef && chapterAudioRef.current) {
+                      chapterAudioRef.current.currentTime = pos;
+                      setLocalProgress(pos);
+                    }
+                  },
+                  className: "flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                }),
+                canGoNext && isPlaylistMode && allAudioChaps[curAudioIdx + 1] ? React.createElement(
+                  "span",
+                  { className: "text-[10px] text-teal-300 truncate max-w-[140px] sm:max-w-xs font-sans" },
+                  "⏭️ التالي: " + allAudioChaps[curAudioIdx + 1].title
+                ) : null,
+                React.createElement("span", { className: "text-slate-400 tabular-nums text-[11px]" }, formatTime(localDuration))
+              ),
+
+              // أزرار التحكم بالصوت والتنقل بين التراكات (توزيع LTR قياسي ثابت)
+              React.createElement(
+                "div",
+                {
+                  dir: "ltr",
+                  className: "flex items-center justify-center gap-1.5 sm:gap-2.5 bg-slate-900/90 px-2 py-0.5 rounded-full border border-slate-800 shadow-inner"
+                },
+                // السابق
+                React.createElement("button", {
+                  type: "button",
+                  onClick: handlePrevTrack,
+                  disabled: !canGoPrev,
+                  className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
+                  title: "الفصل الصوتي السابق"
+                },
+                  React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
+                    React.createElement("path", { d: "M6 6h2v12H6zm3.5 6l8.5 6V6z" })
+                  )
+                ),
+                // تأخير 10 ثوان
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() {
+                    if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10;
+                  },
+                  className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
+                  title: "تأخير 10 ثوان (رجوع للخلف)"
+                },
+                  React.createElement("svg", {
+                    className: "w-5 h-5 stroke-current fill-none",
+                    viewBox: "0 0 24 24",
+                    strokeWidth: "2",
+                    strokeLinecap: "round",
+                    strokeLinejoin: "round"
+                  },
+                    React.createElement("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }),
+                    React.createElement("path", { d: "M3 3v5h5" })
+                  ),
+                  React.createElement("span", {
+                    className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
+                  }, "10")
+                ),
+                // تشغيل / إيقاف
+                React.createElement("button", {
+                  type: "button",
+                  onClick: handleTogglePlay,
+                  className: "w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-base sm:text-lg shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
+                  title: localIsPlaying ? "إيقاف مؤقت" : "متابعة التشغيل"
+                },
+                  localIsPlaying
+                    ? React.createElement("svg", { className: "w-5 h-5 fill-current", viewBox: "0 0 24 24" },
+                        React.createElement("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" })
+                      )
+                    : React.createElement("svg", { className: "w-5 h-5 fill-current ml-0.5", viewBox: "0 0 24 24" },
+                        React.createElement("path", { d: "M8 5v14l11-7z" })
+                      )
+                ),
+                // تقديم 10 ثوان
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() {
+                    if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime += 10;
+                  },
+                  className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
+                  title: "تقديم 10 ثوان (تقدم للأمام)"
+                },
+                  React.createElement("svg", {
+                    className: "w-5 h-5 stroke-current fill-none",
+                    viewBox: "0 0 24 24",
+                    strokeWidth: "2",
+                    strokeLinecap: "round",
+                    strokeLinejoin: "round"
+                  },
+                    React.createElement("path", { d: "M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
+                    React.createElement("path", { d: "M21 3v5h-5" })
+                  ),
+                  React.createElement("span", {
+                    className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
+                  }, "10")
+                ),
+                // التالي
+                React.createElement("button", {
+                  type: "button",
+                  onClick: handleNextTrack,
+                  disabled: !canGoNext,
+                  className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
+                  title: "الفصل الصوتي التالي"
+                },
+                  React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
+                    React.createElement("path", { d: "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" })
+                  )
+                )
               )
             )
           )
+        ) : React.createElement(
         ) : React.createElement(
           "div",
           { className: "p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-500/30 flex items-center justify-between gap-3 shrink-0" },
