@@ -133,13 +133,30 @@ function App() {
             shouldNotify = true;
           }
 
-          if (shouldNotify && ("Notification" in window) && Notification.permission === "granted") {
-            try {
-              new Notification(latest.title, {
-                body: latest.body,
-                icon: "icon-192.png"
-              });
-            } catch (err) {}
+          if (shouldNotify) {
+            // تشغيل الرنين والاهتزاز فور وصول الإشعار
+            if (window.NotificationService && typeof window.NotificationService.playNotificationChime === "function") {
+              window.NotificationService.playNotificationChime();
+            }
+
+            if (("Notification" in window) && Notification.permission === "granted") {
+              try {
+                var notif = new Notification(latest.title, {
+                  body: latest.body,
+                  icon: "icon-192.png",
+                  badge: "icon-192.png",
+                  vibrate: [250, 100, 250],
+                  tag: latest.id || "counsel_notify",
+                  renotify: true
+                });
+                notif.onclick = function() {
+                  window.focus();
+                  if (latest.linkTab) setActiveTab(latest.linkTab);
+                  else if (latest.lectureId) setActiveTab("lectures");
+                  notif.close();
+                };
+              } catch (err) {}
+            }
           }
         }
         initialLoad = false;
