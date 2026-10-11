@@ -323,46 +323,98 @@ window.ChapterTextViewerModal = function(props) {
             React.createElement("span", { className: "text-slate-400 tabular-nums text-[11px]" }, formatTime(localDuration))
           ),
 
-          // أزرار التحكم بالصوت والتنقل بين التراكات
+          // أزرار التحكم بالصوت والتنقل بين التراكات (توزيع LTR قياسي ثابت)
           React.createElement(
             "div",
-            { className: "flex items-center justify-center gap-2 sm:gap-3" },
+            {
+              dir: "ltr",
+              className: "flex items-center justify-center gap-1.5 sm:gap-2.5 bg-slate-900/90 px-2 py-0.5 rounded-full border border-slate-800 shadow-inner"
+            },
+            // السابق
             React.createElement("button", {
               type: "button",
               onClick: handlePrevTrack,
               disabled: !canGoPrev,
-              className: "p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-25",
+              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
               title: "الفصل الصوتي السابق"
-            }, "⏮️"),
+            },
+              React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
+                React.createElement("path", { d: "M6 6h2v12H6zm3.5 6l8.5 6V6z" })
+              )
+            ),
+            // تأخير 10 ثوان
             React.createElement("button", {
               type: "button",
               onClick: function() {
                 if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime -= 10;
               },
-              className: "p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all text-xs font-bold",
-              title: "تأخير 10 ثواني"
-            }, "⏪ 10-"),
+              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
+              title: "تأخير 10 ثوان (رجوع للخلف)"
+            },
+              React.createElement("svg", {
+                className: "w-5 h-5 stroke-current fill-none",
+                viewBox: "0 0 24 24",
+                strokeWidth: "2",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+              },
+                React.createElement("path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" }),
+                React.createElement("path", { d: "M3 3v5h5" })
+              ),
+              React.createElement("span", {
+                className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
+              }, "10")
+            ),
+            // تشغيل / إيقاف
             React.createElement("button", {
               type: "button",
               onClick: handleTogglePlay,
-              className: "w-10 h-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-lg shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
+              className: "w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-base sm:text-lg shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
               title: localIsPlaying ? "إيقاف مؤقت" : "متابعة التشغيل"
-            }, localIsPlaying ? "⏸️" : "▶️"),
+            },
+              localIsPlaying
+                ? React.createElement("svg", { className: "w-5 h-5 fill-current", viewBox: "0 0 24 24" },
+                    React.createElement("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" })
+                  )
+                : React.createElement("svg", { className: "w-5 h-5 fill-current ml-0.5", viewBox: "0 0 24 24" },
+                    React.createElement("path", { d: "M8 5v14l11-7z" })
+                  )
+            ),
+            // تقديم 10 ثوان
             React.createElement("button", {
               type: "button",
               onClick: function() {
                 if (chapterAudioRef && chapterAudioRef.current) chapterAudioRef.current.currentTime += 10;
               },
-              className: "p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all text-xs font-bold",
-              title: "تقديم 10 ثواني"
-            }, "+10 ⏩"),
+              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 transition-all relative group",
+              title: "تقديم 10 ثوان (تقدم للأمام)"
+            },
+              React.createElement("svg", {
+                className: "w-5 h-5 stroke-current fill-none",
+                viewBox: "0 0 24 24",
+                strokeWidth: "2",
+                strokeLinecap: "round",
+                strokeLinejoin: "round"
+              },
+                React.createElement("path", { d: "M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }),
+                React.createElement("path", { d: "M21 3v5h-5" })
+              ),
+              React.createElement("span", {
+                className: "absolute text-[8px] font-black font-mono leading-none text-slate-200 mt-1 pointer-events-none"
+              }, "10")
+            ),
+            // التالي
             React.createElement("button", {
               type: "button",
               onClick: handleNextTrack,
               disabled: !canGoNext,
-              className: "p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-25",
+              className: "w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-20",
               title: "الفصل الصوتي التالي"
-            }, "⏭️")
+            },
+              React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
+                React.createElement("path", { d: "M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" })
+              )
+            )
           )
         ) : React.createElement(
           "div",

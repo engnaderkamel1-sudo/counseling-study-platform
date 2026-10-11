@@ -31,8 +31,11 @@ window.LecturesPage = function(props) {
   var [uploadStatusText, setUploadStatusText] = React.useState("");
 
   var [editingLecture, setEditingLecture] = React.useState(null); // المحاضرة المراد تعديل مادتها وبياناتها
-  var [editModalTab, setEditModalTab] = React.useState("all"); // 'all', 'video', 'audio', 'summary', 'quiz', 'info'
+  var [editModalTab, setEditModalTab] = React.useState("all"); // 'all', 'video', 'handout', 'audio', 'summary', 'quiz', 'info'
   var [editingQuizText, setEditingQuizText] = React.useState("");
+  var [editingHandoutUrl, setEditingHandoutUrl] = React.useState("");
+  var [editingHandoutName, setEditingHandoutName] = React.useState("");
+  var [isUploadingHandout, setIsUploadingHandout] = React.useState(false);
 
   var [newTitle, setNewTitle] = React.useState("");
   var [newSubject, setNewSubject] = React.useState("");
@@ -40,10 +43,40 @@ window.LecturesPage = function(props) {
   var [newDate, setNewDate] = React.useState(new Date().toISOString().split("T")[0]);
   var [newSessionOrder, setNewSessionOrder] = React.useState(1);
   var [newMediaUrl, setNewMediaUrl] = React.useState(""); // YouTube or Drive link
+  var [newHandoutUrl, setNewHandoutUrl] = React.useState("");
+  var [newHandoutName, setNewHandoutName] = React.useState("");
   var [newAudioSummaryUrl, setNewAudioSummaryUrl] = React.useState("");
   var [newWrittenSummary, setNewWrittenSummary] = React.useState("");
   var [newQuizText, setNewQuizText] = React.useState("");
   var [newNotes, setNewNotes] = React.useState("");
+
+  // دالة تحديد حالة المحاضرة الذكية
+  var getLectureStatus = function(lec) {
+    if (!lec) return { type: "unknown", label: "غير محدد", badgeClass: "bg-slate-100 text-slate-600" };
+    var hasMedia = !!(lec.mediaUrl && lec.mediaUrl.trim());
+    var todayStr = new Date().toISOString().split("T")[0];
+    var lecDate = (lec.date || "").trim();
+
+    if (hasMedia) {
+      return {
+        type: "ready",
+        label: "✅ متوفرة ومكتملة",
+        badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+      };
+    }
+    if (lecDate && lecDate > todayStr) {
+      return {
+        type: "upcoming",
+        label: "⏳ محاضرة قادمة",
+        badgeClass: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+      };
+    }
+    return {
+      type: "waiting",
+      label: "🔄 بانتظار رفع التسجيل",
+      badgeClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+    };
+  };
 
   // حالة الكويز التفاعلي للدارس
   var [quizUserAnswers, setQuizUserAnswers] = React.useState({});
@@ -201,6 +234,8 @@ window.LecturesPage = function(props) {
       date: newDate,
       sessionOrder: parseInt(newSessionOrder) || 1,
       mediaUrl: finalUrl,
+      handoutUrl: newHandoutUrl.trim(),
+      handoutName: newHandoutName.trim() || (newHandoutUrl.trim() ? "ملف المرفقات (Handout)" : ""),
       audioSummaryUrl: newAudioSummaryUrl.trim(),
       writtenSummary: newWrittenSummary.trim(),
       quizQuestions: parsedQuiz,
@@ -220,6 +255,8 @@ window.LecturesPage = function(props) {
     setNewSubject("");
     setNewSpeaker("");
     setNewMediaUrl("");
+    setNewHandoutUrl("");
+    setNewHandoutName("");
     setNewAudioSummaryUrl("");
     setNewWrittenSummary("");
     setNewQuizText("");
@@ -283,11 +320,57 @@ window.LecturesPage = function(props) {
     if (!lec) return;
     setEditingLecture(Object.assign({}, lec));
     setEditModalTab(targetTab || "all");
+    setEditingHandoutUrl(lec.handoutUrl || "");
+    setEditingHandoutName(lec.handoutName || "");
     setEditingQuizText(
       Array.isArray(lec.quizQuestions) && lec.quizQuestions.length > 0
         ? JSON.stringify(lec.quizQuestions, null, 2)
         : (typeof lec.quizQuestions === "string" ? lec.quizQuestions : "")
     );
+  };
+
+  var handleUploadHandout = async function(file) {
+    if (!file) return;
+    try {
+      setIsUploadingHandout(true);
+      var base64Data = await new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          var result = reader.result;
+          var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      var response = await fetch(cfg.driveUploadEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type || "application/pdf",
+          base64Data: base64Data
+        })
+      });
+
+      var resData = await response.json();
+      if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+        var finalFileUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
+        setEditingHandoutUrl(finalFileUrl);
+        setEditingHandoutName(file.name);
+        setEditingLecture(function(prev) {
+          return Object.assign({}, prev, { handoutUrl: finalFileUrl, handoutName: file.name });
+        });
+        alert("✅ تم رفع ملف الهاند آوت / العرض بنجاح!");
+      } else {
+        throw new Error(resData.message || "فشل رفع الهاند آوت");
+      }
+    } catch(err) {
+      alert("خطأ أثناء رفع ملف الهاند آوت: " + err.message);
+    } finally {
+      setIsUploadingHandout(false);
+    }
   };
 
   var handleSaveEdit = function(e) {
@@ -299,6 +382,8 @@ window.LecturesPage = function(props) {
       subject: (editingLecture.subject || "").trim() || "عام",
       speaker: (editingLecture.speaker || "").trim() || "غير محدد",
       mediaUrl: (editingLecture.mediaUrl || "").trim(),
+      handoutUrl: (editingLecture.handoutUrl || editingHandoutUrl || "").trim(),
+      handoutName: (editingLecture.handoutName || editingHandoutName || "").trim(),
       audioSummaryUrl: (editingLecture.audioSummaryUrl || "").trim(),
       writtenSummary: (editingLecture.writtenSummary || "").trim(),
       quizQuestions: parsedQuiz
