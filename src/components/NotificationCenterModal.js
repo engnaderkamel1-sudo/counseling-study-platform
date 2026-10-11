@@ -29,27 +29,28 @@ window.NotificationCenterModal = function(props) {
     if (utils.setLocal) utils.setLocal("counsel_read_notif_ids", updated);
   };
 
+  if (!isOpen) return null;
+
+  // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي)
+  var allowedNotifications = notifications.filter(function(n) {
+    if (n.type === "user_registration" && !isAdmin) return false;
+    if (n.type === "password_reset" && !isAdmin) return false;
+    return true;
+  });
+
   var markAllAsRead = function() {
-    var allIds = notifications.map(function(n) { return n.id; }).filter(Boolean);
+    var allIds = allowedNotifications.map(function(n) { return n.id; }).filter(Boolean);
     setReadIds(allIds);
     if (utils.setLocal) utils.setLocal("counsel_read_notif_ids", allIds);
   };
 
-  if (!isOpen) return null;
-
-  var filteredNotifications = notifications.filter(function(n) {
-    // تصفية إشعارات التسجيل للمشرف فقط
-    if (n.type === "user_registration" && !isAdmin) return false;
-    if (n.type === "password_reset" && !isAdmin) return false;
-
+  var filteredNotifications = allowedNotifications.filter(function(n) {
     var isRead = readIds.indexOf(n.id) !== -1;
     if (activeFilter === "unread") return !isRead;
     return true;
   });
 
-  var unreadCount = notifications.filter(function(n) {
-    if (n.type === "user_registration" && !isAdmin) return false;
-    if (n.type === "password_reset" && !isAdmin) return false;
+  var unreadCount = allowedNotifications.filter(function(n) {
     return readIds.indexOf(n.id) === -1;
   }).length;
 
@@ -209,7 +210,7 @@ window.NotificationCenterModal = function(props) {
               className: "px-3 py-1 rounded-lg font-bold transition-all " +
                 (activeFilter === "all" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800")
             },
-            "الكل (" + notifications.length + ")"
+            "الكل (" + allowedNotifications.length + ")"
           ),
           React.createElement(
             "button",

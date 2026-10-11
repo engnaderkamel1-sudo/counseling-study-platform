@@ -763,53 +763,6 @@ window.LectureViewerModal = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
-            // أزرار التكبير والتصغير والتدوير
-            React.createElement(
-              "div",
-              { className: "flex items-center bg-slate-800/80 rounded-xl p-0.5 border border-slate-700/80 text-xs" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleZoomOutHandout,
-                  title: "تصغير العرض",
-                  className: "w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-700 active:scale-95 text-slate-300 font-bold"
-                },
-                "➖"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleResetZoomHandout,
-                  title: "إعادة ضبط الحجم الطبيعي 100%",
-                  className: "px-1.5 h-7 flex items-center justify-center hover:bg-slate-700 text-[11px] font-mono text-emerald-400 font-bold"
-                },
-                handoutZoom + "%"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleZoomInHandout,
-                  title: "تكبير العرض",
-                  className: "w-7 h-7 rounded-lg flex items-center justify-center hover:bg-slate-700 active:scale-95 text-slate-300 font-bold"
-                },
-                "➕"
-              )
-            ),
-            // زر التدوير 90 درجة
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleRotateHandout,
-                title: "تدوير الصفحة 90 درجة (ملء الشاشة بالعرض)",
-                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 font-bold text-xs flex items-center gap-1 border border-slate-700 shadow-sm active:scale-95 transition-all"
-              },
-              React.createElement("span", { className: "text-sm" }, "🔄"),
-              React.createElement("span", { className: "font-mono" }, handoutRotation + "°")
-            ),
             React.createElement(
               "a",
               {
@@ -817,7 +770,7 @@ window.LectureViewerModal = function(props) {
                 download: true,
                 target: "_blank",
                 rel: "noopener noreferrer",
-                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all border border-slate-700 hidden sm:flex items-center gap-1"
+                className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 flex items-center gap-1.5 shadow-sm active:scale-95"
               },
               React.createElement("span", null, "⬇️"),
               React.createElement("span", null, "تحميل")
@@ -825,10 +778,13 @@ window.LectureViewerModal = function(props) {
           )
         ),
 
-        // مساحة عرض الـ PDF كاملة الشاشة داخل التطبيق مع دعم التكبير والتدوير
+        // مساحة عرض الـ PDF كاملة الشاشة داخل التطبيق مع دعم التدوير
         React.createElement(
           "div",
-          { className: "flex-1 w-full h-[calc(100vh-56px)] bg-slate-950 relative overflow-hidden flex items-center justify-center" },
+          {
+            ref: handoutScrollContainerRef,
+            className: "flex-1 w-full h-[calc(100vh-56px)] bg-slate-950 relative overflow-y-auto overflow-x-hidden flex items-start justify-center"
+          },
           React.createElement("iframe", {
             key: "fullscreen-handout",
             src: (function() {
@@ -840,13 +796,63 @@ window.LectureViewerModal = function(props) {
             })(),
             className: "w-full h-full border-0 transition-transform duration-300",
             style: {
-              transform: "rotate(" + handoutRotation + "deg) scale(" + (handoutZoom / 100) + ")",
+              transform: handoutRotation ? ("rotate(" + handoutRotation + "deg)") : "none",
               transformOrigin: "center center",
               minHeight: handoutRotation % 180 !== 0 ? "100vw" : "100%",
               minWidth: handoutRotation % 180 !== 0 ? "100vh" : "100%"
             },
             title: currentHandout.name || "Handout Fullscreen Viewer"
-          })
+          }),
+
+          // شريط الأدوات العائم الزجاجي الشفاف بمتناول الإبهام بالأسفل
+          React.createElement(
+            "div",
+            {
+              className: "fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md text-white border border-white/15 shadow-2xl transition-all hover:bg-slate-950/60"
+            },
+            // زر التدوير 90 درجة
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleRotateHandout,
+                title: "تدوير الصفحة 90 درجة",
+                className: "px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-teal-300 font-bold flex items-center gap-1 active:scale-95 transition-all text-xs border border-white/10"
+              },
+              React.createElement("span", null, "🔄"),
+              React.createElement("span", { className: "font-mono text-[11px]" }, handoutRotation + "°")
+            ),
+            // خط فاصل رفيع
+            React.createElement("div", { className: "w-[1px] h-4 bg-white/20 mx-0.5" }),
+            // زر الصفحة السابقة (Page Up)
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleHandoutPageUp,
+                title: "الصفحة السابقة (Page Up)",
+                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
+              },
+              "▲"
+            ),
+            // نص أو أيقونة التصفح
+            React.createElement(
+              "span",
+              { className: "text-[11px] font-bold text-slate-300 px-1 select-none" },
+              "صفحة"
+            ),
+            // زر الصفحة التالية (Page Down)
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleHandoutPageDown,
+                title: "الصفحة التالية (Page Down)",
+                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
+              },
+              "▼"
+            )
+          )
         )
       );
     })()
