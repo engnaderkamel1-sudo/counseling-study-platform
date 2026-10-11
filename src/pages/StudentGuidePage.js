@@ -174,8 +174,8 @@ window.StudentGuidePage = function(props) {
           customFileName
         );
 
-        if (resData && resData.viewUrl) {
-          finalUrl = resData.viewUrl;
+        if (resData && (resData.fileUrl || resData.viewUrl)) {
+          finalUrl = resData.fileUrl || resData.viewUrl;
         } else if (resData && resData.fileId) {
           finalUrl = "https://drive.google.com/file/d/" + resData.fileId + "/view";
         } else {

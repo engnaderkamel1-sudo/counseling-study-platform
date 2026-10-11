@@ -368,65 +368,40 @@ window.APP_UTILS = {
           base64Data: base64
         });
 
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", endpoint);
-        xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+        if (onProgress) {
+          onProgress({
+            percent: 30,
+            loadedMB: (totalFileSizeMB * 0.3).toFixed(1),
+            totalMB: totalFileSizeMB,
+            stage: "uploading",
+            message: "🚀 جاري الرفع السحابي إلى Google Drive..."
+          });
+        }
 
-        xhr.upload.onprogress = function(e) {
-          if (e.lengthComputable && onProgress) {
-            var rawRatio = e.loaded / e.total;
-            var uploadPct = 15 + Math.round(rawRatio * 80); // من 15% إلى 95%
-            var lMB = (e.loaded / (1024 * 1024)).toFixed(1);
-            var tMB = (e.total / (1024 * 1024)).toFixed(1);
-            onProgress({
-              percent: Math.min(95, uploadPct),
-              loadedMB: lMB,
-              totalMB: tMB,
-              stage: "uploading",
-              message: "🚀 جاري الرفع السحابي: " + Math.min(95, uploadPct) + "% (" + lMB + " من " + tMB + " MB)"
-            });
-          }
-        };
-
-        xhr.upload.onload = function() {
+        fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: payload
+        })
+        .then(function(res) {
+          if (!res.ok) throw new Error("Server returned status " + res.status);
+          return res.json();
+        })
+        .then(function(data) {
           if (onProgress) {
             onProgress({
-              percent: 96,
+              percent: 100,
               loadedMB: totalFileSizeMB,
               totalMB: totalFileSizeMB,
-              stage: "processing",
-              message: "☁️ اكتمل الرفع 100%! جاري الحفظ والتأكيد في Google Drive ⏳"
+              stage: "done",
+              message: "🎉 اكتمل الرفع والحفظ بنجاح!"
             });
           }
-        };
-
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 400) {
-            try {
-              var data = JSON.parse(xhr.responseText);
-              if (onProgress) {
-                onProgress({
-                  percent: 100,
-                  loadedMB: totalFileSizeMB,
-                  totalMB: totalFileSizeMB,
-                  stage: "done",
-                  message: "🎉 اكتمل الرفع والحفظ بنجاح!"
-                });
-              }
-              resolve(data);
-            } catch (err) {
-              resolve({ status: "success", raw: xhr.responseText });
-            }
-          } else {
-            reject(new Error("Server returned status " + xhr.status));
-          }
-        };
-
-        xhr.onerror = function(err) {
-          reject(new Error("Network error during file upload: " + (err && err.message)));
-        };
-
-        xhr.send(payload);
+          resolve(data);
+        })
+        .catch(function(err) {
+          reject(new Error("Network error during file upload: " + (err && err.message ? err.message : String(err))));
+        });
       };
 
       reader.readAsDataURL(file);
