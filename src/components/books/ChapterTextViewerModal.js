@@ -525,7 +525,6 @@ window.ChapterTextViewerModal = function(props) {
             )
           )
         ) : React.createElement(
-        ) : React.createElement(
           "div",
           { className: "p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-500/30 flex items-center justify-between gap-3 shrink-0" },
           React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" },
