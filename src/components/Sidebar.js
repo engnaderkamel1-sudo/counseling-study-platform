@@ -13,6 +13,7 @@ window.Sidebar = function(props) {
   var menuItems = [
     { id: "lectures", label: "المحاضرات الدراسية", icon: "🎙️" },
     { id: "books", label: "المراجع والكتب", icon: "📚" },
+    { id: "student_guide", label: "دليل الدارس واللوائح", icon: "📋" },
     { id: "curriculum", label: "المنهج الدراسي والتقارير", icon: "📑" },
     { id: "notes", label: "ملاحظاتي الدراسية", icon: "📝" }
   ];

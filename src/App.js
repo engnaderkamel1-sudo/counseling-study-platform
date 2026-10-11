@@ -6,7 +6,7 @@ function App() {
   var [activeTab, setActiveTab] = React.useState(function() {
     var hash = (window.location.hash || "").replace("#", "").trim();
     var saved = utils.getLocal("counsel_active_tab");
-    var validTabs = ["lectures", "books", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "error_reports", "settings"];
+    var validTabs = ["lectures", "books", "student_guide", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "error_reports", "settings"];
     if (hash && validTabs.indexOf(hash) !== -1) return hash;
     if (saved && validTabs.indexOf(saved) !== -1) return saved;
     return "lectures";
@@ -379,6 +379,7 @@ function App() {
           currentUser: currentUser,
           onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
         }),
+        activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: currentUser }),
         activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
         activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
         activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),

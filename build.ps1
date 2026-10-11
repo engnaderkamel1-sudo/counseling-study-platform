@@ -51,6 +51,7 @@ function Build-App {
         "components/lectures/AddLectureModal.js",
         "pages/LecturesPage.js",
         "pages/BooksPage.js",
+        "pages/StudentGuidePage.js",
         "pages/CurriculumPage.js",
         "pages/NotesPage.js",
         "pages/UsersManagementPage.js",
