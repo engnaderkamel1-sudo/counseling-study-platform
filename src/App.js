@@ -120,7 +120,20 @@ function App() {
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
         if (!initialLoad && list.length > 0) {
           var latest = list[0];
-          if ("Notification" in window && Notification.permission === "granted") {
+          var isRegistration = (latest.type === "user_registration");
+          var shouldNotify = false;
+
+          // إشعار طلبات الدارسين الجدد يظهر فقط لمشرف المنصة
+          if (isRegistration) {
+            if (currentUser && currentUser.role === "admin") {
+              shouldNotify = true;
+            }
+          } else {
+            // إشعارات المحاضرات تظهر لجميع الدارسين المعتمدين
+            shouldNotify = true;
+          }
+
+          if (shouldNotify && ("Notification" in window) && Notification.permission === "granted") {
             try {
               new Notification(latest.title, {
                 body: latest.body,
@@ -137,7 +150,7 @@ function App() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
       if (typeof unsubscribeNotifs === "function") unsubscribeNotifs();
     };
-  }, []);
+  }, [currentUser]);
 
   var handleToggleNotification = async function() {
     if (window.NotificationService && typeof window.NotificationService.requestPermission === "function") {
@@ -146,17 +159,59 @@ function App() {
     }
   };
 
+  // حالة المستخدم الحالي (فارغ افتراضياً لإلزام تسجيل الدخول)
   var [currentUser, setCurrentUser] = React.useState(function() {
     var saved = utils.getLocal("counsel_current_user", null);
-    if (saved && typeof saved === "object") return saved;
-    return {
-      fullName: "الأدمن",
-      email: "eng.nader.reda@gmail.com",
-      phone: "01275571569",
-      role: "admin",
-      status: "approved"
-    };
+    if (saved && typeof saved === "object" && saved.status === "approved") {
+      return saved;
+    }
+    return null;
   });
+
+  // عدد طلبات الانضمام المعلقة في انتظار المشرف
+  var [pendingUsersCount, setPendingUsersCount] = React.useState(0);
+
+  // مراقبة فورية لطلبات الانضمام الجديدة للمشرف
+  React.useEffect(function() {
+    if (!currentUser || currentUser.role !== "admin" || !window.db) return;
+    try {
+      var unsubscribePending = window.db.collection("users")
+        .where("status", "==", "pending")
+        .onSnapshot(function(snap) {
+          setPendingUsersCount(snap.size);
+        }, function(err) {
+          console.warn("Pending users listener note:", err);
+        });
+      return function() { unsubscribePending(); };
+    } catch (e) {}
+  }, [currentUser]);
+
+  // مراقبة حية لحالة الحساب للدارس (في حال تعليقه أو حذفه من قِبل المشرف)
+  React.useEffect(function() {
+    if (!currentUser || currentUser.role === "admin" || !currentUser.id || !window.db) return;
+    try {
+      var unsubscribeUser = window.db.collection("users").doc(currentUser.id).onSnapshot(function(doc) {
+        if (doc.exists) {
+          var uData = doc.data();
+          if (uData.status !== "approved") {
+            alert("تنبيه: تم تعليق حسابك أو تعديل حالته من قِبل مشرف المنصة.");
+            utils.removeLocal("counsel_current_user");
+            setCurrentUser(null);
+          }
+        }
+      });
+      return function() { unsubscribeUser(); };
+    } catch (e) {}
+  }, [currentUser]);
+
+  // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
+  React.useEffect(function() {
+    if (currentUser && currentUser.role !== "admin") {
+      if (activeTab === "users" || activeTab === "errors") {
+        setActiveTab("lectures");
+      }
+    }
+  }, [currentUser, activeTab]);
 
   var [theme, setTheme] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.theme, "light");
@@ -178,8 +233,33 @@ function App() {
   var handleLoginSuccess = function(userData) {
     setCurrentUser(userData);
     utils.setLocal("counsel_current_user", userData);
-    alert("مرحباً بك يا " + (userData.fullName || "زميلنا العزيز") + "! تم تسجيل الدخول بنجاح.");
+    setIsAuthOpen(false);
   };
+
+  var handleLogout = function() {
+    if (confirm("هل تريد بالتأكيد تسجيل الخروج من حسابك؟")) {
+      utils.removeLocal("counsel_current_user");
+      setCurrentUser(null);
+      setIsSidebarOpen(false);
+      if (window.auth && typeof window.auth.signOut === "function") {
+        try { window.auth.signOut(); } catch (e) {}
+      }
+    }
+  };
+
+  // حائط الصد الأمني: إذا لم يسجل المستخدم دخوله، تظهر شاشة الدخول الإلزامية
+  if (!currentUser) {
+    return React.createElement(
+      "div",
+      { className: "min-h-screen bg-slate-900 text-slate-100 flex items-center justify-center p-3 font-cairo" },
+      React.createElement(window.AuthModal, {
+        isOpen: true,
+        isBlocking: true,
+        onClose: null,
+        onLoginSuccess: handleLoginSuccess
+      })
+    );
+  }
 
   return React.createElement(
     "div",
@@ -190,6 +270,8 @@ function App() {
       onTabChange: setActiveTab,
       currentUser: currentUser,
       onOpenAuth: function() { setIsAuthOpen(true); },
+      onLogout: handleLogout,
+      pendingCount: pendingUsersCount,
       isOpen: isSidebarOpen,
       onClose: function() { setIsSidebarOpen(false); },
       hasNotificationPermission: hasNotificationPermission,
@@ -245,6 +327,8 @@ function App() {
           theme: theme,
           onToggleTheme: handleToggleTheme,
           currentUser: currentUser,
+          onOpenAuth: function() { setIsAuthOpen(true); },
+          onLogout: handleLogout,
           onOpenErrorReport: function() { setIsErrorReportOpen(true); },
           hasNotificationPermission: hasNotificationPermission,
           onToggleNotification: handleToggleNotification,
