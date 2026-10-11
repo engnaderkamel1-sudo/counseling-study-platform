@@ -38,6 +38,8 @@ window.ChapterTextViewerModal = function(props) {
     }
   });
   var [isAudioCollapsed, setIsAudioCollapsed] = React.useState(false);
+  var [isFullScreen, setIsFullScreen] = React.useState(false);
+  var [showSyncSettings, setShowSyncSettings] = React.useState(false);
 
   // حالة إزاحة تزامن الصوت مع النص (Time Shift بالثواني مع الكسور مثل +1.5s أو -2s)
   var [timeOffset, setTimeOffset] = React.useState(function() {
@@ -309,19 +311,23 @@ window.ChapterTextViewerModal = function(props) {
   return React.createElement(
     "div",
     {
-      className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-fade-in",
+      className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center " +
+        (isFullScreen ? "p-0" : "p-2 sm:p-4") + " animate-fade-in",
       onClick: onClose
     },
     React.createElement(
       "div",
       {
-        className: "bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-6 max-w-3xl md:max-w-4xl lg:max-w-5xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 sm:space-y-3 max-h-[92vh] sm:max-h-[88vh] md:h-[92vh] flex flex-col",
+        className: "bg-white dark:bg-slate-900 w-full shadow-2xl border border-slate-200 dark:border-slate-800 space-y-2 sm:space-y-2.5 flex flex-col transition-all duration-200 " +
+          (isFullScreen
+            ? "h-full rounded-none p-3 sm:p-5"
+            : "rounded-3xl p-3.5 sm:p-5 max-w-3xl md:max-w-4xl lg:max-w-5xl max-h-[95vh] sm:max-h-[90vh] md:h-[92vh]"),
         onClick: function(e) { e.stopPropagation(); }
       },
       // ترويسة النافذة
       React.createElement(
         "div",
-        { className: "flex items-center justify-between border-b pb-3 border-slate-100 dark:border-slate-800 shrink-0 gap-2" },
+        { className: "flex items-center justify-between border-b pb-2 sm:pb-3 border-slate-100 dark:border-slate-800 shrink-0 gap-2" },
         React.createElement("div", { className: "min-w-0 flex-1" },
           React.createElement("h3", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2 truncate" },
             "📄 " + viewingChapterText.title
@@ -333,6 +339,13 @@ window.ChapterTextViewerModal = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-1.5 shrink-0" },
+          // زر وضع ملء الشاشة (Full Screen)
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setIsFullScreen(!isFullScreen); },
+            title: isFullScreen ? "تصغير الشاشة" : "تكبير الشاشة لملء الشاشة بالكامل للقراءة المريحة",
+            className: "w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-sm font-bold transition-all active:scale-95"
+          }, isFullScreen ? "🗗" : "⛶"),
           // زر وضع الورق الدافئ (Sepia Mode)
           React.createElement("button", {
             type: "button",
@@ -363,11 +376,21 @@ window.ChapterTextViewerModal = function(props) {
             React.createElement("span", { className: "px-1.5 font-mono text-[11px] text-slate-400" }, fontSize + "px"),
             React.createElement("button", {
               type: "button",
-              onClick: function() { if (onFontSizeChange) onFontSizeChange(Math.min(32, fontSize + 1)); },
+              onClick: function() { if (onFontSizeChange) onFontSizeChange(Math.min(34, fontSize + 1)); },
               title: "تكبير الخط",
               className: "w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 active:scale-90 transition-all text-slate-600 dark:text-slate-300"
             }, "A+")
           ),
+          // زر إعدادات التزامن المخفي (أيقونة ترس أنيقة ومدمجة)
+          hasAudio ? React.createElement("button", {
+            type: "button",
+            onClick: function() { setShowSyncSettings(!showSyncSettings); },
+            title: showSyncSettings ? "إخفاء أدوات ضبط التزامن" : "ضبط توقيت تظليل النص مع الصوت (تقديم/تأخير)",
+            className: "w-8 h-8 rounded-xl flex items-center justify-center text-sm transition-all border active:scale-95 " +
+              (showSyncSettings || timeOffset !== 0
+                ? "bg-amber-500/20 text-amber-500 border-amber-400/40"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700")
+          }, "⚙️") : null,
           React.createElement("button", {
             type: "button",
             onClick: onClose,
@@ -455,36 +478,36 @@ window.ChapterTextViewerModal = function(props) {
               )
             )
           ) : (
-            // وضع المشغل الموسع (مع زر الطي)
+            // وضع المشغل الموسع المدمج الأنيق (Compact Modern Player)
             React.createElement(
               "div",
-              { className: "p-2.5 sm:p-3 rounded-2xl bg-slate-950 text-white border border-indigo-500/40 shadow-lg space-y-2 shrink-0 animate-fade-in" },
-              // السطر العلوي: رقم التراك وحالة الـ Playlist المتتالية وزر الطي
+              { className: "p-2 sm:p-2.5 rounded-2xl bg-slate-950/90 backdrop-blur text-white border border-indigo-500/30 shadow-md space-y-1.5 shrink-0 animate-fade-in" },
+              // السطر العلوي: رقم التراك وحالة الـ Playlist والسرعة وزر الطي
               React.createElement(
                 "div",
-                { className: "flex items-center justify-between text-xs gap-2 flex-wrap" },
-                React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-indigo-300 text-[11px] sm:text-xs" },
+                { className: "flex items-center justify-between text-xs gap-1.5 flex-wrap" },
+                React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-indigo-300 text-[11px]" },
                   React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" }),
                   React.createElement("span", null, "🎧 تراك"),
-                  curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300" }, "(" + (curAudioIdx + 1) + " من " + allAudioChaps.length + ")") : null
+                  curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300 font-mono" }, "(" + (curAudioIdx + 1) + "/" + allAudioChaps.length + ")") : null
                 ),
-                React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+                React.createElement("div", { className: "flex items-center gap-1 sm:gap-1.5 flex-wrap" },
                   React.createElement("button", {
                     type: "button",
                     onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
-                    className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
-                      (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
+                    className: "px-2 py-0.5 rounded-xl text-[10px] sm:text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                      (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
                     title: autoScrollEnabled ? "تحريك الشاشة تلقائياً مع قراءة الصوت مفعل (اضغط للإيقاف)" : "تحريك الشاشة التلقائي متوقف (اضغط للتفعيل)"
                   }, autoScrollEnabled ? "📍 تحريك الشاشة ✓" : "📍 تحريك متوقف"),
                   setIsPlaylistMode ? React.createElement("button", {
                     type: "button",
                     onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
-                    className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
-                      (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
+                    className: "px-2 py-0.5 rounded-xl text-[10px] sm:text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                      (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
                     title: isPlaylistMode ? "تشغيل التراك التالي تلقائياً بعد انتهاء الحالي مفعل" : "تشغيل التراك التالي تلقائياً متوقف"
                   }, "🔁 " + (isPlaylistMode ? "التالي تلقائياً ✓" : "تشغيل مفرد")) : null,
                   React.createElement("div", {
-                    className: "flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-800 border border-slate-700 text-[11px] font-bold shadow-xs",
+                    className: "flex items-center gap-1 px-1.5 py-0.5 rounded-xl bg-slate-850/80 border border-slate-750 text-[10px] sm:text-[11px] font-bold",
                     title: "شريط ضبط سرعة الصوت"
                   },
                     React.createElement("span", { className: "text-slate-400 text-[10px]" }, "السرعة:"),
@@ -501,14 +524,14 @@ window.ChapterTextViewerModal = function(props) {
                           chapterAudioRef.current.playbackRate = spd;
                         }
                       },
-                      className: "w-14 sm:w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                      className: "w-12 sm:w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
                     }),
-                    React.createElement("span", { className: "text-amber-300 font-mono text-[11px] min-w-[28px] text-center" }, localSpeed.toFixed(1) + "x")
+                    React.createElement("span", { className: "text-amber-300 font-mono text-[10px] sm:text-[11px] min-w-[26px] text-center" }, localSpeed.toFixed(1) + "x")
                   ),
                   React.createElement("button", {
                     type: "button",
                     onClick: toggleAudioCollapse,
-                    className: "px-2 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-bold border border-slate-700 flex items-center gap-1 transition-all active:scale-95",
+                    className: "px-2 py-0.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] sm:text-[11px] font-bold border border-slate-700 flex items-center gap-1 transition-all active:scale-95",
                     title: "طي المشغل لإتاحة مساحة أكبر لقراءة النص"
                   },
                     React.createElement("span", null, "طي"),
@@ -590,14 +613,14 @@ window.ChapterTextViewerModal = function(props) {
                 React.createElement("button", {
                   type: "button",
                   onClick: handleTogglePlay,
-                  className: "w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-base sm:text-lg shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
+                  className: "w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-sm sm:text-base shadow-md shadow-blue-600/30 active:scale-95 transition-all",
                   title: localIsPlaying ? "إيقاف مؤقت" : "متابعة التشغيل"
                 },
                   localIsPlaying
-                    ? React.createElement("svg", { className: "w-5 h-5 fill-current", viewBox: "0 0 24 24" },
+                    ? React.createElement("svg", { className: "w-4 h-4 fill-current", viewBox: "0 0 24 24" },
                         React.createElement("path", { d: "M6 19h4V5H6v14zm8-14v14h4V5h-4z" })
                       )
-                    : React.createElement("svg", { className: "w-5 h-5 fill-current ml-0.5", viewBox: "0 0 24 24" },
+                    : React.createElement("svg", { className: "w-4 h-4 fill-current ml-0.5", viewBox: "0 0 24 24" },
                         React.createElement("path", { d: "M8 5v14l11-7z" })
                       )
                 ),
@@ -657,13 +680,13 @@ window.ChapterTextViewerModal = function(props) {
         )
       ) : null,
 
-      // لوحة وأدوات وزن وضبط تزامن تظليل النص مع صوت المتحدث (Highlight Time Sync Shift)
-      hasAudio ? React.createElement(
+      // لوحة وأدوات وزن وضبط تزامن تظليل النص مع صوت المتحدث (Highlight Time Sync Shift - تظهر عند النقر على الترس ⚙️)
+      hasAudio && showSyncSettings ? React.createElement(
         "div",
-        { className: "p-2.5 sm:p-3 md:py-2 md:px-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-3 shrink-0 text-xs shadow-2xs" },
+        { className: "p-2.5 sm:p-3 md:py-2 md:px-3 rounded-2xl bg-amber-50/95 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700/80 flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-3 shrink-0 text-xs shadow-sm animate-fade-in" },
         React.createElement(
           "div",
-          { className: "flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0" },
+          { className: "flex flex-col sm:flex-row sm:items-center gap-2 min-w-0" },
           React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
             React.createElement("span", { className: "text-base" }, "🎯"),
             React.createElement("div", null,
