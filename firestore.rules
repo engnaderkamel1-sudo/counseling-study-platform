@@ -2,33 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // دالة للتحقق مما إذا كان المستخدم هو المشرف الرئيسي للمنصة
+    // دالة التحقق من هوية المشرف الرئيسي المعتمد للمنصة
     function isMasterAdmin() {
-      return request.auth != null && request.auth.token.email.lower() == "eng.naderkamel@gmail.com";
+      return request.auth != null && request.auth.token.email != null && request.auth.token.email == "eng.naderkamel@gmail.com";
     }
 
     // 1. حسابات وبيانات الدارسين (users):
-    // - الدارس يقرأ ويعدل مستنده الخاص فقط
-    // - المشرف الرئيسي له كامل الصلاحيات
-    // - يُسمح بإنشاء طلب انضمام جديد (بحالة pending ورتبة student فقط)
     match /users/{userId} {
-      allow read: if isMasterAdmin() || (request.auth != null && (request.auth.uid == userId || ("user_" + request.auth.token.email.replace("[^a-zA-Z0-9]", "_")) == userId));
+      // السماح بجلب مستند واحد مباشر فقط عند تسجيل الدخول
+      allow get: if true;
+      // حظر سحب أو استعراض جدول وقائمة الدارسين بالكامل للعامة، وحصره فقط بالمشرف
+      allow list: if isMasterAdmin();
+      // السماح بإنشاء طلب انضمام جديد برتبة دارس وحالة انتظار فقط
       allow create: if request.resource.data.role == "student" && request.resource.data.status == "pending";
-      allow update: if isMasterAdmin() || (request.auth != null && (request.auth.uid == userId || ("user_" + request.auth.token.email.replace("[^a-zA-Z0-9]", "_")) == userId) && request.resource.data.role == resource.data.role);
-      allow delete: if isMasterAdmin();
+      // التعديل والحذف وتغيير الرتب محصور حصرياً بالمشرف الرئيسي
+      allow update, delete: if isMasterAdmin();
     }
 
-    // 2. الملاحظات والتأملات الشخصية (personal_notes):
-    // - خاصة بكل دارس ولا يمكن لدارس آخر الاطلاع عليها
+    // 2. الملاحظات والتأملات الشخصية للدارسين (personal_notes):
     match /personal_notes/{noteId} {
-      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid || resource.data.userId == request.auth.token.email);
+      // عزل مذكرات كل طالب ومنع اطلاع أي دارس آخر عليها
+      allow read, write: if isMasterAdmin() || (resource == null || resource.data.userId == request.auth.uid || resource.data.userId == request.auth.token.email);
     }
 
-    // 3. المحاضرات والكتب والرفوف (lectures & books):
-    // - قراءة متاحة للجميع للتشغيل والتعلم
-    // - الإضافة والتعديل والحذف حصرياً للمشرف الرئيسي
+    // 3. المحاضرات والكتب والرفوف الدراسية (lectures & books):
     match /lectures/{lecId} {
+      // قراءة وتشغيل مستقر للجميع بدون أي عوائق في الصوت أو البث
       allow read: if true;
+      // الإضافة والتعديل والحذف محصور حصرياً بالمشرف الرئيسي
       allow write: if isMasterAdmin();
     }
 
@@ -36,38 +37,32 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isMasterAdmin();
       
-      // نصوص الصفحات المستخرجة (Cloud Cache)
+      // نصوص الصفحات المستخرجة للكتاب (Cloud Cache)
       match /cached_pages/{pageId} {
         allow read: if true;
         allow write: if isMasterAdmin();
       }
     }
 
-    // 4. سلة المحذوفات (recycle_bin):
-    // - للمشرف الرئيسي فقط لحماية المحتوى من الحذف العشوائي
+    // 4. سلة المحذوفات والأرشيف (recycle_bin):
     match /recycle_bin/{item} {
       allow read, write: if isMasterAdmin();
     }
 
     // 5. الإشعارات السحابية (notifications):
-    // - قراءة للجميع لاستلام التنبيهات
-    // - إرسال الإعلانات العامة للمشرف فقط، وطلبات التسجيل للجميع
     match /notifications/{notifId} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if isMasterAdmin();
     }
 
-    // 6. تقارير الأعطال الفنية (error_reports):
-    // - أي دارس يمكنه إرسال بلاغ عن عطل
-    // - المشرف فقط يقرأ ويحل البلاغات
+    // 6. تقارير وبلاغات الأعطال الفنية (error_reports):
     match /error_reports/{reportId} {
       allow create: if true;
       allow read, update, delete: if isMasterAdmin();
     }
 
-    // 7. الإعدادات ومفاتيح الذكاء الاصطناعي (settings):
-    // - حصرياً للمشرف الرئيسي لمنع استنزاف أو سرقة المفاتيح
+    // 7. إعدادات المنصة ومفاتيح الذكاء الاصطناعي (settings):
     match /settings/{doc} {
       allow read, write: if isMasterAdmin();
     }

@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
       return res.end(JSON.stringify({ error: "Missing text parameter" }));
     }
 
-    const lang = req.query.tl || "ar";
+    const lang = /^[a-zA-Z-]{2,10}$/.test(req.query.tl) ? req.query.tl : "ar";
     // Truncate to safe limit for upstream Google TTS (max ~180 chars)
     const safeText = text.substring(0, 200);
     const upstreamUrl = "https://translate.google.com/translate_tts?ie=UTF-8&tl=" + 

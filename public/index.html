@@ -170,8 +170,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791724920",
-  buildTime: "2026-10-11T13:22:00",
+  version: "1.2.1791726133",
+  buildTime: "2026-10-11T13:42:13",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -7184,12 +7184,41 @@ window.AudioChaptersView = function(props) {
       }
       return;
     }
-    var firstChap = audioChaptersList[0];
-    setPlayingChapterId(firstChap.id);
-    if (viewingChapterText && setViewingChapterText) setViewingChapterText(firstChap);
+
+    // استئناف الاستماع من آخر فصل كان يستمع له الدارس بدلاً من البدء من البداية دائماً
+    var targetChap = null;
+    if (activeBook && activeBook.id) {
+      try {
+        var lastChapId = localStorage.getItem("counsel_audio_last_chap_" + activeBook.id);
+        if (lastChapId) {
+          targetChap = audioChaptersList.find(function(c) { return c.id === lastChapId; });
+        }
+      } catch (e) {}
+
+      // إذا لم نجد آخر فصل، نبحث عن أول فصل يحتوي على موضع استماع محفوظ
+      if (!targetChap) {
+        for (var i = 0; i < audioChaptersList.length; i++) {
+          try {
+            var savedPos = localStorage.getItem("counsel_audio_pos_" + activeBook.id + "_" + audioChaptersList[i].id);
+            if (savedPos && parseFloat(savedPos) > 3) {
+              targetChap = audioChaptersList[i];
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // إذا لم يكن هناك استماع سابق، نبدأ من الفصل الأول في القائمة
+    if (!targetChap) {
+      targetChap = audioChaptersList[0];
+    }
+
+    setPlayingChapterId(targetChap.id);
+    if (viewingChapterText && setViewingChapterText) setViewingChapterText(targetChap);
     setTimeout(function() {
       try {
-        var el = document.getElementById("chapter-card-" + firstChap.id);
+        var el = document.getElementById("chapter-card-" + targetChap.id);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
       } catch (e) {}
     }, 150);
@@ -7742,30 +7771,43 @@ window.AudioChaptersView = function(props) {
         ) : null
       ) : null,
 
-      // زر البدء الكبير المخصص للموبايل
-      React.createElement(
-        "div",
-        { className: "pt-1" },
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handlePlayFullPlaylist,
-            className: "w-full py-3 px-5 rounded-2xl font-black text-xs sm:text-sm shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 " +
-              (playingChapterId
-                ? (isAudioPlaying
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/20"
-                    : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25")
-                : "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30")
-          },
-          React.createElement("span", { className: "text-base" }, playingChapterId ? (isAudioPlaying ? "⏸️" : "▶️") : "▶️"),
-          React.createElement("span", null,
-            playingChapterId
-              ? (isAudioPlaying ? "إيقاف مؤقت للاستماع" : "متابعة استماع الكتاب الصوتي")
-              : "بدء تشغيل الكتاب كاملاً (Playlist متتالية)"
+      // زر البدء الكبير المخصص للموبايل (يستأنف من آخر فصل توقف عنده الدارس)
+      (function() {
+        var savedChapTitle = "";
+        if (!playingChapterId && activeBook && activeBook.id) {
+          try {
+            var lastChapId = localStorage.getItem("counsel_audio_last_chap_" + activeBook.id);
+            if (lastChapId) {
+              var foundC = audioChaptersList.find(function(c) { return c.id === lastChapId; });
+              if (foundC) savedChapTitle = foundC.title;
+            }
+          } catch (e) {}
+        }
+
+        var btnText = playingChapterId
+          ? (isAudioPlaying ? "إيقاف مؤقت للاستماع" : "متابعة استماع الكتاب الصوتي")
+          : (savedChapTitle ? ("استئناف تشغيل الكتاب من: " + savedChapTitle) : "بدء تشغيل الكتاب كاملاً (Playlist متتالية)");
+
+        return React.createElement(
+          "div",
+          { className: "pt-1" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handlePlayFullPlaylist,
+              className: "w-full py-3 px-5 rounded-2xl font-black text-xs sm:text-sm shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 " +
+                (playingChapterId
+                  ? (isAudioPlaying
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/20"
+                      : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25")
+                  : "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30")
+            },
+            React.createElement("span", { className: "text-base" }, playingChapterId ? (isAudioPlaying ? "⏸️" : "▶️") : "▶️"),
+            React.createElement("span", { className: "truncate max-w-full" }, btnText)
           )
-        )
-      )
+        );
+      })()
     ) : null,
 
     // مشغل الصوت للفصل النشط (مع وضع عائم فخم مصمم خصيصاً للموبايل UI/UX Pro Max)
@@ -17580,9 +17622,20 @@ window.ErrorReportsAdminPage = function(props) {
 
 // Module: pages/SettingsPage.js
 // شاشة الإعدادات وربط المفاتيح السحابية
-window.SettingsPage = function() {
+window.SettingsPage = function(props) {
+  var currentUser = (props && props.currentUser) || { role: "student" };
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
+
+  if (!currentUser || currentUser.role !== "admin") {
+    return React.createElement(
+      "div",
+      { className: "p-12 text-center text-slate-500 space-y-3 font-cairo" },
+      React.createElement("div", { className: "text-4xl" }, "🔒"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-800 dark:text-white" }, "هذه الصفحة مخصصة لمشرف المنصة فقط"),
+      React.createElement("p", { className: "text-xs text-slate-400" }, "ليس لديك الصلاحيات الكافية لتعديل إعدادات ومفاتيح المنصة.")
+    );
+  }
 
   var [apiKey, setApiKey] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.apiKey, "");

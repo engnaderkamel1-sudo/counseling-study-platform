@@ -1,7 +1,18 @@
-﻿// شاشة الإعدادات وربط المفاتيح السحابية
-window.SettingsPage = function() {
+// شاشة الإعدادات وربط المفاتيح السحابية
+window.SettingsPage = function(props) {
+  var currentUser = (props && props.currentUser) || { role: "student" };
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
+
+  if (!currentUser || currentUser.role !== "admin") {
+    return React.createElement(
+      "div",
+      { className: "p-12 text-center text-slate-500 space-y-3 font-cairo" },
+      React.createElement("div", { className: "text-4xl" }, "🔒"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-800 dark:text-white" }, "هذه الصفحة مخصصة لمشرف المنصة فقط"),
+      React.createElement("p", { className: "text-xs text-slate-400" }, "ليس لديك الصلاحيات الكافية لتعديل إعدادات ومفاتيح المنصة.")
+    );
+  }
 
   var [apiKey, setApiKey] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.apiKey, "");

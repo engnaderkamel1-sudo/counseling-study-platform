@@ -246,12 +246,41 @@ window.AudioChaptersView = function(props) {
       }
       return;
     }
-    var firstChap = audioChaptersList[0];
-    setPlayingChapterId(firstChap.id);
-    if (viewingChapterText && setViewingChapterText) setViewingChapterText(firstChap);
+
+    // استئناف الاستماع من آخر فصل كان يستمع له الدارس بدلاً من البدء من البداية دائماً
+    var targetChap = null;
+    if (activeBook && activeBook.id) {
+      try {
+        var lastChapId = localStorage.getItem("counsel_audio_last_chap_" + activeBook.id);
+        if (lastChapId) {
+          targetChap = audioChaptersList.find(function(c) { return c.id === lastChapId; });
+        }
+      } catch (e) {}
+
+      // إذا لم نجد آخر فصل، نبحث عن أول فصل يحتوي على موضع استماع محفوظ
+      if (!targetChap) {
+        for (var i = 0; i < audioChaptersList.length; i++) {
+          try {
+            var savedPos = localStorage.getItem("counsel_audio_pos_" + activeBook.id + "_" + audioChaptersList[i].id);
+            if (savedPos && parseFloat(savedPos) > 3) {
+              targetChap = audioChaptersList[i];
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // إذا لم يكن هناك استماع سابق، نبدأ من الفصل الأول في القائمة
+    if (!targetChap) {
+      targetChap = audioChaptersList[0];
+    }
+
+    setPlayingChapterId(targetChap.id);
+    if (viewingChapterText && setViewingChapterText) setViewingChapterText(targetChap);
     setTimeout(function() {
       try {
-        var el = document.getElementById("chapter-card-" + firstChap.id);
+        var el = document.getElementById("chapter-card-" + targetChap.id);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
       } catch (e) {}
     }, 150);
@@ -804,30 +833,43 @@ window.AudioChaptersView = function(props) {
         ) : null
       ) : null,
 
-      // زر البدء الكبير المخصص للموبايل
-      React.createElement(
-        "div",
-        { className: "pt-1" },
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handlePlayFullPlaylist,
-            className: "w-full py-3 px-5 rounded-2xl font-black text-xs sm:text-sm shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 " +
-              (playingChapterId
-                ? (isAudioPlaying
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/20"
-                    : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25")
-                : "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30")
-          },
-          React.createElement("span", { className: "text-base" }, playingChapterId ? (isAudioPlaying ? "⏸️" : "▶️") : "▶️"),
-          React.createElement("span", null,
-            playingChapterId
-              ? (isAudioPlaying ? "إيقاف مؤقت للاستماع" : "متابعة استماع الكتاب الصوتي")
-              : "بدء تشغيل الكتاب كاملاً (Playlist متتالية)"
+      // زر البدء الكبير المخصص للموبايل (يستأنف من آخر فصل توقف عنده الدارس)
+      (function() {
+        var savedChapTitle = "";
+        if (!playingChapterId && activeBook && activeBook.id) {
+          try {
+            var lastChapId = localStorage.getItem("counsel_audio_last_chap_" + activeBook.id);
+            if (lastChapId) {
+              var foundC = audioChaptersList.find(function(c) { return c.id === lastChapId; });
+              if (foundC) savedChapTitle = foundC.title;
+            }
+          } catch (e) {}
+        }
+
+        var btnText = playingChapterId
+          ? (isAudioPlaying ? "إيقاف مؤقت للاستماع" : "متابعة استماع الكتاب الصوتي")
+          : (savedChapTitle ? ("استئناف تشغيل الكتاب من: " + savedChapTitle) : "بدء تشغيل الكتاب كاملاً (Playlist متتالية)");
+
+        return React.createElement(
+          "div",
+          { className: "pt-1" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handlePlayFullPlaylist,
+              className: "w-full py-3 px-5 rounded-2xl font-black text-xs sm:text-sm shadow-lg active:scale-98 transition-all flex items-center justify-center gap-2 " +
+                (playingChapterId
+                  ? (isAudioPlaying
+                      ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-amber-500/20"
+                      : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25")
+                  : "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 shadow-emerald-500/30")
+            },
+            React.createElement("span", { className: "text-base" }, playingChapterId ? (isAudioPlaying ? "⏸️" : "▶️") : "▶️"),
+            React.createElement("span", { className: "truncate max-w-full" }, btnText)
           )
-        )
-      )
+        );
+      })()
     ) : null,
 
     // مشغل الصوت للفصل النشط (مع وضع عائم فخم مصمم خصيصاً للموبايل UI/UX Pro Max)

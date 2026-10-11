@@ -1,4 +1,4 @@
-﻿// Vercel Serverless Function: Google Drive Audio Stream Proxy
+// Vercel Serverless Function: Google Drive Audio Stream Proxy
 // Pipes Google Drive audio chunks directly to HTML5 audio element without CORS or buffer size limits
 
 const { Readable } = require("stream");
@@ -14,11 +14,11 @@ module.exports = async function handler(req, res) {
     }
 
     const fileId = (req.query.id || "").trim();
-    if (!fileId) {
+    if (!fileId || !/^[a-zA-Z0-9_-]{10,120}$/.test(fileId)) {
       res.statusCode = 400;
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Access-Control-Allow-Origin", "*");
-      return res.end(JSON.stringify({ error: "Missing file id parameter" }));
+      return res.end(JSON.stringify({ error: "Invalid or missing file id parameter" }));
     }
 
     const candidates = [
