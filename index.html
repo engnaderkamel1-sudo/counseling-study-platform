@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791701507",
-  buildTime: "2026-10-11T06:51:47",
+  version: "1.2.1791706272",
+  buildTime: "2026-10-11T08:11:12",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -301,18 +301,22 @@ window.CloudSyncService = {
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
       };
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
+      if (controller) fetchOpts.signal = controller.signal;
 
       fetch(restUrl, fetchOpts)
         .then(function(res) {
           if (timeoutId) clearTimeout(timeoutId);
+          if (!res.ok) throw new Error("HTTP " + res.status);
           return res.json();
         })
         .then(function(data) {
           if (data && data.documents && Array.isArray(data.documents)) {
             var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
             restList = restList.filter(function(b) { return !b.isDeleted; });
-            handleUpdate(restList);
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
           }
         })
         .catch(function(errRest) {
@@ -348,8 +352,8 @@ window.CloudSyncService = {
   sanitizeForFirestore: function(obj) {
     if (obj === null || obj === undefined) return null;
     if (typeof obj !== "object") {
-      // حماية الحجم: إذا كان النص صورة Base64 ضخمة، نحذفه من المستند السحابي لمنع تخطي 1 ميجابايت
-      if (typeof obj === "string" && obj.indexOf("data:image/") === 0 && obj.length > 5000) {
+      // حماية الحجم: السماح بالغلاف إذا كان Base64 خفيف أو رابط، وحذف النصوص المفرطة الحجم فقط لمنع تخطي 1 ميجابايت
+      if (typeof obj === "string" && obj.indexOf("data:image/") === 0 && obj.length > 200000) {
         return "";
       }
       return obj;
@@ -374,9 +378,18 @@ window.CloudSyncService = {
     if (!window.db || !book) return Promise.resolve();
     var docId = book.id || ("book-" + Date.now());
     try {
+      // حفظ الغلاف في الكاش المحلي لضمان ظهوره الفوري دائماً على الجهاز
+      if (book.coverUrl && typeof book.coverUrl === "string" && book.coverUrl.trim()) {
+        try {
+          if (window.APP_UTILS && window.APP_UTILS.setLocal) {
+            window.APP_UTILS.setLocal("counsel_cover_thumb_" + docId, book.coverUrl);
+          }
+        } catch (eThumb) {}
+      }
+
       var cleanBook = this.sanitizeForFirestore(book);
-      // التأكد الصارم من عدم وجود أي Base64 في الغلاف السحابي
-      if (cleanBook.coverUrl && typeof cleanBook.coverUrl === "string" && cleanBook.coverUrl.indexOf("data:") === 0) {
+      // إذا كان الغلاف كود Base64 ضخم جداً (> 200KB)، لا نرفعه لسحابة فايربيز بل نكتفي بالكاش المحلي
+      if (cleanBook.coverUrl && typeof cleanBook.coverUrl === "string" && cleanBook.coverUrl.indexOf("data:") === 0 && cleanBook.coverUrl.length > 200000) {
         cleanBook.coverUrl = "";
       }
       // مزامنة حالة النشر بدقة لمنع إخفاء الكتاب عن الطلبة بالخطأ
@@ -1101,14 +1114,14 @@ window.APP_UTILS = {
     return "https://drive.google.com/file/d/" + id + "/preview";
   },
 
-  // تحويل رابط جوجل درايف إلى رابط صورة مباشر لعرض الأغلفة
+  // تحويل رابط جوجل درايف إلى رابط صورة مباشر وسريع لعرض الأغلفة (يدعم lh3 المباشر و thumbnail)
   getDriveImageUrl: function(driveIdOrUrl) {
     if (!driveIdOrUrl) return "";
     var str = String(driveIdOrUrl).trim();
     if (!str || str.startsWith("data:") || str.startsWith("blob:")) return str;
     var id = window.APP_UTILS.extractDriveId(str);
     if (id && id.length >= 15 && !id.startsWith("http")) {
-      return "https://drive.google.com/thumbnail?id=" + id + "&sz=w800";
+      return "https://lh3.googleusercontent.com/d/" + id;
     }
     return str;
   },
@@ -1642,7 +1655,7 @@ window.APP_UTILS.getAudioStreamUrl = function(url) {
   if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    return "/api/audio-proxy?id=" + driveId;
+    return "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
   }
   return url;
 };
@@ -1653,10 +1666,10 @@ window.APP_UTILS.getAudioStreamCandidates = function(url) {
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
     return [
-      "/api/audio-proxy?id=" + driveId,
       "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t",
       "https://docs.google.com/uc?export=download&id=" + driveId,
-      "https://drive.google.com/uc?export=download&id=" + driveId
+      "https://drive.google.com/uc?export=download&id=" + driveId,
+      "https://lh3.googleusercontent.com/d/" + driveId
     ];
   }
   return [url];
@@ -4679,26 +4692,7 @@ window.PdfReaderView = function(props) {
         (!isFullScreen && mobileSectionTab !== "pdf" ? "hidden sm:block" : "block")
     },
 
-    // تنبيه بالمواد المفرغة سحابياً على شاشات الموبايل لتسهيل الوصول المباشر
-    (function() {
-      var readyList = (activeBook.audioChapters || []).filter(function(c) { return c.text && c.text.trim().length > 30; });
-      if (readyList.length > 0 && mobileSectionTab === "pdf") {
-        return React.createElement(
-          "div",
-          { className: "sm:hidden p-3 rounded-xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 text-white text-xs font-bold flex items-center justify-between shadow-lg border border-blue-500/40" },
-          React.createElement("div", { className: "flex items-center gap-2" },
-            React.createElement("span", { className: "text-base animate-bounce" }, "🎧"),
-            React.createElement("span", null, "تم تفريغ " + readyList.length + " فصول سحابياً جاهزة")
-          ),
-          React.createElement("button", {
-            type: "button",
-            onClick: function() { if (setMobileSectionTab) setMobileSectionTab("study"); },
-            className: "px-3 py-1.5 bg-white text-blue-900 hover:bg-blue-50 font-black rounded-lg text-xs shadow-md active:scale-95 transition-all whitespace-nowrap"
-          }, "عرض الفصول ◀")
-        );
-      }
-      return null;
-    })(),
+
     
     // شريط أدوات قارئ الكتاب وحالة الأوفلاين وأزرار ملء الشاشة والتدوير
     React.createElement(
@@ -4970,6 +4964,7 @@ window.AudioChaptersView = function(props) {
     setLocalPlaylistMode(nextVal);
     if (utils.setLocal) utils.setLocal("counsel_audio_playlist_mode", nextVal);
   };
+  var [showAdminTools, setShowAdminTools] = React.useState(false);
 
   var cycleSpeed = function() {
     var speeds = [1, 1.25, 1.5, 1.75, 2, 0.8];
@@ -4985,10 +4980,12 @@ window.AudioChaptersView = function(props) {
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
     if (audio && playingChapterId) {
-      var p = audio.play();
-      if (p !== undefined && typeof p.catch === "function") {
-        p.catch(function(err) { /* انتظار لمسة المستخدم الأولى */ });
-      }
+      try {
+        var p = audio.play();
+        if (p !== undefined && typeof p.catch === "function") {
+          p.catch(function(err) { /* انتظار لمسة المستخدم الأولى */ });
+        }
+      } catch (playErr) {}
     }
   }, [playingChapterId]);
 
@@ -5263,50 +5260,54 @@ window.AudioChaptersView = function(props) {
         "div",
         null,
         React.createElement("h4", { className: "font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2" },
-          "🎧 فصول الكتاب الصوتية والنصوص المفرغة",
+          "🎧 فصول الكتاب الصوتية والنصوص",
           React.createElement("span", { className: "text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300" },
-            chaps.length + " فصول مضافة"
+            visibleChaps.length + " فصول"
           )
         ),
         React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" },
-          "استمع للمقدمة ولكل فصل بشكل مستقل بصوت نقي، واقرأ النص المفرغ أو انتقل لصفحته في الكتاب بضغطة زر."
+          "استمع لكل فصل بشكل مستقل، واقرأ النص المفرغ أو تصفح صفحات الـ PDF بكل سهولة."
         )
       ),
 
-      // بطاقة حالة المزامنة السحابية للفصول المفرغة (تؤكد حفظ كافة النصوص على جميع الأجهزة)
-      (function() {
-        var readyChaps = chaps.filter(function(c) { return c.text && c.text.trim().length > 30; });
-        if (readyChaps.length > 0) {
-          var totalChars = readyChaps.reduce(function(acc, c) { return acc + (c.text ? c.text.length : 0); }, 0);
-          return React.createElement(
-            "div",
-            { className: "p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-teal-950/60 to-slate-900 border border-emerald-500/30 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 animate-fade-in w-full" },
-            React.createElement("div", { className: "flex items-center gap-2.5 min-w-0" },
-              React.createElement("span", { className: "w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-lg shrink-0 shadow-sm" }, "☁️"),
-              React.createElement("div", { className: "min-w-0" },
-                React.createElement("div", { className: "font-black text-xs sm:text-sm text-emerald-300 flex items-center gap-2 flex-wrap" },
-                  "متزامن سحابياً مع قاعدة البيانات",
-                  React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" },
-                    readyChaps.length + " فصول مفرغة جاهزة"
-                  )
-                ),
-                React.createElement("div", { className: "text-[11px] text-slate-300 mt-0.5" },
-                  "تم حفظ وتوثيق " + totalChars.toLocaleString() + " حرف من نصوص الكتاب ومتاحة على جميع أجهزتك."
-                )
-              )
-            ),
-            React.createElement("div", { className: "flex items-center gap-2 self-end sm:self-auto shrink-0" },
-              React.createElement("span", { className: "text-[10px] font-mono text-emerald-400 bg-emerald-900/60 border border-emerald-700/60 px-2.5 py-1 rounded-xl" },
-                "✓ Cloud Sync Active"
-              )
-            )
-          );
-        }
-        return null;
-      })(),
       currentUser && currentUser.role === "admin" ? React.createElement(
         "div",
         { className: "flex items-center gap-2 self-start sm:self-auto flex-wrap" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowAdminTools(!showAdminTools); },
+            className: "inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition-all border border-slate-200 dark:border-slate-700 shadow-2xs"
+          },
+          showAdminTools ? "✕ إغلاق أدوات الإدارة" : "⚙️ أدوات المعالجة والـ AI"
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleOpenAddChapter,
+            disabled: !!batchProgress || !!audioBatchProgress,
+            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-sm"
+          },
+          "➕ إضافة فصل"
+        )
+      ) : null
+    ),
+
+    // درج أدوات المعالجة بالذكاء الاصطناعي للأدمن (يفتح عند الضغط على زر الأدوات فقط للحفاظ على نظافة وهدوء الشاشة)
+    currentUser && currentUser.role === "admin" && (showAdminTools || !!batchProgress || !!audioBatchProgress) ? React.createElement(
+      "div",
+      { className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-3 animate-fade-in" },
+      React.createElement("div", { className: "flex items-center justify-between border-b pb-2.5 border-slate-200 dark:border-slate-800" },
+        React.createElement("span", { className: "text-xs font-black text-slate-700 dark:text-slate-300 flex items-center gap-1.5" },
+          "⚙️ لوحة أدوات المعالجة والاستخراج بالـ AI"
+        ),
+        React.createElement("span", { className: "text-[11px] text-slate-400" }, "أدوات مخصصة للمسؤول لإعداد الكتاب")
+      ),
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-2 flex-wrap pt-1" },
         React.createElement(
           "button",
           {
@@ -5363,22 +5364,12 @@ window.AudioChaptersView = function(props) {
             className: "inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-800 transition-all active:scale-95"
           },
           "🗑️ مسح الفصول والبدء من جديد"
-        ) : null,
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleOpenAddChapter,
-            disabled: !!batchProgress || !!audioBatchProgress,
-            className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold active:scale-95 transition-all"
-          },
-          "➕ إضافة فصل يدوي"
-        )
-      ) : null
-    ),
+        ) : null
+      )
+    ) : null,
 
     // لوحة بوابة الجودة واعتماد النشر للدارسين (Quality Gate Card)
-    currentUser && currentUser.role === "admin" && audit ? React.createElement(
+    currentUser && currentUser.role === "admin" && audit && showAdminTools ? React.createElement(
       "div",
       {
         className: "p-4 rounded-2xl border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 " +
@@ -5776,13 +5767,8 @@ window.AudioChaptersView = function(props) {
           className: "hidden",
           onError: function(e) {
             var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
-            var audioEl = chapterAudioRef.current;
-            if (driveId && audioEl && !audioEl._triedCandidate2) {
-              audioEl._triedCandidate2 = true;
-              audioEl.src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
-              audioEl.play().catch(function() {
-                setAudioHasError(true);
-              });
+            if (driveId) {
+              setUseIframePlayer(true);
               return;
             }
             setAudioHasError(true);
@@ -5828,19 +5814,30 @@ window.AudioChaptersView = function(props) {
 
         useIframePlayer ? React.createElement(
           "div",
-          { className: "w-full flex flex-col gap-1.5 pt-1" },
+          { className: "w-full flex flex-col gap-2 pt-1" },
           React.createElement("iframe", {
             src: utils.getMediaEmbedUrl(activeChap.audioUrl),
-            className: "w-full h-14 rounded-xl border border-slate-700 bg-black shadow-inner",
+            className: "w-full h-48 sm:h-52 rounded-2xl border border-slate-700 bg-slate-950 shadow-inner",
             allow: "autoplay"
           }),
-          React.createElement("div", { className: "flex justify-between items-center text-[11px]" },
-            React.createElement("span", { className: "text-emerald-400 font-bold" }, "✓ مشغل Google Drive الرسمي"),
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { setUseIframePlayer(false); },
-              className: "text-blue-300 hover:text-white underline font-bold"
-            }, "العودة للمشغل الذكي ↺")
+          React.createElement("div", { className: "flex justify-between items-center text-[11px] flex-wrap gap-2 px-1" },
+            React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" },
+              React.createElement("span", null, "✓"),
+              React.createElement("span", null, "مشغل Google Drive المباشر")
+            ),
+            React.createElement("div", { className: "flex items-center gap-3" },
+              React.createElement("a", {
+                href: activeChap.audioUrl,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "text-amber-300 hover:text-amber-200 underline font-bold flex items-center gap-1"
+              }, "فتح الصوت في Google Drive ↗"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setUseIframePlayer(false); },
+                className: "text-slate-400 hover:text-white underline font-bold"
+              }, "العودة للمشغل الذكي ↺")
+            )
           )
         ) : React.createElement(
           "div",
@@ -6042,12 +6039,12 @@ window.AudioChaptersView = function(props) {
                   return React.createElement("span", {
                     className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 text-[11px]"
                   },
-                    "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "صوت MP3 جاهز ✓")
+                    "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "صوت متاح ✓")
                   );
                 })() : (currentUser && currentUser.role === "admin" ? React.createElement(
                   "span",
                   { className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1" },
-                  "⚠️ بدون صوت MP3"
+                  "⚠️ بدون صوت"
                 ) : null),
                 (function() {
                   var sP = Number(chap.startPage) || 1;
@@ -6065,25 +6062,25 @@ window.AudioChaptersView = function(props) {
                       return React.createElement("span", {
                         className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
                       },
-                        "✅ مكتمل 100% (" + totalChapPages + " ص • " + textLen.toLocaleString() + " حرف)"
+                        "✅ مكتمل (" + totalChapPages + " ص)"
                       );
                     } else if (textLen > 0 || pagesDone > 0) {
                       return React.createElement("span", {
-                        className: "text-amber-700 dark:text-amber-300 font-black bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1 animate-pulse"
+                        className: "text-amber-700 dark:text-amber-300 font-black bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
                       },
-                        "⚠️ غير مكتمل (" + pagesDone + " من " + totalChapPages + " ص • " + textLen.toLocaleString() + " حرف)"
+                        "⚠️ قيد الإعداد (" + pagesDone + " من " + totalChapPages + " ص)"
                       );
                     } else {
                       return React.createElement("span", {
                         className: "text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1"
                       },
-                        "⚪ لم يستخرج بعد (" + totalChapPages + " ص)"
+                        "⚪ قيد الإعداد (" + totalChapPages + " ص)"
                       );
                     }
                   } else {
                     return textLen > 0 ? React.createElement("span", {
                       className: "text-blue-600 dark:text-blue-400 font-medium text-[11px] flex items-center gap-1"
-                    }, "📖 نص مفرغ متاح للقراءة ✓") : null;
+                    }, "📖 متاح للقراءة") : null;
                   }
                 })(),
                 // شارة حالة نشر هذا الفصل للأدمن
@@ -7875,8 +7872,13 @@ window.BooksPage = function(props) {
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
-      if (cloudList) {
+      if (cloudList && Array.isArray(cloudList) && cloudList.length > 0) {
         var cleanCloudList = sanitizeBooksList(cloudList);
+        if (cleanCloudList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
+
         // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
         var mergedList = cleanCloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
@@ -7919,51 +7921,62 @@ window.BooksPage = function(props) {
           return cb;
         });
         mergedList = sanitizeBooksList(mergedList);
+        if (mergedList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
 
-        // تنظيف أي مخلفات لكتب محذوفة من التخزين المحلي
+        // تنظيف أي مخلفات لكتب محذوفة مؤكدة فقط من التخزين المحلي
         var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
         localBooks.forEach(function(lb) {
-          var inCloud = mergedList.some(function(mb) { return mb.id === lb.id; });
-          if (!inCloud) {
+          if (lb.id === "book-1791664075112" || lb.title === "تتت" || lb.title === "ت ت ت" || lb.title === "ت ت" || lb.isDeleted) {
             utils.removeLocal("counsel_book_data_" + lb.id);
             utils.removeLocal("counsel_book_page_" + lb.id);
           }
         });
-        var savedActiveId = utils.getLocal("counsel_active_book_id");
-        if (savedActiveId && !mergedList.some(function(mb) { return mb.id === savedActiveId; })) {
-          utils.removeLocal("counsel_active_book_id");
-        }
 
         setBooks(mergedList);
         setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
-        if (mergedList.length > 0) {
-          setActiveBook(function(prev) {
-            if (!prev) {
-              var savedActiveId = utils.getLocal("counsel_active_book_id");
-              if (savedActiveId) {
-                var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
-                if (foundSaved) {
-                  var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
-                  var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
-                  return Object.assign({}, foundSaved, { currentPage: pNum });
-                }
+        setActiveBook(function(prev) {
+          if (!prev) {
+            var savedActiveId = utils.getLocal("counsel_active_book_id");
+            if (savedActiveId) {
+              var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
+              if (foundSaved) {
+                var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
+                var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
+                return Object.assign({}, foundSaved, { currentPage: pNum });
               }
-              // عند فتح التطبيق لأول مرة أو على جهاز جديد: البقاء في رف الكتب ليرى المستخدم الكتب المنشورة
-              return null;
             }
-            var found = mergedList.find(function(b) { return b.id === prev.id; });
-            if (!found) return null;
-            var savedPage = utils.getLocal("counsel_book_page_" + found.id);
-            var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
-            return Object.assign({}, found, { currentPage: page });
-          });
-        } else {
-          setActiveBook(null);
-        }
+            // إذا كان هناك كتاب منشور وحيد، نحدده تلقائياً للمستخدم لتجربة قراءة فورية وسلسة
+            var publishedBooks = mergedList.filter(function(b) { return b.isPublished !== false && b.publishStatus !== "draft"; });
+            if (publishedBooks.length === 1) {
+              var singleBook = publishedBooks[0];
+              var sPage = utils.getLocal("counsel_book_page_" + singleBook.id);
+              var pNum = sPage ? Number(sPage) : (singleBook.currentPage || 1);
+              return Object.assign({}, singleBook, { currentPage: pNum });
+            }
+            return null;
+          }
+          var found = mergedList.find(function(b) { return b.id === prev.id; });
+          if (!found) return prev; // الحفاظ على الكتاب المفتوح وعدم إغلاقه أبداً أثناء القراءة أو الاستماع
+          var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+          var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
+          return Object.assign({}, found, { currentPage: page });
+        });
+      } else {
+        setIsLoadingBooks(false);
       }
     });
+
+    // مؤقت حماية لمنع بقاء مؤشر التحميل معلقاً في حالة ضعف الشبكة
+    var safetyTimer = setTimeout(function() {
+      setIsLoadingBooks(false);
+    }, 4000);
+
     return function() {
+      clearTimeout(safetyTimer);
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, []);
@@ -8012,6 +8025,33 @@ window.BooksPage = function(props) {
         ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
         : 1;
       renderPdfPage(loadedDoc, targetPage);
+
+      // الاستخراج التلقائي الذكي لغلاف الكتاب إذا لم يكن متوفراً
+      if (activeBook && activeBook.id && !activeBook.coverUrl && !utils.getLocal("counsel_cover_thumb_" + activeBook.id)) {
+        try {
+          loadedDoc.getPage(1).then(function(page1) {
+            var unscaledVp = page1.getViewport({ scale: 1 });
+            var targetWidth = 350;
+            var scale = Math.min(1, targetWidth / (unscaledVp.width || 600));
+            var vp = page1.getViewport({ scale: scale });
+            var canvas = document.createElement("canvas");
+            canvas.width = vp.width;
+            canvas.height = vp.height;
+            var ctx = canvas.getContext("2d");
+            return page1.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+              var thumbData = canvas.toDataURL("image/jpeg", 0.75);
+              utils.setLocal("counsel_cover_thumb_" + activeBook.id, thumbData);
+              uploadCoverImage(thumbData).then(function(upUrl) {
+                if (upUrl) {
+                  var updatedB = Object.assign({}, activeBook, { coverUrl: upUrl });
+                  setActiveBook(updatedB);
+                  safeCloudSaveBook(updatedB, { silent: true });
+                }
+              });
+            });
+          }).catch(function() {});
+        } catch (eCov) {}
+      }
     }).catch(function(err) {
       console.warn("PDF load error:", err);
       setIsPdfLoading(false);
@@ -8311,43 +8351,61 @@ window.BooksPage = function(props) {
     alert("تم إزالة النسخة المحفوظة أوفلاين من هذا الجهاز بنجاح.");
   };
 
-  // رفع صورة غلاف الكتاب إلى درايف أو تحويلها
-  var uploadCoverImage = async function(file) {
-    if (!file) return null;
+  // رفع صورة غلاف الكتاب إلى درايف أو تحويلها (يدعم ملف صورة أو كود Base64)
+  var uploadCoverImage = async function(fileOrBase64) {
+    if (!fileOrBase64) return null;
     try {
-      var base64Data = await new Promise(function(resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function() {
-          var result = reader.result;
-          resolve(result); // Data URL for preview and fallback
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      var base64Data = "";
+      var mimeType = "image/jpeg";
+      var fileName = "cover_" + Date.now() + ".jpg";
 
-      // محاولة الرفع السحابي عبر Drive إن وُجد
-      try {
-        var pureBase64 = base64Data.indexOf(",") !== -1 ? base64Data.split(",")[1] : base64Data;
-        var response = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: file.name,
-            mimeType: file.type || "image/jpeg",
-            base64Data: pureBase64
-          })
-        });
-        var resData = await response.json();
-        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
-          return resData.fileUrl || ("https://drive.google.com/thumbnail?id=" + resData.fileId + "&sz=w800");
+      if (typeof fileOrBase64 === "string" && fileOrBase64.indexOf("data:") === 0) {
+        base64Data = fileOrBase64.indexOf(",") !== -1 ? fileOrBase64.split(",")[1] : fileOrBase64;
+        if (fileOrBase64.indexOf("image/png") !== -1) {
+          mimeType = "image/png";
+          fileName = "cover_" + Date.now() + ".png";
         }
-      } catch (e) {
-        console.warn("Drive upload fallback to local dataUrl:", e);
+      } else if (typeof fileOrBase64 === "object") {
+        var rawData = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() { resolve(reader.result); };
+          reader.onerror = reject;
+          reader.readAsDataURL(fileOrBase64);
+        });
+        mimeType = fileOrBase64.type || "image/jpeg";
+        fileName = fileOrBase64.name || fileName;
+        base64Data = (typeof rawData === "string" && rawData.indexOf(",") !== -1) ? rawData.split(",")[1] : rawData;
+      } else {
+        return fileOrBase64;
       }
-      return base64Data;
+
+      // محاولة الرفع السحابي عبر Drive إن وُجد للحصول على رابط دائم
+      if (cfg && cfg.driveUploadEndpoint) {
+        try {
+          var response = await fetch(cfg.driveUploadEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              fileName: fileName,
+              mimeType: mimeType,
+              base64Data: base64Data
+            })
+          });
+          var resData = await response.json();
+          if (resData.status === "success" && (resData.fileId || resData.fileUrl)) {
+            var fId = resData.fileId || utils.extractDriveId(resData.fileUrl);
+            if (fId) {
+              return "https://lh3.googleusercontent.com/d/" + fId;
+            }
+          }
+        } catch (e) {
+          console.warn("Drive cover upload fallback:", e);
+        }
+      }
+      return (typeof fileOrBase64 === "string") ? fileOrBase64 : ("data:" + mimeType + ";base64," + base64Data);
     } catch (err) {
-      alert("خطأ في قراءة صورة الغلاف: " + err.message);
-      return null;
+      console.warn("Error uploading cover image:", err);
+      return typeof fileOrBase64 === "string" ? fileOrBase64 : null;
     }
   };
 
@@ -8355,8 +8413,17 @@ window.BooksPage = function(props) {
   var handleSaveCurrentBookCover = async function(coverUrlToSave) {
     if (!activeBook) return;
     var finalCover = utils.getDriveImageUrl(coverUrlToSave);
+    if (finalCover && finalCover.indexOf("data:") === 0) {
+      try {
+        var up = await uploadCoverImage(finalCover);
+        if (up) finalCover = utils.getDriveImageUrl(up);
+      } catch (eUp) {}
+    }
+    if (finalCover) {
+      utils.setLocal("counsel_cover_thumb_" + activeBook.id, finalCover);
+    }
     var updated = Object.assign({}, activeBook, { coverUrl: finalCover });
-    safeCloudSaveBook(updated);
+    await safeCloudSaveBook(updated);
     setActiveBook(updated);
     setShowCoverEditModal(false);
   };
@@ -10020,6 +10087,11 @@ window.BooksPage = function(props) {
         var uploadedCover = await uploadCoverImage(selectedCoverFile);
         if (uploadedCover) finalCoverUrl = utils.getDriveImageUrl(uploadedCover);
       } catch (errCover) {}
+    } else if (finalCoverUrl && finalCoverUrl.indexOf("data:") === 0) {
+      try {
+        var upBase = await uploadCoverImage(finalCoverUrl);
+        if (upBase) finalCoverUrl = utils.getDriveImageUrl(upBase);
+      } catch (errBase) {}
     }
 
     var finalAuthor = newAuthor.trim();
@@ -10029,8 +10101,12 @@ window.BooksPage = function(props) {
 
     var existingBook = editingBookId ? books.find(function(b) { return b.id === editingBookId; }) : null;
     var nowTimestamp = Date.now();
+    var newBookId = editingBookId || ("book-" + nowTimestamp);
+    if (finalCoverUrl) {
+      utils.setLocal("counsel_cover_thumb_" + newBookId, finalCoverUrl);
+    }
     var newB = Object.assign({}, existingBook || {}, {
-      id: editingBookId || ("book-" + nowTimestamp),
+      id: newBookId,
       title: newTitle.trim(),
       author: finalAuthor || "غير محدد",
       translator: newTranslator.trim() || (existingBook ? existingBook.translator : ""),
@@ -10091,7 +10167,7 @@ window.BooksPage = function(props) {
     try {
       // 1. جلب القائمة الرسمية المعتمدة من السحابة أولاً عبر REST API (Pull from Cloud)
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
       var cloudBooks = [];
       var pullError = null;
       try {
@@ -10123,8 +10199,8 @@ window.BooksPage = function(props) {
         utils.removeLocal("counsel_active_book_id");
       }
 
-      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين
-      var finalBooks = cloudBooks.length > 0 ? cloudBooks : (pullError ? localBooks : []);
+      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين بأمان تام (عدم تصفير الكتب المحلية إذا تعثر جلب السحابة)
+      var finalBooks = cloudBooks.length > 0 ? cloudBooks : localBooks;
       finalBooks = sanitizeBooksList(finalBooks);
       utils.setLocal(cfg.storageKeys.books, finalBooks);
       setBooks(finalBooks);
@@ -10335,18 +10411,21 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             { className: "relative group w-12 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-800 shrink-0 shadow-sm" },
-            activeBook.coverUrl ? React.createElement("img", {
-              src: utils.getDriveImageUrl(activeBook.coverUrl),
-              alt: activeBook.title,
-              className: "w-full h-full object-cover",
-              onError: function(e) {
-                var rawId = utils.extractDriveId(activeBook.coverUrl);
-                if (rawId && !e.target._triedLh3) {
-                  e.target._triedLh3 = true;
-                  e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+            (function() {
+              var coverSrc = (activeBook && activeBook.coverUrl) || (utils.getLocal && utils.getLocal("counsel_cover_thumb_" + (activeBook && activeBook.id)));
+              return coverSrc ? React.createElement("img", {
+                src: utils.getDriveImageUrl(coverSrc),
+                alt: activeBook.title,
+                className: "w-full h-full object-cover",
+                onError: function(e) {
+                  var rawId = utils.extractDriveId(coverSrc);
+                  if (rawId && !e.target._triedLh3) {
+                    e.target._triedLh3 = true;
+                    e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                  }
                 }
-              }
-            }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕"),
+              }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕");
+            })(),
             isAdmin && React.createElement(
               "button",
               {
@@ -10430,15 +10509,15 @@ window.BooksPage = function(props) {
               React.createElement("span", null, "المؤلف: " + (activeBook.author || "غير محدد")),
               React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
               React.createElement("span", null, (activeBook.totalPages || 0) + " صفحة"),
-              (activeBook.uploadedAt || activeBook.createdAt) ? React.createElement(
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
                 "span",
-                { className: "flex items-center gap-1 text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md" },
-                React.createElement("span", null, "📅 تم الرفع:"),
-                React.createElement("span", null, (function() {
-                  try {
-                    return new Date(activeBook.uploadedAt || activeBook.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
-                  } catch(e) { return ""; }
-                })())
+                { className: "text-slate-300 dark:text-slate-700" },
+                "•"
+              ) : null,
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
+                "span",
+                { className: "text-blue-600 dark:text-blue-400 font-semibold" },
+                activeBook.audioChapters.length + " فصول"
               ) : null
             )
           )
@@ -11143,18 +11222,21 @@ window.BooksPage = function(props) {
             React.createElement(
               "div",
               { className: "relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md mb-2.5 bg-gradient-to-br " + palette },
-              b.coverUrl ? React.createElement("img", {
-                src: utils.getDriveImageUrl(b.coverUrl),
-                alt: b.title,
-                className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
-                onError: function(e) {
-                  var rawId = utils.extractDriveId(b.coverUrl);
-                  if (rawId && !e.target._triedLh3) {
-                    e.target._triedLh3 = true;
-                    e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+              (function() {
+                var cardCover = (b && b.coverUrl) || (utils.getLocal && utils.getLocal("counsel_cover_thumb_" + (b && b.id)));
+                return cardCover ? React.createElement("img", {
+                  src: utils.getDriveImageUrl(cardCover),
+                  alt: b.title,
+                  className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+                  onError: function(e) {
+                    var rawId = utils.extractDriveId(cardCover);
+                    if (rawId && !e.target._triedLh3) {
+                      e.target._triedLh3 = true;
+                      e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                    }
                   }
-                }
-              }) : React.createElement(
+                }) : null;
+              })() || React.createElement(
                 "div",
                 { className: "absolute inset-0 p-3 flex flex-col justify-between text-white text-center" },
                 React.createElement("div", { className: "text-[10px] text-white/60 font-medium text-right" }, "مرجع معتمد"),
@@ -11266,21 +11348,16 @@ window.BooksPage = function(props) {
                 React.createElement(
                   "div",
                   { className: "text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between" },
-                  React.createElement("span", null, "☁️ متزامن سحابياً"),
-                  React.createElement("span", { className: "font-mono font-bold" }, totalExtractedChars.toLocaleString() + " حرف")
+                  React.createElement("span", null, "جاهز للقراءة والاستماع"),
+                  React.createElement("span", { className: "font-bold" }, extractedCount + " من " + totalChaps + " فصول")
                 )
               ) : null,
 
-              // الفوتر: تاريخ الرفع وزر الفتح
+              // الفوتر: عدد الفصول وزر الفتح
               React.createElement(
                 "div",
                 { className: "pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 mt-2" },
-                uploadDateStr ? React.createElement(
-                  "span",
-                  { className: "flex items-center gap-1 text-slate-400", title: "تاريخ رفع الكتاب" },
-                  React.createElement("span", null, "📅"),
-                  React.createElement("span", null, uploadDateStr)
-                ) : React.createElement("span", null, ((b.chapters || []).length || (b.audioChapters || []).length || 0) + " فصول"),
+                React.createElement("span", null, ((b.audioChapters || []).length || (b.chapters || []).length || 0) + " فصول"),
                 React.createElement(
                   "span",
                   { className: "text-teal-600 dark:text-teal-400 font-bold group-hover:translate-x-[-2px] transition-transform flex items-center gap-0.5" },

@@ -207,8 +207,13 @@ window.BooksPage = function(props) {
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
-      if (cloudList) {
+      if (cloudList && Array.isArray(cloudList) && cloudList.length > 0) {
         var cleanCloudList = sanitizeBooksList(cloudList);
+        if (cleanCloudList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
+
         // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
         var mergedList = cleanCloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
@@ -251,51 +256,62 @@ window.BooksPage = function(props) {
           return cb;
         });
         mergedList = sanitizeBooksList(mergedList);
+        if (mergedList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
 
-        // تنظيف أي مخلفات لكتب محذوفة من التخزين المحلي
+        // تنظيف أي مخلفات لكتب محذوفة مؤكدة فقط من التخزين المحلي
         var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
         localBooks.forEach(function(lb) {
-          var inCloud = mergedList.some(function(mb) { return mb.id === lb.id; });
-          if (!inCloud) {
+          if (lb.id === "book-1791664075112" || lb.title === "تتت" || lb.title === "ت ت ت" || lb.title === "ت ت" || lb.isDeleted) {
             utils.removeLocal("counsel_book_data_" + lb.id);
             utils.removeLocal("counsel_book_page_" + lb.id);
           }
         });
-        var savedActiveId = utils.getLocal("counsel_active_book_id");
-        if (savedActiveId && !mergedList.some(function(mb) { return mb.id === savedActiveId; })) {
-          utils.removeLocal("counsel_active_book_id");
-        }
 
         setBooks(mergedList);
         setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
-        if (mergedList.length > 0) {
-          setActiveBook(function(prev) {
-            if (!prev) {
-              var savedActiveId = utils.getLocal("counsel_active_book_id");
-              if (savedActiveId) {
-                var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
-                if (foundSaved) {
-                  var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
-                  var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
-                  return Object.assign({}, foundSaved, { currentPage: pNum });
-                }
+        setActiveBook(function(prev) {
+          if (!prev) {
+            var savedActiveId = utils.getLocal("counsel_active_book_id");
+            if (savedActiveId) {
+              var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
+              if (foundSaved) {
+                var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
+                var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
+                return Object.assign({}, foundSaved, { currentPage: pNum });
               }
-              // عند فتح التطبيق لأول مرة أو على جهاز جديد: البقاء في رف الكتب ليرى المستخدم الكتب المنشورة
-              return null;
             }
-            var found = mergedList.find(function(b) { return b.id === prev.id; });
-            if (!found) return null;
-            var savedPage = utils.getLocal("counsel_book_page_" + found.id);
-            var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
-            return Object.assign({}, found, { currentPage: page });
-          });
-        } else {
-          setActiveBook(null);
-        }
+            // إذا كان هناك كتاب منشور وحيد، نحدده تلقائياً للمستخدم لتجربة قراءة فورية وسلسة
+            var publishedBooks = mergedList.filter(function(b) { return b.isPublished !== false && b.publishStatus !== "draft"; });
+            if (publishedBooks.length === 1) {
+              var singleBook = publishedBooks[0];
+              var sPage = utils.getLocal("counsel_book_page_" + singleBook.id);
+              var pNum = sPage ? Number(sPage) : (singleBook.currentPage || 1);
+              return Object.assign({}, singleBook, { currentPage: pNum });
+            }
+            return null;
+          }
+          var found = mergedList.find(function(b) { return b.id === prev.id; });
+          if (!found) return prev; // الحفاظ على الكتاب المفتوح وعدم إغلاقه أبداً أثناء القراءة أو الاستماع
+          var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+          var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
+          return Object.assign({}, found, { currentPage: page });
+        });
+      } else {
+        setIsLoadingBooks(false);
       }
     });
+
+    // مؤقت حماية لمنع بقاء مؤشر التحميل معلقاً في حالة ضعف الشبكة
+    var safetyTimer = setTimeout(function() {
+      setIsLoadingBooks(false);
+    }, 4000);
+
     return function() {
+      clearTimeout(safetyTimer);
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, []);
@@ -344,6 +360,33 @@ window.BooksPage = function(props) {
         ? (Number(utils.getLocal("counsel_book_page_" + activeBook.id)) || activeBook.currentPage || 1)
         : 1;
       renderPdfPage(loadedDoc, targetPage);
+
+      // الاستخراج التلقائي الذكي لغلاف الكتاب إذا لم يكن متوفراً
+      if (activeBook && activeBook.id && !activeBook.coverUrl && !utils.getLocal("counsel_cover_thumb_" + activeBook.id)) {
+        try {
+          loadedDoc.getPage(1).then(function(page1) {
+            var unscaledVp = page1.getViewport({ scale: 1 });
+            var targetWidth = 350;
+            var scale = Math.min(1, targetWidth / (unscaledVp.width || 600));
+            var vp = page1.getViewport({ scale: scale });
+            var canvas = document.createElement("canvas");
+            canvas.width = vp.width;
+            canvas.height = vp.height;
+            var ctx = canvas.getContext("2d");
+            return page1.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+              var thumbData = canvas.toDataURL("image/jpeg", 0.75);
+              utils.setLocal("counsel_cover_thumb_" + activeBook.id, thumbData);
+              uploadCoverImage(thumbData).then(function(upUrl) {
+                if (upUrl) {
+                  var updatedB = Object.assign({}, activeBook, { coverUrl: upUrl });
+                  setActiveBook(updatedB);
+                  safeCloudSaveBook(updatedB, { silent: true });
+                }
+              });
+            });
+          }).catch(function() {});
+        } catch (eCov) {}
+      }
     }).catch(function(err) {
       console.warn("PDF load error:", err);
       setIsPdfLoading(false);
@@ -643,43 +686,61 @@ window.BooksPage = function(props) {
     alert("تم إزالة النسخة المحفوظة أوفلاين من هذا الجهاز بنجاح.");
   };
 
-  // رفع صورة غلاف الكتاب إلى درايف أو تحويلها
-  var uploadCoverImage = async function(file) {
-    if (!file) return null;
+  // رفع صورة غلاف الكتاب إلى درايف أو تحويلها (يدعم ملف صورة أو كود Base64)
+  var uploadCoverImage = async function(fileOrBase64) {
+    if (!fileOrBase64) return null;
     try {
-      var base64Data = await new Promise(function(resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function() {
-          var result = reader.result;
-          resolve(result); // Data URL for preview and fallback
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      var base64Data = "";
+      var mimeType = "image/jpeg";
+      var fileName = "cover_" + Date.now() + ".jpg";
 
-      // محاولة الرفع السحابي عبر Drive إن وُجد
-      try {
-        var pureBase64 = base64Data.indexOf(",") !== -1 ? base64Data.split(",")[1] : base64Data;
-        var response = await fetch(cfg.driveUploadEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            fileName: file.name,
-            mimeType: file.type || "image/jpeg",
-            base64Data: pureBase64
-          })
-        });
-        var resData = await response.json();
-        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
-          return resData.fileUrl || ("https://drive.google.com/thumbnail?id=" + resData.fileId + "&sz=w800");
+      if (typeof fileOrBase64 === "string" && fileOrBase64.indexOf("data:") === 0) {
+        base64Data = fileOrBase64.indexOf(",") !== -1 ? fileOrBase64.split(",")[1] : fileOrBase64;
+        if (fileOrBase64.indexOf("image/png") !== -1) {
+          mimeType = "image/png";
+          fileName = "cover_" + Date.now() + ".png";
         }
-      } catch (e) {
-        console.warn("Drive upload fallback to local dataUrl:", e);
+      } else if (typeof fileOrBase64 === "object") {
+        var rawData = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() { resolve(reader.result); };
+          reader.onerror = reject;
+          reader.readAsDataURL(fileOrBase64);
+        });
+        mimeType = fileOrBase64.type || "image/jpeg";
+        fileName = fileOrBase64.name || fileName;
+        base64Data = (typeof rawData === "string" && rawData.indexOf(",") !== -1) ? rawData.split(",")[1] : rawData;
+      } else {
+        return fileOrBase64;
       }
-      return base64Data;
+
+      // محاولة الرفع السحابي عبر Drive إن وُجد للحصول على رابط دائم
+      if (cfg && cfg.driveUploadEndpoint) {
+        try {
+          var response = await fetch(cfg.driveUploadEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              fileName: fileName,
+              mimeType: mimeType,
+              base64Data: base64Data
+            })
+          });
+          var resData = await response.json();
+          if (resData.status === "success" && (resData.fileId || resData.fileUrl)) {
+            var fId = resData.fileId || utils.extractDriveId(resData.fileUrl);
+            if (fId) {
+              return "https://lh3.googleusercontent.com/d/" + fId;
+            }
+          }
+        } catch (e) {
+          console.warn("Drive cover upload fallback:", e);
+        }
+      }
+      return (typeof fileOrBase64 === "string") ? fileOrBase64 : ("data:" + mimeType + ";base64," + base64Data);
     } catch (err) {
-      alert("خطأ في قراءة صورة الغلاف: " + err.message);
-      return null;
+      console.warn("Error uploading cover image:", err);
+      return typeof fileOrBase64 === "string" ? fileOrBase64 : null;
     }
   };
 
@@ -687,8 +748,17 @@ window.BooksPage = function(props) {
   var handleSaveCurrentBookCover = async function(coverUrlToSave) {
     if (!activeBook) return;
     var finalCover = utils.getDriveImageUrl(coverUrlToSave);
+    if (finalCover && finalCover.indexOf("data:") === 0) {
+      try {
+        var up = await uploadCoverImage(finalCover);
+        if (up) finalCover = utils.getDriveImageUrl(up);
+      } catch (eUp) {}
+    }
+    if (finalCover) {
+      utils.setLocal("counsel_cover_thumb_" + activeBook.id, finalCover);
+    }
     var updated = Object.assign({}, activeBook, { coverUrl: finalCover });
-    safeCloudSaveBook(updated);
+    await safeCloudSaveBook(updated);
     setActiveBook(updated);
     setShowCoverEditModal(false);
   };
@@ -2352,6 +2422,11 @@ window.BooksPage = function(props) {
         var uploadedCover = await uploadCoverImage(selectedCoverFile);
         if (uploadedCover) finalCoverUrl = utils.getDriveImageUrl(uploadedCover);
       } catch (errCover) {}
+    } else if (finalCoverUrl && finalCoverUrl.indexOf("data:") === 0) {
+      try {
+        var upBase = await uploadCoverImage(finalCoverUrl);
+        if (upBase) finalCoverUrl = utils.getDriveImageUrl(upBase);
+      } catch (errBase) {}
     }
 
     var finalAuthor = newAuthor.trim();
@@ -2361,8 +2436,12 @@ window.BooksPage = function(props) {
 
     var existingBook = editingBookId ? books.find(function(b) { return b.id === editingBookId; }) : null;
     var nowTimestamp = Date.now();
+    var newBookId = editingBookId || ("book-" + nowTimestamp);
+    if (finalCoverUrl) {
+      utils.setLocal("counsel_cover_thumb_" + newBookId, finalCoverUrl);
+    }
     var newB = Object.assign({}, existingBook || {}, {
-      id: editingBookId || ("book-" + nowTimestamp),
+      id: newBookId,
       title: newTitle.trim(),
       author: finalAuthor || "غير محدد",
       translator: newTranslator.trim() || (existingBook ? existingBook.translator : ""),
@@ -2423,7 +2502,7 @@ window.BooksPage = function(props) {
     try {
       // 1. جلب القائمة الرسمية المعتمدة من السحابة أولاً عبر REST API (Pull from Cloud)
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
       var cloudBooks = [];
       var pullError = null;
       try {
@@ -2455,8 +2534,8 @@ window.BooksPage = function(props) {
         utils.removeLocal("counsel_active_book_id");
       }
 
-      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين
-      var finalBooks = cloudBooks.length > 0 ? cloudBooks : (pullError ? localBooks : []);
+      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين بأمان تام (عدم تصفير الكتب المحلية إذا تعثر جلب السحابة)
+      var finalBooks = cloudBooks.length > 0 ? cloudBooks : localBooks;
       finalBooks = sanitizeBooksList(finalBooks);
       utils.setLocal(cfg.storageKeys.books, finalBooks);
       setBooks(finalBooks);
@@ -2667,18 +2746,21 @@ window.BooksPage = function(props) {
           React.createElement(
             "div",
             { className: "relative group w-12 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-800 shrink-0 shadow-sm" },
-            activeBook.coverUrl ? React.createElement("img", {
-              src: utils.getDriveImageUrl(activeBook.coverUrl),
-              alt: activeBook.title,
-              className: "w-full h-full object-cover",
-              onError: function(e) {
-                var rawId = utils.extractDriveId(activeBook.coverUrl);
-                if (rawId && !e.target._triedLh3) {
-                  e.target._triedLh3 = true;
-                  e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+            (function() {
+              var coverSrc = (activeBook && activeBook.coverUrl) || (utils.getLocal && utils.getLocal("counsel_cover_thumb_" + (activeBook && activeBook.id)));
+              return coverSrc ? React.createElement("img", {
+                src: utils.getDriveImageUrl(coverSrc),
+                alt: activeBook.title,
+                className: "w-full h-full object-cover",
+                onError: function(e) {
+                  var rawId = utils.extractDriveId(coverSrc);
+                  if (rawId && !e.target._triedLh3) {
+                    e.target._triedLh3 = true;
+                    e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                  }
                 }
-              }
-            }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕"),
+              }) : React.createElement("div", { className: "w-full h-full flex items-center justify-center text-lg bg-emerald-900/40 text-emerald-300" }, "📕");
+            })(),
             isAdmin && React.createElement(
               "button",
               {
@@ -2762,15 +2844,15 @@ window.BooksPage = function(props) {
               React.createElement("span", null, "المؤلف: " + (activeBook.author || "غير محدد")),
               React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
               React.createElement("span", null, (activeBook.totalPages || 0) + " صفحة"),
-              (activeBook.uploadedAt || activeBook.createdAt) ? React.createElement(
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
                 "span",
-                { className: "flex items-center gap-1 text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md" },
-                React.createElement("span", null, "📅 تم الرفع:"),
-                React.createElement("span", null, (function() {
-                  try {
-                    return new Date(activeBook.uploadedAt || activeBook.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
-                  } catch(e) { return ""; }
-                })())
+                { className: "text-slate-300 dark:text-slate-700" },
+                "•"
+              ) : null,
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
+                "span",
+                { className: "text-blue-600 dark:text-blue-400 font-semibold" },
+                activeBook.audioChapters.length + " فصول"
               ) : null
             )
           )
@@ -3475,18 +3557,21 @@ window.BooksPage = function(props) {
             React.createElement(
               "div",
               { className: "relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-md mb-2.5 bg-gradient-to-br " + palette },
-              b.coverUrl ? React.createElement("img", {
-                src: utils.getDriveImageUrl(b.coverUrl),
-                alt: b.title,
-                className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
-                onError: function(e) {
-                  var rawId = utils.extractDriveId(b.coverUrl);
-                  if (rawId && !e.target._triedLh3) {
-                    e.target._triedLh3 = true;
-                    e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+              (function() {
+                var cardCover = (b && b.coverUrl) || (utils.getLocal && utils.getLocal("counsel_cover_thumb_" + (b && b.id)));
+                return cardCover ? React.createElement("img", {
+                  src: utils.getDriveImageUrl(cardCover),
+                  alt: b.title,
+                  className: "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500",
+                  onError: function(e) {
+                    var rawId = utils.extractDriveId(cardCover);
+                    if (rawId && !e.target._triedLh3) {
+                      e.target._triedLh3 = true;
+                      e.target.src = "https://lh3.googleusercontent.com/d/" + rawId;
+                    }
                   }
-                }
-              }) : React.createElement(
+                }) : null;
+              })() || React.createElement(
                 "div",
                 { className: "absolute inset-0 p-3 flex flex-col justify-between text-white text-center" },
                 React.createElement("div", { className: "text-[10px] text-white/60 font-medium text-right" }, "مرجع معتمد"),
@@ -3598,21 +3683,16 @@ window.BooksPage = function(props) {
                 React.createElement(
                   "div",
                   { className: "text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between" },
-                  React.createElement("span", null, "☁️ متزامن سحابياً"),
-                  React.createElement("span", { className: "font-mono font-bold" }, totalExtractedChars.toLocaleString() + " حرف")
+                  React.createElement("span", null, "جاهز للقراءة والاستماع"),
+                  React.createElement("span", { className: "font-bold" }, extractedCount + " من " + totalChaps + " فصول")
                 )
               ) : null,
 
-              // الفوتر: تاريخ الرفع وزر الفتح
+              // الفوتر: عدد الفصول وزر الفتح
               React.createElement(
                 "div",
                 { className: "pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 mt-2" },
-                uploadDateStr ? React.createElement(
-                  "span",
-                  { className: "flex items-center gap-1 text-slate-400", title: "تاريخ رفع الكتاب" },
-                  React.createElement("span", null, "📅"),
-                  React.createElement("span", null, uploadDateStr)
-                ) : React.createElement("span", null, ((b.chapters || []).length || (b.audioChapters || []).length || 0) + " فصول"),
+                React.createElement("span", null, ((b.audioChapters || []).length || (b.chapters || []).length || 0) + " فصول"),
                 React.createElement(
                   "span",
                   { className: "text-teal-600 dark:text-teal-400 font-bold group-hover:translate-x-[-2px] transition-transform flex items-center gap-0.5" },

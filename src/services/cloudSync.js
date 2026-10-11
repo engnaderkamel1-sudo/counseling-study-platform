@@ -98,18 +98,22 @@ window.CloudSyncService = {
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
       };
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
+      if (controller) fetchOpts.signal = controller.signal;
 
       fetch(restUrl, fetchOpts)
         .then(function(res) {
           if (timeoutId) clearTimeout(timeoutId);
+          if (!res.ok) throw new Error("HTTP " + res.status);
           return res.json();
         })
         .then(function(data) {
           if (data && data.documents && Array.isArray(data.documents)) {
             var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
             restList = restList.filter(function(b) { return !b.isDeleted; });
-            handleUpdate(restList);
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
           }
         })
         .catch(function(errRest) {
@@ -145,8 +149,8 @@ window.CloudSyncService = {
   sanitizeForFirestore: function(obj) {
     if (obj === null || obj === undefined) return null;
     if (typeof obj !== "object") {
-      // حماية الحجم: إذا كان النص صورة Base64 ضخمة، نحذفه من المستند السحابي لمنع تخطي 1 ميجابايت
-      if (typeof obj === "string" && obj.indexOf("data:image/") === 0 && obj.length > 5000) {
+      // حماية الحجم: السماح بالغلاف إذا كان Base64 خفيف أو رابط، وحذف النصوص المفرطة الحجم فقط لمنع تخطي 1 ميجابايت
+      if (typeof obj === "string" && obj.indexOf("data:image/") === 0 && obj.length > 200000) {
         return "";
       }
       return obj;
@@ -171,9 +175,18 @@ window.CloudSyncService = {
     if (!window.db || !book) return Promise.resolve();
     var docId = book.id || ("book-" + Date.now());
     try {
+      // حفظ الغلاف في الكاش المحلي لضمان ظهوره الفوري دائماً على الجهاز
+      if (book.coverUrl && typeof book.coverUrl === "string" && book.coverUrl.trim()) {
+        try {
+          if (window.APP_UTILS && window.APP_UTILS.setLocal) {
+            window.APP_UTILS.setLocal("counsel_cover_thumb_" + docId, book.coverUrl);
+          }
+        } catch (eThumb) {}
+      }
+
       var cleanBook = this.sanitizeForFirestore(book);
-      // التأكد الصارم من عدم وجود أي Base64 في الغلاف السحابي
-      if (cleanBook.coverUrl && typeof cleanBook.coverUrl === "string" && cleanBook.coverUrl.indexOf("data:") === 0) {
+      // إذا كان الغلاف كود Base64 ضخم جداً (> 200KB)، لا نرفعه لسحابة فايربيز بل نكتفي بالكاش المحلي
+      if (cleanBook.coverUrl && typeof cleanBook.coverUrl === "string" && cleanBook.coverUrl.indexOf("data:") === 0 && cleanBook.coverUrl.length > 200000) {
         cleanBook.coverUrl = "";
       }
       // مزامنة حالة النشر بدقة لمنع إخفاء الكتاب عن الطلبة بالخطأ

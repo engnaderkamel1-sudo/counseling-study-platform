@@ -26,14 +26,14 @@ window.APP_UTILS = {
     return "https://drive.google.com/file/d/" + id + "/preview";
   },
 
-  // تحويل رابط جوجل درايف إلى رابط صورة مباشر لعرض الأغلفة
+  // تحويل رابط جوجل درايف إلى رابط صورة مباشر وسريع لعرض الأغلفة (يدعم lh3 المباشر و thumbnail)
   getDriveImageUrl: function(driveIdOrUrl) {
     if (!driveIdOrUrl) return "";
     var str = String(driveIdOrUrl).trim();
     if (!str || str.startsWith("data:") || str.startsWith("blob:")) return str;
     var id = window.APP_UTILS.extractDriveId(str);
     if (id && id.length >= 15 && !id.startsWith("http")) {
-      return "https://drive.google.com/thumbnail?id=" + id + "&sz=w800";
+      return "https://lh3.googleusercontent.com/d/" + id;
     }
     return str;
   },
