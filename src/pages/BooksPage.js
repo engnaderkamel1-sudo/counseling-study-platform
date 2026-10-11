@@ -207,8 +207,13 @@ window.BooksPage = function(props) {
 
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeBooks(function(cloudList) {
-      if (cloudList) {
+      if (cloudList && Array.isArray(cloudList) && cloudList.length > 0) {
         var cleanCloudList = sanitizeBooksList(cloudList);
+        if (cleanCloudList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
+
         // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
         var mergedList = cleanCloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
@@ -251,55 +256,52 @@ window.BooksPage = function(props) {
           return cb;
         });
         mergedList = sanitizeBooksList(mergedList);
+        if (mergedList.length === 0) {
+          setIsLoadingBooks(false);
+          return;
+        }
 
-        // تنظيف أي مخلفات لكتب محذوفة من التخزين المحلي
+        // تنظيف أي مخلفات لكتب محذوفة مؤكدة فقط من التخزين المحلي
         var localBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
         localBooks.forEach(function(lb) {
-          var inCloud = mergedList.some(function(mb) { return mb.id === lb.id; });
-          if (!inCloud) {
+          if (lb.id === "book-1791664075112" || lb.title === "تتت" || lb.title === "ت ت ت" || lb.title === "ت ت" || lb.isDeleted) {
             utils.removeLocal("counsel_book_data_" + lb.id);
             utils.removeLocal("counsel_book_page_" + lb.id);
           }
         });
-        var savedActiveId = utils.getLocal("counsel_active_book_id");
-        if (savedActiveId && !mergedList.some(function(mb) { return mb.id === savedActiveId; })) {
-          utils.removeLocal("counsel_active_book_id");
-        }
 
         setBooks(mergedList);
         setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
-        if (mergedList.length > 0) {
-          setActiveBook(function(prev) {
-            if (!prev) {
-              var savedActiveId = utils.getLocal("counsel_active_book_id");
-              if (savedActiveId) {
-                var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
-                if (foundSaved) {
-                  var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
-                  var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
-                  return Object.assign({}, foundSaved, { currentPage: pNum });
-                }
+        setActiveBook(function(prev) {
+          if (!prev) {
+            var savedActiveId = utils.getLocal("counsel_active_book_id");
+            if (savedActiveId) {
+              var foundSaved = mergedList.find(function(b) { return b.id === savedActiveId; });
+              if (foundSaved) {
+                var sPage = utils.getLocal("counsel_book_page_" + foundSaved.id);
+                var pNum = sPage ? Number(sPage) : (foundSaved.currentPage || 1);
+                return Object.assign({}, foundSaved, { currentPage: pNum });
               }
-              // إذا كان هناك كتاب منشور وحيد، نحدده تلقائياً للمستخدم لتجربة قراءة فورية وسلسة
-              var publishedBooks = mergedList.filter(function(b) { return b.isPublished !== false && b.publishStatus !== "draft"; });
-              if (publishedBooks.length === 1) {
-                var singleBook = publishedBooks[0];
-                var sPage = utils.getLocal("counsel_book_page_" + singleBook.id);
-                var pNum = sPage ? Number(sPage) : (singleBook.currentPage || 1);
-                return Object.assign({}, singleBook, { currentPage: pNum });
-              }
-              return null;
             }
-            var found = mergedList.find(function(b) { return b.id === prev.id; });
-            if (!found) return null;
-            var savedPage = utils.getLocal("counsel_book_page_" + found.id);
-            var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
-            return Object.assign({}, found, { currentPage: page });
-          });
-        } else {
-          setActiveBook(null);
-        }
+            // إذا كان هناك كتاب منشور وحيد، نحدده تلقائياً للمستخدم لتجربة قراءة فورية وسلسة
+            var publishedBooks = mergedList.filter(function(b) { return b.isPublished !== false && b.publishStatus !== "draft"; });
+            if (publishedBooks.length === 1) {
+              var singleBook = publishedBooks[0];
+              var sPage = utils.getLocal("counsel_book_page_" + singleBook.id);
+              var pNum = sPage ? Number(sPage) : (singleBook.currentPage || 1);
+              return Object.assign({}, singleBook, { currentPage: pNum });
+            }
+            return null;
+          }
+          var found = mergedList.find(function(b) { return b.id === prev.id; });
+          if (!found) return prev; // الحفاظ على الكتاب المفتوح وعدم إغلاقه أبداً أثناء القراءة أو الاستماع
+          var savedPage = utils.getLocal("counsel_book_page_" + found.id);
+          var page = savedPage ? Number(savedPage) : (found.currentPage || prev.currentPage || 1);
+          return Object.assign({}, found, { currentPage: page });
+        });
+      } else {
+        setIsLoadingBooks(false);
       }
     });
 

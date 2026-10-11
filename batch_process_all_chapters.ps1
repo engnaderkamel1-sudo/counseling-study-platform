@@ -1,5 +1,5 @@
-﻿# Batch script to generate audio for Chapters 1 through 10, upload to Google Drive, and update Firestore
-$ErrorActionPreference = "Stop"
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
+$ErrorActionPreference = "Continue"
 
 $apiKey = "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8"
 $patchUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books/book-1791651887196?key=$apiKey&updateMask.fieldPaths=audioChapters"
@@ -8,7 +8,7 @@ $driveEndpoint = "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chp
 Write-Host "=== Starting Batch Audiobook Generator for Chapters 1-10 ===" -ForegroundColor Cyan
 
 # Fetch current book document
-$doc = Invoke-RestMethod -Uri 'https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books/book-1791651887196'
+$doc = Invoke-RestMethod -Uri "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books/book-1791651887196?key=$apiKey"
 $chaps = $doc.fields.audioChapters.arrayValue.values
 
 for ($idx = 1; $idx -lt $chaps.Count; $idx++) {
@@ -61,12 +61,34 @@ for ($idx = 1; $idx -lt $chaps.Count; $idx++) {
         continue
     }
 
-    # 2. Download MP3
+    # 2. Download MP3 with retries
     $tempFile = Join-Path $PSScriptRoot "temp_chap_$idx.mp3"
     Write-Host "  -> Downloading MP3 file..."
-    Invoke-WebRequest -Uri $downloadUrl -OutFile $tempFile
-    $fileSize = (Get-Item $tempFile).Length
-    Write-Host "  -> Downloaded successfully: $([Math]::Round($fileSize / 1024 / 1024, 2)) MB"
+    $downloadSuccess = $false
+    for ($dlAttempt = 1; $dlAttempt -le 3; $dlAttempt++) {
+        try {
+            Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+            $wc = New-Object System.Net.WebClient
+            $wc.Headers.Add("User-Agent", "Mozilla/5.0")
+            $wc.DownloadFile($downloadUrl, $tempFile)
+            if (Test-Path $tempFile) {
+                $fileSize = (Get-Item $tempFile).Length
+                if ($fileSize -gt 5000) {
+                    Write-Host "  -> Downloaded successfully: $([Math]::Round($fileSize / 1024 / 1024, 2)) MB"
+                    $downloadSuccess = $true
+                    break
+                }
+            }
+        } catch {
+            Write-Warning "  -> Download attempt $dlAttempt failed: $_"
+            Start-Sleep -Seconds 3
+        }
+    }
+
+    if (-not $downloadSuccess) {
+        Write-Warning "  -> FAILED to download MP3 for Chapter $idx ($title). Skipping..."
+        continue
+    }
 
     # 3. Upload to Google Drive with retries
     Write-Host "  -> Uploading to Google Drive..."

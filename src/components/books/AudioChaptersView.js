@@ -71,10 +71,12 @@ window.AudioChaptersView = function(props) {
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
     if (audio && playingChapterId) {
-      var p = audio.play();
-      if (p !== undefined && typeof p.catch === "function") {
-        p.catch(function(err) { /* انتظار لمسة المستخدم الأولى */ });
-      }
+      try {
+        var p = audio.play();
+        if (p !== undefined && typeof p.catch === "function") {
+          p.catch(function(err) { /* انتظار لمسة المستخدم الأولى */ });
+        }
+      } catch (playErr) {}
     }
   }, [playingChapterId]);
 
@@ -859,10 +861,7 @@ window.AudioChaptersView = function(props) {
             var audioEl = chapterAudioRef.current;
             if (driveId && audioEl && !audioEl._triedCandidate2) {
               audioEl._triedCandidate2 = true;
-              audioEl.src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
-              audioEl.play().catch(function() {
-                setAudioHasError(true);
-              });
+              audioEl.src = "https://docs.google.com/uc?export=download&id=" + driveId;
               return;
             }
             setAudioHasError(true);

@@ -111,9 +111,9 @@ window.CloudSyncService = {
           if (data && data.documents && Array.isArray(data.documents)) {
             var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
             restList = restList.filter(function(b) { return !b.isDeleted; });
-            handleUpdate(restList);
-          } else if (data && !data.documents) {
-            handleUpdate([]);
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
           }
         })
         .catch(function(errRest) {
