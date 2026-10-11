@@ -6,7 +6,6 @@ window.AuthModal = function(props) {
   var onLoginSuccess = props.onLoginSuccess;
 
   var MASTER_ADMIN_EMAIL = "eng.naderkamel@gmail.com";
-  var DEFAULT_BYPASS_CODE = "counsel2026"; // كود التخطي والاعتماد الفوري الافتراضي
 
   var [isLogin, setIsLogin] = React.useState(true);
   
@@ -26,7 +25,6 @@ window.AuthModal = function(props) {
   var [diocese, setDiocese] = React.useState("");
   var [governorate, setGovernorate] = React.useState("القاهرة");
   var [whatsapp, setWhatsapp] = React.useState("");
-  var [bypassCode, setBypassCode] = React.useState("");
 
   var [isLoading, setIsLoading] = React.useState(false);
   var [pendingNotice, setPendingNotice] = React.useState(false);
@@ -61,7 +59,6 @@ window.AuthModal = function(props) {
       var cleanChurch = church.trim();
       var cleanDiocese = diocese.trim();
       var cleanGov = governorate.trim();
-      var cleanBypass = bypassCode.trim().toLowerCase();
 
       if (!cleanFullName || !cleanEmail || !cleanPassword || !cleanWhatsapp || !cleanChurch || !cleanDiocese || !cleanGov) {
         throw new Error("يرجى ملء جميع الحقول الإلزامية المطلوبة (بما في ذلك رقم الواتساب).");
@@ -82,32 +79,7 @@ window.AuthModal = function(props) {
         throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
       }
 
-      // فحص إمكانية التخطي والاعتماد الفوري (Bypass)
-      var isBypassed = false;
-      if (isMasterAdmin) {
-        isBypassed = true;
-      } else if (cleanBypass === DEFAULT_BYPASS_CODE.toLowerCase()) {
-        isBypassed = true;
-      } else {
-        // فحص إعدادات التخطي المسجلة في السحابة
-        try {
-          var settingsDoc = await window.db.collection("system_settings").doc("auth_config").get();
-          if (settingsDoc.exists) {
-            var conf = settingsDoc.data();
-            if (conf.bypassCode && cleanBypass === String(conf.bypassCode).trim().toLowerCase()) {
-              isBypassed = true;
-            }
-            if (Array.isArray(conf.whitelistedEmails)) {
-              var matchesWhitelist = conf.whitelistedEmails.some(function(em) {
-                return String(em).trim().toLowerCase() === cleanEmail;
-              });
-              if (matchesWhitelist) isBypassed = true;
-            }
-          }
-        } catch (confErr) {}
-      }
-
-      var userStatus = isBypassed ? "approved" : "pending";
+      var userStatus = isMasterAdmin ? "approved" : "pending";
       var userRole = isMasterAdmin ? "admin" : "student";
 
       var userData = {
@@ -124,7 +96,6 @@ window.AuthModal = function(props) {
         governorate: cleanGov,
         role: userRole,
         status: userStatus,
-        bypassed: isBypassed,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -138,8 +109,8 @@ window.AuthModal = function(props) {
         } catch (authErr) {}
       }
 
-      if (isBypassed) {
-        alert(isMasterAdmin ? "مرحباً بك يا مشرف المنصة!" : "تهانينا! تم اعتماد وتفعيل حسابك فورياً بنجاح.");
+      if (isMasterAdmin) {
+        alert("مرحباً بك يا مشرف المنصة!");
         onLoginSuccess(userData);
         if (onClose) onClose();
         return;
@@ -713,30 +684,11 @@ window.AuthModal = function(props) {
           )
         ),
 
-        // كود التخطي / الاعتماد الفوري (Bypass Code)
-        React.createElement(
-          "div",
-          null,
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between mb-1" },
-            React.createElement("label", { className: "text-xs font-semibold text-slate-600 dark:text-slate-400" }, "كود الاعتماد الفوري (اختياري)"),
-            React.createElement("span", { className: "text-[10px] text-slate-400" }, "إذا كان لديك كود تفعيل مباشر")
-          ),
-          React.createElement("input", {
-            type: "text",
-            value: bypassCode,
-            onChange: function(e) { setBypassCode(e.target.value); },
-            placeholder: "أدخل الكود إن وُجد لتفعيل الحساب فوراً...",
-            className: "w-full px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder-slate-400 font-mono"
-          })
-        ),
-
         // ملاحظة المراجعة والاعتماد
         React.createElement(
           "div",
-          { className: "p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-[11px] border border-amber-200/60 leading-relaxed" },
-          "📌 سيتم مراجعة الطلب والتأكد من البيانات من قِبل مشرف المنصة قبل تفعيل الحساب (ما لم يكن معك كود اعتماد فوري)."
+          { className: "p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-[11px] border border-amber-200/60 leading-relaxed text-center font-medium" },
+          "📌 سيتم مراجعة الطلب واعتماده من قِبل مشرف المنصة قبل تفعيل الحساب."
         ),
 
         React.createElement(

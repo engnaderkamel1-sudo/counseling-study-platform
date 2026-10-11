@@ -6,13 +6,6 @@ window.UsersManagementPage = function(props) {
   var [searchQuery, setSearchQuery] = React.useState("");
   var [activeFilter, setActiveFilter] = React.useState("pending"); // "pending", "approved", "rejected", "all"
 
-  // إعدادات كود التخطي والقائمة البيضاء
-  var [bypassCode, setBypassCode] = React.useState("counsel2026");
-  var [whitelistedEmails, setWhitelistedEmails] = React.useState([]);
-  var [newWhitelistEmail, setNewWhitelistEmail] = React.useState("");
-  var [showBypassSettings, setShowBypassSettings] = React.useState(false);
-  var [isSavingSettings, setIsSavingSettings] = React.useState(false);
-
   // نافذة إضافة دارس يدوياً ومعتمد فوراً
   var [showManualAddModal, setShowManualAddModal] = React.useState(false);
   var [manualFullName, setManualFullName] = React.useState("");
@@ -50,14 +43,6 @@ window.UsersManagementPage = function(props) {
         return tB - tA;
       });
       setUsers(list);
-
-      // جلب إعدادات التخطي
-      var confDoc = await window.db.collection("system_settings").doc("auth_config").get();
-      if (confDoc.exists) {
-        var d = confDoc.data();
-        if (d.bypassCode) setBypassCode(d.bypassCode);
-        if (Array.isArray(d.whitelistedEmails)) setWhitelistedEmails(d.whitelistedEmails);
-      }
     } catch (e) {
       console.error("Error fetching users:", e);
     } finally {
@@ -122,41 +107,6 @@ window.UsersManagementPage = function(props) {
     }
   };
 
-  // حفظ كود التخطي والقائمة البيضاء
-  var handleSaveBypassSettings = async function() {
-    if (!window.db) return;
-    setIsSavingSettings(true);
-    try {
-      await window.db.collection("system_settings").doc("auth_config").set({
-        bypassCode: bypassCode.trim(),
-        whitelistedEmails: whitelistedEmails,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      alert("تم حفظ إعدادات كود التخطي والقائمة البيضاء بنجاح! ✓");
-      setShowBypassSettings(false);
-    } catch (err) {
-      alert("خطأ أثناء حفظ الإعدادات: " + err.message);
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
-  var handleAddWhitelistEmail = function(e) {
-    e.preventDefault();
-    var em = newWhitelistEmail.trim().toLowerCase();
-    if (!em) return;
-    if (whitelistedEmails.indexOf(em) !== -1) {
-      alert("هذا البريد موجود بالقائمة بالفعل.");
-      return;
-    }
-    setWhitelistedEmails([em].concat(whitelistedEmails));
-    setNewWhitelistEmail("");
-  };
-
-  var handleRemoveWhitelistEmail = function(em) {
-    setWhitelistedEmails(whitelistedEmails.filter(function(x) { return x !== em; }));
-  };
-
   // إنشاء حساب دارس معتمد يدوياً بواسطة المشرف
   var handleCreateManualUser = async function(e) {
     e.preventDefault();
@@ -180,7 +130,6 @@ window.UsersManagementPage = function(props) {
         governorate: manualGov,
         role: "student",
         status: "approved", // معتمد فوراً بواسطة المشرف
-        bypassed: true,
         createdByAdmin: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
@@ -260,13 +209,6 @@ window.UsersManagementPage = function(props) {
         "div",
         { className: "flex items-center gap-2 flex-wrap" },
         React.createElement("button", {
-          onClick: function() { setShowBypassSettings(!showBypassSettings); },
-          className: "text-xs px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-100 transition-all flex items-center gap-1.5 shadow-2xs"
-        },
-          React.createElement("span", null, "⚡"),
-          React.createElement("span", null, "إعدادات كود التخطي (Bypass)")
-        ),
-        React.createElement("button", {
           onClick: function() { setShowManualAddModal(true); },
           className: "text-xs px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-xs"
         },
@@ -277,103 +219,6 @@ window.UsersManagementPage = function(props) {
           onClick: fetchUsers,
           className: "text-xs px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all"
         }, "🔄")
-      )
-    ),
-
-    // لوحة إعدادات التخطي المباشر (Bypass & Whitelist)
-    showBypassSettings && React.createElement(
-      "div",
-      { className: "bg-white dark:bg-slate-900 p-5 rounded-3xl border-2 border-amber-400/80 dark:border-amber-500/50 shadow-md space-y-4 animate-in fade-in zoom-in-95 duration-150" },
-      React.createElement(
-        "div",
-        { className: "flex items-center justify-between border-b pb-3" },
-        React.createElement("div", null,
-          React.createElement("h3", { className: "text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2" },
-            React.createElement("span", null, "⚡"),
-            "خيارات تخطي المراجعة والاعتماد الفوري (Bypass Approval)"
-          ),
-          React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" },
-            "يمكنك إعطاء كود موحد لأشخاص تثق بهم ليُعتمد حسابهم تلقائياً، أو إضافة إيميلات محددة مسبقاً."
-          )
-        ),
-        React.createElement("button", { onClick: function() { setShowBypassSettings(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
-      ),
-
-      React.createElement(
-        "div",
-        { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
-        // 1. كود التخطي الموحد
-        React.createElement(
-          "div",
-          { className: "p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200" }, "كود التفعيل الفوري (Bypass Code)"),
-          React.createElement("div", { className: "flex items-center gap-2" },
-            React.createElement("input", {
-              type: "text",
-              value: bypassCode,
-              onChange: function(e) { setBypassCode(e.target.value); },
-              placeholder: "مثال: counsel2026",
-              className: "flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono font-bold"
-            }),
-            React.createElement("button", {
-              type: "button",
-              onClick: function() {
-                navigator.clipboard.writeText(bypassCode);
-                alert("تم نسخ الكود: " + bypassCode);
-              },
-              className: "px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-xs font-semibold"
-            }, "نسخ 📋")
-          ),
-          React.createElement("p", { className: "text-[11px] text-slate-400" }, "أي شخص يكتب هذا الكود في خانة كود الاعتماد الفوري أثناء التسجيل يدخل للمنصة فوراً دون انتظار.")
-        ),
-
-        // 2. القائمة البيضاء للإيميلات المعتمدة مسبقاً
-        React.createElement(
-          "div",
-          { className: "p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200" }, "القائمة البيضاء للإيميلات (Pre-approved Emails)"),
-          React.createElement(
-            "form",
-            { onSubmit: handleAddWhitelistEmail, className: "flex items-center gap-2" },
-            React.createElement("input", {
-              type: "email",
-              value: newWhitelistEmail,
-              onChange: function(e) { setNewWhitelistEmail(e.target.value); },
-              placeholder: "user@example.com",
-              className: "flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
-            }),
-            React.createElement("button", {
-              type: "submit",
-              className: "px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
-            }, "إضافة +")
-          ),
-          whitelistedEmails.length > 0 ? React.createElement(
-            "div",
-            { className: "flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-1" },
-            whitelistedEmails.map(function(em) {
-              return React.createElement(
-                "span",
-                { key: em, className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900 border text-[11px] font-mono" },
-                em,
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { handleRemoveWhitelistEmail(em); },
-                  className: "text-rose-500 hover:text-rose-700 font-bold mr-1"
-                }, "✕")
-              );
-            })
-          ) : React.createElement("p", { className: "text-[11px] text-slate-400" }, "لا توجد إيميلات بالقائمة حالياً.")
-        )
-      ),
-
-      React.createElement(
-        "div",
-        { className: "flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800" },
-        React.createElement("button", {
-          onClick: handleSaveBypassSettings,
-          disabled: isSavingSettings,
-          className: "px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm transition-all"
-        }, isSavingSettings ? "جاري الحفظ..." : "حفظ إعدادات التخطي السحابية ✓")
       )
     ),
 
@@ -487,10 +332,6 @@ window.UsersManagementPage = function(props) {
                         : "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300")
                 }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
                 
-                // شارة الاعتماد السريع إذا وجد
-                u.bypassed && React.createElement("span", { className: "text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold px-2 py-0.5 rounded-md" },
-                  "⚡ تخطي سريع"
-                ),
                 // شارة نوع الدراسة
                 u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
                   u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
