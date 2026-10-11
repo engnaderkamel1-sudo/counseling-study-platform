@@ -236,14 +236,26 @@ window.CloudSyncService = {
     return null;
   },
 
-  // الاشتراك في الملاحظات الدراسية
-  subscribeNotes: function(onUpdate) {
+  // الاشتراك في الملاحظات الدراسية (مع فصل الملاحظات لكل مستخدم)
+  subscribeNotes: function(currentUser, onUpdate) {
     if (!window.db) return function() {};
+    if (typeof currentUser === "function") {
+      onUpdate = currentUser;
+      currentUser = null;
+    }
     try {
-      return window.db.collection("personal_notes").orderBy("date", "desc").onSnapshot(function(snapshot) {
+      var query = window.db.collection("personal_notes");
+      if (currentUser && (currentUser.id || currentUser.email)) {
+        var userIdentifier = currentUser.id || currentUser.email;
+        query = query.where("userId", "==", userIdentifier);
+      }
+      return query.onSnapshot(function(snapshot) {
         var list = [];
         snapshot.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        list.sort(function(a, b) {
+          return String(b.date || "").localeCompare(String(a.date || ""));
         });
         onUpdate(list);
       });
@@ -252,9 +264,12 @@ window.CloudSyncService = {
     }
   },
 
-  saveNote: function(note) {
+  saveNote: function(note, currentUser) {
     if (!window.db) return Promise.resolve();
     var docId = note.id || ("note-" + Date.now());
+    if (currentUser && (currentUser.id || currentUser.email) && !note.userId) {
+      note.userId = currentUser.id || currentUser.email;
+    }
     return window.db.collection("personal_notes").doc(docId).set(note, { merge: true });
   },
 

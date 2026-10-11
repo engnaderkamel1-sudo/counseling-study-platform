@@ -14,6 +14,13 @@ window.FIREBASE_CONFIG = {
       firebase.initializeApp(window.FIREBASE_CONFIG);
     }
     window.db = firebase.firestore();
+    if (typeof firebase.auth === "function") {
+      try {
+        window.auth = firebase.auth();
+      } catch (authErr) {
+        console.warn("Firebase auth init warning:", authErr);
+      }
+    }
     
     // تم تعطيل enablePersistence لحماية الأجهزة من التخزين المؤقت القديم (IndexedDB Cache Poisoning)
     // التطبيق يعتمد على التخزين المحلي النظيف localStorage مع المزامنة المباشرة

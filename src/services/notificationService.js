@@ -33,6 +33,23 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار سحابي إلى المشرف عند تسجيل دارس جديد بانتظار الاعتماد
+  notifyAdminNewUserRegistration: async function(userData) {
+    if (!window.db) return;
+    try {
+      var notifData = {
+        title: "👤 طلب انضمام دارس جديد",
+        body: (userData.fullName || "دارس جديد") + " • " + (userData.studyType || "دراسة المشورة") + " (" + (userData.studyYear || "السنة الأولى") + ") • كنيسة " + (userData.church || "غير محدد"),
+        type: "user_registration",
+        userId: userData.id || userData.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not send admin notification:", e);
+    }
+  },
+
   // الاستماع للإشعارات الجديدة وعرضها للمستخدمين
   subscribeNotifications: function(onNewNotification) {
     if (!window.db) return function() {};

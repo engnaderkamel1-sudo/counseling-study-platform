@@ -5,6 +5,9 @@ window.Header = function(props) {
   var onToggleTheme = props.onToggleTheme;
   var currentUser = props.currentUser;
   var onOpenErrorReport = props.onOpenErrorReport;
+  var onLogout = props.onLogout;
+  var onOpenAuth = props.onOpenAuth;
+  var isAdmin = !!(currentUser && currentUser.role === "admin");
 
   return React.createElement(
     "header",
@@ -22,7 +25,7 @@ window.Header = function(props) {
           "button",
           {
             onClick: onOpenSidebar,
-            title: props.isSidebarOpen ? "إغفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
+            title: props.isSidebarOpen ? "إخفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
             className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700 shadow-2xs active:scale-95"
           },
           React.createElement("span", { className: "text-base" }, "☰"),
@@ -39,6 +42,22 @@ window.Header = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-2" },
+
+        // شارة المستخدم الحالي
+        currentUser && React.createElement(
+          "div",
+          {
+            onClick: onOpenAuth,
+            title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
+            className: "hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          },
+          React.createElement("span", { className: "w-2 h-2 rounded-full " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+          React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" }, currentUser.fullName || (isAdmin ? "المشرف" : "دارس")),
+          React.createElement("span", { className: "text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
+            isAdmin ? "مشرف" : "دارس"
+          )
+        ),
+
         // زر تحديث فوري للمنصة وإفراغ الذاكرة
         React.createElement(
           "button",
@@ -57,6 +76,7 @@ window.Header = function(props) {
           React.createElement("span", null, "🔄"),
           React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
         ),
+
         // تبديل المظهر
         React.createElement(
           "button",
@@ -66,6 +86,17 @@ window.Header = function(props) {
             className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
           },
           theme === "dark" ? "☀️" : "🌙"
+        ),
+
+        // زر تسجيل الخروج
+        onLogout && React.createElement(
+          "button",
+          {
+            onClick: onLogout,
+            title: "تسجيل الخروج",
+            className: "w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 flex items-center justify-center transition-all text-sm"
+          },
+          "🚪"
         )
       )
     )

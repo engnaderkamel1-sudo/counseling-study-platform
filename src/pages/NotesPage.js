@@ -4,8 +4,11 @@ window.NotesPage = function(props) {
   var cfg = window.APP_CONFIG;
   var cloud = window.CloudSyncService;
 
+  var currentUser = props.currentUser;
+  var userKey = "counsel_study_personal_notes_" + (currentUser ? (currentUser.id || currentUser.email || "user") : "guest");
+
   var [notes, setNotes] = React.useState(function() {
-    return utils.getLocal("counsel_study_personal_notes", []);
+    return utils.getLocal(userKey, []);
   });
 
   var [newTitle, setNewTitle] = React.useState("");
@@ -14,16 +17,16 @@ window.NotesPage = function(props) {
   var [showModal, setShowModal] = React.useState(false);
 
   React.useEffect(function() {
-    var unsubscribe = cloud.subscribeNotes(function(cloudList) {
+    var unsubscribe = cloud.subscribeNotes(currentUser, function(cloudList) {
       if (cloudList) {
         setNotes(cloudList);
-        utils.setLocal("counsel_study_personal_notes", cloudList);
+        utils.setLocal(userKey, cloudList);
       }
     });
     return function() {
       if (typeof unsubscribe === "function") unsubscribe();
     };
-  }, []);
+  }, [currentUser]);
 
   var handleAddNote = function(e) {
     e.preventDefault();
@@ -34,14 +37,15 @@ window.NotesPage = function(props) {
       title: newTitle.trim(),
       date: new Date().toISOString().split("T")[0],
       lectureRef: newRef.trim() || "عام",
-      content: newContent.trim()
+      content: newContent.trim(),
+      userId: currentUser ? (currentUser.id || currentUser.email) : null
     };
 
     var updated = [n].concat(notes);
     setNotes(updated);
     setShowModal(false);
-    utils.setLocal("counsel_study_personal_notes", updated);
-    cloud.saveNote(n);
+    utils.setLocal(userKey, updated);
+    cloud.saveNote(n, currentUser);
 
     setNewTitle("");
     setNewContent("");

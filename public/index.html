@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791708914",
-  buildTime: "2026-10-11T08:55:14",
+  version: "1.2.1791709975",
+  buildTime: "2026-10-11T09:12:55",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -191,6 +191,13 @@ window.FIREBASE_CONFIG = {
       firebase.initializeApp(window.FIREBASE_CONFIG);
     }
     window.db = firebase.firestore();
+    if (typeof firebase.auth === "function") {
+      try {
+        window.auth = firebase.auth();
+      } catch (authErr) {
+        console.warn("Firebase auth init warning:", authErr);
+      }
+    }
     
     // تم تعطيل enablePersistence لحماية الأجهزة من التخزين المؤقت القديم (IndexedDB Cache Poisoning)
     // التطبيق يعتمد على التخزين المحلي النظيف localStorage مع المزامنة المباشرة
@@ -439,14 +446,26 @@ window.CloudSyncService = {
     return null;
   },
 
-  // الاشتراك في الملاحظات الدراسية
-  subscribeNotes: function(onUpdate) {
+  // الاشتراك في الملاحظات الدراسية (مع فصل الملاحظات لكل مستخدم)
+  subscribeNotes: function(currentUser, onUpdate) {
     if (!window.db) return function() {};
+    if (typeof currentUser === "function") {
+      onUpdate = currentUser;
+      currentUser = null;
+    }
     try {
-      return window.db.collection("personal_notes").orderBy("date", "desc").onSnapshot(function(snapshot) {
+      var query = window.db.collection("personal_notes");
+      if (currentUser && (currentUser.id || currentUser.email)) {
+        var userIdentifier = currentUser.id || currentUser.email;
+        query = query.where("userId", "==", userIdentifier);
+      }
+      return query.onSnapshot(function(snapshot) {
         var list = [];
         snapshot.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        list.sort(function(a, b) {
+          return String(b.date || "").localeCompare(String(a.date || ""));
         });
         onUpdate(list);
       });
@@ -455,9 +474,12 @@ window.CloudSyncService = {
     }
   },
 
-  saveNote: function(note) {
+  saveNote: function(note, currentUser) {
     if (!window.db) return Promise.resolve();
     var docId = note.id || ("note-" + Date.now());
+    if (currentUser && (currentUser.id || currentUser.email) && !note.userId) {
+      note.userId = currentUser.id || currentUser.email;
+    }
     return window.db.collection("personal_notes").doc(docId).set(note, { merge: true });
   },
 
@@ -921,6 +943,23 @@ window.NotificationService = {
       await window.db.collection("notifications").add(notifData);
     } catch (e) {
       console.warn("Could not broadcast notification:", e);
+    }
+  },
+
+  // إرسال إشعار سحابي إلى المشرف عند تسجيل دارس جديد بانتظار الاعتماد
+  notifyAdminNewUserRegistration: async function(userData) {
+    if (!window.db) return;
+    try {
+      var notifData = {
+        title: "👤 طلب انضمام دارس جديد",
+        body: (userData.fullName || "دارس جديد") + " • " + (userData.studyType || "دراسة المشورة") + " (" + (userData.studyYear || "السنة الأولى") + ") • كنيسة " + (userData.church || "غير محدد"),
+        type: "user_registration",
+        userId: userData.id || userData.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not send admin notification:", e);
     }
   },
 
@@ -1683,6 +1722,8 @@ window.Sidebar = function(props) {
   var currentUser = props.currentUser;
   var onSwitchRole = props.onSwitchRole;
   var onOpenAuth = props.onOpenAuth;
+  var onLogout = props.onLogout;
+  var pendingCount = props.pendingCount || 0;
   var isOpen = props.isOpen;
   var onClose = props.onClose;
 
@@ -1695,7 +1736,12 @@ window.Sidebar = function(props) {
 
   var isAdmin = !!(currentUser && currentUser.role === "admin");
   if (isAdmin) {
-    menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
+    menuItems.push({
+      id: "users",
+      label: "إدارة الدارسين والطلبات",
+      icon: "👥",
+      badge: pendingCount > 0 ? pendingCount : null
+    });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
     menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
   }
@@ -1750,10 +1796,11 @@ window.Sidebar = function(props) {
             "div",
             null,
             React.createElement("span", { className: "text-xs text-slate-500 block" }, "الحساب الحالي:"),
-            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, (currentUser && currentUser.fullName) || "الأدمن")
+            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white block" }, (currentUser && currentUser.fullName) || (isAdmin ? "مشرف المنصة" : "دارس")),
+            currentUser && currentUser.studyType && React.createElement("span", { className: "text-[10px] text-slate-400 block" }, currentUser.studyType + " • " + (currentUser.studyYear || ""))
           ),
-          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700") },
-            isAdmin ? "مسؤول" : "دارس"
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
+            isAdmin ? "مشرف" : "دارس"
           )
         ),
         React.createElement(
@@ -1763,9 +1810,17 @@ window.Sidebar = function(props) {
             "button",
             {
               onClick: onOpenAuth,
-              className: "flex-1 text-xs py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 text-center"
+              className: "flex-1 text-xs py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 text-center"
             },
             "تبديل الحساب"
+          ),
+          onLogout && React.createElement(
+            "button",
+            {
+              onClick: onLogout,
+              className: "text-xs py-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 font-bold text-rose-600 dark:text-rose-400 text-center transition-colors"
+            },
+            "خروج 🚪"
           )
         ),
         React.createElement(
@@ -1841,7 +1896,8 @@ window.Sidebar = function(props) {
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60")
             },
             React.createElement("span", { className: "text-lg" }, item.icon),
-            React.createElement("span", null, item.label)
+            React.createElement("span", { className: "flex-1 text-right" }, item.label),
+            item.badge ? React.createElement("span", { className: "bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse" }, item.badge) : null
           );
         })
       ),
@@ -1863,6 +1919,9 @@ window.Header = function(props) {
   var onToggleTheme = props.onToggleTheme;
   var currentUser = props.currentUser;
   var onOpenErrorReport = props.onOpenErrorReport;
+  var onLogout = props.onLogout;
+  var onOpenAuth = props.onOpenAuth;
+  var isAdmin = !!(currentUser && currentUser.role === "admin");
 
   return React.createElement(
     "header",
@@ -1880,7 +1939,7 @@ window.Header = function(props) {
           "button",
           {
             onClick: onOpenSidebar,
-            title: props.isSidebarOpen ? "إغفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
+            title: props.isSidebarOpen ? "إخفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
             className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700 shadow-2xs active:scale-95"
           },
           React.createElement("span", { className: "text-base" }, "☰"),
@@ -1897,6 +1956,22 @@ window.Header = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-2" },
+
+        // شارة المستخدم الحالي
+        currentUser && React.createElement(
+          "div",
+          {
+            onClick: onOpenAuth,
+            title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
+            className: "hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          },
+          React.createElement("span", { className: "w-2 h-2 rounded-full " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+          React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" }, currentUser.fullName || (isAdmin ? "المشرف" : "دارس")),
+          React.createElement("span", { className: "text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
+            isAdmin ? "مشرف" : "دارس"
+          )
+        ),
+
         // زر تحديث فوري للمنصة وإفراغ الذاكرة
         React.createElement(
           "button",
@@ -1915,6 +1990,7 @@ window.Header = function(props) {
           React.createElement("span", null, "🔄"),
           React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
         ),
+
         // تبديل المظهر
         React.createElement(
           "button",
@@ -1924,6 +2000,17 @@ window.Header = function(props) {
             className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
           },
           theme === "dark" ? "☀️" : "🌙"
+        ),
+
+        // زر تسجيل الخروج
+        onLogout && React.createElement(
+          "button",
+          {
+            onClick: onLogout,
+            title: "تسجيل الخروج",
+            className: "w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 flex items-center justify-center transition-all text-sm"
+          },
+          "🚪"
         )
       )
     )
@@ -1975,20 +2062,36 @@ window.BottomNav = function(props) {
 };
 
 // Module: components/AuthModal.js
-// نافذة تسجيل الدخول وطلب الانضمام للمنصة
+// نافذة وشاشة تسجيل الدخول وبوابة اعتماد الدارسين
 window.AuthModal = function(props) {
   var isOpen = props.isOpen;
+  var isBlocking = props.isBlocking; // عند الدخول الأول للمنصة بدون تسجيل
   var onClose = props.onClose;
   var onLoginSuccess = props.onLoginSuccess;
 
+  var MASTER_ADMIN_EMAIL = "eng.naderkamel@gmail.com";
+
   var [isLogin, setIsLogin] = React.useState(true);
-  var [email, setEmail] = React.useState("");
-  var [phone, setPhone] = React.useState("");
+  
+  // حقول الدخول
+  var [loginIdentifier, setLoginIdentifier] = React.useState("");
+  var [loginPassword, setLoginPassword] = React.useState("");
+  var [showLoginPassword, setShowLoginPassword] = React.useState(false);
+
+  // حقول التسجيل الجديد
   var [fullName, setFullName] = React.useState("");
-  var [instituteMessage, setInstituteMessage] = React.useState("");
+  var [email, setEmail] = React.useState("");
+  var [password, setPassword] = React.useState("");
+  var [showPassword, setShowPassword] = React.useState(false);
+  var [phone, setPhone] = React.useState("");
+  var [studyType, setStudyType] = React.useState("أكاديمي"); // "أكاديمي" أو "ثقافي"
+  var [studyYear, setStudyYear] = React.useState("السنة الأولى");
+  var [church, setChurch] = React.useState("");
+
   var [isLoading, setIsLoading] = React.useState(false);
   var [pendingNotice, setPendingNotice] = React.useState(false);
   var [errorMsg, setErrorMsg] = React.useState("");
+  var [successMsg, setSuccessMsg] = React.useState("");
 
   if (!isOpen) return null;
 
@@ -1996,38 +2099,75 @@ window.AuthModal = function(props) {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
+    setSuccessMsg("");
 
     try {
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة");
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً. يرجى التحقق من الاتصال.");
 
-      // فحص الحساب المسؤول الافتراضي
-      if (email.trim().toLowerCase().includes("admin") || email.trim().toLowerCase().includes("nader") || phone.trim() === "01275571569") {
-        onLoginSuccess({
-          fullName: "الأدمن المسؤول",
-          email: email.trim(),
-          phone: phone.trim(),
-          role: "admin",
-          status: "approved"
-        });
-        onClose();
-        return;
+      var cleanEmail = email.trim().toLowerCase();
+      var cleanPhone = phone.trim();
+      var cleanPassword = password.trim();
+
+      if (!cleanEmail || !cleanPhone || !fullName.trim() || !cleanPassword) {
+        throw new Error("يرجى ملء جميع الحقول المطلوبة.");
       }
 
-      var userDocId = "user_" + phone.trim().replace(/\D/g, "");
+      if (cleanPassword.length < 4) {
+        throw new Error("كلمة المرور يجب ألا تقل عن 4 أحرف أو أرقام.");
+      }
+
+      // فحص الحساب الرئيسي للمشرف
+      var isMasterAdmin = (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase());
+
+      var userDocId = "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
+
+      // فحص ما إذا كان المستخدم مسجلاً بالفعل
+      var snap = await window.db.collection("users").doc(userDocId).get();
+      if (snap.exists && !isMasterAdmin) {
+        throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
+      }
+
       var userData = {
+        id: userDocId,
         fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        instituteMessage: instituteMessage.trim(),
-        role: "student",
-        status: "pending", // قيد انتظار موافقة الأدمن
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        email: cleanEmail,
+        password: cleanPassword,
+        phone: cleanPhone,
+        studyType: studyType,
+        studyYear: studyYear,
+        church: church.trim() || "غير محدد",
+        role: isMasterAdmin ? "admin" : "student",
+        status: isMasterAdmin ? "approved" : "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
       await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
+
+      // محاولة إنشاء حساب في Firebase Auth إن أمكن لدعم الاستعادة المتقدمة
+      if (window.auth && typeof window.auth.createUserWithEmailAndPassword === "function") {
+        try {
+          await window.auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword);
+        } catch (authErr) {
+          // نتجاهل أي خطأ هنا حتى لا يتعطل التسجيل في حال كانت سياسات فايربيز صارمة
+          console.log("Firebase auth note:", authErr.code);
+        }
+      }
+
+      if (isMasterAdmin) {
+        onLoginSuccess(userData);
+        if (onClose) onClose();
+        return;
+      }
+
+      // إرسال إشعار فوري للمشرف بوصول طلب جديد
+      if (window.NotificationService && typeof window.NotificationService.notifyAdminNewUserRegistration === "function") {
+        window.NotificationService.notifyAdminNewUserRegistration(userData);
+      }
+
       setPendingNotice(true);
     } catch (err) {
-      setErrorMsg(err.message || "حدث خطأ أثناء إرسال الطلب");
+      setErrorMsg(err.message || "حدث خطأ أثناء إرسال طلب الانضمام.");
     } finally {
       setIsLoading(false);
     }
@@ -2037,42 +2177,95 @@ window.AuthModal = function(props) {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
+    setSuccessMsg("");
 
     try {
-      // فحص إذا كان حساب الأدمن
-      if (email.trim().toLowerCase().includes("admin") || email.trim().toLowerCase().includes("nader") || phone.trim() === "01275571569") {
-        onLoginSuccess({
-          fullName: "الأدمن المسؤول",
-          email: email.trim(),
-          phone: phone.trim(),
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
+
+      var ident = loginIdentifier.trim().toLowerCase();
+      var pwd = loginPassword.trim();
+
+      if (!ident || !pwd) {
+        throw new Error("يرجى كتابة البريد الإلكتروني أو الهاتف وكلمة المرور.");
+      }
+
+      // حساب المشرف الرئيسي
+      var isMasterAdmin = (ident === MASTER_ADMIN_EMAIL.toLowerCase());
+
+      var userDoc = null;
+      var userDocId = "user_" + ident.replace(/[^a-zA-Z0-9]/g, "_");
+
+      // محاولة الجلب المباشر عبر الـ ID
+      var directSnap = await window.db.collection("users").doc(userDocId).get();
+      if (directSnap.exists) {
+        userDoc = directSnap.data();
+      } else {
+        // البحث بالبريد
+        var emailSnap = await window.db.collection("users").where("email", "==", ident).limit(1).get();
+        if (!emailSnap.empty) {
+          userDoc = emailSnap.docs[0].data();
+        } else {
+          // البحث بالهاتف
+          var phoneSnap = await window.db.collection("users").where("phone", "==", loginIdentifier.trim()).limit(1).get();
+          if (!phoneSnap.empty) {
+            userDoc = phoneSnap.docs[0].data();
+          }
+        }
+      }
+
+      // حالة خاصة: المشرف يدخل لأول مرة ولم يُنشئ حسابه بعد
+      if (!userDoc && isMasterAdmin) {
+        var masterData = {
+          id: userDocId,
+          fullName: "مشرف المنصة",
+          email: MASTER_ADMIN_EMAIL.toLowerCase(),
+          password: pwd,
+          phone: "01275571569",
+          studyType: "أكاديمي",
+          studyYear: "المشرف العام",
+          church: "الإدارة",
           role: "admin",
-          status: "approved"
-        });
-        onClose();
+          status: "approved",
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await window.db.collection("users").doc(userDocId).set(masterData, { merge: true });
+        onLoginSuccess(masterData);
+        if (onClose) onClose();
         return;
       }
 
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة");
-
-      // البحث عن المستخدم بالهاتف أو البريد
-      var snap = await window.db.collection("users").where("email", "==", email.trim().toLowerCase()).get();
-      if (snap.empty) {
-        snap = await window.db.collection("users").where("phone", "==", phone.trim()).get();
+      if (!userDoc) {
+        throw new Error("لا يوجد حساب مسجل بهذه البيانات. يرجى إنشاء حساب جديد كدارس أولاً.");
       }
 
-      if (snap.empty) {
-        throw new Error("لا يوجد حساب مسجل بهذه البيانات. يرجى تقديم طلب انضمام أولاً.");
+      // فحص كلمة المرور
+      if (userDoc.password && userDoc.password !== pwd) {
+        throw new Error("كلمة المرور غير صحيحة. يرجى التأكد وإعادة المحاولة.");
       }
 
-      var user = snap.docs[0].data();
-      if (user.status !== "approved") {
-        throw new Error("طلب انضمامك قيد المراجعة لدى الأدمن. ستتمكن من الدخول فور الموافقة عليك.");
+      // إذا كان هو المشرف، نضمن إعطاءه الصلاحية الكاملة والموافقة
+      if (userDoc.email && userDoc.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
+        userDoc.role = "admin";
+        userDoc.status = "approved";
       }
 
-      onLoginSuccess(user);
-      onClose();
+      // فحص حالة الحساب للدارسين
+      if (userDoc.status === "pending") {
+        throw new Error("طلب انضمامك قيد المراجعة والاعتماد من قِبل مشرف المنصة. ستتمكن من الدخول فور تفعيل حسابك.");
+      }
+
+      if (userDoc.status === "rejected") {
+        throw new Error("عفواً، تم تعليق أو رفض هذا الحساب من قِبل مشرف المنصة.");
+      }
+
+      if (userDoc.status !== "approved") {
+        throw new Error("الحساب بانتظار اعتماد المشرف.");
+      }
+
+      onLoginSuccess(userDoc);
+      if (onClose) onClose();
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "حدث خطأ أثناء تسجيل الدخول.");
     } finally {
       setIsLoading(false);
     }
@@ -2080,139 +2273,327 @@ window.AuthModal = function(props) {
 
   return React.createElement(
     "div",
-    { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" },
+    {
+      className: isBlocking
+        ? "fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        : "fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+    },
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
+      {
+        className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto animate-in fade-in zoom-in-95 duration-200"
+      },
 
+      // ترويسة النافذة
       React.createElement(
         "div",
-        { className: "flex items-center justify-between border-b pb-3" },
-        React.createElement("div", null,
-          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
-            isLogin ? "تسجيل الدخول للمنصة" : "طلب انضمام دارس جديد"
-          ),
-          React.createElement("p", { className: "text-xs text-slate-400" }, "منصة دراسة المشورة • حساب خاص بالدارسين")
+        { className: "flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-3" },
+          React.createElement("div", { className: "w-11 h-11 rounded-2xl bg-slate-900 dark:bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shrink-0" }, "🌿"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white leading-tight" },
+              isLogin ? "تسجيل الدخول للمنصة" : "طلب انضمام دارس جديد"
+            ),
+            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" },
+              "منصة دراسة المشورة • الدخول مصرح به للدارسين المعتمدين فقط"
+            )
+          )
         ),
-        React.createElement("button", { onClick: onClose, className: "text-slate-400" }, "✕")
+        // زر الإغلاق يظهر فقط إن لم تكن الشاشة إجبارية حاصرة
+        !isBlocking && onClose && React.createElement(
+          "button",
+          {
+            onClick: onClose,
+            className: "text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          },
+          "✕"
+        )
       ),
 
+      // تنبيه الخطأ
       errorMsg && React.createElement(
         "div",
-        { className: "p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs border border-rose-200" },
-        errorMsg
+        { className: "p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-semibold border border-rose-200 dark:border-rose-900/50 flex items-center gap-2" },
+        React.createElement("span", { className: "text-base shrink-0" }, "⚠️"),
+        React.createElement("span", { className: "leading-relaxed" }, errorMsg)
       ),
 
+      // شاشة الانتظار والمراجعة بعد التسجيل
       pendingNotice ? React.createElement(
         "div",
-        { className: "p-6 text-center space-y-3" },
-        React.createElement("div", { className: "text-3xl" }, "⏳"),
-        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تم استلام طلب انضمامك بنجاح"),
-        React.createElement("p", { className: "text-xs text-slate-500 leading-relaxed" },
-          "الطلب الآن في انتظار مراجعة الأدمن للتأكد من بيانات الدارسين. ستتمكن من تصفح المحاضرات والمراجع فور تفعيل حسابك."
+        { className: "p-6 text-center space-y-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700/60" },
+        React.createElement("div", { className: "w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center text-3xl shadow-xs" }, "⏳"),
+        React.createElement(
+          "div",
+          { className: "space-y-2" },
+          React.createElement("h4", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تم استلام طلب انضمامك بنجاح!"),
+          React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-sm mx-auto" },
+            "طلب انضمامك الآن قيد المراجعة والاعتماد من قِبل مشرف المنصة للتأكد من بيانات الدارسين. ستتمكن من تسجيل الدخول وتصفح المحاضرات والكتب فور تفعيل حسابك."
+          )
         ),
-        React.createElement("button", {
-          onClick: function() { setPendingNotice(false); setIsLogin(true); },
-          className: "mt-2 bg-slate-900 dark:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold"
-        }, "العودة لتسجيل الدخول")
+        React.createElement(
+          "button",
+          {
+            onClick: function() {
+              setPendingNotice(false);
+              setIsLogin(true);
+              setErrorMsg("");
+            },
+            className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white text-xs font-bold shadow-md hover:bg-slate-800 transition-colors"
+          },
+          "العودة لتسجيل الدخول ⏎"
+        )
       ) : isLogin ? React.createElement(
-        // نموذج تسجيل الدخول
+        // ================= نموذج تسجيل الدخول =================
         "form",
-        { onSubmit: handleLogin, className: "space-y-3" },
-        React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "البريد الإلكتروني"),
+        { onSubmit: handleLogin, className: "space-y-3.5" },
+        
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "البريد الإلكتروني أو الهاتف"),
           React.createElement("input", {
-            type: "email",
+            type: "text",
             required: true,
-            value: email,
-            onChange: function(e) { setEmail(e.target.value); },
-            placeholder: "بريدك الإلكتروني...",
-            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            value: loginIdentifier,
+            onChange: function(e) { setLoginIdentifier(e.target.value); },
+            placeholder: "name@example.com أو 012xxxxxxxx",
+            className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
           })
         ),
-        React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "أو رقم الهاتف المسجل"),
-          React.createElement("input", {
-            type: "tel",
-            value: phone,
-            onChange: function(e) { setPhone(e.target.value); },
-            placeholder: "012xxxxxxxx",
-            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-          })
+
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "كلمة المرور"),
+          React.createElement(
+            "div",
+            { className: "relative" },
+            React.createElement("input", {
+              type: showLoginPassword ? "text" : "password",
+              required: true,
+              value: loginPassword,
+              onChange: function(e) { setLoginPassword(e.target.value); },
+              placeholder: "••••••••",
+              className: "w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500"
+            }),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowLoginPassword(!showLoginPassword); },
+                className: "absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm p-1"
+              },
+              showLoginPassword ? "👁️‍🗨️" : "👁️"
+            )
+          )
         ),
-        React.createElement("button", {
-          type: "submit",
-          disabled: isLoading,
-          className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-sm disabled:opacity-50"
-        }, isLoading ? "جاري التحقق..." : "دخول إلى المنصة"),
-        React.createElement("div", { className: "text-center pt-2" },
-          React.createElement("button", {
-            type: "button",
-            onClick: function() { setIsLogin(false); setErrorMsg(""); },
-            className: "text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline"
-          }, "دارس جديد؟ اضغط هنا لتقديم طلب انضمام")
+
+        React.createElement(
+          "button",
+          {
+            type: "submit",
+            disabled: isLoading,
+            className: "w-full py-3 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-md hover:bg-slate-800 transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
+          },
+          isLoading ? "جاري التحقق والدخول..." : "تسجيل الدخول للمنصة ←"
+        ),
+
+        React.createElement(
+          "div",
+          { className: "text-center pt-2 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsLogin(false); setErrorMsg(""); },
+              className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+            },
+            "دارس جديد؟ اضغط هنا لإنشاء حساب وطلب الانضمام"
+          )
         )
       ) : React.createElement(
-        // نموذج طلب الانضمام
+        // ================= نموذج إنشاء حساب دارس جديد =================
         "form",
         { onSubmit: handleRegisterRequest, className: "space-y-3" },
-        React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "الاسم الثلاثي أو بالكامل"),
+
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الاسم بالكامل (ثلاثي أو رباعي) *"),
           React.createElement("input", {
             type: "text",
             required: true,
             value: fullName,
             onChange: function(e) { setFullName(e.target.value); },
-            placeholder: "اسمك كدارس في المشورة...",
-            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            placeholder: "اسمك كدارس في المعهد...",
+            className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
           })
         ),
-        React.createElement("div", { className: "grid grid-cols-2 gap-2" },
-          React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "البريد الإلكتروني"),
+
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "البريد الإلكتروني *"),
             React.createElement("input", {
               type: "email",
               required: true,
               value: email,
               onChange: function(e) { setEmail(e.target.value); },
-              placeholder: "example@mail.com",
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              placeholder: "student@example.com",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           ),
-          React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رقم الموبايل / واتساب"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "رقم الموبايل / واتساب *"),
             React.createElement("input", {
               type: "tel",
               required: true,
               value: phone,
               onChange: function(e) { setPhone(e.target.value); },
               placeholder: "012xxxxxxxx",
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
             })
           )
         ),
-        React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رسالة تعريفية بالدراسة والفرقة"),
-          React.createElement("textarea", {
-            rows: 2,
-            required: true,
-            value: instituteMessage,
-            onChange: function(e) { setInstituteMessage(e.target.value); },
-            placeholder: "مثال: أنا دارس بالدفعة الحالية لدراسة المشورة...",
-            className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-          })
+
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "كلمة المرور للدخول *"),
+          React.createElement(
+            "div",
+            { className: "relative" },
+            React.createElement("input", {
+              type: showPassword ? "text" : "password",
+              required: true,
+              value: password,
+              onChange: function(e) { setPassword(e.target.value); },
+              placeholder: "اختر كلمة مرور خاصة بك (4 خانات فأكثر)...",
+              className: "w-full pl-10 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            }),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowPassword(!showPassword); },
+                className: "absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm p-1"
+              },
+              showPassword ? "👁️‍🗨️" : "👁️"
+            )
+          )
         ),
-        React.createElement("button", {
-          type: "submit",
-          disabled: isLoading,
-          className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-sm disabled:opacity-50"
-        }, isLoading ? "جاري الإرسال..." : "إرسال طلب الانضمام للمراجعة"),
-        React.createElement("div", { className: "text-center pt-2" },
-          React.createElement("button", {
-            type: "button",
-            onClick: function() { setIsLogin(true); setErrorMsg(""); },
-            className: "text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white underline"
-          }, "لديك حساب بالفعل؟ تسجيل الدخول")
+
+        // نوع الدراسة (أكاديمي أو ثقافي)
+        React.createElement(
+          "div",
+          null,
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5" }, "نوع الدراسة *"),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-2" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setStudyType("أكاديمي"); },
+                className: "py-2 px-3 rounded-xl border text-xs font-bold transition-all " +
+                  (studyType === "أكاديمي"
+                    ? "bg-slate-900 text-white dark:bg-emerald-600 border-transparent shadow-xs"
+                    : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700")
+              },
+              "🎓 دراسة أكاديمية"
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setStudyType("ثقافي"); },
+                className: "py-2 px-3 rounded-xl border text-xs font-bold transition-all " +
+                  (studyType === "ثقافي"
+                    ? "bg-slate-900 text-white dark:bg-emerald-600 border-transparent shadow-xs"
+                    : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700")
+              },
+              "📖 دراسة ثقافية"
+            )
+          )
+        ),
+
+        // السنة الدراسية والكنيسة
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "السنة الدراسية *"),
+            React.createElement(
+              "select",
+              {
+                value: studyYear,
+                onChange: function(e) { setStudyYear(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+              },
+              React.createElement("option", { value: "السنة الأولى" }, "السنة الأولى"),
+              React.createElement("option", { value: "السنة الثانية" }, "السنة الثانية"),
+              React.createElement("option", { value: "السنة الثالثة" }, "السنة الثالثة"),
+              React.createElement("option", { value: "السنة الرابعة" }, "السنة الرابعة"),
+              React.createElement("option", { value: "خريج / متابع عام" }, "خريج / متابع عام")
+            )
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الكنيسة / الإيبارشية *"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: church,
+              onChange: function(e) { setChurch(e.target.value); },
+              placeholder: "مثال: كنيسة مارمرقس...",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          )
+        ),
+
+        // ملاحظة المراجعة والاعتماد
+        React.createElement(
+          "div",
+          { className: "p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-[11px] border border-amber-200/60 leading-relaxed" },
+          "📌 سيتم مراجعة الطلب والتأكد من البيانات من قِبل مشرف المنصة قبل تفعيل الحساب."
+        ),
+
+        React.createElement(
+          "button",
+          {
+            type: "submit",
+            disabled: isLoading,
+            className: "w-full py-3 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-md hover:bg-slate-800 transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
+          },
+          isLoading ? "جاري إرسال الطلب..." : "إرسال طلب الانضمام للمشرف ✓"
+        ),
+
+        React.createElement(
+          "div",
+          { className: "text-center pt-2 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsLogin(true); setErrorMsg(""); },
+              className: "text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline"
+            },
+            "لديك حساب بالفعل؟ تسجيل الدخول"
+          )
         )
       )
     )
@@ -6659,12 +7040,43 @@ window.LecturesPage = function(props) {
   var [newQuizText, setNewQuizText] = React.useState("");
   var [newNotes, setNewNotes] = React.useState("");
 
+  // دالة فحص وتحديد ما إذا كان العنصر امتحاناً أو تقييماً (وليس محاضرة عادية)
+  var isItemExam = function(lec) {
+    if (!lec) return false;
+    if (lec.isExam === true || lec.isExam === "true" || lec.itemType === "exam") return true;
+    var text = ((lec.title || "") + " " + (lec.subject || "")).toLowerCase();
+    return /امتحان|اختبار|فاينل|final|تقييم/.test(text);
+  };
+
   // دالة تحديد حالة المحاضرة الذكية
   var getLectureStatus = function(lec) {
     if (!lec) return { type: "unknown", label: "غير محدد", badgeClass: "bg-slate-100 text-slate-600" };
+    var isExam = isItemExam(lec);
     var hasMedia = !!(lec.mediaUrl && lec.mediaUrl.trim());
     var todayStr = new Date().toISOString().split("T")[0];
     var lecDate = (lec.date || "").trim();
+
+    if (isExam) {
+      if (hasMedia || lec.handoutUrl) {
+        return {
+          type: "ready",
+          label: "📝 تفاصيل الامتحان متوفرة",
+          badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+        };
+      }
+      if (lecDate && lecDate > todayStr) {
+        return {
+          type: "upcoming",
+          label: "📝 امتحان مجدول",
+          badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+        };
+      }
+      return {
+        type: "waiting",
+        label: "📝 موعد الامتحان",
+        badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+      };
+    }
 
     if (hasMedia) {
       return {
@@ -6691,14 +7103,26 @@ window.LecturesPage = function(props) {
   var [quizUserAnswers, setQuizUserAnswers] = React.useState({});
   var [quizSubmitted, setQuizSubmitted] = React.useState(false);
 
+  // إغلاق النوافذ والمشغل بمفتاح Escape
+  React.useEffect(function() {
+    var handleKeyDown = function(e) {
+      if (e.key === "Escape") {
+        if (editingLecture) setEditingLecture(null);
+        else if (showAddModal) setShowAddModal(false);
+        else if (activeLecture) setActiveLecture(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return function() { window.removeEventListener("keydown", handleKeyDown); };
+  }, [editingLecture, showAddModal, activeLecture]);
+
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
       if (cloudList) {
-        // ترتيب تصاعدي تسلسلي فوري حسب الجدول
+        // ترتيب تصاعدي تسلسلي فوري حسب التاريخ وترتيب الجلسة
         cloudList.sort(function(a, b) {
-          if (a.orderIndex && b.orderIndex) return a.orderIndex - b.orderIndex;
-          var dateA = new Date(a.date).getTime();
-          var dateB = new Date(b.date).getTime();
+          var dateA = new Date(a.date).getTime() || 0;
+          var dateB = new Date(b.date).getTime() || 0;
           if (dateA !== dateB) return dateA - dateB;
           return (a.sessionOrder || 1) - (b.sessionOrder || 1);
         });
@@ -6707,7 +7131,8 @@ window.LecturesPage = function(props) {
         utils.setLocal(cfg.storageKeys.lectures, cloudList);
         if (cloudList.length > 0) {
           setActiveLecture(function(prev) {
-            return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || cloudList[0]) : cloudList[0];
+            // لا نفتح المحاضرة الأولى تلقائياً عند فتح الصفحة حتى تظهر القائمة والسطور بوضوح
+            return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
           });
         } else {
           setActiveLecture(null);
@@ -6728,6 +7153,37 @@ window.LecturesPage = function(props) {
     if (l.date && datesList.indexOf(l.date) === -1) datesList.push(l.date);
   });
 
+  // خريطة الترقيم التسلسلي الزمني التلقائي (تضمن تسلسل 1، 2، 3.. بدون فجوات وتتعامل مع الامتحانات كعنصر خاص)
+  var chronoList = lectures.slice().sort(function(a, b) {
+    var dateA = new Date(a.date).getTime() || 0;
+    var dateB = new Date(b.date).getTime() || 0;
+    if (dateA !== dateB) return dateA - dateB;
+    return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+  });
+
+  var itemSeqInfo = {};
+  var lectureCounter = 0;
+  var examCounter = 0;
+  chronoList.forEach(function(lec) {
+    if (isItemExam(lec)) {
+      examCounter++;
+      itemSeqInfo[lec.id] = {
+        isExam: true,
+        num: null,
+        titleBadge: "📝 امتحان",
+        fullLabel: "الامتحان والتقييم النهائي"
+      };
+    } else {
+      lectureCounter++;
+      itemSeqInfo[lec.id] = {
+        isExam: false,
+        num: lectureCounter,
+        titleBadge: "#" + lectureCounter,
+        fullLabel: "المحاضرة رقم: " + lectureCounter
+      };
+    }
+  });
+
   var filteredLectures = lectures.filter(function(lec) {
     var matchQuery = (lec.title + " " + (lec.subject || "") + " " + (lec.speaker || "") + " " + (lec.notes || "")).toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
     var matchSubject = selectedSubject === "الكل" || lec.subject === selectedSubject;
@@ -6737,16 +7193,12 @@ window.LecturesPage = function(props) {
   });
 
   filteredLectures.sort(function(a, b) {
+    var dateA = new Date(a.date).getTime() || 0;
+    var dateB = new Date(b.date).getTime() || 0;
     if (sortByDate === "asc") {
-      if (a.orderIndex && b.orderIndex) return a.orderIndex - b.orderIndex;
-      var dateA = new Date(a.date).getTime();
-      var dateB = new Date(b.date).getTime();
       if (dateA !== dateB) return dateA - dateB;
       return (a.sessionOrder || 1) - (b.sessionOrder || 1);
     } else {
-      if (a.orderIndex && b.orderIndex) return b.orderIndex - a.orderIndex;
-      var dateA = new Date(a.date).getTime();
-      var dateB = new Date(b.date).getTime();
       if (dateA !== dateB) return dateB - dateA;
       return (b.sessionOrder || 1) - (a.sessionOrder || 1);
     }
@@ -7006,6 +7458,11 @@ window.LecturesPage = function(props) {
       title: editingLecture.title.trim(),
       subject: (editingLecture.subject || "").trim() || "عام",
       speaker: (editingLecture.speaker || "").trim() || "غير محدد",
+      date: (editingLecture.date || "").trim(),
+      sessionOrder: parseInt(editingLecture.sessionOrder) || 1,
+      isExam: !!editingLecture.isExam,
+      itemType: editingLecture.itemType || (editingLecture.isExam ? "exam" : "lecture"),
+      notes: (editingLecture.notes || "").trim(),
       mediaUrl: (editingLecture.mediaUrl || "").trim(),
       handoutUrl: (editingLecture.handoutUrl || editingHandoutUrl || "").trim(),
       handoutName: (editingLecture.handoutName || editingHandoutName || "").trim(),
@@ -7148,51 +7605,71 @@ window.LecturesPage = function(props) {
       )
     ),
 
-    // المحاضرة النشطة مع الألسنة الداخلية الثلاثة
-    activeLecture ? React.createElement(
+    // مشغل المحاضرة ومحتواها التفاعلي في نافذة منبثقة واضحة مع إمكانية الإغلاق
+    activeLecture && React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
-
-      // رأس المحاضرة
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto",
+        onClick: function(e) { if (e.target === e.currentTarget) setActiveLecture(null); }
+      },
       React.createElement(
         "div",
-        { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4" },
+        { className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto my-auto" },
+
+        // رأس المحاضرة داخل النافذة
         React.createElement(
           "div",
-          null,
-          (function() {
-            var st = getLectureStatus(activeLecture);
-            return React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-1" },
-              activeLecture.subject && React.createElement("span", { className: "text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800" }, "📚 " + activeLecture.subject),
-              React.createElement("span", { className: "text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg" }, "تاريخ: " + activeLecture.date),
-              React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "المحاضرة رقم: " + (activeLecture.orderIndex || activeLecture.sessionOrder || 1)),
-              React.createElement("span", { className: "text-xs font-bold px-2.5 py-0.5 rounded-lg " + st.badgeClass }, st.label)
-            );
-          })(),
-          React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeLecture.title),
-          React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" }, "المحاضر: " + activeLecture.speaker)
-        ),
-        React.createElement(
-          "div",
-          { className: "flex items-center gap-3" },
-          currentUser.role === "admin" && React.createElement(
-            "button",
-            {
-              onClick: function() { openEditModal(activeLecture); },
-              title: "تعديل المادة أو بيانات المحاضرة",
-              className: "px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
-            },
-            React.createElement("span", null, "✏️"),
-            React.createElement("span", null, "تعديل المادة")
+          { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4" },
+          React.createElement(
+            "div",
+            null,
+            (function() {
+              var st = getLectureStatus(activeLecture);
+              var actSeq = itemSeqInfo[activeLecture.id] || { isExam: isItemExam(activeLecture), num: 1, titleBadge: "#1", fullLabel: "المحاضرة" };
+              return React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-1" },
+                activeLecture.subject && React.createElement("span", { className: "text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800" }, "📚 " + activeLecture.subject),
+                React.createElement("span", { className: "text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg" }, "تاريخ: " + (activeLecture.date || "غير محدد")),
+                actSeq.isExam
+                  ? React.createElement("span", { className: "text-xs font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800" }, "📝 امتحان وتقييم نهائي")
+                  : React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "المحاضرة رقم: " + actSeq.num),
+                React.createElement("span", { className: "text-xs font-bold px-2.5 py-0.5 rounded-lg " + st.badgeClass }, st.label)
+              );
+            })(),
+            React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeLecture.title),
+            React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" }, "المحاضر: " + activeLecture.speaker)
           ),
           React.createElement(
             "div",
-            { className: "text-left sm:text-right" },
-            React.createElement("span", { className: "text-xs text-slate-400 block" }, "التوقف المحفوظ"),
-            React.createElement("span", { className: "text-base font-bold text-emerald-600 dark:text-emerald-400" }, utils.formatDuration(activeLecture.lastPosition || 0))
+            { className: "flex items-center gap-2.5" },
+            currentUser.role === "admin" && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { openEditModal(activeLecture); },
+                title: "تعديل المادة أو بيانات المحاضرة",
+                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
+              },
+              React.createElement("span", null, "✏️"),
+              React.createElement("span", null, "تعديل")
+            ),
+            React.createElement(
+              "div",
+              { className: "text-left sm:text-right hidden sm:block" },
+              React.createElement("span", { className: "text-[11px] text-slate-400 block" }, "التوقف المحفوظ"),
+              React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400" }, utils.formatDuration(activeLecture.lastPosition || 0))
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setActiveLecture(null); },
+                className: "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-xs"
+              },
+              React.createElement("span", null, "✕"),
+              React.createElement("span", null, "إغلاق والعودة للجدول")
+            )
           )
-        )
-      ),
+        ),
 
       // شريط أزرار التحكم السريع للمسؤول (الفيديو، الهاند آوت، الملخص الصوتي، ريبورت الملخص، الكويز)
       currentUser.role === "admin" && React.createElement(
@@ -7690,99 +8167,182 @@ window.LecturesPage = function(props) {
             "📝 إعداد أسئلة الكويز الآن"
           )
         )
+        // تذييل النافذة للتنقل بين المحاضرات
+        (function() {
+          var currentIdx = filteredLectures.findIndex(function(l) { return l.id === activeLecture.id; });
+          var prevLec = currentIdx > 0 ? filteredLectures[currentIdx - 1] : null;
+          var nextLec = currentIdx >= 0 && currentIdx < filteredLectures.length - 1 ? filteredLectures[currentIdx + 1] : null;
+          return React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-xs" },
+            prevLec ? React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setActiveLecture(prevLec); },
+                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all text-slate-700 dark:text-slate-200"
+              },
+              "◀ " + (itemSeqInfo[prevLec.id] ? itemSeqInfo[prevLec.id].titleBadge : "") + " " + prevLec.title
+            ) : React.createElement("div"),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setActiveLecture(null); },
+                className: "px-4 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-emerald-600 font-bold hover:opacity-90 transition-all text-xs"
+              },
+              "العودة للجدول الكامل ✓"
+            ),
+            nextLec ? React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setActiveLecture(nextLec); },
+                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all text-slate-700 dark:text-slate-200"
+              },
+              nextLec.title + " " + (itemSeqInfo[nextLec.id] ? itemSeqInfo[nextLec.id].titleBadge : "") + " ▶"
+            ) : React.createElement("div")
+          );
+        })()
       )
+    ),
+
+    // شريط إحصائيات وتوضيح الجدول
+    lectures.length > 0 && React.createElement(
+      "div",
+      { className: "flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-500 font-bold" },
+      React.createElement("div", { className: "flex items-center gap-2" },
+        React.createElement("span", { className: "text-slate-800 dark:text-slate-200" }, "📋 جدول المحاضرات والامتحانات (" + filteredLectures.length + ")"),
+        React.createElement("span", { className: "text-[11px] font-normal text-slate-400" }, "(" + lectureCounter + " محاضرة • " + examCounter + " امتحان)")
+      ),
+      React.createElement("span", { className: "text-[11px] font-normal text-slate-400 hidden sm:inline" }, "💡 اضغط على أي سطر لفتح المحاضرة والمشاهدة، أو اضغط ✏️ للتعديل السريع")
+    ),
+
+    // قائمة المحاضرات المرفوعة في سطور صغيرة ومترتبة بعناية لسهولة التصفح
+    lectures.length > 0 ? React.createElement(
+      "div",
+      { className: "space-y-2" },
+      filteredLectures.map(function(lec, idx) {
+        var seq = itemSeqInfo[lec.id] || { isExam: isItemExam(lec), num: idx + 1, titleBadge: "#" + (idx + 1), fullLabel: "محاضرة #" + (idx + 1) };
+        var st = getLectureStatus(lec);
+        var isCurrent = activeLecture && activeLecture.id === lec.id;
+        return React.createElement(
+          "div",
+          {
+            key: lec.id,
+            onClick: function() { setActiveLecture(lec); },
+            className: "group flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs hover:shadow-xs " +
+              (isCurrent
+                ? "bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
+                : "bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-slate-300 dark:hover:border-slate-700")
+          },
+          // قسم اليمين: الترتيب + التاريخ + العنوان والمادة والمحاضر
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-3 min-w-0 flex-1" },
+            // الشارة
+            seq.isExam ? React.createElement(
+              "span",
+              { className: "px-2.5 py-1 rounded-xl text-xs font-black bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0 shadow-2xs flex items-center gap-1" },
+              "📝 امتحان"
+            ) : React.createElement(
+              "span",
+              { className: "w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black flex items-center justify-center shrink-0 shadow-2xs" },
+              "#" + seq.num
+            ),
+            // تاريخ المحاضرة
+            React.createElement(
+              "span",
+              { className: "text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0 hidden md:inline-block bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50" },
+              lec.date || "قريباً"
+            ),
+            // العنوان والمحاضر
+            React.createElement(
+              "div",
+              { className: "min-w-0 flex-1" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 flex-wrap" },
+                React.createElement("span", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate" }, lec.title),
+                lec.subject && React.createElement("span", { className: "text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0" }, lec.subject),
+                (lec.sessionOrder && lec.sessionOrder > 1) && React.createElement("span", { className: "text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0" }, "جلسة " + lec.sessionOrder)
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap" },
+                React.createElement("span", null, lec.speaker),
+                React.createElement("span", { className: "md:hidden" }, "• " + (lec.date || "")),
+                (lec.lastPosition > 0) && React.createElement("span", { className: "text-[10px] text-emerald-600 dark:text-emerald-400 font-medium" }, "• التوقف: " + utils.formatDuration(lec.lastPosition))
+              )
+            )
+          ),
+          // قسم اليسار: مؤشرات المحتوى + شارة الحالة + أزرار الإجراءات
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800" },
+            // الأيقونات والمؤشرات
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 text-[10px]" },
+              lec.mediaUrl && React.createElement("span", { title: "فيديو متاح", className: "px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/60" }, "📺 فيديو"),
+              lec.handoutUrl && React.createElement("span", { title: "هاند آوت متاح", className: "px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800/60" }, "📂 هاند آوت"),
+              (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800/60" }, "📄 ملخص")
+            ),
+            // شارة الحالة
+            React.createElement("span", { className: "text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 " + st.badgeClass }, st.label),
+            // زر الفتح
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function(e) {
+                  e.stopPropagation();
+                  setActiveLecture(lec);
+                },
+                className: "px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 text-xs font-bold transition-all shadow-2xs active:scale-95"
+              },
+              "فتح ▶"
+            ),
+            // أزرار المسؤول
+            currentUser.role === "admin" && React.createElement(
+              "div",
+              { className: "flex items-center gap-1" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function(e) {
+                    e.stopPropagation();
+                    openEditModal(lec);
+                  },
+                  title: "تعديل بيانات المحاضرة أو الروابط",
+                  className: "p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 text-xs"
+                },
+                "✏️"
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function(e) {
+                    e.stopPropagation();
+                    handleDeleteLecture(lec);
+                  },
+                  title: "نقل لسلة المحذوفات",
+                  className: "p-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 hover:bg-rose-100"
+                },
+                "🗑️"
+              )
+            )
+          )
+        );
+      })
     ) : React.createElement(
       "div",
       { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
       React.createElement("div", { className: "text-3xl" }, "🎧"),
       React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الأرشيف نظيف وجاهز لرفع محاضراتك الفعلية"),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يمكنك إضافة رابط يوتيوب مباشر أو رفع ملف المحاضرة من جهازك.")
-    ),
-
-    // قائمة المحاضرات المرفوعة
-    lectures.length > 0 && React.createElement(
-      "div",
-      { className: "space-y-2.5" },
-      React.createElement("div", { className: "flex items-center justify-between text-xs text-slate-500 font-bold px-1" },
-        React.createElement("span", null, "سجل المحاضرات (" + filteredLectures.length + ")"),
-        React.createElement("span", null, "مرتبة حسب التاريخ وترتيب الجلسة")
-      ),
-      filteredLectures.map(function(lec, idx) {
-        var isCurrent = activeLecture && activeLecture.id === lec.id;
-        var st = getLectureStatus(lec);
-        return React.createElement(
-          "div",
-          {
-            key: lec.id,
-            onClick: function() { setActiveLecture(lec); },
-            className: "p-4 rounded-2xl border cursor-pointer transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 " +
-              (isCurrent ? "bg-slate-100 dark:bg-slate-800 border-slate-400" : "bg-white dark:bg-slate-900 border-slate-200")
-          },
-          React.createElement(
-            "div",
-            { className: "flex items-start gap-3" },
-            React.createElement(
-              "div",
-              {
-                className: "w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex flex-col items-center justify-center font-bold shrink-0 border border-slate-200 dark:border-slate-700",
-                title: "محاضرة رقم " + (lec.orderIndex || (idx + 1))
-              },
-              React.createElement("span", { className: "text-[9px] text-slate-400 font-normal leading-none" }, "محاضرة"),
-              React.createElement("span", { className: "text-xs font-black text-slate-800 dark:text-slate-100 leading-tight" }, "#" + (lec.orderIndex || (idx + 1)))
-            ),
-            React.createElement(
-              "div",
-              null,
-              React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, lec.title),
-                lec.subject && React.createElement("span", { className: "text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800" }, lec.subject),
-                React.createElement("span", { className: "text-[10px] font-bold px-2 py-0.5 rounded-md " + st.badgeClass }, st.label)
-              ),
-              React.createElement("div", { className: "flex items-center gap-2 mt-0.5 flex-wrap text-xs text-slate-500" },
-                React.createElement("span", null, lec.speaker + " • " + lec.date),
-                React.createElement("div", { className: "flex items-center gap-1 mr-1 text-[11px]" },
-                  lec.mediaUrl && React.createElement("span", { title: "فيديو متاح", className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "📺 فيديو"),
-                  lec.handoutUrl && React.createElement("span", { title: "هاند آوت متاح", className: "text-indigo-600 dark:text-indigo-400 font-bold" }, "• 📂 هاند آوت"),
-                  (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "text-amber-600 dark:text-amber-400 font-bold" }, "• 📄 ملخص")
-                )
-              )
-            )
-          ),
-          React.createElement(
-            "div",
-            { className: "flex items-center gap-2" },
-            currentUser.role === "admin" && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function(e) {
-                  e.stopPropagation();
-                  openEditModal(lec);
-                },
-                title: "تعديل المادة أو البيانات",
-                className: "p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs hover:bg-slate-100 text-slate-600 dark:text-slate-300"
-              },
-              "✏️"
-            ),
-            currentUser.role === "admin" && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function(e) {
-                  e.stopPropagation();
-                  handleDeleteLecture(lec);
-                },
-                title: "نقل المحاضرة لسلة المحذوفات",
-                className: "p-1.5 rounded-lg border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs hover:bg-rose-100 text-rose-600 dark:text-rose-400"
-              },
-              "🗑️"
-            ),
-            React.createElement("div", { className: "text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-xl" },
-              "آخر توقف: " + utils.formatDuration(lec.lastPosition || 0)
-            )
-          )
-        );
-      })
     ),
 
     // نافذة إضافة محاضرة جديدة (للمسؤول فقط)
@@ -8242,30 +8802,92 @@ window.LecturesPage = function(props) {
             React.createElement("p", { className: "text-[11px] text-slate-400" }, "💡 النظام يتعرف تلقائياً على الأسئلة سواء كانت نصاً عادياً أو صيغة JSON.")
           ),
 
-          // قسم 5: البيانات العامة (العنوان والمحاضر)
+          // قسم 5: البيانات العامة (العنوان والمحاضر والتاريخ والنوع)
           (editModalTab === "all" || editModalTab === "info") && React.createElement(
             "div",
             { className: "p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/70 space-y-3" },
             React.createElement(
               "div",
-              null,
-              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "المادة الدراسية"),
-              React.createElement("input", {
-                type: "text",
-                value: editingLecture.subject || "",
-                onChange: function(e) {
-                  var val = e.target.value;
-                  setEditingLecture(function(prev) { return Object.assign({}, prev, { subject: val }); });
-                },
-                list: "counseling-subjects-list-edit",
-                placeholder: "مثال: مادة علم المشورة، النمو النفسي...",
-                className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
-              })
+              { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "نوع الفعالية / العنصر"),
+                React.createElement("select", {
+                  value: (editingLecture.isExam || editingLecture.itemType === "exam") ? "exam" : (editingLecture.itemType || "lecture"),
+                  onChange: function(e) {
+                    var val = e.target.value;
+                    setEditingLecture(function(prev) {
+                      return Object.assign({}, prev, {
+                        itemType: val,
+                        isExam: val === "exam"
+                      });
+                    });
+                  },
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-bold"
+                }, [
+                  React.createElement("option", { key: "lecture", value: "lecture" }, "🎓 محاضرة دراسية"),
+                  React.createElement("option", { key: "exam", value: "exam" }, "📝 امتحان وتقييم نهائي"),
+                  React.createElement("option", { key: "workshop", value: "workshop" }, "🤝 ورشة عمل / نشاط")
+                ])
+              ),
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "تاريخ اليوم الدراسي"),
+                React.createElement("input", {
+                  type: "date",
+                  required: true,
+                  value: editingLecture.date || "",
+                  onChange: function(e) {
+                    var val = e.target.value;
+                    setEditingLecture(function(prev) { return Object.assign({}, prev, { date: val }); });
+                  },
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-mono"
+                })
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "grid grid-cols-1 sm:grid-cols-2 gap-3" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "ترتيب الجلسة في اليوم"),
+                React.createElement("select", {
+                  value: editingLecture.sessionOrder || 1,
+                  onChange: function(e) {
+                    var val = parseInt(e.target.value) || 1;
+                    setEditingLecture(function(prev) { return Object.assign({}, prev, { sessionOrder: val }); });
+                  },
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
+                }, [
+                  React.createElement("option", { key: 1, value: 1 }, "الجلسة الأولى (1)"),
+                  React.createElement("option", { key: 2, value: 2 }, "الجلسة الثانية (2)"),
+                  React.createElement("option", { key: 3, value: 3 }, "الجلسة الثالثة (3)")
+                ])
+              ),
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "المادة الدراسية"),
+                React.createElement("input", {
+                  type: "text",
+                  value: editingLecture.subject || "",
+                  onChange: function(e) {
+                    var val = e.target.value;
+                    setEditingLecture(function(prev) { return Object.assign({}, prev, { subject: val }); });
+                  },
+                  list: "counseling-subjects-list-edit",
+                  placeholder: "مثال: مادة علم المشورة، النمو النفسي...",
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
+                })
+              )
             ),
             React.createElement(
               "div",
               null,
-              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "عنوان المحاضرة"),
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "عنوان المحاضرة أو الامتحان"),
               React.createElement("input", {
                 type: "text",
                 required: true,
@@ -8274,13 +8896,14 @@ window.LecturesPage = function(props) {
                   var val = e.target.value;
                   setEditingLecture(function(prev) { return Object.assign({}, prev, { title: val }); });
                 },
-                className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
+                placeholder: "اكتب العنوان هنا...",
+                className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-bold"
               })
             ),
             React.createElement(
               "div",
               null,
-              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "المحاضر / الدكتور"),
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "المحاضر / الدكتور / المسؤول"),
               React.createElement("input", {
                 type: "text",
                 required: true,
@@ -8289,6 +8912,22 @@ window.LecturesPage = function(props) {
                   var val = e.target.value;
                   setEditingLecture(function(prev) { return Object.assign({}, prev, { speaker: val }); });
                 },
+                placeholder: "مثال: د. مجدي اسحق أو إدارة المعهد",
+                className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
+              })
+            ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "ملاحظات وتفاصيل الفعالية"),
+              React.createElement("textarea", {
+                rows: 2,
+                value: editingLecture.notes || "",
+                onChange: function(e) {
+                  var val = e.target.value;
+                  setEditingLecture(function(prev) { return Object.assign({}, prev, { notes: val }); });
+                },
+                placeholder: "ملاحظات هامة للدارسين...",
                 className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
               })
             )
@@ -12400,23 +13039,32 @@ window.NotesPage = function(props) {
 };
 
 // Module: pages/UsersManagementPage.js
-// شاشة إدارة طلبات المستخدمين وقبول/رفض الدارسين (للمسؤول نادر كمال فقط)
+// شاشة إدارة طلبات المستخدمين واعتماد الدارسين (خاصة بالمشرف فقط)
 window.UsersManagementPage = function(props) {
-  var currentUser = props.currentUser || { role: "admin" };
+  var currentUser = props.currentUser;
   var [users, setUsers] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
+  var [searchQuery, setSearchQuery] = React.useState("");
+  var [activeFilter, setActiveFilter] = React.useState("pending"); // "pending", "approved", "rejected", "all"
 
   var fetchUsers = async function() {
     if (!window.db) return;
+    setIsLoading(true);
     try {
       var snap = await window.db.collection("users").get();
       var list = [];
       snap.forEach(function(doc) {
         list.push(Object.assign({ id: doc.id }, doc.data()));
       });
+      // ترتيب حسب الأحدث
+      list.sort(function(a, b) {
+        var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+        var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+        return tB - tA;
+      });
       setUsers(list);
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching users:", e);
     } finally {
       setIsLoading(false);
     }
@@ -12439,129 +13087,274 @@ window.UsersManagementPage = function(props) {
         return u;
       }));
     } catch (e) {
-      alert("خطأ: " + e.message);
+      alert("حدث خطأ أثناء تعديل حالة الحساب: " + e.message);
+    }
+  };
+
+  var handleDeleteUser = async function(userId, userName) {
+    if (!confirm("هل أنت متأكد من حذف حساب '" + userName + "' نهائياً من النظام؟")) return;
+    if (!window.db) return;
+    try {
+      await window.db.collection("users").doc(userId).delete();
+      setUsers(users.filter(function(u) { return u.id !== userId; }));
+    } catch (e) {
+      alert("حدث خطأ أثناء حذف الحساب: " + e.message);
     }
   };
 
   var pendingUsers = users.filter(function(u) { return u.status === "pending"; });
-  var approvedUsers = users.filter(function(u) { return u.status === "approved"; });
+  var approvedUsers = users.filter(function(u) { return u.status === "approved" && u.role !== "admin"; });
   var rejectedUsers = users.filter(function(u) { return u.status === "rejected"; });
 
+  var filteredUsers = users.filter(function(u) {
+    if (activeFilter === "pending" && u.status !== "pending") return false;
+    if (activeFilter === "approved" && (u.status !== "approved" || u.role === "admin")) return false;
+    if (activeFilter === "rejected" && u.status !== "rejected") return false;
+    
+    if (searchQuery.trim()) {
+      var q = searchQuery.trim().toLowerCase();
+      var matchName = (u.fullName || "").toLowerCase().indexOf(q) !== -1;
+      var matchEmail = (u.email || "").toLowerCase().indexOf(q) !== -1;
+      var matchPhone = (u.phone || "").indexOf(q) !== -1;
+      var matchChurch = (u.church || "").toLowerCase().indexOf(q) !== -1;
+      return matchName || matchEmail || matchPhone || matchChurch;
+    }
+    return true;
+  });
+
   if (!currentUser || currentUser.role !== "admin") {
-    return React.createElement("div", { className: "p-8 text-center text-slate-500 text-sm" },
-      "عفواً، هذه الشاشة مخصصة للمسؤول (الأدمن) فقط لإدارة طلبات الانضمام."
+    return React.createElement(
+      "div",
+      { className: "p-12 text-center text-slate-500 space-y-3" },
+      React.createElement("div", { className: "text-4xl" }, "🔒"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-800 dark:text-white" }, "هذه الصفحة مخصصة لمشرف المنصة فقط"),
+      React.createElement("p", { className: "text-xs text-slate-400" }, "ليس لديك الصلاحيات الكافية لإدارة حسابات الدارسين.")
     );
   }
 
   return React.createElement(
     "div",
-    { className: "space-y-6 pb-12" },
+    { className: "space-y-6 pb-12 animate-in fade-in duration-300" },
 
+    // ترويسة الصفحة والملخص
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" },
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" },
       React.createElement(
         "div",
         null,
-        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "إدارة طلبات الانضمام والدارسين"),
-        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "مراجعة رسائل الزملاء الدارسين وتأكيد بياناتهم قبل السماح لهم بالدخول للمنصة")
+        React.createElement("div", { className: "flex items-center gap-2" },
+          React.createElement("h2", { className: "text-lg font-bold text-slate-900 dark:text-white" }, "إدارة طلبات الانضمام واعتماد الدارسين"),
+          pendingUsers.length > 0 && React.createElement("span", { className: "bg-rose-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full animate-pulse" },
+            pendingUsers.length + " بانتظارك"
+          )
+        ),
+        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" },
+          "مراجعة بيانات الزملاء الدارسين، نوع دراستهم وكنائسهم قبل منحهم تصريح الدخول للمنصة"
+        )
       ),
-      React.createElement("button", {
-        onClick: fetchUsers,
-        className: "text-xs px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 font-semibold"
-      }, "تحديث القائمة 🔄")
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-2" },
+        React.createElement("button", {
+          onClick: fetchUsers,
+          className: "text-xs px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex items-center gap-1.5"
+        },
+          React.createElement("span", null, "🔄"),
+          React.createElement("span", null, "تحديث البيانات")
+        )
+      )
     ),
 
-    // 1. قسم الطلبات المعلقة (Pending)
+    // إحصائيات سريعة للطلبات
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
-      React.createElement("div", { className: "flex items-center justify-between border-b pb-3" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "طلبات بانتظار موافقتك (" + pendingUsers.length + ")"),
-        React.createElement("span", { className: "text-xs bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full font-bold" }, "قيد المراجعة")
+      { className: "grid grid-cols-3 gap-3" },
+      React.createElement(
+        "button",
+        {
+          onClick: function() { setActiveFilter("pending"); },
+          className: "p-4 rounded-2xl border text-right transition-all " +
+            (activeFilter === "pending"
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-300")
+        },
+        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "بانتظار الموافقة"),
+        React.createElement("span", { className: "text-2xl font-black text-amber-600 block mt-1" }, pendingUsers.length)
       ),
+      React.createElement(
+        "button",
+        {
+          onClick: function() { setActiveFilter("approved"); },
+          className: "p-4 rounded-2xl border text-right transition-all " +
+            (activeFilter === "approved"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-300")
+        },
+        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "الدارسون المعتمدون"),
+        React.createElement("span", { className: "text-2xl font-black text-emerald-600 block mt-1" }, approvedUsers.length)
+      ),
+      React.createElement(
+        "button",
+        {
+          onClick: function() { setActiveFilter("rejected"); },
+          className: "p-4 rounded-2xl border text-right transition-all " +
+            (activeFilter === "rejected"
+              ? "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 ring-2 ring-rose-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-rose-300")
+        },
+        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "المرفوض / المعلق"),
+        React.createElement("span", { className: "text-2xl font-black text-rose-600 block mt-1" }, rejectedUsers.length)
+      )
+    ),
 
-      pendingUsers.length > 0 ? React.createElement(
-        "div",
-        { className: "space-y-3" },
-        pendingUsers.map(function(u) {
-          return React.createElement(
+    // شريط البحث والفلترة
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-2xs" },
+      React.createElement("span", { className: "text-slate-400 text-sm" }, "🔍"),
+      React.createElement("input", {
+        type: "text",
+        value: searchQuery,
+        onChange: function(e) { setSearchQuery(e.target.value); },
+        placeholder: "بحث باسم الدارس، الهاتف، الكنيسة، أو الإيميل...",
+        className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+      }),
+      searchQuery && React.createElement(
+        "button",
+        { onClick: function() { setSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
+        "مسح"
+      )
+    ),
+
+    // قائمة المستخدمين
+    isLoading ? React.createElement(
+      "div",
+      { className: "p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2" },
+      React.createElement("span", { className: "animate-spin text-base" }, "⏳"),
+      "جاري تحميل قائمة المستخدمين من السحابة..."
+    ) : filteredUsers.length === 0 ? React.createElement(
+      "div",
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
+      React.createElement("div", { className: "text-3xl" }, "📭"),
+      React.createElement("p", null, "لا توجد نتائج مطابقة في هذا القسم.")
+    ) : React.createElement(
+      "div",
+      { className: "space-y-3" },
+      filteredUsers.map(function(u) {
+        var isPending = u.status === "pending";
+        var isApproved = u.status === "approved";
+        var isRejected = u.status === "rejected";
+
+        return React.createElement(
+          "div",
+          {
+            key: u.id,
+            className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border transition-all shadow-xs space-y-3 " +
+              (isPending
+                ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/20 dark:bg-amber-950/10"
+                : isApproved
+                  ? "border-slate-200 dark:border-slate-800"
+                  : "border-rose-200 dark:border-rose-900/40 opacity-75")
+          },
+          // السطر العلوي: اسم الدارس + الشارات + أزرار الإجراء
+          React.createElement(
             "div",
-            {
-              key: u.id,
-              className: "p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-2"
-            },
+            { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3" },
             React.createElement(
               "div",
-              { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" },
-              React.createElement("div", null,
+              { className: "space-y-1" },
+              React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
                 React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, u.fullName),
-                React.createElement("p", { className: "text-xs text-slate-500" }, "الهاتف: " + u.phone + " • البريد: " + u.email)
+                // شارة الحالة
+                React.createElement("span", {
+                  className: "text-[10px] font-black px-2.5 py-0.5 rounded-full " +
+                    (isPending
+                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 animate-pulse"
+                      : isApproved
+                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                        : "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300")
+                }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
+                // شارة نوع الدراسة
+                u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
+                  u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
+                ),
+                // شارة السنة
+                u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
+                  u.studyYear
+                )
               ),
-              React.createElement(
-                "div",
-                { className: "flex items-center gap-2" },
-                React.createElement("button", {
-                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
-                  className: "px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
-                }, "قبول وانضمام ✓"),
-                React.createElement("button", {
-                  onClick: function() { handleUpdateStatus(u.id, "rejected"); },
-                  className: "px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs"
-                }, "رفض ✕")
+              React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" },
+                "كنيسة: " + (u.church || "غير محدد") + " • الهاتف: " + (u.phone || "—") + " • البريد: " + (u.email || "—")
               )
             ),
-            React.createElement("div", { className: "p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 text-xs text-slate-600 dark:text-slate-300" },
-              React.createElement("span", { className: "font-bold text-slate-400 block mb-0.5" }, "رسالة الزميل الدارس:"),
-              u.instituteMessage || "لا توجد رسالة مرفقة"
+
+            // أزرار اتخاذ القرار
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 shrink-0 self-end sm:self-center" },
+              isPending && React.createElement(
+                "button",
+                {
+                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
+                  className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                },
+                React.createElement("span", null, "✓"),
+                React.createElement("span", null, "قبول واعتماد")
+              ),
+              isPending && React.createElement(
+                "button",
+                {
+                  onClick: function() { handleUpdateStatus(u.id, "rejected"); },
+                  className: "px-3 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold text-xs transition-all active:scale-95"
+                },
+                "رفض"
+              ),
+              isApproved && React.createElement(
+                "button",
+                {
+                  onClick: function() {
+                    if (confirm("هل تريد تعليق حساب الدارس '" + u.fullName + "' ومنعه من الدخول؟")) {
+                      handleUpdateStatus(u.id, "rejected");
+                    }
+                  },
+                  className: "text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2.5 py-1.5 rounded-lg font-semibold transition-colors"
+                },
+                "تعليق الحساب ⏸"
+              ),
+              isRejected && React.createElement(
+                "button",
+                {
+                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
+                  className: "text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors"
+                },
+                "إعادة التفعيل ✓"
+              ),
+              React.createElement(
+                "button",
+                {
+                  onClick: function() { handleDeleteUser(u.id, u.fullName); },
+                  title: "حذف نهائي",
+                  className: "text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
+                },
+                "🗑️"
+              )
             )
-          );
-        })
-      ) : React.createElement(
-        "div",
-        { className: "p-6 text-center text-xs text-slate-400" },
-        "لا توجد أي طلبات معلقة حالياً."
-      )
-    ),
+          ),
 
-    // 2. قائمة الدارسين المقبولين (Approved)
-    React.createElement(
-      "div",
-      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
-      React.createElement("div", { className: "flex items-center justify-between border-b pb-3" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الدارسون المعتمدون بالمنصة (" + approvedUsers.length + ")"),
-        React.createElement("span", { className: "text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold" }, "نشط")
-      ),
-
-      approvedUsers.length > 0 ? React.createElement(
-        "div",
-        { className: "divide-y divide-slate-100 dark:divide-slate-800" },
-        approvedUsers.map(function(u) {
-          return React.createElement(
+          // السطر السفلي: تفاصيل إضافية
+          React.createElement(
             "div",
-            {
-              key: u.id,
-              className: "py-3 flex items-center justify-between gap-3 text-xs"
-            },
-            React.createElement("div", null,
-              React.createElement("span", { className: "font-bold text-slate-900 dark:text-white block" }, u.fullName),
-              React.createElement("span", { className: "text-slate-400" }, u.phone + " • " + u.email)
+            { className: "flex items-center justify-between text-[11px] text-slate-400 pt-1" },
+            React.createElement("span", null,
+              "تاريخ التسجيل: " + (u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString("ar-EG") : "حديثاً")
             ),
-            React.createElement("button", {
-              onClick: function() {
-                if (confirm("هل تريد استبعاد هذا المستخدم وتعليق حسابه؟")) {
-                  handleUpdateStatus(u.id, "rejected");
-                }
-              },
-              className: "text-rose-600 hover:text-rose-800 font-semibold"
-            }, "إلغاء التفعيل / إخراج")
-          );
-        })
-      ) : React.createElement(
-        "div",
-        { className: "p-6 text-center text-xs text-slate-400" },
-        "لم يتم اعتماد أي دارسين بعد."
-      )
+            React.createElement("span", { className: "font-mono text-[10px]" },
+              "معرف: " + u.id
+            )
+          )
+        );
+      })
     )
   );
 };

@@ -5,6 +5,8 @@ window.Sidebar = function(props) {
   var currentUser = props.currentUser;
   var onSwitchRole = props.onSwitchRole;
   var onOpenAuth = props.onOpenAuth;
+  var onLogout = props.onLogout;
+  var pendingCount = props.pendingCount || 0;
   var isOpen = props.isOpen;
   var onClose = props.onClose;
 
@@ -17,7 +19,12 @@ window.Sidebar = function(props) {
 
   var isAdmin = !!(currentUser && currentUser.role === "admin");
   if (isAdmin) {
-    menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
+    menuItems.push({
+      id: "users",
+      label: "إدارة الدارسين والطلبات",
+      icon: "👥",
+      badge: pendingCount > 0 ? pendingCount : null
+    });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
     menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
   }
@@ -72,10 +79,11 @@ window.Sidebar = function(props) {
             "div",
             null,
             React.createElement("span", { className: "text-xs text-slate-500 block" }, "الحساب الحالي:"),
-            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white" }, (currentUser && currentUser.fullName) || "الأدمن")
+            React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white block" }, (currentUser && currentUser.fullName) || (isAdmin ? "مشرف المنصة" : "دارس")),
+            currentUser && currentUser.studyType && React.createElement("span", { className: "text-[10px] text-slate-400 block" }, currentUser.studyType + " • " + (currentUser.studyYear || ""))
           ),
-          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700") },
-            isAdmin ? "مسؤول" : "دارس"
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
+            isAdmin ? "مشرف" : "دارس"
           )
         ),
         React.createElement(
@@ -85,9 +93,17 @@ window.Sidebar = function(props) {
             "button",
             {
               onClick: onOpenAuth,
-              className: "flex-1 text-xs py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 text-center"
+              className: "flex-1 text-xs py-1.5 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 text-center"
             },
             "تبديل الحساب"
+          ),
+          onLogout && React.createElement(
+            "button",
+            {
+              onClick: onLogout,
+              className: "text-xs py-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 font-bold text-rose-600 dark:text-rose-400 text-center transition-colors"
+            },
+            "خروج 🚪"
           )
         ),
         React.createElement(
@@ -163,7 +179,8 @@ window.Sidebar = function(props) {
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60")
             },
             React.createElement("span", { className: "text-lg" }, item.icon),
-            React.createElement("span", null, item.label)
+            React.createElement("span", { className: "flex-1 text-right" }, item.label),
+            item.badge ? React.createElement("span", { className: "bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse" }, item.badge) : null
           );
         })
       ),
