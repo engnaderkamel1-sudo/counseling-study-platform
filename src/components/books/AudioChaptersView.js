@@ -858,10 +858,8 @@ window.AudioChaptersView = function(props) {
           className: "hidden",
           onError: function(e) {
             var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
-            var audioEl = chapterAudioRef.current;
-            if (driveId && audioEl && !audioEl._triedCandidate2) {
-              audioEl._triedCandidate2 = true;
-              audioEl.src = "https://docs.google.com/uc?export=download&id=" + driveId;
+            if (driveId) {
+              setUseIframePlayer(true);
               return;
             }
             setAudioHasError(true);
@@ -907,19 +905,30 @@ window.AudioChaptersView = function(props) {
 
         useIframePlayer ? React.createElement(
           "div",
-          { className: "w-full flex flex-col gap-1.5 pt-1" },
+          { className: "w-full flex flex-col gap-2 pt-1" },
           React.createElement("iframe", {
             src: utils.getMediaEmbedUrl(activeChap.audioUrl),
-            className: "w-full h-14 rounded-xl border border-slate-700 bg-black shadow-inner",
+            className: "w-full h-48 sm:h-52 rounded-2xl border border-slate-700 bg-slate-950 shadow-inner",
             allow: "autoplay"
           }),
-          React.createElement("div", { className: "flex justify-between items-center text-[11px]" },
-            React.createElement("span", { className: "text-emerald-400 font-bold" }, "✓ مشغل Google Drive الرسمي"),
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { setUseIframePlayer(false); },
-              className: "text-blue-300 hover:text-white underline font-bold"
-            }, "العودة للمشغل الذكي ↺")
+          React.createElement("div", { className: "flex justify-between items-center text-[11px] flex-wrap gap-2 px-1" },
+            React.createElement("span", { className: "text-emerald-400 font-bold flex items-center gap-1" },
+              React.createElement("span", null, "✓"),
+              React.createElement("span", null, "مشغل Google Drive المباشر")
+            ),
+            React.createElement("div", { className: "flex items-center gap-3" },
+              React.createElement("a", {
+                href: activeChap.audioUrl,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "text-amber-300 hover:text-amber-200 underline font-bold flex items-center gap-1"
+              }, "فتح الصوت في Google Drive ↗"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setUseIframePlayer(false); },
+                className: "text-slate-400 hover:text-white underline font-bold"
+              }, "العودة للمشغل الذكي ↺")
+            )
           )
         ) : React.createElement(
           "div",
