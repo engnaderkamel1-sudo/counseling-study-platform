@@ -630,70 +630,85 @@ window.ChapterTextViewerModal = function(props) {
         )
       ) : null,
 
-      // لوحة وأدوات ضبط إزاحة تزامن الصوت مع النص (Time Shift Fine-Tuning)
+      // لوحة وأدوات وزن وضبط تزامن تظليل النص مع صوت المتحدث (Highlight Time Sync Shift)
       hasAudio ? React.createElement(
         "div",
-        { className: "p-2 sm:p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 text-xs" },
+        { className: "p-2.5 sm:p-3 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0 text-xs shadow-2xs" },
         React.createElement(
           "div",
-          { className: "flex items-center gap-2 flex-wrap min-w-0" },
-          React.createElement("span", { className: "font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1 shrink-0 text-[11px]" },
-            React.createElement("span", null, "⏱️"),
-            React.createElement("span", null, "وزن وتزامن الصوت مع النص:")
+          { className: "flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0" },
+          React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+            React.createElement("span", { className: "text-base" }, "🎯"),
+            React.createElement("div", null,
+              React.createElement("span", { className: "font-black text-slate-900 dark:text-white block text-xs" }, "ضبط تزامن التظليل الأصفر مع الصوت:"),
+              React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 block" }, "لوزن السطر المظلل إذا كان سابقاً لصوت المتحدث أو متأخراً عنه")
+            )
           ),
-          // مجموعة أزرار الخطوة والخانة المباشرة (+ / - / input)
+
+          // أزرار الضبط الواضحة والصريحة باللغة العربية
           React.createElement(
             "div",
-            { dir: "ltr", className: "flex items-center bg-white dark:bg-slate-900 rounded-xl border border-indigo-200 dark:border-indigo-800 p-0.5 shadow-2xs shrink-0" },
-            // زر تأخير النص (-0.5s)
+            { className: "flex items-center gap-1.5 flex-wrap" },
+            // زر تأخير التظليل (إذا كان النص سابق الصوت)
             React.createElement("button", {
               type: "button",
-              onClick: function() { handleAdjustOffset(-0.5); },
-              className: "w-7 h-7 flex items-center justify-center font-black text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-xs",
-              title: "تأخير تمييز النص بمقدار 0.5 ثانية (في حال كانت الكتابة سابقة الصوت)"
-            }, "-"),
-            // خانة كتابة القيمة يدوياً بالثانية
-            React.createElement("input", {
-              type: "number",
-              step: "0.5",
-              value: timeOffset,
-              onChange: function(e) { handleDirectOffsetChange(e.target.value); },
-              className: "w-14 text-center font-mono font-bold text-xs bg-transparent text-indigo-700 dark:text-indigo-300 focus:outline-none border-x border-slate-200 dark:border-slate-800 py-0.5",
-              title: "اكتب القيمة يدوياً بالثواني (مثلاً: 2 أو -1.5)"
-            }),
-            // زر تقديم النص (+0.5s)
+              onClick: function() { handleAdjustOffset(2); },
+              className: "px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-bold text-xs shadow-2xs flex items-center gap-1 transition-all active:scale-95",
+              title: "اضغط هنا إذا كان التظليل الأصفر يسبق صوت المتحدث لتأخير التظليل ثانيتين"
+            },
+              React.createElement("span", null, "⏪"),
+              React.createElement("span", null, "تأخير التظليل (-2ث)")
+            ),
+
+            // خانة كتابة الثواني يدوياً
+            React.createElement(
+              "div",
+              { dir: "ltr", className: "flex items-center bg-white dark:bg-slate-900 rounded-xl border border-amber-300 dark:border-amber-700 px-2 py-0.5 shadow-inner" },
+              React.createElement("input", {
+                type: "number",
+                step: "1",
+                value: timeOffset,
+                onChange: function(e) { handleDirectOffsetChange(e.target.value); },
+                className: "w-12 text-center font-mono font-black text-xs bg-transparent text-amber-700 dark:text-amber-300 focus:outline-none py-1",
+                title: "القيمة بالثواني (مثال: 3 لتأخير التظليل، أو -3 لتقديمه)"
+              }),
+              React.createElement("span", { className: "text-[10px] text-slate-400 font-sans ml-0.5" }, "ث")
+            ),
+
+            // زر تقديم التظليل (إذا كان النص متأخراً عن الصوت)
             React.createElement("button", {
               type: "button",
-              onClick: function() { handleAdjustOffset(0.5); },
-              className: "w-7 h-7 flex items-center justify-center font-black text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-xs",
-              title: "تقديم تمييز النص بمقدار 0.5 ثانية (في حال كان الصوت سابق الكتابة)"
-            }, "+")
-          ),
-          React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 font-mono" },
-            (timeOffset > 0 ? ("+ " + timeOffset + " ثانية (تقديم)") : timeOffset < 0 ? (timeOffset + " ثانية (تأخير)") : "تزامن افتراضي (0.0s)")
-          ),
-          timeOffset !== 0 ? React.createElement("button", {
-            type: "button",
-            onClick: handleResetOffset,
-            className: "text-[10px] text-rose-500 hover:text-rose-700 underline font-bold px-1 transition-colors",
-            title: "إعادة تعيين التزامن للوضع الافتراضي"
-          }, "إعادة ضبط ↺") : null
+              onClick: function() { handleAdjustOffset(-2); },
+              className: "px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 font-bold text-xs shadow-2xs flex items-center gap-1 transition-all active:scale-95",
+              title: "اضغط هنا إذا كان صوت المتحدث يسبق التظليل لتقديم التظليل ثانيتين"
+            },
+              React.createElement("span", null, "تقديم التظليل (+2ث)"),
+              React.createElement("span", null, "⏩")
+            ),
+
+            timeOffset !== 0 ? React.createElement("button", {
+              type: "button",
+              onClick: handleResetOffset,
+              className: "text-[11px] text-rose-500 hover:text-rose-700 underline font-bold px-1.5 transition-colors",
+              title: "إعادة تعيين التزامن للوضع الافتراضي الأصلي"
+            }, "إلغاء التعديل ↺") : null
+          )
         ),
 
-        // قسم أزرار الحفظ (للمشرف حفظ عام للجميع وللطالب إشعار)
+        // حالة الحفظ وزر المشرف
         React.createElement(
           "div",
-          { className: "flex items-center gap-1.5 self-end sm:self-auto shrink-0" },
-          offsetSavedNotice ? React.createElement("span", { className: "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in" }, offsetSavedNotice) : null,
+          { className: "flex items-center gap-2 self-end md:self-auto shrink-0" },
+          offsetSavedNotice ? React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in" }, offsetSavedNotice) : null,
           isAdmin && onUpdateTimeOffset ? React.createElement("button", {
             type: "button",
             disabled: isSavingOffset,
             onClick: handleSaveOffsetForEveryone,
-            className: "px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-2xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50",
-            title: "حفظ هذا الوزن الزمني سحابياً لجميع الدارسين حتى يظهر لهم متزامناً بدقة تلقائياً"
+            className: "px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50",
+            title: "حفظ هذا التزامن في قاعدة البيانات لجميع الدارسين ليروا النص متزامناً بهذا الشكل تلقائياً"
           },
             React.createElement("span", null, "💾"),
-            React.createElement("span", null, isSavingOffset ? "جاري الحفظ..." : "حفظ التزامن للجميع")
+            React.createElement("span", null, isSavingOffset ? "جاري الحفظ..." : "حفظ التزامن لجميع الطلبة")
           ) : null
         )
       ) : null,

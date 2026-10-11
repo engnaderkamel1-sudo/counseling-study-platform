@@ -22,7 +22,23 @@ window.LectureRow = function(props) {
     // قسم اليمين: الترتيب + التاريخ + العنوان والمادة والمحاضر
     React.createElement(
       "div",
-      { className: "flex items-center gap-3 min-w-0 flex-1" },
+      { className: "flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1" },
+      // زر تحديد إتمام دراسة المحاضرة
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function(e) {
+            if (props.onToggleCompleted) props.onToggleCompleted(lec.id, e);
+          },
+          title: props.isCompleted ? "تمت دراستها بنجاح (اضغط للإلغاء)" : "اضغط لتحديد إتمام دراسة المحاضرة",
+          className: "w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer " +
+            (props.isCompleted
+              ? "bg-emerald-500 text-white shadow-xs scale-105"
+              : "border border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600 hover:border-emerald-400 hover:text-emerald-500")
+        },
+        React.createElement("span", { className: "text-xs font-black" }, props.isCompleted ? "✓" : "")
+      ),
       // الشارة
       seq.isExam ? React.createElement(
         "span",

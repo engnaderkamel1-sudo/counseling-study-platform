@@ -25,6 +25,20 @@ window.LecturesPage = function(props) {
   var [selectedDate, setSelectedDate] = React.useState("الكل");
   var [sortByDate, setSortByDate] = React.useState("asc"); // ترتيب تسلسلي افتراضي: الأقدم (البداية) للأحدث
 
+  // سجل المحاضرات المكتملة والمدروسة
+  var [completedIds, setCompletedIds] = React.useState(function() {
+    return utils.getLocal("counsel_completed_lectures", []);
+  });
+
+  var handleToggleCompleted = function(lecId, e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    var next = completedIds.indexOf(lecId) === -1
+      ? completedIds.concat([lecId])
+      : completedIds.filter(function(id) { return id !== lecId; });
+    setCompletedIds(next);
+    utils.setLocal("counsel_completed_lectures", next);
+  };
+
   // حقول الإضافة والتعديل
   var [selectedFile, setSelectedFile] = React.useState(null);
   var [isDraggingFile, setIsDraggingFile] = React.useState(false);
@@ -794,6 +808,70 @@ window.LecturesPage = function(props) {
       );
     })(),
 
+    // بطاقة شريط إنجاز ومتابعة المنهج الدراسي (Progress Tracker)
+    (function() {
+      if (!lectures || lectures.length === 0) return null;
+      var total = lectures.length;
+      var done = lectures.filter(function(l) {
+        return completedIds.indexOf(l.id) !== -1 || (l.lastPosition > 0);
+      }).length;
+      var pct = Math.min(100, Math.round((done / total) * 100));
+
+      return React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3 transition-all animate-in fade-in duration-300" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between gap-2 flex-wrap" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-xl sm:text-2xl" }, "🎓"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement(
+                "h4",
+                { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight" },
+                "إنجازك الدراسي في محاضرات الترم"
+              ),
+              React.createElement(
+                "p",
+                { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" },
+                pct === 100 ? "🎉 تهانينا! أتممت دراسة كافة المحاضرات" : (pct >= 50 ? "🌿 أكثر من نصف المنهج تم إنجازه، استمر!" : "اضغط على علامة (✓) في أي محاضرة لتسجيل إتمامها")
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "span",
+              { className: "text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 font-mono" },
+              done + " / " + total
+            ),
+            React.createElement(
+              "span",
+              { className: "text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono" },
+              pct + "%"
+            )
+          )
+        ),
+        // شريط التقدم المرئي
+        React.createElement(
+          "div",
+          { className: "w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60" },
+          React.createElement(
+            "div",
+            {
+              className: "h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 rounded-full transition-all duration-500 shadow-xs",
+              style: { width: Math.max(3, pct) + "%" }
+            }
+          )
+        )
+      );
+    })(),
+
     // شريط إشعار وتنبيه بسيط عند وجود فلترة نشطة مع زر لإلغائها سريعاً
     isFiltered && React.createElement(
       "div",
@@ -949,7 +1027,7 @@ window.LecturesPage = function(props) {
       filteredLectures.map(function(lec) {
         var seq = itemSeqInfo[lec.id] || { isExam: isItemExam(lec), num: 1, titleBadge: "#1", fullLabel: "المحاضرة" };
         var st = getLectureStatus(lec);
-        var isCurrent = activeLecture && activeLecture.id === lec.id;
+        var isDone = completedIds.indexOf(lec.id) !== -1 || (lec.lastPosition > 0);
 
         return React.createElement(window.LectureRow, {
           key: lec.id,
@@ -957,6 +1035,8 @@ window.LecturesPage = function(props) {
           seq: seq,
           st: st,
           isCurrent: isCurrent,
+          isCompleted: isDone,
+          onToggleCompleted: handleToggleCompleted,
           currentUser: currentUser,
           utils: utils,
           onSelect: function(item) { setActiveLecture(item); },
