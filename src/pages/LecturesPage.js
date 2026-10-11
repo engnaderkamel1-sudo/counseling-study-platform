@@ -370,43 +370,71 @@ window.LecturesPage = function(props) {
     );
   };
 
-  var handleUploadHandout = async function(file) {
-    if (!file) return;
+  var handleUploadHandout = async function(fileOrFiles) {
+    if (!fileOrFiles) return;
+    var files = [];
+    if (fileOrFiles.length !== undefined && typeof fileOrFiles.length === "number") {
+      for (var fIdx = 0; fIdx < fileOrFiles.length; fIdx++) {
+        files.push(fileOrFiles[fIdx]);
+      }
+    } else {
+      files.push(fileOrFiles);
+    }
+    if (files.length === 0) return;
+
     try {
       setIsUploadingHandout(true);
-      var base64Data = await new Promise(function(resolve, reject) {
-        var reader = new FileReader();
-        reader.onload = function() {
-          var result = reader.result;
-          var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
-          resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      var response = await fetch(cfg.driveUploadEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          fileName: file.name,
-          mimeType: file.type || "application/pdf",
-          base64Data: base64Data
-        })
-      });
-
-      var resData = await response.json();
-      if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
-        var finalFileUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
-        setEditingHandoutUrl(finalFileUrl);
-        setEditingHandoutName(file.name);
-        setEditingLecture(function(prev) {
-          return Object.assign({}, prev, { handoutUrl: finalFileUrl, handoutName: file.name });
+      var uploadedItems = [];
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var base64Data = await new Promise(function(resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function() {
+            var result = reader.result;
+            var base64 = typeof result === "string" && result.includes(",") ? result.split(",")[1] : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
         });
-        alert("✅ تم رفع ملف الهاند آوت / العرض بنجاح!");
-      } else {
-        throw new Error(resData.message || "فشل رفع الهاند آوت");
+
+        var response = await fetch(cfg.driveUploadEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            fileName: file.name,
+            mimeType: file.type || "application/pdf",
+            base64Data: base64Data
+          })
+        });
+
+        var resData = await response.json();
+        if (resData.status === "success" && (resData.fileUrl || resData.fileId)) {
+          var finalFileUrl = resData.fileUrl || ("https://drive.google.com/file/d/" + resData.fileId + "/view");
+          uploadedItems.push({
+            id: "h-" + Date.now() + "-" + Math.random().toString(36).substr(2, 4),
+            url: finalFileUrl,
+            name: file.name
+          });
+        } else {
+          throw new Error(resData.message || ("فشل رفع الملف: " + file.name));
+        }
       }
+
+      setEditingLecture(function(prev) {
+        if (!prev) return prev;
+        var existing = Array.isArray(prev.handouts)
+          ? prev.handouts.slice()
+          : (prev.handoutUrl ? [{ id: "h-0", url: prev.handoutUrl, name: prev.handoutName || "ملف الهاند آوت" }] : []);
+        var combined = existing.concat(uploadedItems);
+        return Object.assign({}, prev, {
+          handouts: combined,
+          handoutUrl: combined[0] ? combined[0].url : "",
+          handoutName: combined[0] ? combined[0].name : ""
+        });
+      });
+
+      alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " ملفات هاند آوت بنجاح!" : "✅ تم رفع ملف الهاند آوت بنجاح وإضافته للمحاضرة!");
     } catch(err) {
       alert("خطأ أثناء رفع ملف الهاند آوت: " + err.message);
     } finally {
@@ -418,6 +446,11 @@ window.LecturesPage = function(props) {
     if (e && e.preventDefault) e.preventDefault();
     if (!editingLecture || !editingLecture.title.trim()) return;
     var parsedQuiz = parseQuizInput(editingQuizText);
+
+    var currentHandouts = Array.isArray(editingLecture.handouts)
+      ? editingLecture.handouts.filter(function(h) { return h && h.url && h.url.trim(); })
+      : (editingLecture.handoutUrl ? [{ id: "h-0", url: editingLecture.handoutUrl.trim(), name: editingLecture.handoutName || "ملف الهاند آوت" }] : []);
+
     var updated = Object.assign({}, editingLecture, {
       title: editingLecture.title.trim(),
       subject: (editingLecture.subject || "").trim() || "عام",
@@ -428,8 +461,9 @@ window.LecturesPage = function(props) {
       itemType: editingLecture.itemType || (editingLecture.isExam ? "exam" : "lecture"),
       notes: (editingLecture.notes || "").trim(),
       mediaUrl: (editingLecture.mediaUrl || "").trim(),
-      handoutUrl: (editingLecture.handoutUrl || editingHandoutUrl || "").trim(),
-      handoutName: (editingLecture.handoutName || editingHandoutName || "").trim(),
+      handouts: currentHandouts,
+      handoutUrl: currentHandouts[0] ? currentHandouts[0].url : (editingHandoutUrl || "").trim(),
+      handoutName: currentHandouts[0] ? currentHandouts[0].name : (editingHandoutName || "").trim(),
       audioSummaryUrl: (editingLecture.audioSummaryUrl || "").trim(),
       writtenSummary: (editingLecture.writtenSummary || "").trim(),
       quizQuestions: parsedQuiz

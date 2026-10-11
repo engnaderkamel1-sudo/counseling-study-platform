@@ -219,71 +219,177 @@ window.LectureEditModal = function(props) {
           React.createElement("p", { className: "text-[11px] text-slate-400" }, "يدعم روابط يوتيوب العادية والمختصرة وقوائم التشغيل وملفات درايف.")
         ),
 
-        // قسم 3: ملف الهاند آوت / العرض التقديمي
-        (editModalTab === "all" || editModalTab === "handout") && React.createElement(
-          "div",
-          { className: "p-3.5 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/40 border border-indigo-100 dark:border-slate-700/70 space-y-2.5" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5" },
-            React.createElement("span", null, "📂"),
-            React.createElement("span", null, "ملف الهاند آوت أو العرض التقديمي (PDF / Presentation)")
-          ),
-          React.createElement("div", { className: "space-y-1.5" },
-            React.createElement("input", {
-              type: "url",
-              value: editingLecture.handoutUrl || "",
-              onChange: function(e) {
-                var val = e.target.value;
-                setEditingLecture(function(prev) {
-                  return Object.assign({}, prev, {
-                    handoutUrl: val,
-                    handoutName: prev.handoutName || (val ? "ملف المحاضرة (Handout)" : "")
-                  });
-                });
-              },
-              placeholder: "https://drive.google.com/file/d/... أو رابط ملف مباشر",
-              className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs"
-            }),
-            React.createElement("input", {
-              type: "text",
-              value: editingLecture.handoutName || "",
-              onChange: function(e) {
-                var val = e.target.value;
-                setEditingLecture(function(prev) { return Object.assign({}, prev, { handoutName: val }); });
-              },
-              placeholder: "تسمية الملف (مثال: ملخص بوربوينت د. مجدي اسحق.pdf)",
-              className: "w-full px-3 py-1.5 rounded-xl border bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-300"
-            })
-          ),
-          React.createElement(
+        // قسم 3: ملفات الهاند آوت / العروض التقديمية (دعم ملفات متعددة)
+        (editModalTab === "all" || editModalTab === "handout") && (function() {
+          var handoutsList = Array.isArray(editingLecture.handouts)
+            ? editingLecture.handouts
+            : (editingLecture.handoutUrl
+                ? [{ id: "h-0", url: editingLecture.handoutUrl, name: editingLecture.handoutName || "ملف الهاند آوت" }]
+                : []);
+
+          var updateHandout = function(idx, field, val) {
+            var updated = handoutsList.slice();
+            var target = Object.assign({}, updated[idx] || { id: "h-" + Date.now() });
+            target[field] = val;
+            updated[idx] = target;
+            setEditingLecture(function(prev) {
+              return Object.assign({}, prev, {
+                handouts: updated,
+                handoutUrl: updated[0] ? updated[0].url : "",
+                handoutName: updated[0] ? updated[0].name : ""
+              });
+            });
+          };
+
+          var removeHandout = function(idx) {
+            var updated = handoutsList.filter(function(_, i) { return i !== idx; });
+            setEditingLecture(function(prev) {
+              return Object.assign({}, prev, {
+                handouts: updated,
+                handoutUrl: updated[0] ? updated[0].url : "",
+                handoutName: updated[0] ? updated[0].name : ""
+              });
+            });
+          };
+
+          var addBlankHandout = function() {
+            var newItem = { id: "h-" + Date.now(), url: "", name: "" };
+            var updated = handoutsList.concat([newItem]);
+            setEditingLecture(function(prev) {
+              return Object.assign({}, prev, {
+                handouts: updated,
+                handoutUrl: updated[0] ? updated[0].url : "",
+                handoutName: updated[0] ? updated[0].name : ""
+              });
+            });
+          };
+
+          return React.createElement(
             "div",
-            { className: "pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between" },
-            React.createElement("label", { className: "cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 transition-all shadow-2xs" },
-              React.createElement("span", null, "⬆️"),
-              React.createElement("span", null, isUploadingHandout ? "جاري الرفع..." : "أو ارفع ملف PDF/PPT من جهازك"),
-              React.createElement("input", {
-                type: "file",
-                accept: ".pdf,.ppt,.pptx,.doc,.docx,application/pdf",
-                disabled: isUploadingHandout,
-                onChange: function(e) {
-                  var f = e.target.files && e.target.files[0];
-                  if (f && handleUploadHandout) handleUploadHandout(f);
+            { className: "p-4 rounded-2xl bg-indigo-50/50 dark:bg-slate-800/40 border border-indigo-100 dark:border-slate-700/70 space-y-3" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between flex-wrap gap-2" },
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5" },
+                React.createElement("span", null, "📂"),
+                React.createElement("span", null, "ملفات الهاند آوت والعروض التقديمية (PDF / PPT)"),
+                React.createElement("span", { className: "text-[10px] bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold" },
+                  handoutsList.length + " ملف"
+                )
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: addBlankHandout,
+                  className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline flex items-center gap-1"
                 },
-                className: "hidden"
+                React.createElement("span", null, "➕"),
+                React.createElement("span", null, "إضافة رابط هاند آوت إضافي")
+              )
+            ),
+
+            // قائمة الملفات
+            handoutsList.length === 0 ? React.createElement(
+              "div",
+              { className: "p-4 text-center border border-dashed border-indigo-200 dark:border-slate-700 rounded-xl text-xs text-slate-400" },
+              "لا توجد ملفات هاند آوت مضافة حالياً. يمكنك رفع ملف من جهازك أو إضافة رابط مباشر."
+            ) : React.createElement(
+              "div",
+              { className: "space-y-2.5" },
+              handoutsList.map(function(item, idx) {
+                return React.createElement(
+                  "div",
+                  {
+                    key: item.id || idx,
+                    className: "p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-2xs"
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300" },
+                    React.createElement("span", { className: "flex items-center gap-1" },
+                      React.createElement("span", null, "📄"),
+                      React.createElement("span", null, "الهاند آوت رقم " + (idx + 1))
+                    ),
+                    React.createElement(
+                      "div",
+                      { className: "flex items-center gap-2" },
+                      item.url && React.createElement(
+                        "a",
+                        {
+                          href: item.url,
+                          target: "_blank",
+                          rel: "noopener noreferrer",
+                          className: "text-[11px] text-emerald-600 hover:underline font-bold"
+                        },
+                        "👁️ معاينة"
+                      ),
+                      React.createElement(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: function() { removeHandout(idx); },
+                          className: "text-[11px] text-rose-500 hover:text-rose-700 font-bold"
+                        },
+                        "✕ حذف"
+                      )
+                    )
+                  ),
+                  React.createElement("input", {
+                    type: "text",
+                    value: item.name || "",
+                    onChange: function(e) { updateHandout(idx, "name", e.target.value); },
+                    placeholder: "تسمية الملف (مثال: ملخص بوربوينت د. مجدي اسحق.pdf)",
+                    className: "w-full px-3 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200"
+                  }),
+                  React.createElement("input", {
+                    type: "url",
+                    value: item.url || "",
+                    onChange: function(e) { updateHandout(idx, "url", e.target.value); },
+                    placeholder: "https://drive.google.com/file/d/... أو رابط ملف مباشر",
+                    className: "w-full px-3 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-800 text-xs font-mono"
+                  })
+                );
               })
             ),
-            editingLecture.handoutUrl && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() {
-                  setEditingLecture(function(prev) { return Object.assign({}, prev, { handoutUrl: "", handoutName: "" }); });
+
+            // أزرار الرفع والإضافة
+            React.createElement(
+              "div",
+              { className: "pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2" },
+              React.createElement(
+                "label",
+                { className: "cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-2xs" },
+                React.createElement("span", null, "⬆️"),
+                React.createElement("span", null, isUploadingHandout ? "جاري الرفع..." : "ارفع ملف أو عدة ملفات (PDF / PPT) من جهازك"),
+                React.createElement("input", {
+                  type: "file",
+                  multiple: true,
+                  accept: ".pdf,.ppt,.pptx,.doc,.docx,application/pdf",
+                  disabled: isUploadingHandout,
+                  onChange: function(e) {
+                    var fls = e.target.files;
+                    if (fls && fls.length > 0 && handleUploadHandout) {
+                      handleUploadHandout(fls);
+                    }
+                    e.target.value = "";
+                  },
+                  className: "hidden"
+                })
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: addBlankHandout,
+                  className: "px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-xs font-bold transition-all border border-indigo-200/80 dark:border-indigo-800 flex items-center gap-1"
                 },
-                className: "text-[11px] text-rose-500 hover:underline font-semibold"
-              },
-              "إزالة الهاند آوت ✕"
+                React.createElement("span", null, "➕"),
+                React.createElement("span", null, "إضافة رابط آخر")
+              )
             )
-          )
-        ),
+          );
+        })(),
 
         // قسم 4: الملخص الصوتي
         (editModalTab === "all" || editModalTab === "audio") && React.createElement(

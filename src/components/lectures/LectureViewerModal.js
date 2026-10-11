@@ -19,11 +19,13 @@ window.LectureViewerModal = function(props) {
   var [isAiGenerating, setIsAiGenerating] = React.useState(false);
   var [quizUserAnswers, setQuizUserAnswers] = React.useState({});
   var [quizSubmitted, setQuizSubmitted] = React.useState(false);
+  var [selectedHandoutIndex, setSelectedHandoutIndex] = React.useState(0);
 
-  // إعادة ضبط إجابات الكويز عند تغيير المحاضرة
+  // إعادة ضبط إجابات الكويز والهاند آوت عند تغيير المحاضرة
   React.useEffect(function() {
     setQuizUserAnswers({});
     setQuizSubmitted(false);
+    setSelectedHandoutIndex(0);
   }, [activeLecture ? activeLecture.id : null]);
 
   if (!activeLecture) return null;
@@ -276,108 +278,180 @@ window.LectureViewerModal = function(props) {
         )
       ),
 
-      // 2. تبويب الهاند آوت والمرفقات (PDF / PPT)
-      activeSubTab === "handout" && React.createElement(
-        "div",
-        { className: "space-y-4" },
-        currentUser.role === "admin" && React.createElement(
-          "div",
-          { className: "flex items-center justify-between p-3 rounded-2xl bg-indigo-50/60 dark:bg-slate-800/40 border border-indigo-100 dark:border-slate-800" },
-          React.createElement("div", { className: "text-xs text-indigo-900 dark:text-indigo-200 font-bold flex items-center gap-1.5" },
-            React.createElement("span", null, "📂"),
-            React.createElement("span", null, "إدارة هاند آوت المحاضرة (ملف PDF أو عرض تقديمي)")
-          ),
-          React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
-              className: "px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-1"
-            },
-            React.createElement("span", null, "⬆️"),
-            React.createElement("span", null, activeLecture.handoutUrl ? "تعديل أو استبدال الملف" : "رفع هاند آوت جديد")
-          )
-        ),
-        activeLecture.handoutUrl ? React.createElement(
-          "div",
-          { className: "space-y-3" },
-          React.createElement(
+        // 2. تبويب الهاند آوت والمرفقات (PDF / PPT)
+        activeSubTab === "handout" && (function() {
+          var handoutsList = [];
+          if (Array.isArray(activeLecture.handouts) && activeLecture.handouts.length > 0) {
+            handoutsList = activeLecture.handouts.filter(function(h) { return h && (h.url || h.name); });
+          } else if (activeLecture.handoutUrl) {
+            handoutsList = [{
+              id: "legacy",
+              name: activeLecture.handoutName || "ملف الهاند آوت للمحاضرة",
+              url: activeLecture.handoutUrl
+            }];
+          }
+
+          var activeIdx = Math.min(Math.max(0, selectedHandoutIndex), Math.max(0, handoutsList.length - 1));
+          var currentHandout = handoutsList[activeIdx] || null;
+
+          return React.createElement(
             "div",
-            { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-xs" },
-            React.createElement(
+            { className: "space-y-4" },
+            currentUser.role === "admin" && React.createElement(
               "div",
-              { className: "flex items-center gap-3" },
-              React.createElement("div", { className: "w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xl shrink-0" }, "📄"),
-              React.createElement(
-                "div",
-                null,
-                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, activeLecture.handoutName || "ملف الهاند آوت والعرض التقديمي للمحاضرة"),
-                React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" }, "متاح للتحميل والقراءة المباشرة أثناء متابعة المحاضرة")
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2 w-full sm:w-auto" },
-              React.createElement(
-                "a",
-                {
-                  href: activeLecture.handoutUrl,
-                  target: "_blank",
-                  rel: "noopener noreferrer",
-                  className: "flex-1 sm:flex-none text-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
-                },
-                React.createElement("span", null, "👁️"),
-                React.createElement("span", null, "فتح في نافذة كاملة")
+              { className: "flex items-center justify-between p-3 rounded-2xl bg-indigo-50/60 dark:bg-slate-800/40 border border-indigo-100 dark:border-slate-800" },
+              React.createElement("div", { className: "text-xs text-indigo-900 dark:text-indigo-200 font-bold flex items-center gap-1.5" },
+                React.createElement("span", null, "📂"),
+                React.createElement("span", null, "إدارة هاند آوت المحاضرة (" + (handoutsList.length > 0 ? (handoutsList.length + " ملفات مرفقة") : "ملف PDF أو عرض تقديمي") + ")")
               ),
               React.createElement(
-                "a",
+                "button",
                 {
-                  href: activeLecture.handoutUrl,
-                  download: true,
-                  target: "_blank",
-                  rel: "noopener noreferrer",
-                  className: "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5"
+                  type: "button",
+                  onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
+                  className: "px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-1 shadow-sm"
                 },
-                React.createElement("span", null, "⬇️"),
-                React.createElement("span", null, "تحميل")
+                React.createElement("span", null, "⬆️"),
+                React.createElement("span", null, handoutsList.length > 0 ? "إدارة ورفع المزيد" : "رفع هاند آوت جديد")
+              )
+            ),
+            handoutsList.length > 0 ? React.createElement(
+              "div",
+              { className: "space-y-3" },
+              // شريط التنقل بين ملفات الهاند آوت إذا وُجد أكثر من ملف
+              handoutsList.length > 1 && React.createElement(
+                "div",
+                { className: "flex items-center gap-2 overflow-x-auto pb-1 p-1.5 bg-slate-100/80 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/60" },
+                handoutsList.map(function(item, idx) {
+                  var isSelected = idx === activeIdx;
+                  return React.createElement(
+                    "button",
+                    {
+                      key: item.id || idx,
+                      type: "button",
+                      onClick: function() { setSelectedHandoutIndex(idx); },
+                      className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 " + (
+                        isSelected
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "bg-white dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-white/80"
+                      )
+                    },
+                    React.createElement("span", null, "📄"),
+                    React.createElement("span", { className: "max-w-[180px] truncate" }, item.name || ("ملف " + (idx + 1))),
+                    React.createElement("span", { className: "text-[10px] opacity-70 px-1.5 py-0.2 bg-black/10 dark:bg-white/10 rounded-full" }, idx + 1)
+                  );
+                })
+              ),
+              // بطاقة الملف النشط وروابط الفتح/التحميل
+              currentHandout && React.createElement(
+                "div",
+                { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-xs" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-3 min-w-0" },
+                  React.createElement("div", { className: "w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-xl shrink-0" }, "📄"),
+                  React.createElement(
+                    "div",
+                    { className: "min-w-0" },
+                    React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white truncate" }, currentHandout.name || "ملف الهاند آوت والعرض التقديمي للمحاضرة"),
+                    React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate" },
+                      handoutsList.length > 1 ? ("الملف " + (activeIdx + 1) + " من أصل " + handoutsList.length + " - متاح للتحميل والقراءة المباشرة") : "متاح للتحميل والقراءة المباشرة أثناء متابعة المحاضرة"
+                    )
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2 w-full sm:w-auto shrink-0" },
+                  React.createElement(
+                    "a",
+                    {
+                      href: currentHandout.url,
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      className: "flex-1 sm:flex-none text-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+                    },
+                    React.createElement("span", null, "👁️"),
+                    React.createElement("span", null, "فتح في نافذة كاملة")
+                  ),
+                  React.createElement(
+                    "a",
+                    {
+                      href: currentHandout.url,
+                      download: true,
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      className: "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5"
+                    },
+                    React.createElement("span", null, "⬇️"),
+                    React.createElement("span", null, "تحميل")
+                  )
+                )
+              ),
+              // عارض الملفات المباشر المضمن (Google Drive أو مستند)
+              currentHandout && currentHandout.url && React.createElement(
+                "div",
+                { className: "w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 aspect-[4/3] md:aspect-[16/10] shadow-inner" },
+                React.createElement("iframe", {
+                  src: (function() {
+                    var url = currentHandout.url;
+                    if (url.includes("drive.google.com/file/d/")) {
+                      return url.replace(/\/view(\?.*)?$/, "/preview");
+                    }
+                    return url;
+                  })(),
+                  className: "w-full h-full border-0",
+                  title: currentHandout.name || "Handout Viewer"
+                })
+              ),
+              // قائمة تنزيل سريعة لكافة الملفات إذا كان هناك أكثر من ملف
+              handoutsList.length > 1 && React.createElement(
+                "div",
+                { className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2" },
+                React.createElement("div", { className: "text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "📥 قائمة جميع الملفات المرفقة للتحميل المباشر:"),
+                React.createElement(
+                  "div",
+                  { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+                  handoutsList.map(function(h, i) {
+                    return React.createElement(
+                      "div",
+                      { key: h.id || i, className: "flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-xs" },
+                      React.createElement("span", { className: "font-medium text-slate-800 dark:text-slate-200 truncate pr-2" }, (i + 1) + ". " + (h.name || ("ملف " + (i + 1)))),
+                      React.createElement(
+                        "a",
+                        {
+                          href: h.url,
+                          target: "_blank",
+                          rel: "noopener noreferrer",
+                          download: true,
+                          className: "px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 transition-colors shrink-0 flex items-center gap-1"
+                        },
+                        React.createElement("span", null, "⬇️"),
+                        React.createElement("span", null, "تحميل")
+                      )
+                    );
+                  })
+                )
+              )
+            ) : React.createElement(
+              "div",
+              { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
+              React.createElement("div", { className: "text-3xl" }, "📂"),
+              React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملف هاند آوت لهذه المحاضرة بعد"),
+              React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
+                "في حال وفر المحاضر عرض تقديمي أو مذكرات ملحقة، سيتم رفعها هنا تلقائياً لتكون متاحة للقراءة والتحميل."
+              ),
+              currentUser.role === "admin" && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
+                  className: "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm hover:scale-102 transition-all mt-2"
+                },
+                "⬆️ رفع ملف هاند آوت الآن"
               )
             )
-          ),
-          // عارض الملفات المباشر المضمن (Google Drive أو مستند)
-          React.createElement(
-            "div",
-            { className: "w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 aspect-[4/3] md:aspect-[16/10] shadow-inner" },
-            React.createElement("iframe", {
-              src: (function() {
-                var url = activeLecture.handoutUrl;
-                if (url.includes("drive.google.com/file/d/")) {
-                  return url.replace(/\/view(\?.*)?$/, "/preview");
-                }
-                return url;
-              })(),
-              className: "w-full h-full border-0",
-              title: "Handout Viewer"
-            })
-          )
-        ) : React.createElement(
-          "div",
-          { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
-          React.createElement("div", { className: "text-3xl" }, "📂"),
-          React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملف هاند آوت لهذه المحاضرة بعد"),
-          React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-            "في حال وفر المحاضر عرض تقديمي أو مذكرات ملحقة، سيتم رفعها هنا تلقائياً لتكون متاحة للقراءة والتحميل."
-          ),
-          currentUser.role === "admin" && React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
-              className: "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm hover:scale-102 transition-all mt-2"
-            },
-            "⬆️ رفع ملف هاند آوت الآن"
-          )
-        )
-      ),
+          );
+        })(),
 
       // 3. تبويب الملخص المكتوب
       activeSubTab === "summary" && React.createElement(

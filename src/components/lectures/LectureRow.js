@@ -68,7 +68,17 @@ window.LectureRow = function(props) {
         "div",
         { className: "flex items-center gap-1.5 text-[10px]" },
         lec.mediaUrl && React.createElement("span", { title: "فيديو متاح", className: "px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800/60" }, "📺 فيديو"),
-        lec.handoutUrl && React.createElement("span", { title: "هاند آوت متاح", className: "px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800/60" }, "📂 هاند آوت"),
+        ((Array.isArray(lec.handouts) && lec.handouts.length > 0) || lec.handoutUrl) && (function() {
+          var count = Array.isArray(lec.handouts) && lec.handouts.length > 0 ? lec.handouts.length : 1;
+          return React.createElement(
+            "span",
+            {
+              title: count > 1 ? (count + " ملفات هاند آوت متاحة") : "هاند آوت متاح",
+              className: "px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800/60"
+            },
+            count > 1 ? ("📂 " + count + " هاند آوت") : "📂 هاند آوت"
+          );
+        })(),
         (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800/60" }, "📄 ملخص")
       ),
       // شارة الحالة
