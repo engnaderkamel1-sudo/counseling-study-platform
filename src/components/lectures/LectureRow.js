@@ -73,10 +73,10 @@ window.LectureRow = function(props) {
           return React.createElement(
             "span",
             {
-              title: count > 1 ? (count + " مرفقات متاحة") : "مرفقات متاحة",
+              title: count + " ملف متاح للمحاضرة",
               className: "px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/50"
             },
-            count > 1 ? (count + " مرفقات") : "مرفقات"
+            count + " ملف"
           );
         })(),
         (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/50" }, "ملخص")

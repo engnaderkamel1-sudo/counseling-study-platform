@@ -549,7 +549,7 @@ window.LecturesPage = function(props) {
           "div",
           { className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold" },
           React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
-          React.createElement("span", null, passedLecturesCount + " من " + totalLecturesCount + " محاضرة")
+          React.createElement("span", null, "السنة الأولى • الترم الأول: " + passedLecturesCount + " من " + totalLecturesCount + " محاضرة")
         )
       ),
       React.createElement(
