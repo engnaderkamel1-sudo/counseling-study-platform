@@ -157,6 +157,9 @@ function App() {
                 });
                 notif.onclick = function() {
                   window.focus();
+                  if (latest.zoomUrl) {
+                    window.open(latest.zoomUrl, "_blank");
+                  }
                   if (latest.linkTab) setActiveTab(latest.linkTab);
                   else if (latest.lectureId) setActiveTab("lectures");
                   notif.close();
@@ -174,6 +177,85 @@ function App() {
       if (typeof unsubscribeNotifs === "function") unsubscribeNotifs();
     };
   }, [currentUser]);
+
+  // فحص دوري مجدول كل دقيقة لتذكيرات الزوم (قبل المحاضرة بساعة وقبل الفتح / الصلاة)
+  React.useEffect(function() {
+    var checkZoomReminders = function() {
+      try {
+        var lectures = utils.getLocal(cfg.storageKeys.lectures, []);
+        if (!Array.isArray(lectures) || lectures.length === 0) return;
+
+        var now = new Date();
+        var sentReminders = utils.getLocal("counsel_sent_zoom_reminders", {});
+
+        lectures.forEach(function(lec) {
+          if (!lec || !lec.zoomUrl || !lec.date) return;
+
+          // استخراج وتحديد التوقيت الدقيق للمحاضرة
+          var targetDate = null;
+          var timeStr = lec.startTime || "";
+          if (!timeStr && lec.zoomTimeStr) {
+            // محاولة التقاط الوقت من نص زوم مثل "05:45 PM"
+            var tMatch = lec.zoomTimeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+            if (tMatch) {
+              var hours = parseInt(tMatch[1]);
+              var mins = parseInt(tMatch[2]);
+              var ampm = (tMatch[3] || "").toUpperCase();
+              if (ampm === "PM" && hours < 12) hours += 12;
+              if (ampm === "AM" && hours === 12) hours = 0;
+              timeStr = (hours < 10 ? "0" + hours : hours) + ":" + (mins < 10 ? "0" + mins : mins);
+            }
+          }
+
+          // التوقيت الافتراضي المعتاد لبدء فتح الزوم (05:45 مساءً) إذا لم يُحدد وقت
+          if (!timeStr) {
+            timeStr = "17:45";
+          }
+
+          try {
+            var parts = lec.date.split("-");
+            var timeParts = timeStr.split(":");
+            if (parts.length === 3 && timeParts.length >= 2) {
+              targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(timeParts[0]), parseInt(timeParts[1]), 0);
+            }
+          } catch(eDate) {}
+
+          if (!targetDate || isNaN(targetDate.getTime())) return;
+
+          var diffMs = targetDate.getTime() - now.getTime();
+          var diffMinutes = Math.round(diffMs / 60000);
+
+          var reminder1HourKey = lec.id + "_1h";
+          var reminderOpenKey = lec.id + "_opening";
+
+          // 1. تذكير قبل المحاضرة بساعة (بين 50 إلى 65 دقيقة)
+          if (diffMinutes >= 50 && diffMinutes <= 65 && !sentReminders[reminder1HourKey]) {
+            sentReminders[reminder1HourKey] = Date.now();
+            utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
+            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
+              window.NotificationService.broadcastZoomReminder(lec, "1hour");
+            }
+          }
+
+          // 2. تذكير فتح القاعة وبدء الصلاة (بين 0 إلى 15 دقيقة قبل الموعد، أو عند حلول الموعد)
+          if (diffMinutes >= -5 && diffMinutes <= 15 && !sentReminders[reminderOpenKey]) {
+            sentReminders[reminderOpenKey] = Date.now();
+            utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
+            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
+              window.NotificationService.broadcastZoomReminder(lec, "opening");
+            }
+          }
+        });
+      } catch (eLoop) {}
+    };
+
+    var zoomTimer = setInterval(checkZoomReminders, 60000);
+    // تشغيل فحص فوري عند التحميل
+    checkZoomReminders();
+
+    return function() { clearInterval(zoomTimer); };
+  }, []);
+
 
   var handleToggleNotification = async function() {
     if (window.NotificationService && typeof window.NotificationService.requestPermission === "function") {

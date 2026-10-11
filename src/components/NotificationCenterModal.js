@@ -282,6 +282,27 @@ window.NotificationCenterModal = function(props) {
               ),
               React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed" },
                 item.body
+              ),
+              item.zoomUrl && React.createElement(
+                "div",
+                { className: "mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800 flex items-center justify-between gap-2" },
+                React.createElement(
+                  "span",
+                  { className: "text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1" },
+                  "🎥 " + (item.meetingId ? "ID: " + item.meetingId : "رابط زوم متاح")
+                ),
+                React.createElement(
+                  "a",
+                  {
+                    href: item.zoomUrl,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    onClick: function(e) { e.stopPropagation(); },
+                    className: "px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 shrink-0"
+                  },
+                  React.createElement("span", null, "دخول زوم"),
+                  React.createElement("span", null, "↗")
+                )
               )
             )
           );

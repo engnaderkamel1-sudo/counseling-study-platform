@@ -542,5 +542,66 @@ window.APP_UTILS = {
       };
       reader.readAsDataURL(file);
     });
+  },
+
+  // استخراج وتفكيك بيانات دعوة زوم الذكية من نص رسالة الواتساب
+  parseZoomInvitation: function(rawText) {
+    if (!rawText || typeof rawText !== "string") {
+      return { zoomUrl: "", meetingId: "", passcode: "", topic: "", timeStr: "" };
+    }
+    var text = rawText.trim();
+
+    // 1. استخراج رابط زوم (الرابط الأساسي Join Zoom Meeting)
+    var zoomUrl = "";
+    var urlMatch = text.match(/https?:\/\/[a-zA-Z0-9_\.-]*zoom\.us\/j\/[^\s\<\>"\']+/i);
+    if (urlMatch && urlMatch[0]) {
+      zoomUrl = urlMatch[0].trim();
+      // تنظيف أي نقطة أو فاصلة في نهاية الرابط بالخطأ ما لم تكن جزءاً من رمز pwd
+      if (zoomUrl.endsWith(".") && !zoomUrl.includes("pwd=")) {
+        zoomUrl = zoomUrl.slice(0, -1);
+      }
+    }
+
+    // 2. استخراج Meeting ID
+    var meetingId = "";
+    var idMatch = text.match(/Meeting\s*ID[:\s]*([0-9\s]{9,15})/i) ||
+                  text.match(/معرف\s*(الاجتماع|اللقاء)[:\s]*([0-9\s]{9,15})/i) ||
+                  text.match(/\/j\/([0-9]{9,12})/i);
+    if (idMatch) {
+      meetingId = (idMatch[1] || idMatch[2] || "").trim();
+    }
+
+    // 3. استخراج Passcode
+    var passcode = "";
+    var passMatch = text.match(/Passcode[:\s]*([a-zA-Z0-9]+)/i) ||
+                    text.match(/كلمة\s*(المرور|السر)[:\s]*([a-zA-Z0-9]+)/i) ||
+                    text.match(/رمز\s*(المرور|الدخول)[:\s]*([a-zA-Z0-9]+)/i);
+    if (passMatch) {
+      passcode = (passMatch[1] || "").trim();
+    }
+
+    // 4. استخراج Topic (الموضوع)
+    var topic = "";
+    var topicMatch = text.match(/Topic[:\s]*([^\r\n]+)/i) ||
+                     text.match(/الموضوع[:\s]*([^\r\n]+)/i);
+    if (topicMatch && topicMatch[1]) {
+      topic = topicMatch[1].trim();
+    }
+
+    // 5. استخراج التوقيت المكتوب إن وُجد
+    var timeStr = "";
+    var timeMatch = text.match(/Time[:\s]*([^\r\n]+)/i) ||
+                    text.match(/الموعد[:\s]*([^\r\n]+)/i);
+    if (timeMatch && timeMatch[1]) {
+      timeStr = timeMatch[1].trim();
+    }
+
+    return {
+      zoomUrl: zoomUrl,
+      meetingId: meetingId,
+      passcode: passcode,
+      topic: topic,
+      timeStr: timeStr
+    };
   }
 };

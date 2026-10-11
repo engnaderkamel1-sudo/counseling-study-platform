@@ -51,6 +51,13 @@ window.LecturesPage = function(props) {
   var [newQuizText, setNewQuizText] = React.useState("");
   var [newNotes, setNewNotes] = React.useState("");
 
+  // حقول زوم للمحاضرة الجديدة
+  var [newZoomUrl, setNewZoomUrl] = React.useState("");
+  var [newMeetingId, setNewMeetingId] = React.useState("");
+  var [newPasscode, setNewPasscode] = React.useState("");
+  var [newZoomTimeStr, setNewZoomTimeStr] = React.useState("");
+  var [newBroadcastZoom, setNewBroadcastZoom] = React.useState(true);
+
   // فحص وتحديد ما إذا كان العنصر امتحاناً أو تقييماً
   var isItemExam = function(lec) {
     if (!lec) return false;
@@ -350,6 +357,7 @@ window.LecturesPage = function(props) {
     }
 
     var parsedQuiz = parseQuizInput(newQuizText);
+    var hasZoom = !!(newZoomUrl && newZoomUrl.trim());
     var newLec = {
       id: "lec-" + Date.now(),
       title: newTitle.trim(),
@@ -358,6 +366,10 @@ window.LecturesPage = function(props) {
       date: newDate,
       sessionOrder: parseInt(newSessionOrder) || 1,
       mediaUrl: finalUrl,
+      zoomUrl: newZoomUrl.trim(),
+      meetingId: newMeetingId.trim(),
+      passcode: newPasscode.trim(),
+      zoomTimeStr: newZoomTimeStr.trim(),
       handoutUrl: newHandoutUrl.trim(),
       handoutName: newHandoutName.trim() || (newHandoutUrl.trim() ? "ملف المرفقات (Handout)" : ""),
       audioSummaryUrl: newAudioSummaryUrl.trim(),
@@ -369,7 +381,9 @@ window.LecturesPage = function(props) {
     };
 
     cloud.saveLecture(newLec);
-    if (window.NotificationService && typeof window.NotificationService.broadcastNewLectureNotification === "function") {
+    if (hasZoom && newBroadcastZoom && window.NotificationService && typeof window.NotificationService.broadcastZoomLinkNotification === "function") {
+      window.NotificationService.broadcastZoomLinkNotification(newLec);
+    } else if (window.NotificationService && typeof window.NotificationService.broadcastNewLectureNotification === "function") {
       window.NotificationService.broadcastNewLectureNotification(newLec);
     }
     setShowAddModal(false);
@@ -379,6 +393,10 @@ window.LecturesPage = function(props) {
     setNewSubject("");
     setNewSpeaker("");
     setNewMediaUrl("");
+    setNewZoomUrl("");
+    setNewMeetingId("");
+    setNewPasscode("");
+    setNewZoomTimeStr("");
     setNewHandoutUrl("");
     setNewHandoutName("");
     setNewAudioSummaryUrl("");
@@ -484,6 +502,8 @@ window.LecturesPage = function(props) {
       ? editingLecture.handouts.filter(function(h) { return h && h.url && h.url.trim(); })
       : (editingLecture.handoutUrl ? [{ id: "h-0", url: editingLecture.handoutUrl.trim(), name: editingLecture.handoutName || "ملف الهاند آوت" }] : []);
 
+    var shouldBroadcastZoom = !!(editingLecture.zoomUrl && editingLecture.zoomUrl.trim() && (editingLecture.broadcastZoomImmediately !== false));
+
     var updated = Object.assign({}, editingLecture, {
       title: editingLecture.title.trim(),
       subject: (editingLecture.subject || "").trim() || "عام",
@@ -494,6 +514,10 @@ window.LecturesPage = function(props) {
       itemType: editingLecture.itemType || (editingLecture.isExam ? "exam" : "lecture"),
       notes: (editingLecture.notes || "").trim(),
       mediaUrl: (editingLecture.mediaUrl || "").trim(),
+      zoomUrl: (editingLecture.zoomUrl || "").trim(),
+      meetingId: (editingLecture.meetingId || "").trim(),
+      passcode: (editingLecture.passcode || "").trim(),
+      zoomTimeStr: (editingLecture.zoomTimeStr || "").trim(),
       handouts: currentHandouts,
       handoutUrl: currentHandouts[0] ? currentHandouts[0].url : (editingHandoutUrl || "").trim(),
       handoutName: currentHandouts[0] ? currentHandouts[0].name : (editingHandoutName || "").trim(),
@@ -502,6 +526,9 @@ window.LecturesPage = function(props) {
       quizQuestions: parsedQuiz
     });
     cloud.saveLecture(updated);
+    if (shouldBroadcastZoom && window.NotificationService && typeof window.NotificationService.broadcastZoomLinkNotification === "function") {
+      window.NotificationService.broadcastZoomLinkNotification(updated);
+    }
     if (activeLecture && activeLecture.id === updated.id) {
       setActiveLecture(updated);
     }
@@ -836,7 +863,17 @@ window.LecturesPage = function(props) {
       newWrittenSummary: newWrittenSummary,
       setNewWrittenSummary: setNewWrittenSummary,
       newQuizText: newQuizText,
-      setNewQuizText: setNewQuizText
+      setNewQuizText: setNewQuizText,
+      newZoomUrl: newZoomUrl,
+      setNewZoomUrl: setNewZoomUrl,
+      newMeetingId: newMeetingId,
+      setNewMeetingId: setNewMeetingId,
+      newPasscode: newPasscode,
+      setNewPasscode: setNewPasscode,
+      newZoomTimeStr: newZoomTimeStr,
+      setNewZoomTimeStr: setNewZoomTimeStr,
+      newBroadcastZoom: newBroadcastZoom,
+      setNewBroadcastZoom: setNewBroadcastZoom
     }),
 
     // نافذة إدارة وتعديل المحاضرة (للمسؤول فقط)

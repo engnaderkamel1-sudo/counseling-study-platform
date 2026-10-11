@@ -131,6 +131,64 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار فوري عند نشر رابط زوم للمحاضرة
+  broadcastZoomLinkNotification: async function(lecture) {
+    if (!window.db || !lecture) return;
+    try {
+      var notifData = {
+        title: "🎥 تم توفير رابط زوم: " + (lecture.title || "محاضرة المشورة"),
+        body: "موعد اللقاء: " + (lecture.zoomTimeStr || (lecture.date + (lecture.startTime ? " - " + lecture.startTime : ""))) + " • اضغط للدخول",
+        lectureId: lecture.id,
+        type: "zoom_link",
+        zoomUrl: lecture.zoomUrl || "",
+        meetingId: lecture.meetingId || "",
+        passcode: lecture.passcode || "",
+        target: "all",
+        linkTab: "lectures",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not broadcast zoom link notification:", e);
+    }
+  },
+
+  // إرسال تذكير زوم مخصص (تذكير الساعة أو تذكير بدء الصلاة والدخول)
+  broadcastZoomReminder: async function(lecture, reminderType) {
+    if (!window.db || !lecture) return;
+    try {
+      var title = "";
+      var body = "";
+      if (reminderType === "1hour") {
+        title = "⏰ تذكير: محاضرة " + (lecture.title || "") + " بعد ساعة";
+        body = "الموعد: " + (lecture.zoomTimeStr || (lecture.date + " " + (lecture.startTime || ""))) + " • جهّز مكان هادئ واستعد للدخول!";
+      } else if (reminderType === "opening") {
+        title = "🚀 قاعة زوم مفتوحة الآن: " + (lecture.title || "");
+        body = "بدء الصلاة والاستعداد للمحاضرة • يلا بينا! اضغط للدخول المباشر";
+      } else {
+        title = "🔔 تذكير بمحاضرة: " + (lecture.title || "");
+        body = "المحاضرة ستبدأ قريباً عبر تطبيق زوم.";
+      }
+
+      var notifData = {
+        title: title,
+        body: body,
+        lectureId: lecture.id,
+        type: "zoom_reminder",
+        reminderType: reminderType,
+        zoomUrl: lecture.zoomUrl || "",
+        meetingId: lecture.meetingId || "",
+        passcode: lecture.passcode || "",
+        target: "all",
+        linkTab: "lectures",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not broadcast zoom reminder:", e);
+    }
+  },
+
   // الاستماع للإشعارات الجديدة وعرضها للمستخدمين
   subscribeNotifications: function(onNewNotification) {
     if (!window.db) return function() {};
@@ -150,3 +208,4 @@ window.NotificationService = {
     }
   }
 };
+

@@ -208,6 +208,63 @@ window.LectureViewerModal = function(props) {
       activeSubTab === "media" && React.createElement(
         "div",
         { className: "space-y-4" },
+        // كارت رابط زوم المباشر للمحاضرة
+        activeLecture.zoomUrl && React.createElement(
+          "div",
+          { className: "p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-lg border border-blue-700/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4" },
+          React.createElement(
+            "div",
+            { className: "space-y-1.5" },
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "px-2.5 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-[11px] font-bold text-blue-200" }, "🎥 بث زوم المباشر"),
+              activeLecture.zoomTimeStr && React.createElement("span", { className: "text-xs font-mono text-blue-200" }, "⏰ " + activeLecture.zoomTimeStr)
+            ),
+            React.createElement("h4", { className: "text-base font-bold text-white" }, "رابط قاعة الزوم متاح الآن لحضور المحاضرة"),
+            React.createElement(
+              "div",
+              { className: "flex flex-wrap items-center gap-3 text-xs text-blue-200 pt-0.5" },
+              activeLecture.meetingId && React.createElement(
+                "span",
+                {
+                  onClick: function() {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(activeLecture.meetingId);
+                      alert("تم نسخ Meeting ID: " + activeLecture.meetingId);
+                    }
+                  },
+                  className: "cursor-pointer hover:underline bg-white/10 px-2.5 py-1 rounded-lg flex items-center gap-1 font-mono",
+                  title: "اضغط للنسخ"
+                },
+                "ID: " + activeLecture.meetingId + " 📋"
+              ),
+              activeLecture.passcode && React.createElement(
+                "span",
+                {
+                  onClick: function() {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(activeLecture.passcode);
+                      alert("تم نسخ Passcode: " + activeLecture.passcode);
+                    }
+                  },
+                  className: "cursor-pointer hover:underline bg-white/10 px-2.5 py-1 rounded-lg flex items-center gap-1 font-mono",
+                  title: "اضغط للنسخ"
+                },
+                "Passcode: " + activeLecture.passcode + " 📋"
+              )
+            )
+          ),
+          React.createElement(
+            "a",
+            {
+              href: activeLecture.zoomUrl,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              className: "w-full md:w-auto px-6 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md hover:scale-102 transition-all active:scale-95 shrink-0"
+            },
+            React.createElement("span", { className: "text-base" }, "🚀"),
+            React.createElement("span", null, "دخول زوم المباشر")
+          )
+        ),
         activeLecture.mediaUrl ? React.createElement(
           "div",
           { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
