@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791708304",
-  buildTime: "2026-10-11T08:45:04",
+  version: "1.2.1791708686",
+  buildTime: "2026-10-11T08:51:26",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -6621,7 +6621,7 @@ window.LecturesPage = function(props) {
   var [selectedSubject, setSelectedSubject] = React.useState("الكل");
   var [selectedSpeaker, setSelectedSpeaker] = React.useState("الكل");
   var [selectedDate, setSelectedDate] = React.useState("الكل");
-  var [sortByDate, setSortByDate] = React.useState("desc");
+  var [sortByDate, setSortByDate] = React.useState("asc"); // ترتيب تسلسلي افتراضي: الأقدم (البداية) للأحدث
 
   // حقول الإضافة والتعديل
   var [selectedFile, setSelectedFile] = React.useState(null);
@@ -6684,6 +6684,15 @@ window.LecturesPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
       if (cloudList) {
+        // ترتيب تصاعدي تسلسلي فوري حسب الجدول
+        cloudList.sort(function(a, b) {
+          if (a.orderIndex && b.orderIndex) return a.orderIndex - b.orderIndex;
+          var dateA = new Date(a.date).getTime();
+          var dateB = new Date(b.date).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+        });
+
         setLectures(cloudList);
         utils.setLocal(cfg.storageKeys.lectures, cloudList);
         if (cloudList.length > 0) {
@@ -6718,12 +6727,19 @@ window.LecturesPage = function(props) {
   });
 
   filteredLectures.sort(function(a, b) {
-    var dateA = new Date(a.date).getTime();
-    var dateB = new Date(b.date).getTime();
-    if (dateA !== dateB) {
-      return sortByDate === "desc" ? dateB - dateA : dateA - dateB;
+    if (sortByDate === "asc") {
+      if (a.orderIndex && b.orderIndex) return a.orderIndex - b.orderIndex;
+      var dateA = new Date(a.date).getTime();
+      var dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+    } else {
+      if (a.orderIndex && b.orderIndex) return b.orderIndex - a.orderIndex;
+      var dateA = new Date(a.date).getTime();
+      var dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return (b.sessionOrder || 1) - (a.sessionOrder || 1);
     }
-    return (a.sessionOrder || 1) - (b.sessionOrder || 1);
   });
 
   // توليد ملخص مكتوب للمحاضرة بالذكاء الاصطناعي (للمسؤول فقط)
@@ -7110,14 +7126,14 @@ window.LecturesPage = function(props) {
       React.createElement(
         "div",
         null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "ترتيب زمني"),
+        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "ترتيب المحاضرات"),
         React.createElement("select", {
           value: sortByDate,
           onChange: function(e) { setSortByDate(e.target.value); },
           className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
         }, [
-          React.createElement("option", { key: "desc", value: "desc" }, "الأحدث أولاً"),
-          React.createElement("option", { key: "asc", value: "asc" }, "الأقدم أولاً")
+          React.createElement("option", { key: "asc", value: "asc" }, "تسلسلي (المحاضرة 1 ⬅ الأخيرة)"),
+          React.createElement("option", { key: "desc", value: "desc" }, "عكسي (الأحدث أولاً)")
         ])
       )
     ),
@@ -7139,7 +7155,7 @@ window.LecturesPage = function(props) {
             return React.createElement("div", { className: "flex flex-wrap items-center gap-2 mb-1" },
               activeLecture.subject && React.createElement("span", { className: "text-xs font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800" }, "📚 " + activeLecture.subject),
               React.createElement("span", { className: "text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg" }, "تاريخ: " + activeLecture.date),
-              React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "محاضرة " + (activeLecture.sessionOrder || 1)),
+              React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "المحاضرة رقم: " + (activeLecture.orderIndex || activeLecture.sessionOrder || 1)),
               React.createElement("span", { className: "text-xs font-bold px-2.5 py-0.5 rounded-lg " + st.badgeClass }, st.label)
             );
           })(),
@@ -7681,7 +7697,7 @@ window.LecturesPage = function(props) {
         React.createElement("span", null, "سجل المحاضرات (" + filteredLectures.length + ")"),
         React.createElement("span", null, "مرتبة حسب التاريخ وترتيب الجلسة")
       ),
-      filteredLectures.map(function(lec) {
+      filteredLectures.map(function(lec, idx) {
         var isCurrent = activeLecture && activeLecture.id === lec.id;
         var st = getLectureStatus(lec);
         return React.createElement(
@@ -7695,7 +7711,15 @@ window.LecturesPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-start gap-3" },
-            React.createElement("div", { className: "w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-xs" }, "ج " + (lec.sessionOrder || 1)),
+            React.createElement(
+              "div",
+              {
+                className: "w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex flex-col items-center justify-center font-bold shrink-0 border border-slate-200 dark:border-slate-700",
+                title: "محاضرة رقم " + (lec.orderIndex || (idx + 1))
+              },
+              React.createElement("span", { className: "text-[9px] text-slate-400 font-normal leading-none" }, "محاضرة"),
+              React.createElement("span", { className: "text-xs font-black text-slate-800 dark:text-slate-100 leading-tight" }, "#" + (lec.orderIndex || (idx + 1)))
+            ),
             React.createElement(
               "div",
               null,
