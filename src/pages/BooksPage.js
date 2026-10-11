@@ -2397,7 +2397,10 @@ window.BooksPage = function(props) {
     await safeCloudSaveBook(updatedBook, { silent: false });
 
     if (nextPub) {
-      alert("🎉 تم نشر الكتاب بنجاح!\nأصبح متاحاً ومرئياً الآن لجميع الطلاب والدارسين في المكتبة.");
+      if (window.NotificationService && typeof window.NotificationService.broadcastNewBookNotification === "function") {
+        window.NotificationService.broadcastNewBookNotification(updatedBook);
+      }
+      alert("🎉 تم نشر الكتاب بنجاح!\nأصبح متاحاً ومرئياً الآن لجميع الطلاب والدارسين في المكتبة مع إرسال إشعار للجميع.");
     } else {
       alert("🔒 تم تحويل الكتاب إلى مسودة خاصة بنجاح!\nأصبح مخفياً عن جميع الطلاب، ويمكنك استكمال رفع الصوتيات والفصول براحتك.");
     }
@@ -2494,6 +2497,9 @@ window.BooksPage = function(props) {
 
     await safeCloudSaveBook(newB, { silent: false });
     setActiveBook(newB);
+    if (!existingBook && newB.isPublished && window.NotificationService && typeof window.NotificationService.broadcastNewBookNotification === "function") {
+      window.NotificationService.broadcastNewBookNotification(newB);
+    }
     if (selectedFile) {
       try {
         var fileBuf = await selectedFile.arrayBuffer();

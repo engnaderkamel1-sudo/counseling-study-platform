@@ -93,6 +93,25 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار سحابي إلى فايربيز عند نشر مرجع أو كتاب جديد للدارسين
+  broadcastNewBookNotification: async function(book) {
+    if (!window.db || !book) return;
+    try {
+      var notifData = {
+        title: "📚 مرجع جديد: " + (book.title || "كتاب دراسي"),
+        body: "تم نشر مرجع جديد بقلم: " + (book.author || "معهد المشورة") + " • متاح للقراءة والاستماع",
+        bookId: book.id,
+        type: "book",
+        target: "all",
+        linkTab: "books",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not broadcast book notification:", e);
+    }
+  },
+
   // إرسال تعميم / تنبيه عام من المشرف للدارسين
   broadcastCustomAnnouncement: async function(title, body, target) {
     if (!window.db) return;
