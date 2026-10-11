@@ -80,6 +80,12 @@ window.APP_UTILS = {
     } catch (e) {}
   },
 
+  removeLocal: function(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {}
+  },
+
   // تخزين الملفات الكبيرة (PDFs) بدون إنترنت عبر IndexedDB
   openOfflineDb: function() {
     return new Promise(function(resolve, reject) {
