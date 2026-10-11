@@ -29,6 +29,9 @@ window.AuthModal = function(props) {
 
   var [isLoading, setIsLoading] = React.useState(false);
   var [pendingNotice, setPendingNotice] = React.useState(false);
+  var [isForgotPassword, setIsForgotPassword] = React.useState(false);
+  var [forgotEmail, setForgotEmail] = React.useState("");
+  var [resetSentNotice, setResetSentNotice] = React.useState(false);
   var [errorMsg, setErrorMsg] = React.useState("");
 
   var governoratesList = [
@@ -146,6 +149,43 @@ window.AuthModal = function(props) {
       setPendingNotice(true);
     } catch (err) {
       setErrorMsg(err.message || "حدث خطأ أثناء إرسال طلب الانضمام.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  var handleResetPassword = async function(e) {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      var clean = forgotEmail.trim().toLowerCase();
+      if (!clean) throw new Error("يرجى إدخال البريد الإلكتروني.");
+
+      // 1. محاولة إرسال رابط رسمي من فايربيز إن أمكن
+      if (window.auth && typeof window.auth.sendPasswordResetEmail === "function") {
+        try {
+          await window.auth.sendPasswordResetEmail(clean);
+        } catch (authErr) {
+          console.log("Firebase auth reset notice:", authErr.code);
+        }
+      }
+
+      // 2. تسجيل طلب استعادة كلمة المرور في قاعدة البيانات لتنبيه المشرف
+      if (window.db) {
+        await window.db.collection("notifications").add({
+          title: "🔑 طلب استعادة كلمة المرور",
+          body: "طلب استعادة كلمة مرور لحساب: " + clean,
+          type: "password_reset",
+          email: clean,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      setResetSentNotice(true);
+    } catch (err) {
+      setErrorMsg(err.message || "حدث خطأ أثناء إرسال طلب استعادة كلمة المرور.");
     } finally {
       setIsLoading(false);
     }
@@ -312,6 +352,57 @@ window.AuthModal = function(props) {
           },
           "العودة لتسجيل الدخول ⏎"
         )
+      ) : isForgotPassword ? React.createElement(
+        // ================= شاشة استعادة كلمة المرور =================
+        "div",
+        { className: "space-y-4" },
+        resetSentNotice ? React.createElement(
+          "div",
+          { className: "p-6 text-center space-y-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800" },
+          React.createElement("div", { className: "text-3xl" }, "📬"),
+          React.createElement("h4", { className: "text-sm font-bold text-emerald-900 dark:text-emerald-200" }, "تم إرسال تعليمات الاستعادة!"),
+          React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" },
+            "إذا كان بريدك مسجلاً، فستصلك رسالة عبر البريد الإلكتروني لإعادة تعيين كلمة المرور (يرجى مراجعة البريد والـ Spam).\nكما تم إخطار المشرف بطلبك ويمكنه تعديل كلمة المرور لك مباشرة."
+          ),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() {
+              setIsForgotPassword(false);
+              setResetSentNotice(false);
+              setErrorMsg("");
+            },
+            className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs"
+          }, "العودة لتسجيل الدخول ⏎")
+        ) : React.createElement(
+          "form",
+          { onSubmit: handleResetPassword, className: "space-y-3.5" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "البريد الإلكتروني المسجل"),
+            React.createElement("input", {
+              type: "email",
+              required: true,
+              value: forgotEmail,
+              onChange: function(e) { setForgotEmail(e.target.value); },
+              placeholder: "name@example.com",
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed" },
+            "💡 سيتم إرسال رابط لإعادة تعيين كلمة المرور، أو إشعار مشرف المنصة لمساعدتك في تعيين كلمة مرور جديدة لحسابك."
+          ),
+          React.createElement("button", {
+            type: "submit",
+            disabled: isLoading,
+            className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-md disabled:opacity-50"
+          }, isLoading ? "جاري الإرسال..." : "إرسال طلب الاستعادة ←"),
+          React.createElement("div", { className: "text-center pt-2 border-t border-slate-100 dark:border-slate-800" },
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { setIsForgotPassword(false); setErrorMsg(""); },
+              className: "text-xs font-semibold text-slate-500 hover:underline"
+            }, "العودة لتسجيل الدخول")
+          )
+        )
       ) : isLogin ? React.createElement(
         // ================= نموذج تسجيل الدخول =================
         "form",
@@ -354,6 +445,23 @@ window.AuthModal = function(props) {
                 className: "absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm p-1"
               },
               showLoginPassword ? "👁️‍🗨️" : "👁️"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex justify-end pt-1" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  setIsForgotPassword(true);
+                  setErrorMsg("");
+                  setForgotEmail(loginIdentifier);
+                },
+                className: "text-[11px] text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-semibold transition-colors"
+              },
+              "نسيت كلمة المرور؟"
             )
           )
         ),

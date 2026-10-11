@@ -96,6 +96,31 @@ window.UsersManagementPage = function(props) {
     }
   };
 
+  var handleResetUserPassword = async function(userId, userName, currentPass) {
+    var newPass = prompt("أدخل كلمة المرور الجديدة لحساب '" + userName + "':", currentPass || "");
+    if (!newPass || !newPass.trim()) return;
+    if (newPass.trim().length < 4) {
+      alert("كلمة المرور يجب ألا تقل عن 4 خانات.");
+      return;
+    }
+    if (!window.db) return;
+    try {
+      await window.db.collection("users").doc(userId).update({
+        password: newPass.trim(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setUsers(users.map(function(u) {
+        if (u.id === userId) {
+          return Object.assign({}, u, { password: newPass.trim() });
+        }
+        return u;
+      }));
+      alert("تم تحديث كلمة المرور لحساب '" + userName + "' بنجاح! ✓");
+    } catch (e) {
+      alert("حدث خطأ أثناء تعديل كلمة المرور: " + e.message);
+    }
+  };
+
   // حفظ كود التخطي والقائمة البيضاء
   var handleSaveBypassSettings = async function() {
     if (!window.db) return;
@@ -518,6 +543,16 @@ window.UsersManagementPage = function(props) {
                   className: "text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors"
                 },
                 "إعادة التفعيل ✓"
+              ),
+              React.createElement(
+                "button",
+                {
+                  onClick: function() { handleResetUserPassword(u.id, u.fullName, u.password); },
+                  title: "تعديل كلمة المرور",
+                  className: "text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1"
+                },
+                React.createElement("span", null, "🔑"),
+                React.createElement("span", { className: "hidden sm:inline" }, "كلمة المرور")
               ),
               React.createElement(
                 "button",
