@@ -12,12 +12,18 @@ module.exports = async function handler(req, res) {
       return res.end();
     }
 
-    const rawUrl = (req.query.url || "").trim();
+    let rawUrl = (req.query.url || "").trim();
+    if (!rawUrl && req.query.b64) {
+      try {
+        rawUrl = Buffer.from(req.query.b64.trim(), "base64").toString("utf-8");
+      } catch (eB64) {}
+    }
+
     if (!rawUrl) {
       res.statusCode = 400;
       res.setHeader("Content-Type", "application/json");
       res.setHeader("Access-Control-Allow-Origin", "*");
-      return res.end(JSON.stringify({ error: "Missing url parameter" }));
+      return res.end(JSON.stringify({ error: "Missing url or b64 parameter" }));
     }
 
     const upstreamResp = await fetch(rawUrl, {

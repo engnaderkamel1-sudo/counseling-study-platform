@@ -445,8 +445,12 @@ window.APP_UTILS = {
         onStatus("جاري نقل وحفظ الصوت تلقائياً إلى Google Drive الخاص بك...");
       }
 
-      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل
-      var proxyUrl = "/api/download-audio?url=" + encodeURIComponent(audioUrl);
+      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل وفحص الحزم
+      var b64Param = "";
+      try {
+        b64Param = (typeof btoa === "function") ? btoa(audioUrl) : "";
+      } catch (eB) {}
+      var proxyUrl = b64Param ? ("/api/download-audio?b64=" + encodeURIComponent(b64Param)) : ("/api/download-audio?url=" + encodeURIComponent(audioUrl));
       var resp = null;
       try {
         resp = await fetch(proxyUrl);

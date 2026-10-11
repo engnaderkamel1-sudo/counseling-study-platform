@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791700938",
-  buildTime: "2026-10-11T06:42:18",
+  version: "1.2.1791701105",
+  buildTime: "2026-10-11T06:45:05",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -1520,8 +1520,12 @@ window.APP_UTILS = {
         onStatus("جاري نقل وحفظ الصوت تلقائياً إلى Google Drive الخاص بك...");
       }
 
-      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل
-      var proxyUrl = "/api/download-audio?url=" + encodeURIComponent(audioUrl);
+      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل وفحص الحزم
+      var b64Param = "";
+      try {
+        b64Param = (typeof btoa === "function") ? btoa(audioUrl) : "";
+      } catch (eB) {}
+      var proxyUrl = b64Param ? ("/api/download-audio?b64=" + encodeURIComponent(b64Param)) : ("/api/download-audio?url=" + encodeURIComponent(audioUrl));
       var resp = null;
       try {
         resp = await fetch(proxyUrl);
