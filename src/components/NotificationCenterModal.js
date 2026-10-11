@@ -33,6 +33,13 @@ window.NotificationCenterModal = function(props) {
 
   // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي)
   var allowedNotifications = notifications.filter(function(n) {
+    if (n.target === "user") {
+      var currentUserId = currentUser ? (currentUser.id || "") : "";
+      var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
+      var targetId = n.targetUserId || "";
+      var targetEmail = (n.targetUserEmail || "").toLowerCase().trim();
+      return (targetId && targetId === currentUserId) || (targetEmail && targetEmail === currentUserEmail) || isAdmin;
+    }
     if (n.type === "user_registration" && !isAdmin) return false;
     if (n.type === "password_reset" && !isAdmin) return false;
     return true;
@@ -129,19 +136,38 @@ window.NotificationCenterModal = function(props) {
         )
       ),
 
-      // قسم المشرف: إرسال تعميم رسمي للدارسين
+      // قسم المشرف: إرسال تعميم رسمي للدارسين واختبار إشعار الجهاز
       isAdmin && React.createElement(
         "div",
-        { className: "border-b border-slate-100 dark:border-slate-800 pb-3" },
+        { className: "border-b border-slate-100 dark:border-slate-800 pb-3 space-y-2" },
         !showBroadcastForm ? React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: function() { setShowBroadcastForm(true); },
-            className: "w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition-all active:scale-98"
-          },
-          React.createElement("span", null, "📢"),
-          React.createElement("span", null, "إرسال تعميم أو تنبيه عام لجميع الدارسين")
+          "div",
+          { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowBroadcastForm(true); },
+              className: "w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-98"
+            },
+            React.createElement("span", null, "📢"),
+            React.createElement("span", null, "إرسال تعميم لجميع الدارسين")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                if (window.NotificationService && typeof window.NotificationService.triggerLocalTestNotification === "function") {
+                  window.NotificationService.triggerLocalTestNotification();
+                }
+              },
+              title: "إرسال إشعار تجريبي فوري لجهازك لاختبار الرنين وشاشة القفل دون إرسال أي شيء للدارسين",
+              className: "w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-98"
+            },
+            React.createElement("span", null, "📱"),
+            React.createElement("span", null, "تجربة إشعار على جهازي فقط")
+          )
         ) : React.createElement(
           "form",
           { onSubmit: handleBroadcastSubmit, className: "p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2.5" },

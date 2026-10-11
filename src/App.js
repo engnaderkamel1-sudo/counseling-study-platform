@@ -126,16 +126,26 @@ function App() {
         setNotificationsList(list || []);
         if (!initialLoad && list.length > 0) {
           var latest = list[0];
-          var isRegistration = (latest.type === "user_registration");
-          var shouldNotify = false;
+          // تصنيف وفلترة مستلمي الإشعار بدقة
+          if (latest.target === "user") {
+            // إشعار موجه لدارس بعينه (اختبار أو تنبيه خاص)
+            var currentUserId = currentUser ? (currentUser.id || "") : "";
+            var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
+            var targetId = latest.targetUserId || "";
+            var targetEmail = (latest.targetUserEmail || "").toLowerCase().trim();
 
-          // إشعار طلبات الدارسين الجدد يظهر فقط لمشرف المنصة
-          if (isRegistration) {
+            if ((targetId && targetId === currentUserId) || (targetEmail && targetEmail === currentUserEmail)) {
+              shouldNotify = true;
+            } else {
+              shouldNotify = false;
+            }
+          } else if (isRegistration) {
+            // إشعار طلبات الدارسين الجدد يظهر فقط لمشرف المنصة
             if (currentUser && currentUser.role === "admin") {
               shouldNotify = true;
             }
           } else {
-            // إشعارات المحاضرات تظهر لجميع الدارسين المعتمدين
+            // إشعارات المحاضرات والتعميمات العامة تظهر لجميع الدارسين المعتمدين
             shouldNotify = true;
           }
 

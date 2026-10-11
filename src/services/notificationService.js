@@ -113,6 +113,80 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار تجريبي مخصص لدارس محدد بالاسم والبريد فقط دون إزعاج باقي الدارسين
+  sendDirectUserNotification: async function(user, customTitle, customBody) {
+    if (!window.db || !user) return false;
+    try {
+      var notifData = {
+        title: customTitle || ("🔔 تنبيه تجريبي خاص: مرحباً " + (user.fullName || "يا دارس")),
+        body: customBody || "هذا إشعار تجريبي خاص بحسابك للتأكد من وصول الإشعارات والرنين بنجاح.",
+        type: "direct_test",
+        target: "user",
+        targetUserId: user.id || "",
+        targetUserEmail: (user.email || "").toLowerCase().trim(),
+        targetUserName: user.fullName || "",
+        linkTab: "lectures",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+      return true;
+    } catch (e) {
+      console.warn("Could not send direct user notification:", e);
+      throw e;
+    }
+  },
+
+  // اختبار فوري لإشعار الجهاز والنظام محلياً على جهاز المشرف فقط دون لمس قاعدة البيانات
+  triggerLocalTestNotification: async function() {
+    try {
+      if (!("Notification" in window)) {
+        alert("متصفحك لا يدعم الإشعارات.");
+        return false;
+      }
+      var perm = Notification.permission;
+      if (perm !== "granted") {
+        perm = await Notification.requestPermission();
+      }
+      if (perm !== "granted") {
+        alert("تنبيه: صلاحية الإشعارات غير مفعلة في المتصفح! يرجى السماح بالإشعارات أولاً.");
+        return false;
+      }
+
+      // 1. تشغيل الرنين والاهتزاز
+      window.NotificationService.playNotificationChime();
+
+      var options = {
+        body: "رائع! إشعارات النظام وشاشة القفل والاهتزاز تعمل بكفاءة على جهازك.",
+        icon: "icon-192.png",
+        badge: "icon-192.png",
+        vibrate: [250, 100, 250],
+        tag: "test_notif_" + Date.now(),
+        renotify: true,
+        data: { url: window.location.href }
+      };
+
+      // 2. إظهار الإشعار عبر Service Worker (لتظهر في درج الموبايل وشاشة القفل)
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function(reg) {
+          if (reg && reg.showNotification) {
+            reg.showNotification("🔔 اختبار إشعار ناجح - منصة المشورة", options);
+          } else {
+            new Notification("🔔 اختبار إشعار ناجح - منصة المشورة", options);
+          }
+        }).catch(function() {
+          new Notification("🔔 اختبار إشعار ناجح - منصة المشورة", options);
+        });
+      } else {
+        new Notification("🔔 اختبار إشعار ناجح - منصة المشورة", options);
+      }
+      return true;
+    } catch(err) {
+      console.error("Local test notification error:", err);
+      alert("حدث خطأ أثناء إظهار إشعار التجربة: " + err.message);
+      return false;
+    }
+  },
+
   // إرسال إشعار سحابي إلى المشرف عند تسجيل دارس جديد بانتظار الاعتماد
   notifyAdminNewUserRegistration: async function(userData) {
     if (!window.db) return;

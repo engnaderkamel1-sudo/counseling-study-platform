@@ -141,6 +141,30 @@ window.UsersManagementPage = function(props) {
     }
   };
 
+  // إرسال إشعار تجريبي مخصص لدارس محدد
+  var [sendingNotifUserId, setSendingNotifUserId] = React.useState(null);
+  var handleSendTestNotifToUser = async function(user) {
+    if (!user) return;
+    var confirmSend = confirm("هل تريد إرسال إشعار تجريبي خاص للدارس '" + (user.fullName || user.email) + "' فقط؟\n\nلن يظهر هذا الإشعار لأي شخص آخر.");
+    if (!confirmSend) return;
+
+    setSendingNotifUserId(user.id);
+    try {
+      if (window.NotificationService && typeof window.NotificationService.sendDirectUserNotification === "function") {
+        await window.NotificationService.sendDirectUserNotification(
+          user,
+          "🔔 إشعار تجريبي: مرحباً " + (user.fullName || "يا دارس"),
+          "مرحباً بك في منصة دراسة المشورة! هذا إشعار تجريبي خاص بك للتأكد من وصول التنبيهات والرنين."
+        );
+        alert("✅ تم إرسال الإشعار التجريبي بنجاح إلى: " + (user.fullName || user.email) + "\n\nسيظهر على جهازه فور اتصاله بالمنصة دون إزعاج باقي الدارسين.");
+      }
+    } catch(err) {
+      alert("حدث خطأ أثناء إرسال الإشعار: " + (err.message || err));
+    } finally {
+      setSendingNotifUserId(null);
+    }
+  };
+
   // إرسال رابط إعادة التعيين عبر البريد الإلكتروني
   var handleSendEmailReset = async function() {
     if (!resetModalUser || !resetModalUser.email) return;
@@ -461,6 +485,17 @@ window.UsersManagementPage = function(props) {
                   className: "text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors"
                 },
                 "إعادة التفعيل ✓"
+              ),
+              React.createElement(
+                "button",
+                {
+                  onClick: function() { handleSendTestNotifToUser(u); },
+                  disabled: sendingNotifUserId === u.id,
+                  title: "إرسال إشعار تجريبي خاص لهذا الدارس فقط للتأكد من وصول الإشعارات له دون إزعاج باقي الدارسين",
+                  className: "text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-blue-200/60 dark:border-blue-900/40 disabled:opacity-50"
+                },
+                React.createElement("span", null, "🔔"),
+                React.createElement("span", null, sendingNotifUserId === u.id ? "جاري الإرسال..." : "إشعار تجريبي")
               ),
               React.createElement(
                 "button",
