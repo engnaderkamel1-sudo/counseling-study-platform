@@ -374,7 +374,7 @@ window.LectureViewerModal = function(props) {
                   )
                 )
               ),
-              // عارض الملفات المباشر المضمن مع شريط التقليب العائم
+              // عارض الملفات المباشر المضمن
               currentHandout && currentHandout.url && React.createElement(
                 "div",
                 { className: "relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 aspect-[4/3] md:aspect-[16/10] shadow-inner flex items-center justify-center" },
@@ -387,71 +387,9 @@ window.LectureViewerModal = function(props) {
                     }
                     return url;
                   })(),
-                  className: "w-full h-full border-0 transition-transform duration-300",
-                  style: {
-                    transform: "rotate(" + handoutRotation + "deg) scale(" + (handoutZoom / 100) + ")",
-                    transformOrigin: "center center"
-                  },
+                  className: "w-full h-full border-0",
                   title: currentHandout.name || "Handout Viewer"
-                }),
-
-                // شريط تحكم عائم زجاجي شفاف
-                React.createElement(
-                  "div",
-                  {
-                    className: "absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md text-white border border-white/15 shadow-xl transition-all hover:bg-slate-950/60"
-                  },
-                  React.createElement(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: handleRotateHandout,
-                      title: "تدوير الصفحة 90 درجة",
-                      className: "w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-teal-300 font-bold flex items-center justify-center active:scale-95 transition-all text-xs"
-                    },
-                    "🔄"
-                  ),
-                  React.createElement(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: handleZoomOutHandout,
-                      title: "تصغير",
-                      className: "w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs"
-                    },
-                    "➖"
-                  ),
-                  React.createElement(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: handleResetZoomHandout,
-                      title: "الحجم الافتراضي",
-                      className: "px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-emerald-400 font-mono font-bold text-[11px]"
-                    },
-                    handoutZoom + "%"
-                  ),
-                  React.createElement(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: handleZoomInHandout,
-                      title: "تكبير",
-                      className: "w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs"
-                    },
-                    "➕"
-                  ),
-                  React.createElement(
-                    "button",
-                    {
-                      type: "button",
-                      onClick: function() { setIsHandoutFullScreen(true); },
-                      title: "قراءة بملء الشاشة",
-                      className: "w-7 h-7 rounded-full bg-indigo-600/80 hover:bg-indigo-600 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs"
-                    },
-                    "⛶"
-                  )
-                )
+                })
               ),
               // قائمة تنزيل سريعة لكافة الملفات إذا كان هناك أكثر من ملف
               handoutsList.length > 1 && React.createElement(
@@ -890,7 +828,7 @@ window.LectureViewerModal = function(props) {
         // مساحة عرض الـ PDF كاملة الشاشة داخل التطبيق مع دعم التكبير والتدوير
         React.createElement(
           "div",
-          { className: "flex-1 w-full h-[calc(100vh-56px)] bg-slate-950 relative overflow-auto flex items-center justify-center" },
+          { className: "flex-1 w-full h-[calc(100vh-56px)] bg-slate-950 relative overflow-hidden flex items-center justify-center" },
           React.createElement("iframe", {
             key: "fullscreen-handout",
             src: (function() {
@@ -908,66 +846,7 @@ window.LectureViewerModal = function(props) {
               minWidth: handoutRotation % 180 !== 0 ? "100vh" : "100%"
             },
             title: currentHandout.name || "Handout Fullscreen Viewer"
-          }),
-
-          // شريط أدوات مدمج زجاجي شفاف أسفل الشاشة بمتناول الإبهام
-          React.createElement(
-            "div",
-            {
-              className: "fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/40 backdrop-blur-md text-white border border-white/15 shadow-xl transition-all hover:bg-slate-950/60"
-            },
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleRotateHandout,
-                title: "تدوير الصفحة 90 درجة",
-                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-teal-300 font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
-              },
-              "🔄"
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleZoomOutHandout,
-                title: "تصغير",
-                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
-              },
-              "➖"
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleResetZoomHandout,
-                title: "إعادة ضبط الحجم",
-                className: "px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-emerald-400 font-mono font-bold text-xs border border-white/10"
-              },
-              handoutZoom + "%"
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleZoomInHandout,
-                title: "تكبير",
-                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
-              },
-              "➕"
-            ),
-            React.createElement(
-              "a",
-              {
-                href: currentHandout.url,
-                target: "_blank",
-                rel: "noopener noreferrer",
-                title: "فتح في نافذة مستقلة",
-                className: "w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-amber-300 font-bold flex items-center justify-center active:scale-95 transition-all text-xs border border-white/10"
-              },
-              "↗️"
-            )
-          )
+          })
         )
       );
     })()
