@@ -2193,21 +2193,24 @@ window.BooksPage = function(props) {
   };
 
   var handleDeleteBook = async function(e, bookId) {
-    e.stopPropagation();
-    if (!window.confirm("هل أنت متأكد من حذف هذا الكتاب نهائياً من المنصة؟")) return;
+    if (e && e.stopPropagation) e.stopPropagation();
+    var bookToDelete = books.find(function(b) { return b.id === bookId; }) || (activeBook && activeBook.id === bookId ? activeBook : null);
+    if (!bookToDelete) return;
+    if (!window.confirm("هل ترغب في نقل كتاب «" + (bookToDelete.title || "هذا الكتاب") + "» إلى سلة المحذوفات؟\n\n💡 سيتم الاحتفاظ بالكتاب لمدة 7 أيام ويمكنك استرجاعه في أي وقت بضغطة زر.")) return;
     try {
-      var success = await cloud.deleteDocument("books", bookId);
-      if (success) {
-        setBooks(function(prev) { return prev.filter(function(b) { return b.id !== bookId; }); });
-        if (activeBook && activeBook.id === bookId) {
-            setActiveBook(null);
-            utils.removeLocal("counsel_active_book_id");
-        }
+      if (cloud && cloud.moveToRecycleBin) {
+        await cloud.moveToRecycleBin(bookToDelete, "book", currentUser);
       } else {
-        alert("فشل حذف الكتاب. تأكد من اتصالك بالإنترنت.");
+        await cloud.deleteDocument("books", bookId);
       }
+      setBooks(function(prev) { return prev.filter(function(b) { return b.id !== bookId; }); });
+      if (activeBook && activeBook.id === bookId) {
+        setActiveBook(null);
+        utils.removeLocal("counsel_active_book_id");
+      }
+      alert("🗑️ تم نقل الكتاب إلى سلة المحذوفات بنجاح. يمكنك استرجاعه خلال 7 أيام من سلة المحذوفات.");
     } catch(err) {
-      alert("خطأ أثناء الحذف: " + err.message);
+      alert("خطأ أثناء النقل لسلة المحذوفات: " + err.message);
     }
   };
 
@@ -2477,6 +2480,17 @@ window.BooksPage = function(props) {
           },
           React.createElement("span", null, isForcingSync ? "⏳" : "☁️"),
           React.createElement("span", null, isForcingSync ? "جاري المزامنة..." : "مزامنة السحابة الآن")
+        ),
+        isAdmin && props.onOpenRecycleBin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: props.onOpenRecycleBin,
+            title: "سلة المحذوفات والأرشيف المؤقت (حفظ واسترجاع العناصر المحذوفة لمدة 7 أيام)",
+            className: "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "سلة المحذوفات")
         ),
         isAdmin && React.createElement(
           "button",

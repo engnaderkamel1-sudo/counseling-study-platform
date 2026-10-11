@@ -229,8 +229,169 @@ window.CloudSyncService = {
     }
   },
 
-  // حذف كتاب
+  // حذف كتاب (نهائي)
   deleteBook: async function(bookId) {
     return this.deleteDocument("books", bookId);
+  },
+
+  // ==========================================
+  // منظومة سلة المحذوفات والأرشيف المؤقت (7 أيام)
+  // ==========================================
+  RECYCLE_RETENTION_MS: 7 * 24 * 60 * 60 * 1000, // أسبوع كامل
+
+  // الاشتراك في سلة المحذوفات مع التنظيف التلقائي للعناصر المنتهية صلاحيتها
+  subscribeRecycleBin: function(onUpdate) {
+    var self = this;
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("recycle_bin").orderBy("deletedAt", "desc").onSnapshot(function(snapshot) {
+        var list = [];
+        var now = Date.now();
+        snapshot.forEach(function(doc) {
+          var data = Object.assign({ id: doc.id }, doc.data());
+          // إذا مر أكثر من 7 أيام، نحذف العنصر نهائياً وتلقائياً
+          if (data.deletedAt && (now - data.deletedAt > self.RECYCLE_RETENTION_MS)) {
+            self.permanentDeleteFromRecycleBin(doc.id).catch(function() {});
+          } else {
+            list.push(data);
+          }
+        });
+        if (typeof onUpdate === "function") onUpdate(list);
+      }, function(err) {
+        console.warn("Recycle bin realtime listener notice:", err);
+      });
+    } catch (e) {
+      return function() {};
+    }
+  },
+
+  // نقل كتاب أو محاضرة إلى سلة المحذوفات (Soft Delete)
+  moveToRecycleBin: async function(item, type, user) {
+    if (!item) return false;
+    var self = this;
+    var docId = type + "_" + (item.id || Date.now());
+    var recycleRecord = {
+      id: docId,
+      originalId: item.id,
+      originalType: type, // "book" أو "lecture"
+      itemData: self.sanitizeForFirestore(item),
+      title: item.title || "عنصر بدون عنوان",
+      author: item.author || item.speaker || "",
+      deletedAt: Date.now(),
+      deletedBy: (user && user.fullName) || "الأدمن"
+    };
+
+    if (window.db) {
+      try {
+        await window.db.collection("recycle_bin").doc(docId).set(recycleRecord);
+        // حذفه من المجموعة الأصلية النشطة
+        var targetCollection = type === "book" ? "books" : "lectures";
+        await window.db.collection(targetCollection).doc(item.id).delete();
+      } catch (err) {
+        console.error("moveToRecycleBin cloud error:", err);
+      }
+    }
+
+    // تحديث التخزين المحلي
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        var localBin = utils.getLocal("counsel_recycle_bin", []) || [];
+        localBin.unshift(recycleRecord);
+        utils.setLocal("counsel_recycle_bin", localBin);
+
+        if (type === "book") {
+          var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+          utils.setLocal(window.APP_CONFIG.storageKeys.books, allB.filter(function(b) { return b.id !== item.id; }));
+        } else if (type === "lecture") {
+          var allL = utils.getLocal(window.APP_CONFIG.storageKeys.lectures, []) || [];
+          utils.setLocal(window.APP_CONFIG.storageKeys.lectures, allL.filter(function(l) { return l.id !== item.id; }));
+        }
+      }
+    } catch (e) {}
+
+    return true;
+  },
+
+  // استرجاع عنصر من سلة المحذوفات إلى مكانه الأصلي
+  restoreFromRecycleBin: async function(recycleRecord) {
+    if (!recycleRecord || !recycleRecord.itemData) return false;
+    var self = this;
+    var type = recycleRecord.originalType || "book";
+    var item = recycleRecord.itemData;
+
+    if (type === "book") {
+      await self.saveBook(item);
+    } else {
+      await self.saveLecture(item);
+    }
+
+    // حذفه من سلة المحذوفات
+    await self.permanentDeleteFromRecycleBin(recycleRecord.id);
+
+    // تحديث التخزين المحلي
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        if (type === "book") {
+          var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+          if (!allB.some(function(b) { return b.id === item.id; })) {
+            allB.push(item);
+            utils.setLocal(window.APP_CONFIG.storageKeys.books, allB);
+          }
+        } else if (type === "lecture") {
+          var allL = utils.getLocal(window.APP_CONFIG.storageKeys.lectures, []) || [];
+          if (!allL.some(function(l) { return l.id === item.id; })) {
+            allL.unshift(item);
+            utils.setLocal(window.APP_CONFIG.storageKeys.lectures, allL);
+          }
+        }
+      }
+    } catch (e) {}
+
+    return true;
+  },
+
+  // حذف نهائي لا رجعة فيه لعنصر من السلة
+  permanentDeleteFromRecycleBin: async function(recycleDocId) {
+    if (!recycleDocId) return true;
+    if (window.db) {
+      try {
+        await window.db.collection("recycle_bin").doc(recycleDocId).delete();
+      } catch (err) {
+        console.warn("permanentDeleteFromRecycleBin error:", err);
+      }
+    }
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        var localBin = utils.getLocal("counsel_recycle_bin", []) || [];
+        utils.setLocal("counsel_recycle_bin", localBin.filter(function(i) { return i.id !== recycleDocId; }));
+      }
+    } catch (e) {}
+    return true;
+  },
+
+  // تفريغ سلة المحذوفات بالكامل
+  emptyRecycleBin: async function() {
+    var self = this;
+    if (window.db) {
+      try {
+        var snap = await window.db.collection("recycle_bin").get();
+        var batch = window.db.batch();
+        snap.forEach(function(doc) {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      } catch (e) {
+        console.warn("emptyRecycleBin batch error:", e);
+      }
+    }
+    try {
+      if (window.APP_UTILS) {
+        window.APP_UTILS.setLocal("counsel_recycle_bin", []);
+      }
+    } catch (e) {}
+    return true;
   }
 };

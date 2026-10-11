@@ -19,6 +19,7 @@ window.Sidebar = function(props) {
   if (isAdmin) {
     menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
+    menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
   }
 
   menuItems.push({ id: "settings", label: "الإعدادات العامة", icon: "⚙️" });
@@ -148,6 +149,11 @@ window.Sidebar = function(props) {
             {
               key: item.id,
               onClick: function() {
+                if (item.id === "recycle_bin") {
+                  if (props.onOpenRecycleBin) props.onOpenRecycleBin();
+                  onClose();
+                  return;
+                }
                 onTabChange(item.id);
                 onClose();
               },

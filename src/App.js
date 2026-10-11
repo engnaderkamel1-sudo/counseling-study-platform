@@ -36,6 +36,7 @@ function App() {
   var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);
+  var [isRecycleBinOpen, setIsRecycleBinOpen] = React.useState(false);
 
   var [isInstallPromptOpen, setIsInstallPromptOpen] = React.useState(false);
   var [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -171,7 +172,8 @@ function App() {
       hasNotificationPermission: hasNotificationPermission,
       onToggleNotification: handleToggleNotification,
       onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
-      onOpenErrorReport: function() { setIsErrorReportOpen(true); }
+      onOpenErrorReport: function() { setIsErrorReportOpen(true); },
+      onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
     }),
 
     React.createElement(
@@ -229,8 +231,14 @@ function App() {
       React.createElement(
         "main",
         { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (hasUpdateAvailable ? "pt-28 sm:pt-32" : "pt-20 sm:pt-22") },
-        activeTab === "lectures" && React.createElement(window.LecturesPage, { currentUser: currentUser }),
-        activeTab === "books" && React.createElement(window.BooksPage, { currentUser: currentUser }),
+        activeTab === "lectures" && React.createElement(window.LecturesPage, {
+          currentUser: currentUser,
+          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+        }),
+        activeTab === "books" && React.createElement(window.BooksPage, {
+          currentUser: currentUser,
+          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+        }),
         activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
         activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
         activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
@@ -256,6 +264,12 @@ function App() {
       onClose: function() { setIsErrorReportOpen(false); },
       currentUser: currentUser,
       activeTab: activeTab
+    }),
+
+    React.createElement(window.RecycleBinModal, {
+      isOpen: isRecycleBinOpen,
+      onClose: function() { setIsRecycleBinOpen(false); },
+      currentUser: currentUser
     }),
 
     React.createElement(window.InstallPromptModal, {

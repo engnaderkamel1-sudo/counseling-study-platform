@@ -157,8 +157,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "منصة دراسة المشورة والتعلم الذكي",
-  version: "1.2.1791663933",
-  buildTime: "2026-10-10T20:25:33",
+  version: "1.2.1791695189",
+  buildTime: "2026-10-11T05:06:29",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -434,9 +434,170 @@ window.CloudSyncService = {
     }
   },
 
-  // حذف كتاب
+  // حذف كتاب (نهائي)
   deleteBook: async function(bookId) {
     return this.deleteDocument("books", bookId);
+  },
+
+  // ==========================================
+  // منظومة سلة المحذوفات والأرشيف المؤقت (7 أيام)
+  // ==========================================
+  RECYCLE_RETENTION_MS: 7 * 24 * 60 * 60 * 1000, // أسبوع كامل
+
+  // الاشتراك في سلة المحذوفات مع التنظيف التلقائي للعناصر المنتهية صلاحيتها
+  subscribeRecycleBin: function(onUpdate) {
+    var self = this;
+    if (!window.db) return function() {};
+    try {
+      return window.db.collection("recycle_bin").orderBy("deletedAt", "desc").onSnapshot(function(snapshot) {
+        var list = [];
+        var now = Date.now();
+        snapshot.forEach(function(doc) {
+          var data = Object.assign({ id: doc.id }, doc.data());
+          // إذا مر أكثر من 7 أيام، نحذف العنصر نهائياً وتلقائياً
+          if (data.deletedAt && (now - data.deletedAt > self.RECYCLE_RETENTION_MS)) {
+            self.permanentDeleteFromRecycleBin(doc.id).catch(function() {});
+          } else {
+            list.push(data);
+          }
+        });
+        if (typeof onUpdate === "function") onUpdate(list);
+      }, function(err) {
+        console.warn("Recycle bin realtime listener notice:", err);
+      });
+    } catch (e) {
+      return function() {};
+    }
+  },
+
+  // نقل كتاب أو محاضرة إلى سلة المحذوفات (Soft Delete)
+  moveToRecycleBin: async function(item, type, user) {
+    if (!item) return false;
+    var self = this;
+    var docId = type + "_" + (item.id || Date.now());
+    var recycleRecord = {
+      id: docId,
+      originalId: item.id,
+      originalType: type, // "book" أو "lecture"
+      itemData: self.sanitizeForFirestore(item),
+      title: item.title || "عنصر بدون عنوان",
+      author: item.author || item.speaker || "",
+      deletedAt: Date.now(),
+      deletedBy: (user && user.fullName) || "الأدمن"
+    };
+
+    if (window.db) {
+      try {
+        await window.db.collection("recycle_bin").doc(docId).set(recycleRecord);
+        // حذفه من المجموعة الأصلية النشطة
+        var targetCollection = type === "book" ? "books" : "lectures";
+        await window.db.collection(targetCollection).doc(item.id).delete();
+      } catch (err) {
+        console.error("moveToRecycleBin cloud error:", err);
+      }
+    }
+
+    // تحديث التخزين المحلي
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        var localBin = utils.getLocal("counsel_recycle_bin", []) || [];
+        localBin.unshift(recycleRecord);
+        utils.setLocal("counsel_recycle_bin", localBin);
+
+        if (type === "book") {
+          var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+          utils.setLocal(window.APP_CONFIG.storageKeys.books, allB.filter(function(b) { return b.id !== item.id; }));
+        } else if (type === "lecture") {
+          var allL = utils.getLocal(window.APP_CONFIG.storageKeys.lectures, []) || [];
+          utils.setLocal(window.APP_CONFIG.storageKeys.lectures, allL.filter(function(l) { return l.id !== item.id; }));
+        }
+      }
+    } catch (e) {}
+
+    return true;
+  },
+
+  // استرجاع عنصر من سلة المحذوفات إلى مكانه الأصلي
+  restoreFromRecycleBin: async function(recycleRecord) {
+    if (!recycleRecord || !recycleRecord.itemData) return false;
+    var self = this;
+    var type = recycleRecord.originalType || "book";
+    var item = recycleRecord.itemData;
+
+    if (type === "book") {
+      await self.saveBook(item);
+    } else {
+      await self.saveLecture(item);
+    }
+
+    // حذفه من سلة المحذوفات
+    await self.permanentDeleteFromRecycleBin(recycleRecord.id);
+
+    // تحديث التخزين المحلي
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        if (type === "book") {
+          var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+          if (!allB.some(function(b) { return b.id === item.id; })) {
+            allB.push(item);
+            utils.setLocal(window.APP_CONFIG.storageKeys.books, allB);
+          }
+        } else if (type === "lecture") {
+          var allL = utils.getLocal(window.APP_CONFIG.storageKeys.lectures, []) || [];
+          if (!allL.some(function(l) { return l.id === item.id; })) {
+            allL.unshift(item);
+            utils.setLocal(window.APP_CONFIG.storageKeys.lectures, allL);
+          }
+        }
+      }
+    } catch (e) {}
+
+    return true;
+  },
+
+  // حذف نهائي لا رجعة فيه لعنصر من السلة
+  permanentDeleteFromRecycleBin: async function(recycleDocId) {
+    if (!recycleDocId) return true;
+    if (window.db) {
+      try {
+        await window.db.collection("recycle_bin").doc(recycleDocId).delete();
+      } catch (err) {
+        console.warn("permanentDeleteFromRecycleBin error:", err);
+      }
+    }
+    try {
+      var utils = window.APP_UTILS;
+      if (utils) {
+        var localBin = utils.getLocal("counsel_recycle_bin", []) || [];
+        utils.setLocal("counsel_recycle_bin", localBin.filter(function(i) { return i.id !== recycleDocId; }));
+      }
+    } catch (e) {}
+    return true;
+  },
+
+  // تفريغ سلة المحذوفات بالكامل
+  emptyRecycleBin: async function() {
+    var self = this;
+    if (window.db) {
+      try {
+        var snap = await window.db.collection("recycle_bin").get();
+        var batch = window.db.batch();
+        snap.forEach(function(doc) {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+      } catch (e) {
+        console.warn("emptyRecycleBin batch error:", e);
+      }
+    }
+    try {
+      if (window.APP_UTILS) {
+        window.APP_UTILS.setLocal("counsel_recycle_bin", []);
+      }
+    } catch (e) {}
+    return true;
   }
 };
 
@@ -1448,6 +1609,7 @@ window.Sidebar = function(props) {
   if (isAdmin) {
     menuItems.push({ id: "users", label: "إدارة الدارسين والطلبات", icon: "👥" });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
+    menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
   }
 
   menuItems.push({ id: "settings", label: "الإعدادات العامة", icon: "⚙️" });
@@ -1577,6 +1739,11 @@ window.Sidebar = function(props) {
             {
               key: item.id,
               onClick: function() {
+                if (item.id === "recycle_bin") {
+                  if (props.onOpenRecycleBin) props.onOpenRecycleBin();
+                  onClose();
+                  return;
+                }
                 onTabChange(item.id);
                 onClose();
               },
@@ -2194,6 +2361,292 @@ window.InstallPromptModal = function(props) {
             className: "flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition-all text-center"
           },
           "تم، فهمت ذلك"
+        )
+      )
+    )
+  );
+};
+
+// Module: components/RecycleBinModal.js
+// نافذة سلة المحذوفات والأرشيف المؤقت مع استرجاع وحذف تلقائي بعد 7 أيام
+window.RecycleBinModal = function(props) {
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+  var cloud = window.CloudSyncService;
+  var utils = window.APP_UTILS;
+
+  var [items, setItems] = React.useState(function() {
+    return utils ? utils.getLocal("counsel_recycle_bin", []) : [];
+  });
+  var [filterTab, setFilterTab] = React.useState("all"); // "all" | "book" | "lecture"
+  var [actionLoading, setActionLoading] = React.useState(false);
+
+  React.useEffect(function() {
+    if (!isOpen || !cloud) return;
+    var unsub = cloud.subscribeRecycleBin(function(list) {
+      setItems(list || []);
+      if (utils) utils.setLocal("counsel_recycle_bin", list || []);
+    });
+    return function() {
+      if (typeof unsub === "function") unsub();
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  var filteredItems = items.filter(function(item) {
+    if (filterTab === "all") return true;
+    return item.originalType === filterTab;
+  });
+
+  var booksCount = items.filter(function(i) { return i.originalType === "book"; }).length;
+  var lecturesCount = items.filter(function(i) { return i.originalType === "lecture"; }).length;
+
+  var getRemainingDays = function(deletedAt) {
+    if (!deletedAt) return 7;
+    var diffMs = (7 * 24 * 60 * 60 * 1000) - (Date.now() - deletedAt);
+    if (diffMs <= 0) return 0;
+    return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  };
+
+  var handleRestore = async function(item) {
+    if (!window.confirm("هل ترغب في استرجاع «" + (item.title || "هذا العنصر") + "» إلى مكانه الأصلي؟")) return;
+    setActionLoading(true);
+    try {
+      await cloud.restoreFromRecycleBin(item);
+      alert("✅ تم استرجاع «" + item.title + "» بنجاح!");
+    } catch (err) {
+      alert("حدث خطأ أثناء الاسترجاع: " + (err.message || err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  var handlePermanentDelete = async function(item) {
+    if (!window.confirm("⚠️ تحذير: هل أنت متأكد من الحذف النهائي لـ «" + (item.title || "هذا العنصر") + "»؟\nلا يمكن التراجع عن هذا الإجراء وسيتم حذفه من السيرفر نهائياً.")) return;
+    setActionLoading(true);
+    try {
+      await cloud.permanentDeleteFromRecycleBin(item.id);
+    } catch (err) {
+      alert("حدث خطأ أثناء الحذف: " + (err.message || err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  var handleEmptyAll = async function() {
+    if (!window.confirm("⚠️ تحذير نهائي:\nهل أنت متأكد من رغبتك في تفريغ سلة المحذوفات بالكامل وحذف جميع العناصر نهائياً؟")) return;
+    setActionLoading(true);
+    try {
+      await cloud.emptyRecycleBin();
+      alert("🧹 تم تفريغ سلة المحذوفات بالكامل.");
+    } catch (err) {
+      alert("حدث خطأ أثناء التفريغ: " + (err.message || err));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return React.createElement(
+    "div",
+    { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fade-in" },
+    React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden" },
+
+      // الترويسة
+      React.createElement(
+        "div",
+        { className: "p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-950/30" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2.5" },
+          React.createElement("span", { className: "text-2xl p-2 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400" }, "🗑️"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", { className: "text-base sm:text-lg font-bold text-slate-900 dark:text-white" }, "سلة المحذوفات والأرشيف المؤقت"),
+            React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" }, "تحفظ العناصر لمدة 7 أيام مع إمكانية استرجاعها بضغطة زر واحدة")
+          )
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center text-sm font-bold transition-all"
+          },
+          "✕"
+        )
+      ),
+
+      // شريط التصفية السريع
+      React.createElement(
+        "div",
+        { className: "px-5 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap bg-white dark:bg-slate-900" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-1.5" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setFilterTab("all"); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                (filterTab === "all"
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+            },
+            "الكل (" + items.length + ")"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setFilterTab("book"); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                (filterTab === "book"
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+            },
+            "📚 الكتب (" + booksCount + ")"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setFilterTab("lecture"); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                (filterTab === "lecture"
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+            },
+            "🎙️ المحاضرات (" + lecturesCount + ")"
+          )
+        ),
+        items.length > 0 && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleEmptyAll,
+            disabled: actionLoading,
+            className: "text-rose-600 hover:text-rose-700 dark:text-rose-400 text-xs font-bold transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50"
+          },
+          React.createElement("span", null, "🧹"),
+          React.createElement("span", null, "تفريغ السلة")
+        )
+      ),
+
+      // قائمة العناصر المحذوفة
+      React.createElement(
+        "div",
+        { className: "p-4 sm:p-5 flex-1 overflow-y-auto space-y-3" },
+        filteredItems.length === 0 ? React.createElement(
+          "div",
+          { className: "py-12 text-center text-slate-400 space-y-2" },
+          React.createElement("div", { className: "text-4xl" }, "🌿"),
+          React.createElement("p", { className: "font-bold text-sm text-slate-700 dark:text-slate-300" }, "سلة المحذوفات فارغة تماماً"),
+          React.createElement("p", { className: "text-xs text-slate-400" }, "أي كتاب أو محاضرة تقوم بحذفها مستقبلاً ستظهر هنا لمدة أسبوع قبل حذفها نهائياً.")
+        ) : filteredItems.map(function(item) {
+          var isBook = item.originalType === "book";
+          var daysLeft = getRemainingDays(item.deletedAt);
+          var dateStr = "";
+          if (item.deletedAt) {
+            try {
+              dateStr = new Date(item.deletedAt).toLocaleDateString("ar-EG", {
+                year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+              });
+            } catch (e) {}
+          }
+
+          return React.createElement(
+            "div",
+            {
+              key: item.id,
+              className: "p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+            },
+            React.createElement(
+              "div",
+              { className: "flex items-start gap-3 min-w-0" },
+              React.createElement(
+                "span",
+                { className: "text-2xl shrink-0 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs" },
+                isBook ? "📕" : "🎙️"
+              ),
+              React.createElement(
+                "div",
+                { className: "min-w-0" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2 flex-wrap" },
+                  React.createElement("h4", { className: "font-bold text-sm text-slate-900 dark:text-white truncate" }, item.title),
+                  React.createElement(
+                    "span",
+                    {
+                      className: "text-[10px] px-2 py-0.5 rounded-full font-bold " +
+                        (daysLeft <= 2
+                          ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300")
+                    },
+                    "⏳ متبقي " + daysLeft + " أيام"
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap" },
+                  item.author ? React.createElement("span", null, (isBook ? "المؤلف: " : "المحاضر: ") + item.author) : null,
+                  dateStr ? React.createElement("span", null, "• حُذف في: " + dateStr) : null,
+                  item.deletedBy ? React.createElement("span", null, "• بواسطة: " + item.deletedBy) : null
+                )
+              )
+            ),
+
+            // أزرار التحكم: استرجاع أو حذف نهائي
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 shrink-0 self-end sm:self-auto" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { handleRestore(item); },
+                  disabled: actionLoading,
+                  title: "استرجاع إلى مكانه الأصلي",
+                  className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 disabled:opacity-50"
+                },
+                React.createElement("span", null, "🔄"),
+                React.createElement("span", null, "استرجاع")
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { handlePermanentDelete(item); },
+                  disabled: actionLoading,
+                  title: "حذف نهائي بدون انتظار الأسبوع",
+                  className: "px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 text-xs font-bold transition-all flex items-center gap-1 disabled:opacity-50"
+                },
+                React.createElement("span", null, "❌"),
+                React.createElement("span", null, "نهائي")
+              )
+            )
+          );
+        })
+      ),
+
+      // الفوتر
+      React.createElement(
+        "div",
+        { className: "p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 flex items-center justify-between text-xs text-slate-500" },
+        React.createElement("span", null, "💡 تذكير: العناصر تُحذف تلقائياً فور مرور 7 أيام لتوفير الذاكرة."),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onClose,
+            className: "px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-xl transition-all"
+          },
+          "إغلاق"
         )
       )
     )
@@ -5899,6 +6352,25 @@ window.LecturesPage = function(props) {
     setEditingLecture(null);
   };
 
+  var handleDeleteLecture = async function(lec) {
+    if (!lec) return;
+    if (!window.confirm("هل ترغب في نقل محاضرة «" + (lec.title || "هذه المحاضرة") + "» إلى سلة المحذوفات؟\n\n💡 سيتم الاحتفاظ بالمحاضرة لمدة 7 أيام ويمكنك استرجاعها في أي وقت بضغطة زر.")) return;
+    try {
+      if (cloud && cloud.moveToRecycleBin) {
+        await cloud.moveToRecycleBin(lec, "lecture", currentUser);
+      } else {
+        await cloud.deleteDocument("lectures", lec.id);
+      }
+      setLectures(function(prev) { return prev.filter(function(l) { return l.id !== lec.id; }); });
+      if (activeLecture && activeLecture.id === lec.id) {
+        setActiveLecture(null);
+      }
+      alert("🗑️ تم نقل المحاضرة إلى سلة المحذوفات بنجاح. يمكنك استرجاعها خلال 7 أيام من سلة المحذوفات.");
+    } catch(err) {
+      alert("خطأ أثناء النقل لسلة المحذوفات: " + (err.message || err));
+    }
+  };
+
   var handleSavePosition = function(sec) {
     if (!activeLecture) return;
     setActiveLecture(Object.assign({}, activeLecture, { lastPosition: sec }));
@@ -5920,13 +6392,28 @@ window.LecturesPage = function(props) {
         React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ موضع الاستماع التلقائي")
       ),
       currentUser.role === "admin" && React.createElement(
-        "button",
-        {
-          onClick: function() { setShowAddModal(true); },
-          className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
-        },
-        React.createElement("span", null, "➕"),
-        React.createElement("span", null, "إضافة أو رفع محاضرة")
+        "div",
+        { className: "flex items-center gap-2" },
+        props.onOpenRecycleBin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: props.onOpenRecycleBin,
+            title: "سلة المحذوفات والأرشيف المؤقت (حفظ واسترجاع العناصر المحذوفة لمدة 7 أيام)",
+            className: "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "سلة المحذوفات")
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setShowAddModal(true); },
+            className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
+          },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", null, "إضافة أو رفع محاضرة")
+        )
       )
     ),
 
@@ -6090,6 +6577,17 @@ window.LecturesPage = function(props) {
           },
           React.createElement("span", null, "✏️"),
           React.createElement("span", null, "تعديل الكل")
+        ),
+        currentUser.role === "admin" && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { handleDeleteLecture(activeLecture); },
+            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs border border-rose-200 dark:border-rose-900",
+            title: "نقل المحاضرة إلى سلة المحذوفات"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "حذف")
         )
       ),
 
@@ -6458,6 +6956,19 @@ window.LecturesPage = function(props) {
                 className: "p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs hover:bg-slate-100 text-slate-600 dark:text-slate-300"
               },
               "✏️"
+            ),
+            currentUser.role === "admin" && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function(e) {
+                  e.stopPropagation();
+                  handleDeleteLecture(lec);
+                },
+                title: "نقل المحاضرة لسلة المحذوفات",
+                className: "p-1.5 rounded-lg border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs hover:bg-rose-100 text-rose-600 dark:text-rose-400"
+              },
+              "🗑️"
             ),
             React.createElement("div", { className: "text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-xl" },
               "آخر توقف: " + utils.formatDuration(lec.lastPosition || 0)
@@ -9102,21 +9613,24 @@ window.BooksPage = function(props) {
   };
 
   var handleDeleteBook = async function(e, bookId) {
-    e.stopPropagation();
-    if (!window.confirm("هل أنت متأكد من حذف هذا الكتاب نهائياً من المنصة؟")) return;
+    if (e && e.stopPropagation) e.stopPropagation();
+    var bookToDelete = books.find(function(b) { return b.id === bookId; }) || (activeBook && activeBook.id === bookId ? activeBook : null);
+    if (!bookToDelete) return;
+    if (!window.confirm("هل ترغب في نقل كتاب «" + (bookToDelete.title || "هذا الكتاب") + "» إلى سلة المحذوفات؟\n\n💡 سيتم الاحتفاظ بالكتاب لمدة 7 أيام ويمكنك استرجاعه في أي وقت بضغطة زر.")) return;
     try {
-      var success = await cloud.deleteDocument("books", bookId);
-      if (success) {
-        setBooks(function(prev) { return prev.filter(function(b) { return b.id !== bookId; }); });
-        if (activeBook && activeBook.id === bookId) {
-            setActiveBook(null);
-            utils.removeLocal("counsel_active_book_id");
-        }
+      if (cloud && cloud.moveToRecycleBin) {
+        await cloud.moveToRecycleBin(bookToDelete, "book", currentUser);
       } else {
-        alert("فشل حذف الكتاب. تأكد من اتصالك بالإنترنت.");
+        await cloud.deleteDocument("books", bookId);
       }
+      setBooks(function(prev) { return prev.filter(function(b) { return b.id !== bookId; }); });
+      if (activeBook && activeBook.id === bookId) {
+        setActiveBook(null);
+        utils.removeLocal("counsel_active_book_id");
+      }
+      alert("🗑️ تم نقل الكتاب إلى سلة المحذوفات بنجاح. يمكنك استرجاعه خلال 7 أيام من سلة المحذوفات.");
     } catch(err) {
-      alert("خطأ أثناء الحذف: " + err.message);
+      alert("خطأ أثناء النقل لسلة المحذوفات: " + err.message);
     }
   };
 
@@ -9386,6 +9900,17 @@ window.BooksPage = function(props) {
           },
           React.createElement("span", null, isForcingSync ? "⏳" : "☁️"),
           React.createElement("span", null, isForcingSync ? "جاري المزامنة..." : "مزامنة السحابة الآن")
+        ),
+        isAdmin && props.onOpenRecycleBin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: props.onOpenRecycleBin,
+            title: "سلة المحذوفات والأرشيف المؤقت (حفظ واسترجاع العناصر المحذوفة لمدة 7 أيام)",
+            className: "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "سلة المحذوفات")
         ),
         isAdmin && React.createElement(
           "button",
@@ -11346,6 +11871,7 @@ function App() {
   var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);
+  var [isRecycleBinOpen, setIsRecycleBinOpen] = React.useState(false);
 
   var [isInstallPromptOpen, setIsInstallPromptOpen] = React.useState(false);
   var [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -11481,7 +12007,8 @@ function App() {
       hasNotificationPermission: hasNotificationPermission,
       onToggleNotification: handleToggleNotification,
       onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
-      onOpenErrorReport: function() { setIsErrorReportOpen(true); }
+      onOpenErrorReport: function() { setIsErrorReportOpen(true); },
+      onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
     }),
 
     React.createElement(
@@ -11539,8 +12066,14 @@ function App() {
       React.createElement(
         "main",
         { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (hasUpdateAvailable ? "pt-28 sm:pt-32" : "pt-20 sm:pt-22") },
-        activeTab === "lectures" && React.createElement(window.LecturesPage, { currentUser: currentUser }),
-        activeTab === "books" && React.createElement(window.BooksPage, { currentUser: currentUser }),
+        activeTab === "lectures" && React.createElement(window.LecturesPage, {
+          currentUser: currentUser,
+          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+        }),
+        activeTab === "books" && React.createElement(window.BooksPage, {
+          currentUser: currentUser,
+          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+        }),
         activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
         activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
         activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
@@ -11566,6 +12099,12 @@ function App() {
       onClose: function() { setIsErrorReportOpen(false); },
       currentUser: currentUser,
       activeTab: activeTab
+    }),
+
+    React.createElement(window.RecycleBinModal, {
+      isOpen: isRecycleBinOpen,
+      onClose: function() { setIsRecycleBinOpen(false); },
+      currentUser: currentUser
     }),
 
     React.createElement(window.InstallPromptModal, {
