@@ -20,13 +20,31 @@ window.LectureViewerModal = function(props) {
   var [quizUserAnswers, setQuizUserAnswers] = React.useState({});
   var [quizSubmitted, setQuizSubmitted] = React.useState(false);
   var [selectedHandoutIndex, setSelectedHandoutIndex] = React.useState(0);
+  var [isHandoutFullScreen, setIsHandoutFullScreen] = React.useState(false);
+  var [handoutCurrentPage, setHandoutCurrentPage] = React.useState(function() {
+    var saved = utils.getLocal ? utils.getLocal("handout_page_" + (activeLecture ? activeLecture.id : ""), 1) : 1;
+    return parseInt(saved) || 1;
+  });
 
   // إعادة ضبط إجابات الكويز والهاند آوت عند تغيير المحاضرة
   React.useEffect(function() {
     setQuizUserAnswers({});
     setQuizSubmitted(false);
     setSelectedHandoutIndex(0);
+    setIsHandoutFullScreen(false);
+    if (activeLecture && activeLecture.id && utils.getLocal) {
+      var saved = utils.getLocal("handout_page_" + activeLecture.id, 1);
+      setHandoutCurrentPage(parseInt(saved) || 1);
+    }
   }, [activeLecture ? activeLecture.id : null]);
+
+  var handleHandoutPageChange = function(newPage) {
+    var p = Math.max(1, newPage);
+    setHandoutCurrentPage(p);
+    if (activeLecture && activeLecture.id && utils.setLocal) {
+      utils.setLocal("handout_page_" + activeLecture.id, p);
+    }
+  };
 
   if (!activeLecture) return null;
 
@@ -308,15 +326,19 @@ window.LectureViewerModal = function(props) {
                   "div",
                   { className: "flex items-center gap-2 w-full sm:w-auto shrink-0" },
                   React.createElement(
-                    "a",
+                    "button",
                     {
-                      href: currentHandout.url,
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                      className: "flex-1 sm:flex-none text-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5"
+                      type: "button",
+                      onClick: function() { setIsHandoutFullScreen(true); },
+                      className: "flex-1 sm:flex-none text-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"
                     },
-                    React.createElement("span", null, "👁️"),
-                    React.createElement("span", null, "فتح في نافذة كاملة")
+                    React.createElement("span", null, "⛶"),
+                    React.createElement("span", null, "قراءة بملء الشاشة في التطبيق")
+                  ),
+                  handoutCurrentPage > 1 && React.createElement(
+                    "span",
+                    { className: "text-[11px] font-bold px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" },
+                    "🔖 صفحة " + handoutCurrentPage
                   ),
                   React.createElement(
                     "a",
@@ -332,21 +354,67 @@ window.LectureViewerModal = function(props) {
                   )
                 )
               ),
-              // عارض الملفات المباشر المضمن (Google Drive أو مستند)
+              // عارض الملفات المباشر المضمن مع شريط التقليب العائم
               currentHandout && currentHandout.url && React.createElement(
                 "div",
-                { className: "w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 aspect-[4/3] md:aspect-[16/10] shadow-inner" },
+                { className: "relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 aspect-[4/3] md:aspect-[16/10] shadow-inner" },
                 React.createElement("iframe", {
+                  key: "tab-handout-" + handoutCurrentPage,
                   src: (function() {
                     var url = currentHandout.url;
                     if (url.includes("drive.google.com/file/d/")) {
-                      return url.replace(/\/view(\?.*)?$/, "/preview");
+                      return url.replace(/\/view(\?.*)?$/, "/preview") + "#page=" + handoutCurrentPage;
                     }
-                    return url;
+                    return url + (url.includes("#") ? "" : ("#page=" + handoutCurrentPage));
                   })(),
                   className: "w-full h-full border-0",
                   title: currentHandout.name || "Handout Viewer"
-                })
+                }),
+
+                // شريط التقليب العائم المدمج أسفل العارض بمتناول الإبهام (Floating Bottom Pill Bar)
+                React.createElement(
+                  "div",
+                  {
+                    className: "absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 shadow-2xl transition-all"
+                  },
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() { handleHandoutPageChange(handoutCurrentPage - 1); },
+                      disabled: handoutCurrentPage <= 1,
+                      title: "الصفحة السابقة",
+                      className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all shadow-xs border border-slate-700"
+                    },
+                    "◀"
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-1.5 px-2 font-bold font-mono text-xs text-slate-200" },
+                    React.createElement("input", {
+                      type: "number",
+                      min: 1,
+                      value: handoutCurrentPage,
+                      onChange: function(e) {
+                        var val = parseInt(e.target.value);
+                        if (!isNaN(val)) handleHandoutPageChange(val);
+                      },
+                      title: "اضغط لكتابة رقم الصفحة مباشرة",
+                      className: "w-11 bg-slate-950/80 border border-slate-700 rounded-lg text-center text-emerald-400 font-bold text-xs py-0.5 focus:border-emerald-500 focus:outline-none"
+                    }),
+                    React.createElement("span", { className: "text-slate-400 text-xs" }, "صفحة")
+                  ),
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: function() { handleHandoutPageChange(handoutCurrentPage + 1); },
+                      title: "الصفحة التالية",
+                      className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center active:scale-95 transition-all shadow-xs border border-slate-700"
+                    },
+                    "▶"
+                  )
+                )
               ),
               // قائمة تنزيل سريعة لكافة الملفات إذا كان هناك أكثر من ملف
               handoutsList.length > 1 && React.createElement(
@@ -679,6 +747,130 @@ window.LectureViewerModal = function(props) {
           ) : React.createElement("div")
         );
       })()
-    )
+    ),
+
+    // عارض الهاند آوت بملء الشاشة المدمج في التطبيق مع شريط التقليب العائم وحفظ الموضع
+    isHandoutFullScreen && (function() {
+      var handoutsList = [];
+      if (Array.isArray(activeLecture.handouts) && activeLecture.handouts.length > 0) {
+        handoutsList = activeLecture.handouts.filter(function(h) { return h && (h.url || h.name); });
+      } else if (activeLecture.handoutUrl) {
+        handoutsList = [{ id: "legacy", name: activeLecture.handoutName || "ملف الهاند آوت", url: activeLecture.handoutUrl }];
+      }
+      var activeIdx = Math.min(Math.max(0, selectedHandoutIndex), Math.max(0, handoutsList.length - 1));
+      var currentHandout = handoutsList[activeIdx] || null;
+      if (!currentHandout || !currentHandout.url) return null;
+
+      return React.createElement(
+        "div",
+        { className: "fixed inset-0 z-[70] bg-slate-950 flex flex-col font-cairo text-white animate-in fade-in duration-200" },
+        // شريط ترويسة عارض الهاند آوت
+        React.createElement(
+          "div",
+          { className: "h-14 px-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0 z-10" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5 min-w-0" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setIsHandoutFullScreen(false); },
+                className: "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 border border-slate-700 shadow-sm active:scale-95 transition-all"
+              },
+              "✕ رجوع للمحاضرة"
+            ),
+            React.createElement("div", { className: "min-w-0" },
+              React.createElement("h4", { className: "text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md" }, currentHandout.name || activeLecture.title),
+              React.createElement("p", { className: "text-[10px] text-slate-400 hidden sm:block truncate" }, (activeLecture.subject || "") + " • " + (activeLecture.speaker || ""))
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "span",
+              { className: "text-xs font-mono font-bold px-2.5 py-1 rounded-xl bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 shadow-2xs" },
+              "🔖 صفحة " + handoutCurrentPage
+            ),
+            React.createElement(
+              "a",
+              {
+                href: currentHandout.url,
+                download: true,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all border border-slate-700 hidden sm:flex items-center gap-1"
+              },
+              React.createElement("span", null, "⬇️"),
+              React.createElement("span", null, "تحميل")
+            )
+          )
+        ),
+
+        // مساحة عرض الـ PDF كاملة الشاشة داخل التطبيق
+        React.createElement(
+          "div",
+          { className: "flex-1 w-full h-[calc(100vh-56px)] bg-slate-900 relative" },
+          React.createElement("iframe", {
+            key: "fullscreen-handout-" + handoutCurrentPage,
+            src: (function() {
+              var url = currentHandout.url;
+              if (url.includes("drive.google.com/file/d/")) {
+                return url.replace(/\/view(\?.*)?$/, "/preview") + "#page=" + handoutCurrentPage;
+              }
+              return url + (url.includes("#") ? "" : ("#page=" + handoutCurrentPage));
+            })(),
+            className: "w-full h-full border-0",
+            title: currentHandout.name || "Handout Fullscreen Viewer"
+          }),
+
+          // شريط التقليب العائم المدمج أسفل الشاشة بمتناول الإبهام (Floating Bottom Pill Bar)
+          React.createElement(
+            "div",
+            {
+              className: "fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 shadow-2xl transition-all"
+            },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handleHandoutPageChange(handoutCurrentPage - 1); },
+                disabled: handoutCurrentPage <= 1,
+                title: "الصفحة السابقة",
+                className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all shadow-xs border border-slate-700"
+              },
+              "◀"
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 px-2 font-bold font-mono text-xs text-slate-200" },
+              React.createElement("input", {
+                type: "number",
+                min: 1,
+                value: handoutCurrentPage,
+                onChange: function(e) {
+                  var val = parseInt(e.target.value);
+                  if (!isNaN(val)) handleHandoutPageChange(val);
+                },
+                title: "اضغط لكتابة رقم الصفحة مباشرة",
+                className: "w-11 bg-slate-950/80 border border-slate-700 rounded-lg text-center text-emerald-400 font-bold text-xs py-0.5 focus:border-emerald-500 focus:outline-none"
+              }),
+              React.createElement("span", { className: "text-slate-400 text-xs" }, "صفحة")
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handleHandoutPageChange(handoutCurrentPage + 1); },
+                title: "الصفحة التالية",
+                className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center active:scale-95 transition-all shadow-xs border border-slate-700"
+              },
+              "▶"
+            )
+          )
+        )
+      );
+    })()
   );
 };

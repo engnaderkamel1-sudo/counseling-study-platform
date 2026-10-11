@@ -274,6 +274,53 @@ window.PdfReaderView = function(props) {
           title: activeBook.title
         }
       )
+    ),
+
+    // شريط التقليب العائم المدمج أسفل الشاشة بمتناول الإبهام (Floating Bottom Pill Bar)
+    React.createElement(
+      "div",
+      {
+        className: "fixed bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 shadow-2xl transition-all"
+      },
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function() { handlePageChange((activeBook.currentPage || 1) - 1); },
+          disabled: (activeBook.currentPage || 1) <= 1,
+          title: "الصفحة السابقة",
+          className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all shadow-xs border border-slate-700"
+        },
+        "◀"
+      ),
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-1.5 px-2 font-bold font-mono text-xs text-slate-200" },
+        React.createElement("input", {
+          type: "number",
+          min: 1,
+          max: getMaxPages(),
+          value: activeBook.currentPage || 1,
+          onChange: function(e) {
+            var val = parseInt(e.target.value);
+            if (!isNaN(val)) handlePageChange(val);
+          },
+          title: "اضغط لكتابة رقم الصفحة مباشرة",
+          className: "w-11 bg-slate-950/80 border border-slate-700 rounded-lg text-center text-emerald-400 font-bold text-xs py-0.5 focus:border-emerald-500 focus:outline-none"
+        }),
+        React.createElement("span", { className: "text-slate-400 text-xs" }, "من " + getMaxPages())
+      ),
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function() { handlePageChange((activeBook.currentPage || 1) + 1); },
+          disabled: (activeBook.currentPage || 1) >= getMaxPages(),
+          title: "الصفحة التالية",
+          className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all shadow-xs border border-slate-700"
+        },
+        "▶"
+      )
     )
   );
 };
