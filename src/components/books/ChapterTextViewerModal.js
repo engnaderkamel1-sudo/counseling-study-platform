@@ -30,6 +30,13 @@ window.ChapterTextViewerModal = function(props) {
   var [localIsPlaying, setLocalIsPlaying] = React.useState(false);
   var [localSpeed, setLocalSpeed] = React.useState(1);
   var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
+  var [readerTheme, setReaderTheme] = React.useState(function() {
+    try {
+      return localStorage.getItem("counsel_reader_theme") || "normal";
+    } catch (e) {
+      return "normal";
+    }
+  });
   var [isAudioCollapsed, setIsAudioCollapsed] = React.useState(function() {
     try {
       var saved = localStorage.getItem("counsel_reader_audio_collapsed");
@@ -338,7 +345,24 @@ window.ChapterTextViewerModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2 shrink-0" },
+          { className: "flex items-center gap-1.5 shrink-0" },
+          // زر وضع الورق الدافئ (Sepia Mode)
+          React.createElement("button", {
+            type: "button",
+            onClick: function() {
+              var next = readerTheme === "sepia" ? "normal" : "sepia";
+              setReaderTheme(next);
+              try { localStorage.setItem("counsel_reader_theme", next); } catch (e) {}
+            },
+            title: readerTheme === "sepia" ? "العودة للوضع العادي" : "تفعيل وضع الورق الدافئ (Sepia)",
+            className: "px-2 py-1 rounded-xl text-xs font-bold transition-all border flex items-center gap-1 " +
+              (readerTheme === "sepia"
+                ? "bg-amber-100 border-amber-300 text-amber-900 shadow-2xs"
+                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200")
+          },
+            React.createElement("span", null, "📜"),
+            React.createElement("span", { className: "hidden sm:inline text-[11px]" }, readerTheme === "sepia" ? "ورق دافئ" : "ورق دافئ")
+          ),
           // أزرار تكبير وتصغير حجم خط القراءة للموبايل
           React.createElement(
             "div",
@@ -352,7 +376,7 @@ window.ChapterTextViewerModal = function(props) {
             React.createElement("span", { className: "px-1.5 font-mono text-[11px] text-slate-400" }, fontSize + "px"),
             React.createElement("button", {
               type: "button",
-              onClick: function() { if (onFontSizeChange) onFontSizeChange(Math.min(24, fontSize + 1)); },
+              onClick: function() { if (onFontSizeChange) onFontSizeChange(Math.min(32, fontSize + 1)); },
               title: "تكبير الخط",
               className: "w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-slate-700 active:scale-90 transition-all text-slate-600 dark:text-slate-300"
             }, "A+")

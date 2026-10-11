@@ -61,6 +61,7 @@ window.AudioChaptersView = function(props) {
   var [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
   var [audioHasError, setAudioHasError] = React.useState(false);
   var [useIframePlayer, setUseIframePlayer] = React.useState(false);
+  var [resumedNotice, setResumedNotice] = React.useState("");
   var restoredPosRef = React.useRef({});
 
   // سجل الفصول المكتملة والمدروسة للكتاب النشط
