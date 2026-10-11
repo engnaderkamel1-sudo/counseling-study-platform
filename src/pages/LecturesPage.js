@@ -1,6 +1,6 @@
 // شاشة المحاضرات الرئيسية بعد التقسيم المعماري إلى مكونات مستقلة
 window.LecturesPage = function(props) {
-  var currentUser = props.currentUser || { role: "admin" };
+  var currentUser = props.currentUser || { role: "student" };
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
   var cloud = window.CloudSyncService;

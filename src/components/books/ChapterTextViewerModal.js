@@ -14,7 +14,11 @@ window.ChapterTextViewerModal = function(props) {
 
   if (!viewingChapterText) return null;
 
+  var currentUser = props.currentUser;
+  var onUpdateTimeOffset = props.onUpdateTimeOffset;
+
   var utils = window.APP_UTILS || {};
+  var isAdmin = !!(currentUser && currentUser.role === "admin");
   var allChaps = (activeBook && activeBook.audioChapters) || [];
   var allAudioChaps = allChaps.filter(function(c) { return c.audioUrl && c.audioUrl.trim(); });
   var curAudioIdx = allAudioChaps.findIndex(function(c) { return c.id === viewingChapterText.id; });
@@ -34,6 +38,87 @@ window.ChapterTextViewerModal = function(props) {
       return false;
     }
   });
+
+  // حالة إزاحة تزامن الصوت مع النص (Time Shift بالثواني مع الكسور مثل +1.5s أو -2s)
+  var [timeOffset, setTimeOffset] = React.useState(function() {
+    // 1. الأولوية للإعداد المحفوظ في الفصل سحابياً
+    if (viewingChapterText && viewingChapterText.timeOffset !== undefined) {
+      return parseFloat(viewingChapterText.timeOffset) || 0;
+    }
+    // 2. أو الإعداد المحفوظ محلياً على جهاز المستخدم لهذا الفصل
+    try {
+      var saved = localStorage.getItem("counsel_time_offset_" + (viewingChapterText ? viewingChapterText.id : ""));
+      if (saved !== null && !isNaN(parseFloat(saved))) {
+        return parseFloat(saved);
+      }
+    } catch (e) {}
+    return 0;
+  });
+
+  var [showOffsetPanel, setShowOffsetPanel] = React.useState(false);
+  var [isSavingOffset, setIsSavingOffset] = React.useState(false);
+  var [offsetSavedNotice, setOffsetSavedNotice] = React.useState("");
+
+  // تحديث الإزاحة عند تغيير الفصل
+  React.useEffect(function() {
+    if (viewingChapterText) {
+      var defaultOffset = (viewingChapterText.timeOffset !== undefined) ? (parseFloat(viewingChapterText.timeOffset) || 0) : 0;
+      try {
+        var localVal = localStorage.getItem("counsel_time_offset_" + viewingChapterText.id);
+        if (localVal !== null && !isNaN(parseFloat(localVal))) {
+          defaultOffset = parseFloat(localVal);
+        }
+      } catch (e) {}
+      setTimeOffset(defaultOffset);
+    }
+  }, [viewingChapterText && viewingChapterText.id]);
+
+  var handleAdjustOffset = function(delta) {
+    setTimeOffset(function(prev) {
+      var nextVal = Math.round((prev + delta) * 10) / 10;
+      try {
+        if (viewingChapterText && viewingChapterText.id) {
+          localStorage.setItem("counsel_time_offset_" + viewingChapterText.id, nextVal.toString());
+        }
+      } catch (e) {}
+      return nextVal;
+    });
+  };
+
+  var handleDirectOffsetChange = function(newVal) {
+    var num = parseFloat(newVal);
+    if (isNaN(num)) num = 0;
+    num = Math.round(num * 10) / 10;
+    setTimeOffset(num);
+    try {
+      if (viewingChapterText && viewingChapterText.id) {
+        localStorage.setItem("counsel_time_offset_" + viewingChapterText.id, num.toString());
+      }
+    } catch (e) {}
+  };
+
+  var handleResetOffset = function() {
+    setTimeOffset(0);
+    try {
+      if (viewingChapterText && viewingChapterText.id) {
+        localStorage.removeItem("counsel_time_offset_" + viewingChapterText.id);
+      }
+    } catch (e) {}
+  };
+
+  var handleSaveOffsetForEveryone = async function() {
+    if (!viewingChapterText || !onUpdateTimeOffset) return;
+    setIsSavingOffset(true);
+    try {
+      await onUpdateTimeOffset(viewingChapterText.id, timeOffset);
+      setOffsetSavedNotice("✅ تم حفظ التزامن لجميع الدارسين بنجاح!");
+      setTimeout(function() { setOffsetSavedNotice(""); }, 3500);
+    } catch (err) {
+      alert("حدث خطأ أثناء الحفظ السحابي: " + (err.message || err));
+    } finally {
+      setIsSavingOffset(false);
+    }
+  };
 
   var toggleAudioCollapse = function() {
     setIsAudioCollapsed(function(prev) {
@@ -113,17 +198,19 @@ window.ChapterTextViewerModal = function(props) {
     });
   }, [viewingChapterText && viewingChapterText.text]);
 
-  // تحديد الفقرة النشطة حالياً بناءً على موضع الصوت
+  // تحديد الفقرة النشطة حالياً بناءً على موضع الصوت مع تطبيق الإزاحة الزمنية (Time Offset / Shift)
   var activeSegmentIdx = React.useMemo(function() {
     if (!isPlayingThis || !localDuration || segments.length === 0) return -1;
-    var ratio = Math.max(0, Math.min(1, localProgress / localDuration));
+    // تطبيق الإزاحة: إذا كان النص سابق الصوت، نطرح الإزاحة لتأخير تحديد الفقرة، وإذا كان النص متأخراً نضيفها
+    var effectiveTime = Math.max(0, Math.min(localDuration, localProgress - timeOffset));
+    var ratio = effectiveTime / localDuration;
     for (var i = 0; i < segments.length; i++) {
       if (ratio >= segments[i].startRatio && ratio < segments[i].endRatio) {
         return i;
       }
     }
     return segments.length - 1;
-  }, [isPlayingThis, localProgress, localDuration, segments]);
+  }, [isPlayingThis, localProgress, localDuration, segments, timeOffset]);
 
   // التمرير السلس للفقرة النشطة تلقائياً أثناء تشغيل الصوت
   React.useEffect(function() {
@@ -135,10 +222,11 @@ window.ChapterTextViewerModal = function(props) {
     }
   }, [activeSegmentIdx, autoScrollEnabled, isPlayingThis]);
 
-  // القفز في الصوت مباشرة للفقرة التي ينقر عليها المستخدم
+  // القفز في الصوت مباشرة للفقرة التي ينقر عليها المستخدم مع مراعاة الإزاحة
   var handleSegmentClick = function(seg) {
     if (chapterAudioRef && chapterAudioRef.current && localDuration > 0) {
-      var targetTime = seg.startRatio * localDuration;
+      var targetTime = (seg.startRatio * localDuration) + timeOffset;
+      targetTime = Math.max(0, Math.min(localDuration, targetTime));
       chapterAudioRef.current.currentTime = targetTime;
       setLocalProgress(targetTime);
       if (!isPlayingThis) {
@@ -539,6 +627,74 @@ window.ChapterTextViewerModal = function(props) {
             onClick: handleTogglePlay,
             className: "px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
           }, "▶️ تشغيل الصوت")
+        )
+      ) : null,
+
+      // لوحة وأدوات ضبط إزاحة تزامن الصوت مع النص (Time Shift Fine-Tuning)
+      hasAudio ? React.createElement(
+        "div",
+        { className: "p-2 sm:p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 text-xs" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 flex-wrap min-w-0" },
+          React.createElement("span", { className: "font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1 shrink-0 text-[11px]" },
+            React.createElement("span", null, "⏱️"),
+            React.createElement("span", null, "وزن وتزامن الصوت مع النص:")
+          ),
+          // مجموعة أزرار الخطوة والخانة المباشرة (+ / - / input)
+          React.createElement(
+            "div",
+            { dir: "ltr", className: "flex items-center bg-white dark:bg-slate-900 rounded-xl border border-indigo-200 dark:border-indigo-800 p-0.5 shadow-2xs shrink-0" },
+            // زر تأخير النص (-0.5s)
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { handleAdjustOffset(-0.5); },
+              className: "w-7 h-7 flex items-center justify-center font-black text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-xs",
+              title: "تأخير تمييز النص بمقدار 0.5 ثانية (في حال كانت الكتابة سابقة الصوت)"
+            }, "-"),
+            // خانة كتابة القيمة يدوياً بالثانية
+            React.createElement("input", {
+              type: "number",
+              step: "0.5",
+              value: timeOffset,
+              onChange: function(e) { handleDirectOffsetChange(e.target.value); },
+              className: "w-14 text-center font-mono font-bold text-xs bg-transparent text-indigo-700 dark:text-indigo-300 focus:outline-none border-x border-slate-200 dark:border-slate-800 py-0.5",
+              title: "اكتب القيمة يدوياً بالثواني (مثلاً: 2 أو -1.5)"
+            }),
+            // زر تقديم النص (+0.5s)
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { handleAdjustOffset(0.5); },
+              className: "w-7 h-7 flex items-center justify-center font-black text-slate-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-lg transition-all active:scale-95 text-xs",
+              title: "تقديم تمييز النص بمقدار 0.5 ثانية (في حال كان الصوت سابق الكتابة)"
+            }, "+")
+          ),
+          React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 font-mono" },
+            (timeOffset > 0 ? ("+ " + timeOffset + " ثانية (تقديم)") : timeOffset < 0 ? (timeOffset + " ثانية (تأخير)") : "تزامن افتراضي (0.0s)")
+          ),
+          timeOffset !== 0 ? React.createElement("button", {
+            type: "button",
+            onClick: handleResetOffset,
+            className: "text-[10px] text-rose-500 hover:text-rose-700 underline font-bold px-1 transition-colors",
+            title: "إعادة تعيين التزامن للوضع الافتراضي"
+          }, "إعادة ضبط ↺") : null
+        ),
+
+        // قسم أزرار الحفظ (للمشرف حفظ عام للجميع وللطالب إشعار)
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-1.5 self-end sm:self-auto shrink-0" },
+          offsetSavedNotice ? React.createElement("span", { className: "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in" }, offsetSavedNotice) : null,
+          isAdmin && onUpdateTimeOffset ? React.createElement("button", {
+            type: "button",
+            disabled: isSavingOffset,
+            onClick: handleSaveOffsetForEveryone,
+            className: "px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] shadow-2xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50",
+            title: "حفظ هذا الوزن الزمني سحابياً لجميع الدارسين حتى يظهر لهم متزامناً بدقة تلقائياً"
+          },
+            React.createElement("span", null, "💾"),
+            React.createElement("span", null, isSavingOffset ? "جاري الحفظ..." : "حفظ التزامن للجميع")
+          ) : null
         )
       ) : null,
 

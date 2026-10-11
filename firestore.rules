@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // دالة للتحقق مما إذا كان المستخدم هو المشرف الرئيسي للمنصة
+    function isMasterAdmin() {
+      return request.auth != null && request.auth.token.email.lower() == "eng.naderkamel@gmail.com";
+    }
+
+    // 1. حسابات وبيانات الدارسين (users):
+    // - الدارس يقرأ ويعدل مستنده الخاص فقط
+    // - المشرف الرئيسي له كامل الصلاحيات
+    // - يُسمح بإنشاء طلب انضمام جديد (بحالة pending ورتبة student فقط)
+    match /users/{userId} {
+      allow read: if isMasterAdmin() || (request.auth != null && (request.auth.uid == userId || ("user_" + request.auth.token.email.replace("[^a-zA-Z0-9]", "_")) == userId));
+      allow create: if request.resource.data.role == "student" && request.resource.data.status == "pending";
+      allow update: if isMasterAdmin() || (request.auth != null && (request.auth.uid == userId || ("user_" + request.auth.token.email.replace("[^a-zA-Z0-9]", "_")) == userId) && request.resource.data.role == resource.data.role);
+      allow delete: if isMasterAdmin();
+    }
+
+    // 2. الملاحظات والتأملات الشخصية (personal_notes):
+    // - خاصة بكل دارس ولا يمكن لدارس آخر الاطلاع عليها
+    match /personal_notes/{noteId} {
+      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid || resource.data.userId == request.auth.token.email);
+    }
+
+    // 3. المحاضرات والكتب والرفوف (lectures & books):
+    // - قراءة متاحة للجميع للتشغيل والتعلم
+    // - الإضافة والتعديل والحذف حصرياً للمشرف الرئيسي
+    match /lectures/{lecId} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+    }
+
+    match /books/{bookId} {
+      allow read: if true;
+      allow write: if isMasterAdmin();
+      
+      // نصوص الصفحات المستخرجة (Cloud Cache)
+      match /cached_pages/{pageId} {
+        allow read: if true;
+        allow write: if isMasterAdmin();
+      }
+    }
+
+    // 4. سلة المحذوفات (recycle_bin):
+    // - للمشرف الرئيسي فقط لحماية المحتوى من الحذف العشوائي
+    match /recycle_bin/{item} {
+      allow read, write: if isMasterAdmin();
+    }
+
+    // 5. الإشعارات السحابية (notifications):
+    // - قراءة للجميع لاستلام التنبيهات
+    // - إرسال الإعلانات العامة للمشرف فقط، وطلبات التسجيل للجميع
+    match /notifications/{notifId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isMasterAdmin();
+    }
+
+    // 6. تقارير الأعطال الفنية (error_reports):
+    // - أي دارس يمكنه إرسال بلاغ عن عطل
+    // - المشرف فقط يقرأ ويحل البلاغات
+    match /error_reports/{reportId} {
+      allow create: if true;
+      allow read, update, delete: if isMasterAdmin();
+    }
+
+    // 7. الإعدادات ومفاتيح الذكاء الاصطناعي (settings):
+    // - حصرياً للمشرف الرئيسي لمنع استنزاف أو سرقة المفاتيح
+    match /settings/{doc} {
+      allow read, write: if isMasterAdmin();
+    }
+  }
+}

@@ -111,14 +111,22 @@ window.AudioChaptersView = function(props) {
   // تفعيل التشغيل الفوري بسلاسة واستعادة نقطة التوقف عند تغيير التراك
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
+    setAudioHasError(false);
     if (audio && playingChapterId) {
       restoreSavedPosition(audio, playingChapterId);
-      try {
-        var p = audio.play();
-        if (p !== undefined && typeof p.catch === "function") {
-          p.catch(function(err) { /* انتظار لمسة المستخدم الأولى */ });
-        }
-      } catch (playErr) {}
+      // تأخير بسيط لمنح المتصفح وقتاً لتهيئة المصدر الجديد بسلاسة
+      var timer = setTimeout(function() {
+        try {
+          var p = audio.play();
+          if (p !== undefined && typeof p.catch === "function") {
+            p.catch(function(err) {
+              // خطأ عدم تفاعل المستخدم أو انتظار جاهزية التراك
+              console.log("Audio play postponed until user gesture or buffer ready:", err);
+            });
+          }
+        } catch (playErr) {}
+      }, 80);
+      return function() { clearTimeout(timer); };
     }
   }, [playingChapterId]);
 
@@ -949,17 +957,24 @@ window.AudioChaptersView = function(props) {
           autoPlay: true,
           className: "hidden",
           onLoadedMetadata: function(e) {
+            setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
           },
           onCanPlay: function(e) {
+            setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
           },
           onError: function(e) {
+            // التحقق مما إذا كان هناك خطأ حقيقي في الرابط أم مجرد تفريغ مؤقت للـ buffer أثناء الانتقال
+            var mediaError = e.target && e.target.error;
+            if (!mediaError) return;
             var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
             if (driveId) {
               setUseIframePlayer(true);
               return;
             }
+            // إذا كان الخطأ بسبب إيقاف التحميل العادي أثناء الانتقال، نتجاهله
+            if (mediaError.code === 1) return; // MEDIA_ERR_ABORTED
             setAudioHasError(true);
           }
         }),

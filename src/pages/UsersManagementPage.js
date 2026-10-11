@@ -37,7 +37,10 @@ window.UsersManagementPage = function(props) {
   ];
 
   var fetchUsers = async function() {
-    if (!window.db) return;
+    if (!window.db || !currentUser || currentUser.role !== "admin") {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       var snap = await window.db.collection("users").get();

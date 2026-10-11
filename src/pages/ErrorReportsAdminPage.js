@@ -1,12 +1,12 @@
 // شاشة تقارير الأعطال والاقتراحات الفنية (للمسؤول نادر كمال فقط) مع دعم الاستماع للتسجيل الصوتي والحذف التلقائي
 window.ErrorReportsAdminPage = function(props) {
-  var currentUser = props.currentUser || { role: "admin" };
+  var currentUser = props.currentUser || { role: "student" };
   var [reports, setReports] = React.useState([]);
   var [filterTab, setFilterTab] = React.useState("all"); // "all", "bugs", "suggestions"
   var [isLoading, setIsLoading] = React.useState(true);
 
   var fetchReports = async function() {
-    if (!window.db) return;
+    if (!window.db || !currentUser || currentUser.role !== "admin") return;
     try {
       // تنظيف تلقائي للبلاغات القديمة التي تم حلها ومضى عليها 14 يوماً
       if (window.ErrorReportService && window.ErrorReportService.cleanupOldReports) {

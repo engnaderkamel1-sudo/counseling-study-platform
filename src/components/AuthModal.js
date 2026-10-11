@@ -68,19 +68,21 @@ window.AuthModal = function(props) {
         throw new Error("كلمة المرور يجب ألا تقل عن 4 خانات.");
       }
 
-      // فحص الحساب الرئيسي للمشرف
-      var isMasterAdmin = (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase());
+      // حظر التسجيل ببريد المشرف الرئيسي لمنع الاستيلاء على حساب الإدارة
+      if (cleanEmail === MASTER_ADMIN_EMAIL.toLowerCase()) {
+        throw new Error("هذا البريد الإلكتروني مخصص لمشرف المنصة. يرجى التوجه لشاشة تسجيل الدخول مباشرة.");
+      }
 
       var userDocId = "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
 
       // فحص ما إذا كان الحساب مسجلاً مسبقاً
       var snap = await window.db.collection("users").doc(userDocId).get();
-      if (snap.exists && !isMasterAdmin) {
+      if (snap.exists) {
         throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
       }
 
-      var userStatus = isMasterAdmin ? "approved" : "pending";
-      var userRole = isMasterAdmin ? "admin" : "student";
+      var userStatus = "pending";
+      var userRole = "student";
 
       var userData = {
         id: userDocId,
@@ -101,20 +103,6 @@ window.AuthModal = function(props) {
       };
 
       await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
-
-      // محاولة إنشاء حساب في Firebase Auth إن أمكن
-      if (window.auth && typeof window.auth.createUserWithEmailAndPassword === "function") {
-        try {
-          await window.auth.createUserWithEmailAndPassword(cleanEmail, cleanPassword);
-        } catch (authErr) {}
-      }
-
-      if (isMasterAdmin) {
-        alert("مرحباً بك يا مشرف المنصة!");
-        onLoginSuccess(userData);
-        if (onClose) onClose();
-        return;
-      }
 
       // إرسال إشعار فوري لموبايل المشرف
       if (window.NotificationService && typeof window.NotificationService.notifyAdminNewUserRegistration === "function") {

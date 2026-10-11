@@ -1,6 +1,6 @@
 // شاشة المنهج الدراسي والتقارير التفاعلية المجهزة للمستقبل (Interactive Report & NotebookLM style)
 window.CurriculumPage = function(props) {
-  var currentUser = props.currentUser || { role: "admin" };
+  var currentUser = props.currentUser || { role: "student" };
   var ai = window.GeminiAIService;
   var [reportText, setReportText] = React.useState("");
   var [isGenerating, setIsGenerating] = React.useState(false);

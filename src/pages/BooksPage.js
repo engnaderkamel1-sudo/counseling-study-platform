@@ -1,6 +1,6 @@
 // شاشة الكتب والمراجع مع فصول الكتاب والملخص الصوتي لكل فصل وحصر الذكاء للمسؤول
 window.BooksPage = function(props) {
-  var currentUser = props.currentUser || { role: "admin" };
+  var currentUser = props.currentUser || { role: "student" };
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
   var cloud = window.CloudSyncService;
@@ -1176,6 +1176,28 @@ window.BooksPage = function(props) {
     var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
 
     await safeCloudSaveBook(updatedBook);
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+  };
+
+  // حفظ وضبط إزاحة تزامن الصوت مع النص (Time Shift / Offset) للفصل سحابياً ومحلياً
+  var handleUpdateChapterTimeOffset = async function(chapterId, offsetSeconds) {
+    if (!activeBook || !chapterId) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapterId; });
+    if (idx === -1) return;
+
+    var chap = Object.assign({}, chaps[idx]);
+    chap.timeOffset = parseFloat(offsetSeconds) || 0;
+    chaps[idx] = chap;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
+
+    await safeCloudSaveBook(updatedBook, { silent: true });
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
     var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
@@ -3818,12 +3840,14 @@ window.BooksPage = function(props) {
       fontSize: chapterTextFontSize,
       onFontSizeChange: setChapterTextFontSize,
       activeBook: activeBook,
+      currentUser: currentUser,
       playingChapterId: playingChapterId,
       setPlayingChapterId: setPlayingChapterId,
       chapterAudioRef: chapterAudioRef,
       setViewingChapterText: setViewingChapterText,
       isPlaylistMode: isPlaylistMode,
-      setIsPlaylistMode: setIsPlaylistMode
+      setIsPlaylistMode: setIsPlaylistMode,
+      onUpdateTimeOffset: handleUpdateChapterTimeOffset
     }),
     // نافذة فحص الجودة الشامل واعتماد النشر للدارسين (Quality Gate)
     React.createElement(window.BookQualityAuditModal, {

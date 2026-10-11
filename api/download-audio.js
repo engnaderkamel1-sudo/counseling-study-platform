@@ -26,6 +26,41 @@ module.exports = async function handler(req, res) {
       return res.end(JSON.stringify({ error: "Missing url or b64 parameter" }));
     }
 
+    let parsed;
+    try {
+      parsed = new URL(rawUrl);
+    } catch (_) {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.end(JSON.stringify({ error: "Invalid URL format" }));
+    }
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.end(JSON.stringify({ error: "Only HTTP and HTTPS protocols are allowed" }));
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "169.254.169.254" ||
+      host.endsWith(".internal") ||
+      host.endsWith(".local") ||
+      host.startsWith("10.") ||
+      host.startsWith("192.168.") ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      res.statusCode = 403;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      return res.end(JSON.stringify({ error: "Access to private or local network addresses is forbidden" }));
+    }
+
     const upstreamResp = await fetch(rawUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
