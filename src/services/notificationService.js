@@ -10,7 +10,7 @@ window.NotificationService = {
     if (permission === "granted") {
       new Notification("منصة دراسة المشورة", {
         body: "تم تفعيل الإشعارات بنجاح! ستصلك تنبيهات فور نزول أي محاضرة جديدة.",
-        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230f172a'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌿%3C/text%3E%3C/svg%3E"
+        icon: "icon-192.png"
       });
       return true;
     }
