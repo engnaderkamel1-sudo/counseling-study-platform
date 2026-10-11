@@ -811,11 +811,25 @@ window.LecturesPage = function(props) {
     // بطاقة شريط إنجاز ومتابعة المنهج الدراسي (Progress Tracker)
     (function() {
       if (!lectures || lectures.length === 0) return null;
-      var total = lectures.length;
-      var done = lectures.filter(function(l) {
+      var totalAll = lectures.length;
+      
+      // المحاضرات المرفوعة والمتاحة للدراسة فعلياً حتى الآن (التي لها تسجيل صوت/فيديو أو ملخصات أو ملفات)
+      var availableLectures = lectures.filter(function(l) {
+        var hasMedia = !!(l.mediaUrl && l.mediaUrl.trim());
+        var hasHandout = !!(l.handoutUrl && l.handoutUrl.trim());
+        var hasAudio = !!(l.audioSummaryUrl && l.audioSummaryUrl.trim());
+        var hasWritten = !!(l.writtenSummary && l.writtenSummary.trim());
+        return hasMedia || hasHandout || hasAudio || hasWritten;
+      });
+
+      var targetPool = availableLectures.length > 0 ? availableLectures : lectures;
+      var totalTarget = targetPool.length;
+      var isAvailableMode = availableLectures.length > 0;
+
+      var done = targetPool.filter(function(l) {
         return completedIds.indexOf(l.id) !== -1;
       }).length;
-      var pct = Math.min(100, Math.round((done / total) * 100));
+      var pct = totalTarget > 0 ? Math.min(100, Math.round((done / totalTarget) * 100)) : 0;
 
       return React.createElement(
         "div",
@@ -833,16 +847,16 @@ window.LecturesPage = function(props) {
               React.createElement(
                 "h4",
                 { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight" },
-                "إنجازك الدراسي (المحاضرات التي أنهيت مذاكرتها)"
+                isAvailableMode ? "إنجازك في المحاضرات المتاحة حتى الآن" : "إنجازك الدراسي في محاضرات الترم"
               ),
               React.createElement(
                 "p",
                 { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-1" },
                 pct === 100
-                  ? "🎉 مبارك! أتممت بنجاح دراسة كافة محاضرات الترم بالكامل."
+                  ? "🎉 أحسنت! أنت مواكب للمنهج تماماً وأتممت دراسة كافة المحاضرات المتاحة حالياً."
                   : (done > 0
-                      ? ("أتممت دراسة " + done + " من أصل " + total + " محاضرة بنجاح 🌿")
-                      : "لم تسجل أي محاضرة مدروسة بعد • اضغط على المربع (✓) بجانب المحاضرة عند إنهائها لاحتسابها في إنجازك.")
+                      ? ("أتممت دراسة " + done + " من أصل " + totalTarget + " محاضرة متاحة حتى الآن 🌿")
+                      : "لم تسجل أي محاضرة مدروسة بعد • اضغط على المربع (✓) بجانب المحاضرة عند إنهائها لاحتسابها.")
               )
             )
           ),
@@ -852,7 +866,7 @@ window.LecturesPage = function(props) {
             React.createElement(
               "span",
               { className: "text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800" },
-              done + " من " + total + " مكتملة"
+              done + " من " + totalTarget + " متاحة"
             ),
             React.createElement(
               "span",
@@ -872,6 +886,13 @@ window.LecturesPage = function(props) {
               style: { width: pct + "%" }
             }
           )
+        ),
+        // سطر إيضاح إجمالي محاضرات جدول الترم
+        isAvailableMode && React.createElement(
+          "div",
+          { className: "flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 pt-0.5 px-0.5" },
+          React.createElement("span", null, "تم رفع " + totalTarget + " من إجمالي " + totalAll + " محاضرة مجدولة بالترم"),
+          React.createElement("span", { className: "font-mono" }, "المرفوع: " + Math.round((totalTarget / totalAll) * 100) + "%")
         )
       );
     })(),
