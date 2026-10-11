@@ -578,5 +578,91 @@ window.APP_UTILS = {
       topic: topic,
       timeStr: timeStr
     };
+  },
+
+  // حساب العد التنازلي التفاعلي المتبقي للمحاضرة أو لقاء الزوم
+  getCountdownInfo: function(dateStr, timeStr) {
+    if (!dateStr) return null;
+    var now = new Date();
+
+    // استخراج الساعة فقط من نص الوقت (مثلاً "05:45 PM" أو "17:45")
+    var cleanHours = 17;
+    var cleanMins = 45; // افتراضي 05:45 PM
+    if (timeStr) {
+      var tMatch = String(timeStr).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (tMatch) {
+        var h = parseInt(tMatch[1]);
+        var m = parseInt(tMatch[2]);
+        var ampm = (tMatch[3] || "").toUpperCase();
+        if (ampm === "PM" && h < 12) h += 12;
+        if (ampm === "AM" && h === 12) h = 0;
+        cleanHours = h;
+        cleanMins = m;
+      }
+    }
+
+    try {
+      // نعتمد تاريخ اليوم الدراسي المحدد للمحاضرة (YYYY-MM-DD)
+      var p = String(dateStr).trim().split("-");
+      if (p.length === 3) {
+        var targetYear = parseInt(p[0]);
+        var targetMonth = parseInt(p[1]) - 1;
+        var targetDay = parseInt(p[2]);
+        var targetDate = new Date(targetYear, targetMonth, targetDay, cleanHours, cleanMins, 0);
+
+        var diffMs = targetDate.getTime() - now.getTime();
+
+        // اللقاء جاري الآن (من قبل الموعد بـ 15 دقيقة حتى بعد الموعد بـ 150 دقيقة)
+        if (diffMs <= (15 * 60 * 1000) && diffMs >= (-150 * 60 * 1000)) {
+          return {
+            status: "live",
+            label: "🔴 جارية الآن عبر زوم",
+            shortBadge: "🔴 جارية الآن",
+            diffMs: diffMs
+          };
+        }
+
+        // اللقاء انتهى
+        if (diffMs < (-150 * 60 * 1000)) {
+          return {
+            status: "past",
+            label: "انتهت المحاضرة",
+            shortBadge: "انتهت",
+            diffMs: diffMs
+          };
+        }
+
+        // اللقاء قادم: حساب الأيام والساعات والدقائق
+        var totalSecs = Math.floor(diffMs / 1000);
+        var days = Math.floor(totalSecs / 86400);
+        var hours = Math.floor((totalSecs % 86400) / 3600);
+        var mins = Math.floor((totalSecs % 3600) / 60);
+
+        var fullLabel = "متبقي ";
+        var shortBadge = "⏳ بعد ";
+
+        if (days > 0) {
+          fullLabel += days + (days === 1 ? " يوم و " : " أيام و ") + hours + " ساعة";
+          shortBadge += days + (days === 1 ? " يوم" : " أيام");
+        } else if (hours > 0) {
+          fullLabel += hours + " ساعة و " + mins + " دقيقة";
+          shortBadge += hours + " س و " + mins + " د";
+        } else {
+          fullLabel += mins + " دقيقة";
+          shortBadge += mins + " دقيقة";
+        }
+
+        return {
+          status: "upcoming",
+          label: fullLabel,
+          shortBadge: shortBadge,
+          days: days,
+          hours: hours,
+          mins: mins,
+          diffMs: diffMs
+        };
+      }
+    } catch(err) {}
+    return null;
   }
 };

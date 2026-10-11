@@ -167,56 +167,50 @@ window.LectureViewerModal = function(props) {
           },
           "تعديل البيانات والروابط"
         ),
+        activeLecture.zoomUrl && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { if (props.handleClearZoom) props.handleClearZoom(activeLecture); },
+            className: "px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs border border-amber-200 dark:border-amber-900",
+            title: "مسح رابط الزوم فقط وإبقاء المحاضرة"
+          },
+          React.createElement("span", null, "🚫"),
+          React.createElement("span", null, "مسح رابط الزوم")
+        ),
         React.createElement(
           "button",
           {
             type: "button",
             onClick: function() { if (handleDeleteLecture) handleDeleteLecture(activeLecture); },
             className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs border border-rose-200 dark:border-rose-900 mr-auto",
-            title: "نقل المحاضرة إلى المحذوفات"
+            title: "نقل المحاضرة كاملة إلى المحذوفات"
           },
-          "حذف المحاضرة"
+          "حذف المحاضرة كاملة"
         )
       ),
 
-      // الألسنة الداخلية الخمسة بتصميم نظيف
-      React.createElement(
-        "div",
-        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
-        [
-          { id: "media", label: "المشاهدة والاستماع" },
-          { id: "handout", label: "المرفقات والملفات" },
-          { id: "summary", label: "الملخص المكتوب" },
-          { id: "audio_summary", label: "الملخص الصوتي" },
-          { id: "quiz", label: "الاختبار التفاعلي" }
-        ].map(function(tab) {
-          var isCurrent = activeSubTab === tab.id;
-          return React.createElement(
-            "button",
-            {
-              key: tab.id,
-              onClick: function() { setActiveSubTab(tab.id); },
-              className: "pb-2.5 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap " +
-                (isCurrent ? "border-emerald-600 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")
-            },
-            tab.label
-          );
-        })
-      ),
+      // كارت قاعة زوم المباشرة المستقل (يظهر في الأعلى بشكل بارز ومستقل عن مشغل الفيديو)
+      activeLecture.zoomUrl && (function() {
+        var cd = (utils && utils.getCountdownInfo) ? utils.getCountdownInfo(activeLecture.date, activeLecture.zoomTimeStr || activeLecture.startTime) : null;
+        var isLive = cd && cd.status === "live";
 
-      // 1. تبويب الفيديو والمشغل
-      activeSubTab === "media" && React.createElement(
-        "div",
-        { className: "space-y-4" },
-        // كارت رابط زوم المباشر للمحاضرة
-        activeLecture.zoomUrl && React.createElement(
+        return React.createElement(
           "div",
-          { className: "p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-lg border border-blue-700/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4" },
+          {
+            className: "p-4 sm:p-5 rounded-2xl text-white shadow-lg border flex flex-col md:flex-row items-start md:items-center justify-between gap-4 " +
+              (isLive
+                ? "bg-gradient-to-r from-rose-900 via-rose-800 to-red-900 border-rose-500/50"
+                : "bg-gradient-to-r from-blue-900 to-indigo-900 border-blue-700/60")
+          },
           React.createElement(
             "div",
             { className: "space-y-1.5" },
-            React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 flex-wrap" },
               React.createElement("span", { className: "px-2.5 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-[11px] font-bold text-blue-200" }, "🎥 بث زوم المباشر"),
+              cd && React.createElement("span", { className: "text-xs font-mono font-bold text-amber-300" }, cd.label),
               activeLecture.zoomTimeStr && React.createElement("span", { className: "text-xs font-mono text-blue-200" }, "⏰ " + activeLecture.zoomTimeStr)
             ),
             React.createElement("h4", { className: "text-base font-bold text-white" }, "رابط قاعة الزوم متاح الآن لحضور المحاضرة"),
@@ -262,9 +256,40 @@ window.LectureViewerModal = function(props) {
               className: "w-full md:w-auto px-6 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md hover:scale-102 transition-all active:scale-95 shrink-0"
             },
             React.createElement("span", { className: "text-base" }, "🚀"),
-            React.createElement("span", null, "دخول زوم المباشر")
+            React.createElement("span", null, isLive ? "دخول زوم الآن" : "دخول زوم المباشر")
           )
-        ),
+        );
+      })(),
+
+      // الألسنة الداخلية الخمسة بتصميم نظيف
+      React.createElement(
+        "div",
+        { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
+        [
+          { id: "media", label: "المشاهدة والاستماع (فيديو التسجيل)" },
+          { id: "handout", label: "المرفقات والملفات" },
+          { id: "summary", label: "الملخص المكتوب" },
+          { id: "audio_summary", label: "الملخص الصوتي" },
+          { id: "quiz", label: "الاختبار التفاعلي" }
+        ].map(function(tab) {
+          var isCurrent = activeSubTab === tab.id;
+          return React.createElement(
+            "button",
+            {
+              key: tab.id,
+              onClick: function() { setActiveSubTab(tab.id); },
+              className: "pb-2.5 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap " +
+                (isCurrent ? "border-emerald-600 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")
+            },
+            tab.label
+          );
+        })
+      ),
+
+      // 1. تبويب الفيديو والمشغل
+      activeSubTab === "media" && React.createElement(
+        "div",
+        { className: "space-y-4" },
         activeLecture.mediaUrl ? React.createElement(
           "div",
           { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },

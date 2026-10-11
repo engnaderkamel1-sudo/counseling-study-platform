@@ -640,6 +640,115 @@ window.LecturesPage = function(props) {
       )
     ),
 
+    // كارت العد التنازلي التفاعلي المباشر لأقرب محاضرة زوم قادمة
+    (function() {
+      var zoomLectures = lectures.filter(function(l) { return l && l.zoomUrl && l.date; });
+      if (zoomLectures.length === 0) return null;
+
+      var bestLec = null;
+      var bestCd = null;
+
+      for (var i = 0; i < zoomLectures.length; i++) {
+        var l = zoomLectures[i];
+        var cd = (utils && utils.getCountdownInfo) ? utils.getCountdownInfo(l.date, l.zoomTimeStr || l.startTime) : null;
+        if (cd && (cd.status === "live" || cd.status === "upcoming")) {
+          if (!bestCd || cd.diffMs < bestCd.diffMs) {
+            bestLec = l;
+            bestCd = cd;
+          }
+        }
+      }
+
+      if (!bestLec || !bestCd) return null;
+
+      var isLive = bestCd.status === "live";
+
+      return React.createElement(
+        "div",
+        {
+          className: "p-4 sm:p-5 rounded-3xl text-white shadow-lg border transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 " +
+            (isLive
+              ? "bg-gradient-to-r from-rose-900 via-rose-800 to-red-900 border-rose-500/50 shadow-rose-950/30"
+              : "bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border-blue-500/40 shadow-blue-950/20")
+        },
+        React.createElement(
+          "div",
+          { className: "space-y-1.5 min-w-0" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 flex-wrap" },
+            React.createElement(
+              "span",
+              { className: "px-2.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1 shadow-2xs " + (isLive ? "bg-rose-500 text-white animate-pulse" : "bg-blue-600 text-white") },
+              isLive ? "🔴 المحاضرة جارية الآن عبر زوم" : "⏳ المحاضرة القادمة عبر زوم"
+            ),
+            bestLec.subject && React.createElement(
+              "span",
+              { className: "px-2 py-0.5 rounded-lg bg-white/10 text-white/90 text-xs font-semibold" },
+              bestLec.subject
+            ),
+            bestLec.date && React.createElement(
+              "span",
+              { className: "text-xs font-mono text-white/70" },
+              "📅 " + bestLec.date + (bestLec.zoomTimeStr ? " • " + bestLec.zoomTimeStr : "")
+            )
+          ),
+          React.createElement(
+            "h3",
+            { className: "text-base sm:text-lg font-bold text-white truncate" },
+            bestLec.title + " • " + bestLec.speaker
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-3 text-xs text-white/80 pt-0.5" },
+            React.createElement("span", { className: "font-mono font-bold text-amber-300 text-sm" }, bestCd.label),
+            bestLec.meetingId && React.createElement(
+              "span",
+              {
+                onClick: function() {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(bestLec.meetingId);
+                    alert("تم نسخ Meeting ID: " + bestLec.meetingId);
+                  }
+                },
+                className: "cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md text-[11px] font-mono",
+                title: "اضغط للنسخ"
+              },
+              "ID: " + bestLec.meetingId + " 📋"
+            ),
+            bestLec.passcode && React.createElement(
+              "span",
+              {
+                onClick: function() {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(bestLec.passcode);
+                    alert("تم نسخ Passcode: " + bestLec.passcode);
+                  }
+                },
+                className: "cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md text-[11px] font-mono",
+                title: "اضغط للنسخ"
+              },
+              "Passcode: " + bestLec.passcode + " 📋"
+            )
+          )
+        ),
+        React.createElement(
+          "a",
+          {
+            href: bestLec.zoomUrl,
+            target: "_blank",
+            rel: "noopener noreferrer",
+            className: "w-full md:w-auto px-6 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2 shadow-md hover:scale-102 transition-all active:scale-95 shrink-0 " +
+              (isLive
+                ? "bg-rose-500 hover:bg-rose-600 text-white animate-pulse"
+                : "bg-blue-600 hover:bg-blue-500 text-white")
+          },
+          React.createElement("span", { className: "text-base" }, "🎥"),
+          React.createElement("span", null, isLive ? "دخول الزوم الآن 🚀" : "رابط قاعة الزوم")
+        )
+      );
+    })(),
+
     // شريط إشعار وتنبيه بسيط عند وجود فلترة نشطة مع زر لإلغائها سريعاً
     isFiltered && React.createElement(
       "div",
