@@ -902,18 +902,27 @@ window.AudioChaptersView = function(props) {
               ),
               React.createElement(
                 "div",
-                { className: "flex items-center gap-2 text-[10px] text-indigo-300" },
-                React.createElement("span", null, "صفحة PDF " + (activeChap.startPage || 1)),
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { handlePageChange(activeChap.startPage || 1); },
-                  className: "hover:text-white underline"
-                }, "انتقل"),
-                activeChap.text ? React.createElement("button", {
-                  type: "button",
-                  onClick: function() { if (setViewingChapterText) setViewingChapterText(activeChap); },
-                  className: "text-blue-300 hover:text-white underline font-bold"
-                }, "📖 عرض النص") : null
+                { className: "flex items-center gap-2 text-[10px] text-indigo-300 flex-wrap" },
+                React.createElement("span", { className: "text-slate-400 font-medium" }, "📄 صفحة PDF " + (activeChap.startPage || 1)),
+                activeChap.text ? (function() {
+                  var isViewingThis = viewingChapterText && viewingChapterText.id === activeChap.id;
+                  return React.createElement("button", {
+                    type: "button",
+                    onClick: function() {
+                      if (setViewingChapterText) {
+                        setViewingChapterText(isViewingThis ? null : activeChap);
+                      }
+                    },
+                    className: "px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all shadow-xs flex items-center gap-1 active:scale-95 " +
+                      (isViewingThis
+                        ? "bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-400/40"
+                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 font-black"),
+                    title: isViewingThis ? "إخفاء نافذة قراءة النص" : "عرض نص الفصل المفرغ للقراءة"
+                  },
+                    React.createElement("span", null, "📖"),
+                    React.createElement("span", null, isViewingThis ? "إخفاء النص" : "عرض النص")
+                  );
+                })() : null
               )
             )
           ),
@@ -1256,11 +1265,9 @@ window.AudioChaptersView = function(props) {
               React.createElement(
                 "div",
                 { className: "flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400" },
-                React.createElement("button", {
-                  type: "button",
-                  onClick: function() { handlePageChange(chap.startPage || 1); },
-                  className: "hover:text-blue-600 font-bold underline flex items-center gap-1"
-                }, "📖 صفحة PDF رقم " + (chap.startPage || 1)),
+                React.createElement("span", {
+                  className: "font-medium flex items-center gap-1 text-slate-500 dark:text-slate-400"
+                }, "📄 صفحة PDF " + (chap.startPage || 1)),
                 chap.audioUrl ? (function() {
                   var d = (durationsMap && durationsMap[chap.id]) || chap.audioDuration || 0;
                   var savedPos = 0;
@@ -1490,6 +1497,9 @@ window.AudioChaptersView = function(props) {
                     setPlayingChapterId(null);
                   } else {
                     setPlayingChapterId(chap.id);
+                    if (chap.text && setViewingChapterText) {
+                      setViewingChapterText(chap);
+                    }
                   }
                 },
                 className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
