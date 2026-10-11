@@ -62,11 +62,11 @@ window.LectureRow = function(props) {
     // قسم اليسار: مؤشرات المحتوى + شارة الحالة + أزرار الإجراءات
     React.createElement(
       "div",
-      { className: "flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800" },
+      { className: "flex items-center justify-between sm:justify-end gap-2.5 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100 dark:border-slate-800/80" },
       // الأيقونات والمؤشرات
       React.createElement(
         "div",
-        { className: "flex items-center gap-1.5 text-[10px]" },
+        { className: "flex items-center gap-1.5 text-[11px]" },
         lec.mediaUrl && React.createElement("span", { title: "فيديو متاح", className: "px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/50" }, "فيديو"),
         ((Array.isArray(lec.handouts) && lec.handouts.length > 0) || lec.handoutUrl) && (function() {
           var count = Array.isArray(lec.handouts) && lec.handouts.length > 0 ? lec.handouts.length : 1;
@@ -83,20 +83,7 @@ window.LectureRow = function(props) {
       ),
       // شارة الحالة
       React.createElement("span", { className: "text-[11px] font-bold px-2.5 py-0.5 rounded-md shrink-0 " + st.badgeClass }, st.label),
-      // زر الفتح
-      React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: function(e) {
-            e.stopPropagation();
-            if (onSelect) onSelect(lec);
-          },
-          className: "px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 text-xs font-bold transition-all shadow-2xs active:scale-95"
-        },
-        "فتح ▶"
-      ),
-      // أزرار المسؤول
+      // أزرار المسؤول (تعديل وحذف)
       currentUser.role === "admin" && React.createElement(
         "div",
         { className: "flex items-center gap-1" },
@@ -109,7 +96,7 @@ window.LectureRow = function(props) {
               if (onEdit) onEdit(lec);
             },
             title: "تعديل بيانات المحاضرة أو الروابط",
-            className: "p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 text-xs"
+            className: "p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 text-xs transition-colors"
           },
           "✏️"
         ),
@@ -121,11 +108,19 @@ window.LectureRow = function(props) {
               e.stopPropagation();
               if (onDelete) onDelete(lec);
             },
-            title: "نقل لسلة المحذوفات",
-            className: "p-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 hover:bg-rose-100"
+            title: "نقل إلى المحذوفات",
+            className: "p-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 hover:bg-rose-100 transition-colors"
           },
           "🗑️"
         )
+      ),
+      // مؤشر الفتح والتنقل (Chevron ناعم يعبر عن إمكانية فتح السطر)
+      React.createElement(
+        "span",
+        {
+          className: "hidden sm:flex w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-950/50 items-center justify-center text-xs font-black transition-all shrink-0"
+        },
+        "◀"
       )
     )
   );
