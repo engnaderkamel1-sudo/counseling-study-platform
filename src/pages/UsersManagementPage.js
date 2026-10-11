@@ -23,6 +23,7 @@ window.UsersManagementPage = function(props) {
   var [manualChurch, setManualChurch] = React.useState("");
   var [manualDiocese, setManualDiocese] = React.useState("");
   var [manualGov, setManualGov] = React.useState("القاهرة");
+  var [manualWhatsapp, setManualWhatsapp] = React.useState("");
   var [isSavingManual, setIsSavingManual] = React.useState(false);
 
   var governoratesList = [
@@ -170,6 +171,8 @@ window.UsersManagementPage = function(props) {
         fullName: manualFullName.trim(),
         email: cleanEmail,
         password: manualPassword.trim() || "123456",
+        phone: manualWhatsapp.trim(),
+        whatsapp: manualWhatsapp.trim(),
         studyType: manualStudyType,
         studyYear: manualStudyYear,
         church: manualChurch.trim() || "غير محدد",
@@ -190,6 +193,7 @@ window.UsersManagementPage = function(props) {
       setManualFullName("");
       setManualEmail("");
       setManualPassword("");
+      setManualWhatsapp("");
       setManualChurch("");
       setManualDiocese("");
     } catch (err) {
@@ -212,10 +216,11 @@ window.UsersManagementPage = function(props) {
       var q = searchQuery.trim().toLowerCase();
       var matchName = (u.fullName || "").toLowerCase().indexOf(q) !== -1;
       var matchEmail = (u.email || "").toLowerCase().indexOf(q) !== -1;
+      var matchPhone = ((u.whatsapp || u.phone) || "").toLowerCase().indexOf(q) !== -1;
       var matchChurch = (u.church || "").toLowerCase().indexOf(q) !== -1;
       var matchDiocese = (u.diocese || "").toLowerCase().indexOf(q) !== -1;
       var matchGov = (u.governorate || "").toLowerCase().indexOf(q) !== -1;
-      return matchName || matchEmail || matchChurch || matchDiocese || matchGov;
+      return matchName || matchEmail || matchPhone || matchChurch || matchDiocese || matchGov;
     }
     return true;
   });
@@ -495,11 +500,30 @@ window.UsersManagementPage = function(props) {
                   u.studyYear
                 )
               ),
-              React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed" },
-                "كنيسة: " + (u.church || "—") +
-                " • إيبارشية: " + (u.diocese || "—") +
-                " • محافظة: " + (u.governorate || "—") +
-                " • البريد: " + (u.email || "—")
+              React.createElement("div", { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed space-y-1.5" },
+                React.createElement("p", null,
+                  "كنيسة: " + (u.church || "—") +
+                  " • إيبارشية: " + (u.diocese || "—") +
+                  " • محافظة: " + (u.governorate || "—") +
+                  " • البريد: " + (u.email || "—")
+                ),
+                (u.whatsapp || u.phone) && React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2 pt-0.5" },
+                  React.createElement(
+                    "a",
+                    {
+                      href: "https://wa.me/" + String(u.whatsapp || u.phone).replace(/[^0-9]/g, "").replace(/^0/, "20"),
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      title: "فتح محادثة واتساب مباشرة مع الدارس",
+                      className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800/60 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                    },
+                    React.createElement("span", null, "💬"),
+                    React.createElement("span", null, "مراسلة واتساب:"),
+                    React.createElement("span", { dir: "ltr", className: "underline font-mono" }, u.whatsapp || u.phone)
+                  )
+                )
               )
             ),
 
@@ -598,16 +622,32 @@ window.UsersManagementPage = function(props) {
         React.createElement(
           "form",
           { onSubmit: handleCreateManualUser, className: "space-y-3" },
-          React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-bold mb-1" }, "الاسم بالكامل *"),
-            React.createElement("input", {
-              type: "text",
-              required: true,
-              value: manualFullName,
-              onChange: function(e) { setManualFullName(e.target.value); },
-              placeholder: "اسم الدارس...",
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
-            })
+          React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "الاسم بالكامل *"),
+              React.createElement("input", {
+                type: "text",
+                required: true,
+                value: manualFullName,
+                onChange: function(e) { setManualFullName(e.target.value); },
+                placeholder: "اسم الدارس...",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1 flex items-center gap-1" },
+                React.createElement("span", null, "💬"),
+                React.createElement("span", null, "رقم الواتساب")
+              ),
+              React.createElement("input", {
+                type: "tel",
+                value: manualWhatsapp,
+                onChange: function(e) { setManualWhatsapp(e.target.value); },
+                placeholder: "01xxxxxxxxx",
+                dir: "ltr",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs text-right"
+              })
+            )
           ),
           React.createElement("div", { className: "grid grid-cols-2 gap-2" },
             React.createElement("div", null,

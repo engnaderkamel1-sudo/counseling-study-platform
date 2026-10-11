@@ -25,6 +25,7 @@ window.AuthModal = function(props) {
   var [church, setChurch] = React.useState("");
   var [diocese, setDiocese] = React.useState("");
   var [governorate, setGovernorate] = React.useState("القاهرة");
+  var [whatsapp, setWhatsapp] = React.useState("");
   var [bypassCode, setBypassCode] = React.useState("");
 
   var [isLoading, setIsLoading] = React.useState(false);
@@ -56,13 +57,14 @@ window.AuthModal = function(props) {
       var cleanEmail = email.trim().toLowerCase();
       var cleanPassword = password.trim();
       var cleanFullName = fullName.trim();
+      var cleanWhatsapp = whatsapp.trim();
       var cleanChurch = church.trim();
       var cleanDiocese = diocese.trim();
       var cleanGov = governorate.trim();
       var cleanBypass = bypassCode.trim().toLowerCase();
 
-      if (!cleanFullName || !cleanEmail || !cleanPassword || !cleanChurch || !cleanDiocese || !cleanGov) {
-        throw new Error("يرجى ملء جميع الحقول الإلزامية المطلوبة.");
+      if (!cleanFullName || !cleanEmail || !cleanPassword || !cleanWhatsapp || !cleanChurch || !cleanDiocese || !cleanGov) {
+        throw new Error("يرجى ملء جميع الحقول الإلزامية المطلوبة (بما في ذلك رقم الواتساب).");
       }
 
       if (cleanPassword.length < 4) {
@@ -113,6 +115,8 @@ window.AuthModal = function(props) {
         fullName: cleanFullName,
         email: cleanEmail,
         password: cleanPassword,
+        phone: cleanWhatsapp,
+        whatsapp: cleanWhatsapp,
         studyType: studyType,
         studyYear: studyYear,
         church: cleanChurch,
@@ -494,18 +498,40 @@ window.AuthModal = function(props) {
         "form",
         { onSubmit: handleRegisterRequest, className: "space-y-3" },
 
+        // الاسم ورقم الواتساب للتواصل
         React.createElement(
           "div",
-          null,
-          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الاسم *"),
-          React.createElement("input", {
-            type: "text",
-            required: true,
-            value: fullName,
-            onChange: function(e) { setFullName(e.target.value); },
-            placeholder: "اسمك...",
-            className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-          })
+          { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الاسم *"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: fullName,
+              onChange: function(e) { setFullName(e.target.value); },
+              placeholder: "اسمك...",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1" },
+              React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold" }, "💬"),
+              React.createElement("span", null, "رقم الواتساب *")
+            ),
+            React.createElement("input", {
+              type: "tel",
+              required: true,
+              value: whatsapp,
+              onChange: function(e) { setWhatsapp(e.target.value); },
+              placeholder: "01xxxxxxxxx (للتواصل عبر واتساب)",
+              dir: "ltr",
+              className: "w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white text-right"
+            })
+          )
         ),
 
         React.createElement(
