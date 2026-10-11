@@ -147,23 +147,50 @@ function App() {
 
             if (("Notification" in window) && Notification.permission === "granted") {
               try {
-                var notif = new Notification(latest.title, {
+                var notifOptions = {
                   body: latest.body,
                   icon: "icon-192.png",
                   badge: "icon-192.png",
                   vibrate: [250, 100, 250],
                   tag: latest.id || "counsel_notify",
-                  renotify: true
-                });
-                notif.onclick = function() {
-                  window.focus();
-                  if (latest.zoomUrl) {
-                    window.open(latest.zoomUrl, "_blank");
+                  renotify: true,
+                  data: {
+                    url: latest.zoomUrl || (window.location.origin + window.location.pathname + "#lectures"),
+                    zoomUrl: latest.zoomUrl || "",
+                    linkTab: latest.linkTab || "",
+                    lectureId: latest.lectureId || ""
                   }
-                  if (latest.linkTab) setActiveTab(latest.linkTab);
-                  else if (latest.lectureId) setActiveTab("lectures");
-                  notif.close();
                 };
+
+                // محاولة الإظهار عبر Service Worker لضمان الظهور في درج إشعارات الموبايل وشاشة القفل
+                if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+                  navigator.serviceWorker.ready.then(function(reg) {
+                    if (reg && reg.showNotification) {
+                      reg.showNotification(latest.title, notifOptions);
+                    } else {
+                      showFallbackNotification();
+                    }
+                  }).catch(function() {
+                    showFallbackNotification();
+                  });
+                } else {
+                  showFallbackNotification();
+                }
+
+                function showFallbackNotification() {
+                  try {
+                    var notif = new Notification(latest.title, notifOptions);
+                    notif.onclick = function() {
+                      window.focus();
+                      if (latest.zoomUrl) {
+                        window.open(latest.zoomUrl, "_blank");
+                      }
+                      if (latest.linkTab) setActiveTab(latest.linkTab);
+                      else if (latest.lectureId) setActiveTab("lectures");
+                      notif.close();
+                    };
+                  } catch(eNotif) {}
+                }
               } catch (err) {}
             }
           }
