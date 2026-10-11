@@ -174,7 +174,7 @@ window.RecycleBinModal = function(props) {
         filteredItems.length === 0 ? React.createElement(
           "div",
           { className: "py-12 text-center text-slate-400 space-y-2" },
-          React.createElement("div", { className: "text-4xl" }, "🌿"),
+          React.createElement("div", { className: "text-4xl" }, "🗑️"),
           React.createElement("p", { className: "font-bold text-sm text-slate-700 dark:text-slate-300" }, "سلة المحذوفات فارغة تماماً"),
           React.createElement("p", { className: "text-xs text-slate-400" }, "أي كتاب أو محاضرة تقوم بحذفها مستقبلاً ستظهر هنا لمدة أسبوع قبل حذفها نهائياً.")
         ) : filteredItems.map(function(item) {

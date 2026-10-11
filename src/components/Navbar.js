@@ -17,11 +17,7 @@ window.Navbar = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-3 cursor-pointer", onClick: function() { onTabChange("lectures"); } },
-        React.createElement(
-          "div",
-          { className: "w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 font-bold text-lg" },
-          "🌿"
-        ),
+        React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-xl shadow-md object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
         React.createElement(
           "div",
           null,
