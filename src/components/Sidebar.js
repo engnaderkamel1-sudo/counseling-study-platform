@@ -25,7 +25,7 @@ window.Sidebar = function(props) {
       icon: "👥",
       badge: pendingCount > 0 ? pendingCount : null
     });
-    menuItems.push({ id: "errors", label: "بلاغات الأعطال", icon: "🛠️" });
+    menuItems.push({ id: "errors", label: "بلاغات الأعطال والاقتراحات", icon: "💡" });
     menuItems.push({ id: "recycle_bin", label: "المحذوفات", icon: "🗑️", isModal: true });
     menuItems.push({ id: "settings", label: "إعدادات الربط السحابي", icon: "⚙️" });
   }
@@ -137,7 +137,7 @@ window.Sidebar = function(props) {
               React.createElement("span", null, "📲"),
               React.createElement("span", null, "تثبيت التطبيق")
             ),
-            // زر إبلاغ عن عطل
+            // زر إبلاغ عن عطل أو اقتراح
             React.createElement(
               "button",
               {
@@ -145,10 +145,10 @@ window.Sidebar = function(props) {
                   if (props.onOpenErrorReport) props.onOpenErrorReport();
                   if (onClose) onClose();
                 },
-                className: "text-[11px] py-1.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 font-bold flex items-center justify-center gap-1.5"
+                className: "text-[11px] py-1.5 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 font-bold flex items-center justify-center gap-1.5 shadow-2xs hover:bg-amber-100 transition-colors"
               },
-              React.createElement("span", null, "🚨"),
-              React.createElement("span", null, "إبلاغ عن عطل")
+              React.createElement("span", null, "💡"),
+              React.createElement("span", null, "عطل أو اقتراح")
             )
           )
         )

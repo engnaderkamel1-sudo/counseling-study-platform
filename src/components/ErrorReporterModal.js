@@ -1,10 +1,12 @@
-// زر ونافذة الإبلاغ الفوري عن أي مشكلة برمجية أو خطأ مع دعم التسجيل الصوتي المباشر
+// نافذة الإبلاغ عن عطل فني أو تقديم اقتراح مع دعم الفويس نوت
 window.ErrorReporterModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
   var currentUser = props.currentUser || {};
   var activeTab = props.activeTab || "عام";
 
+  // نوع البلاغ: عطل أو اقتراح
+  var [reportType, setReportType] = React.useState("bug"); // "bug" or "suggestion"
   var [userDescription, setUserDescription] = React.useState("");
   var [capturedErrorCode, setCapturedErrorCode] = React.useState("");
   var [isSending, setIsSending] = React.useState(false);
@@ -30,8 +32,9 @@ window.ErrorReporterModal = function(props) {
           "التتبع: " + (last.stack || "")
         );
       } else {
-        setCapturedErrorCode("لم يتم تسجيل انهيار تلقائي؛ تم فتح التقرير يدوياً من الشاشة: " + activeTab);
+        setCapturedErrorCode("لم يتم تسجيل انهيار تلقائي؛ تم فتح النموذج يدوياً من الشاشة: " + activeTab);
       }
+      setReportType("bug");
       setUserDescription("");
       setSuccessNotice(false);
       setIsRecording(false);
@@ -41,7 +44,6 @@ window.ErrorReporterModal = function(props) {
     }
   }, [isOpen, activeTab]);
 
-  // تنظيف الـ audio URL والتسجيل عند إغلاق النافذة
   React.useEffect(function() {
     return function() {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -105,7 +107,7 @@ window.ErrorReporterModal = function(props) {
   var handleSubmit = async function(e) {
     if (e) e.preventDefault();
     if (!userDescription.trim() && !audioBlob) {
-      alert("يرجى كتابة وصف للمشكلة أو تسجيل رسالة صوتية.");
+      alert(reportType === "suggestion" ? "يرجى كتابة فكرة الاقتراح أو تسجيلها بالصوت." : "يرجى كتابة وصف للمشكلة أو تسجيلها بالصوت.");
       return;
     }
 
@@ -118,9 +120,10 @@ window.ErrorReporterModal = function(props) {
       }
 
       await window.ErrorReportService.sendReport({
+        type: reportType, // "bug" or "suggestion"
         page: activeTab,
-        userDescription: userDescription.trim() || (audioBlob ? "تم إرسال شرح صوتي للمشكلة 🎙️" : "لم يكتب المستخدم وصفاً"),
-        errorDetails: capturedErrorCode,
+        userDescription: userDescription.trim() || (audioBlob ? (reportType === "suggestion" ? "تم إرسال اقتراح صوتي 🎙️" : "تم إرسال شرح صوتي للمشكلة 🎙️") : "بدون وصف"),
+        errorDetails: reportType === "bug" ? capturedErrorCode : "اقتراح تطوير مقدم من الدارس",
         senderName: currentUser.fullName || "دارس غير مسجل",
         senderPhone: currentUser.phone || "-",
         senderEmail: currentUser.email || "-",
@@ -134,7 +137,7 @@ window.ErrorReporterModal = function(props) {
         onClose();
       }, 2000);
     } catch (err) {
-      alert("خطأ أثناء إرسال التقرير: " + err.message);
+      alert("خطأ أثناء الإرسال: " + err.message);
     } finally {
       setIsSending(false);
     }
@@ -156,10 +159,10 @@ window.ErrorReporterModal = function(props) {
         { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
         React.createElement("div", null,
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
-            React.createElement("span", null, "🚨"),
-            "إبلاغ عن عطل أو مشكلة تقنية"
+            React.createElement("span", null, reportType === "suggestion" ? "💡" : "🚨"),
+            "إبلاغ عن عطل أو تقديم اقتراح"
           ),
-          React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "سجل فويس أو اكتب ما حدث وسيصل مباشرة للمسؤول لحل العطل")
+          React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "سجل فويس أو اكتب ما تريد وسيصل مباشرة للأدمن للتعامل معه")
         ),
         React.createElement("button", { onClick: onClose, className: "p-1.5 text-slate-400 hover:text-slate-600 rounded-xl" }, "✕")
       ),
@@ -168,14 +171,38 @@ window.ErrorReporterModal = function(props) {
         "div",
         { className: "p-6 text-center space-y-2" },
         React.createElement("div", { className: "text-3xl" }, "✅"),
-        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تم إرسال تقرير الخطأ بنجاح!"),
-        React.createElement("p", { className: "text-xs text-slate-500" }, "شكراً لك. سيقوم الأدمن بمراجعة الشرح وحل المشكلة بأسرع وقت.")
+        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, reportType === "suggestion" ? "تم إرسال اقتراحك بنجاح!" : "تم إرسال بلاغ العطل بنجاح!"),
+        React.createElement("p", { className: "text-xs text-slate-500" }, "شكراً لك. سيقوم الأدمن بالاطلاع على رسالتك قريباً.")
       ) : React.createElement(
         "form",
         { onSubmit: handleSubmit, className: "space-y-4" },
 
+        // التبديل بين إبلاغ عن عطل أو اقتراح جديد
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl" },
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setReportType("bug"); },
+            className: "py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 " + 
+              (reportType === "bug" ? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+          },
+            React.createElement("span", null, "🚨"),
+            "عطل فني أو مشكلة"
+          ),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setReportType("suggestion"); },
+            className: "py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 " + 
+              (reportType === "suggestion" ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+          },
+            React.createElement("span", null, "💡"),
+            "فكرة أو اقتراح تحسين"
+          )
+        ),
+
         React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "قسم / صفحة المشكلة"),
+          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "القسم / الشاشة الحالية"),
           React.createElement("input", {
             type: "text",
             disabled: true,
@@ -184,14 +211,14 @@ window.ErrorReporterModal = function(props) {
           })
         ),
 
-        // بطاقة التسجيل الصوتي
+        // بطاقة تسجيل الفويس
         React.createElement(
           "div",
-          { className: "p-4 rounded-2xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3" },
+          { className: "p-4 rounded-2xl border " + (reportType === "suggestion" ? "border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20" : "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20") + " space-y-3" },
           React.createElement("div", { className: "flex items-center justify-between" },
-            React.createElement("span", { className: "text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5" },
+            React.createElement("span", { className: "text-xs font-bold " + (reportType === "suggestion" ? "text-amber-800 dark:text-amber-300" : "text-emerald-800 dark:text-emerald-300") + " flex items-center gap-1.5" },
               React.createElement("span", null, "🎙️"),
-              "تسجيل فويس لشرح المشكلة بصوتك"
+              reportType === "suggestion" ? "تسجيل فويس لشرح فكرتك واقتراحك بصوتك" : "تسجيل فويس لشرح المشكلة بصوتك"
             ),
             isRecording ? React.createElement("span", { className: "text-xs font-bold text-rose-600 dark:text-rose-400 animate-pulse" }, "● يسجل: " + timeFormatted) : null
           ),
@@ -202,8 +229,8 @@ window.ErrorReporterModal = function(props) {
             !isRecording ? React.createElement("button", {
               type: "button",
               onClick: startRecording,
-              className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
-            }, audioUrl ? "إعادة تسجيل صوت جديد 🔄" : "اضغط لبدء تسجيل صوتك 🎙️") : React.createElement("button", {
+              className: "px-4 py-2 rounded-xl " + (reportType === "suggestion" ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700") + " text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+            }, audioUrl ? "إعادة تسجيل فويس جديد 🔄" : "اضغط لبدء تسجيل صوتك 🎙️") : React.createElement("button", {
               type: "button",
               onClick: stopRecording,
               className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm animate-pulse"
@@ -226,17 +253,19 @@ window.ErrorReporterModal = function(props) {
         ),
 
         React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "وصف كتابي للمشكلة (اختياري لو سجلت فويس)"),
+          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, 
+            reportType === "suggestion" ? "وصف الاقتراح كتابياً (اختياري لو سجلت فويس)" : "وصف المشكلة كتابياً (اختياري لو سجلت فويس)"
+          ),
           React.createElement("textarea", {
             rows: 2,
             value: userDescription,
             onChange: function(e) { setUserDescription(e.target.value); },
-            placeholder: "مثال: الصوت توقف، أو الصفحة لا تفتح، أو أي ملاحظة...",
+            placeholder: reportType === "suggestion" ? "مثال: أقترح إضافة زر لتكرار مقطع الصوت، أو ترتيب الكتب حسب التاريخ..." : "مثال: الصوت توقف، أو الصفحة لا تفتح، أو أي ملاحظة...",
             className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200"
           })
         ),
 
-        React.createElement("div", null,
+        reportType === "bug" ? React.createElement("div", null,
           React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "كود وتتبع الخطأ المسجل تقنياً"),
           React.createElement("textarea", {
             rows: 2,
@@ -244,7 +273,7 @@ window.ErrorReporterModal = function(props) {
             value: capturedErrorCode,
             className: "w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 font-mono text-[11px] text-rose-600 dark:text-rose-400"
           })
-        ),
+        ) : null,
 
         React.createElement(
           "div",
@@ -253,8 +282,8 @@ window.ErrorReporterModal = function(props) {
           React.createElement("button", {
             type: "submit",
             disabled: isSending,
-            className: "px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1.5 transition-all"
-          }, isSending ? "جاري الرفع والإرسال..." : "إرسال البلاغ 🚀")
+            className: "px-5 py-2 rounded-xl text-xs font-bold " + (reportType === "suggestion" ? "bg-amber-600 hover:bg-amber-700" : "bg-rose-600 hover:bg-rose-700") + " text-white shadow-sm flex items-center gap-1.5 transition-all"
+          }, isSending ? "جاري الرفع والإرسال..." : (reportType === "suggestion" ? "إرسال الاقتراح 💡" : "إرسال البلاغ 🚨"))
         )
       )
     )

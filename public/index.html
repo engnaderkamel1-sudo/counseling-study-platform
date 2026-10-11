@@ -159,8 +159,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791718081",
-  buildTime: "2026-10-11T11:28:01",
+  version: "1.2.1791718252",
+  buildTime: "2026-10-11T11:30:52",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -1897,7 +1897,7 @@ window.Sidebar = function(props) {
       icon: "👥",
       badge: pendingCount > 0 ? pendingCount : null
     });
-    menuItems.push({ id: "errors", label: "بلاغات الأعطال", icon: "🛠️" });
+    menuItems.push({ id: "errors", label: "بلاغات الأعطال والاقتراحات", icon: "💡" });
     menuItems.push({ id: "recycle_bin", label: "المحذوفات", icon: "🗑️", isModal: true });
     menuItems.push({ id: "settings", label: "إعدادات الربط السحابي", icon: "⚙️" });
   }
@@ -2009,7 +2009,7 @@ window.Sidebar = function(props) {
               React.createElement("span", null, "📲"),
               React.createElement("span", null, "تثبيت التطبيق")
             ),
-            // زر إبلاغ عن عطل
+            // زر إبلاغ عن عطل أو اقتراح
             React.createElement(
               "button",
               {
@@ -2017,10 +2017,10 @@ window.Sidebar = function(props) {
                   if (props.onOpenErrorReport) props.onOpenErrorReport();
                   if (onClose) onClose();
                 },
-                className: "text-[11px] py-1.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 font-bold flex items-center justify-center gap-1.5"
+                className: "text-[11px] py-1.5 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 font-bold flex items-center justify-center gap-1.5 shadow-2xs hover:bg-amber-100 transition-colors"
               },
-              React.createElement("span", null, "🚨"),
-              React.createElement("span", null, "إبلاغ عن عطل")
+              React.createElement("span", null, "💡"),
+              React.createElement("span", null, "عطل أو اقتراح")
             )
           )
         )
@@ -3131,13 +3131,15 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
 };
 
 // Module: components/ErrorReporterModal.js
-// زر ونافذة الإبلاغ الفوري عن أي مشكلة برمجية أو خطأ مع دعم التسجيل الصوتي المباشر
+// نافذة الإبلاغ عن عطل فني أو تقديم اقتراح مع دعم الفويس نوت
 window.ErrorReporterModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
   var currentUser = props.currentUser || {};
   var activeTab = props.activeTab || "عام";
 
+  // نوع البلاغ: عطل أو اقتراح
+  var [reportType, setReportType] = React.useState("bug"); // "bug" or "suggestion"
   var [userDescription, setUserDescription] = React.useState("");
   var [capturedErrorCode, setCapturedErrorCode] = React.useState("");
   var [isSending, setIsSending] = React.useState(false);
@@ -3163,8 +3165,9 @@ window.ErrorReporterModal = function(props) {
           "التتبع: " + (last.stack || "")
         );
       } else {
-        setCapturedErrorCode("لم يتم تسجيل انهيار تلقائي؛ تم فتح التقرير يدوياً من الشاشة: " + activeTab);
+        setCapturedErrorCode("لم يتم تسجيل انهيار تلقائي؛ تم فتح النموذج يدوياً من الشاشة: " + activeTab);
       }
+      setReportType("bug");
       setUserDescription("");
       setSuccessNotice(false);
       setIsRecording(false);
@@ -3174,7 +3177,6 @@ window.ErrorReporterModal = function(props) {
     }
   }, [isOpen, activeTab]);
 
-  // تنظيف الـ audio URL والتسجيل عند إغلاق النافذة
   React.useEffect(function() {
     return function() {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -3238,7 +3240,7 @@ window.ErrorReporterModal = function(props) {
   var handleSubmit = async function(e) {
     if (e) e.preventDefault();
     if (!userDescription.trim() && !audioBlob) {
-      alert("يرجى كتابة وصف للمشكلة أو تسجيل رسالة صوتية.");
+      alert(reportType === "suggestion" ? "يرجى كتابة فكرة الاقتراح أو تسجيلها بالصوت." : "يرجى كتابة وصف للمشكلة أو تسجيلها بالصوت.");
       return;
     }
 
@@ -3251,9 +3253,10 @@ window.ErrorReporterModal = function(props) {
       }
 
       await window.ErrorReportService.sendReport({
+        type: reportType, // "bug" or "suggestion"
         page: activeTab,
-        userDescription: userDescription.trim() || (audioBlob ? "تم إرسال شرح صوتي للمشكلة 🎙️" : "لم يكتب المستخدم وصفاً"),
-        errorDetails: capturedErrorCode,
+        userDescription: userDescription.trim() || (audioBlob ? (reportType === "suggestion" ? "تم إرسال اقتراح صوتي 🎙️" : "تم إرسال شرح صوتي للمشكلة 🎙️") : "بدون وصف"),
+        errorDetails: reportType === "bug" ? capturedErrorCode : "اقتراح تطوير مقدم من الدارس",
         senderName: currentUser.fullName || "دارس غير مسجل",
         senderPhone: currentUser.phone || "-",
         senderEmail: currentUser.email || "-",
@@ -3267,7 +3270,7 @@ window.ErrorReporterModal = function(props) {
         onClose();
       }, 2000);
     } catch (err) {
-      alert("خطأ أثناء إرسال التقرير: " + err.message);
+      alert("خطأ أثناء الإرسال: " + err.message);
     } finally {
       setIsSending(false);
     }
@@ -3289,10 +3292,10 @@ window.ErrorReporterModal = function(props) {
         { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
         React.createElement("div", null,
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
-            React.createElement("span", null, "🚨"),
-            "إبلاغ عن عطل أو مشكلة تقنية"
+            React.createElement("span", null, reportType === "suggestion" ? "💡" : "🚨"),
+            "إبلاغ عن عطل أو تقديم اقتراح"
           ),
-          React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "سجل فويس أو اكتب ما حدث وسيصل مباشرة للمسؤول لحل العطل")
+          React.createElement("p", { className: "text-xs text-slate-400 mt-0.5" }, "سجل فويس أو اكتب ما تريد وسيصل مباشرة للأدمن للتعامل معه")
         ),
         React.createElement("button", { onClick: onClose, className: "p-1.5 text-slate-400 hover:text-slate-600 rounded-xl" }, "✕")
       ),
@@ -3301,14 +3304,38 @@ window.ErrorReporterModal = function(props) {
         "div",
         { className: "p-6 text-center space-y-2" },
         React.createElement("div", { className: "text-3xl" }, "✅"),
-        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "تم إرسال تقرير الخطأ بنجاح!"),
-        React.createElement("p", { className: "text-xs text-slate-500" }, "شكراً لك. سيقوم الأدمن بمراجعة الشرح وحل المشكلة بأسرع وقت.")
+        React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, reportType === "suggestion" ? "تم إرسال اقتراحك بنجاح!" : "تم إرسال بلاغ العطل بنجاح!"),
+        React.createElement("p", { className: "text-xs text-slate-500" }, "شكراً لك. سيقوم الأدمن بالاطلاع على رسالتك قريباً.")
       ) : React.createElement(
         "form",
         { onSubmit: handleSubmit, className: "space-y-4" },
 
+        // التبديل بين إبلاغ عن عطل أو اقتراح جديد
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl" },
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setReportType("bug"); },
+            className: "py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 " + 
+              (reportType === "bug" ? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+          },
+            React.createElement("span", null, "🚨"),
+            "عطل فني أو مشكلة"
+          ),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setReportType("suggestion"); },
+            className: "py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 " + 
+              (reportType === "suggestion" ? "bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")
+          },
+            React.createElement("span", null, "💡"),
+            "فكرة أو اقتراح تحسين"
+          )
+        ),
+
         React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "قسم / صفحة المشكلة"),
+          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "القسم / الشاشة الحالية"),
           React.createElement("input", {
             type: "text",
             disabled: true,
@@ -3317,14 +3344,14 @@ window.ErrorReporterModal = function(props) {
           })
         ),
 
-        // بطاقة التسجيل الصوتي
+        // بطاقة تسجيل الفويس
         React.createElement(
           "div",
-          { className: "p-4 rounded-2xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3" },
+          { className: "p-4 rounded-2xl border " + (reportType === "suggestion" ? "border-amber-500/30 bg-amber-50/40 dark:bg-amber-950/20" : "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20") + " space-y-3" },
           React.createElement("div", { className: "flex items-center justify-between" },
-            React.createElement("span", { className: "text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5" },
+            React.createElement("span", { className: "text-xs font-bold " + (reportType === "suggestion" ? "text-amber-800 dark:text-amber-300" : "text-emerald-800 dark:text-emerald-300") + " flex items-center gap-1.5" },
               React.createElement("span", null, "🎙️"),
-              "تسجيل فويس لشرح المشكلة بصوتك"
+              reportType === "suggestion" ? "تسجيل فويس لشرح فكرتك واقتراحك بصوتك" : "تسجيل فويس لشرح المشكلة بصوتك"
             ),
             isRecording ? React.createElement("span", { className: "text-xs font-bold text-rose-600 dark:text-rose-400 animate-pulse" }, "● يسجل: " + timeFormatted) : null
           ),
@@ -3335,8 +3362,8 @@ window.ErrorReporterModal = function(props) {
             !isRecording ? React.createElement("button", {
               type: "button",
               onClick: startRecording,
-              className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
-            }, audioUrl ? "إعادة تسجيل صوت جديد 🔄" : "اضغط لبدء تسجيل صوتك 🎙️") : React.createElement("button", {
+              className: "px-4 py-2 rounded-xl " + (reportType === "suggestion" ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700") + " text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+            }, audioUrl ? "إعادة تسجيل فويس جديد 🔄" : "اضغط لبدء تسجيل صوتك 🎙️") : React.createElement("button", {
               type: "button",
               onClick: stopRecording,
               className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm animate-pulse"
@@ -3359,17 +3386,19 @@ window.ErrorReporterModal = function(props) {
         ),
 
         React.createElement("div", null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "وصف كتابي للمشكلة (اختياري لو سجلت فويس)"),
+          React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, 
+            reportType === "suggestion" ? "وصف الاقتراح كتابياً (اختياري لو سجلت فويس)" : "وصف المشكلة كتابياً (اختياري لو سجلت فويس)"
+          ),
           React.createElement("textarea", {
             rows: 2,
             value: userDescription,
             onChange: function(e) { setUserDescription(e.target.value); },
-            placeholder: "مثال: الصوت توقف، أو الصفحة لا تفتح، أو أي ملاحظة...",
+            placeholder: reportType === "suggestion" ? "مثال: أقترح إضافة زر لتكرار مقطع الصوت، أو ترتيب الكتب حسب التاريخ..." : "مثال: الصوت توقف، أو الصفحة لا تفتح، أو أي ملاحظة...",
             className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200"
           })
         ),
 
-        React.createElement("div", null,
+        reportType === "bug" ? React.createElement("div", null,
           React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "كود وتتبع الخطأ المسجل تقنياً"),
           React.createElement("textarea", {
             rows: 2,
@@ -3377,7 +3406,7 @@ window.ErrorReporterModal = function(props) {
             value: capturedErrorCode,
             className: "w-full px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 font-mono text-[11px] text-rose-600 dark:text-rose-400"
           })
-        ),
+        ) : null,
 
         React.createElement(
           "div",
@@ -3386,8 +3415,8 @@ window.ErrorReporterModal = function(props) {
           React.createElement("button", {
             type: "submit",
             disabled: isSending,
-            className: "px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm flex items-center gap-1.5 transition-all"
-          }, isSending ? "جاري الرفع والإرسال..." : "إرسال البلاغ 🚀")
+            className: "px-5 py-2 rounded-xl text-xs font-bold " + (reportType === "suggestion" ? "bg-amber-600 hover:bg-amber-700" : "bg-rose-600 hover:bg-rose-700") + " text-white shadow-sm flex items-center gap-1.5 transition-all"
+          }, isSending ? "جاري الرفع والإرسال..." : (reportType === "suggestion" ? "إرسال الاقتراح 💡" : "إرسال البلاغ 🚨"))
         )
       )
     )
@@ -15527,10 +15556,11 @@ window.UsersManagementPage = function(props) {
 };
 
 // Module: pages/ErrorReportsAdminPage.js
-// شاشة تقارير الأعطال والأخطاء الفنية (للمسؤول نادر كمال فقط) مع دعم الاستماع للتسجيل الصوتي والحذف التلقائي
+// شاشة تقارير الأعطال والاقتراحات الفنية (للمسؤول نادر كمال فقط) مع دعم الاستماع للتسجيل الصوتي والحذف التلقائي
 window.ErrorReportsAdminPage = function(props) {
   var currentUser = props.currentUser || { role: "admin" };
   var [reports, setReports] = React.useState([]);
+  var [filterTab, setFilterTab] = React.useState("all"); // "all", "bugs", "suggestions"
   var [isLoading, setIsLoading] = React.useState(true);
 
   var fetchReports = async function() {
@@ -15576,7 +15606,7 @@ window.ErrorReportsAdminPage = function(props) {
   };
 
   var handleDelete = async function(report) {
-    if (!confirm("هل أنت متأكد من حذف هذا البلاغ وملفه الصوتي نهائياً لتوفير المساحة؟")) return;
+    if (!confirm("هل أنت متأكد من حذف هذا السجل وملفه الصوتي نهائياً لتوفير المساحة؟")) return;
     try {
       await window.ErrorReportService.deleteReport(report.id, report.audioStoragePath);
       setReports(reports.filter(function(r) { return r.id !== report.id; }));
@@ -15587,10 +15617,17 @@ window.ErrorReportsAdminPage = function(props) {
 
   if (!currentUser || currentUser.role !== "admin") return null;
 
-  var openReports = reports.filter(function(r) { return r.status !== "resolved"; });
-  var resolvedReports = reports.filter(function(r) { return r.status === "resolved"; });
+  var filteredList = reports.filter(function(r) {
+    if (filterTab === "bugs") return r.type !== "suggestion";
+    if (filterTab === "suggestions") return r.type === "suggestion";
+    return true;
+  });
+
+  var openReports = filteredList.filter(function(r) { return r.status !== "resolved"; });
+  var resolvedReports = filteredList.filter(function(r) { return r.status === "resolved"; });
 
   var renderReportCard = function(r, isResolved) {
+    var isSuggestion = r.type === "suggestion";
     var dateStr = "-";
     if (r.createdAt && typeof r.createdAt.toDate === "function") {
       dateStr = r.createdAt.toDate().toLocaleString("ar-EG");
@@ -15600,13 +15637,19 @@ window.ErrorReportsAdminPage = function(props) {
       "div",
       {
         key: r.id,
-        className: "p-4 sm:p-5 rounded-2xl border " + (isResolved ? "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 opacity-80" : "border-rose-200 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/20") + " space-y-3"
+        className: "p-4 sm:p-5 rounded-2xl border " + (
+          isResolved ? "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 opacity-80" : 
+          (isSuggestion ? "border-amber-200 dark:border-amber-900/60 bg-amber-50/20 dark:bg-amber-950/20" : "border-rose-200 dark:border-rose-900/60 bg-rose-50/20 dark:bg-rose-950/20")
+        ) + " space-y-3"
       },
       React.createElement(
         "div",
         { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2" },
         React.createElement("div", { className: "flex flex-wrap items-center gap-2" },
-          React.createElement("span", { className: "text-xs font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-2.5 py-0.5 rounded-lg" }, "الصفحة: " + r.page),
+          React.createElement("span", { className: "text-xs font-bold px-2.5 py-0.5 rounded-lg " + (isSuggestion ? "bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300" : "bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300") }, 
+            isSuggestion ? "💡 اقتراح تطوير" : "🚨 عطل فني"
+          ),
+          React.createElement("span", { className: "text-xs font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-2.5 py-0.5 rounded-lg" }, "القسم: " + r.page),
           React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "👤 " + r.senderName + " (" + r.senderPhone + ")"),
           React.createElement("span", { className: "text-[11px] text-slate-400" }, "🕒 " + dateStr)
         ),
@@ -15614,22 +15657,22 @@ window.ErrorReportsAdminPage = function(props) {
           !isResolved ? React.createElement("button", {
             onClick: function() { handleResolve(r.id); },
             className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-all flex items-center gap-1"
-          }, "تم الإصلاح بنجاح ✓") : React.createElement("span", { className: "text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg" }, "تم الحل ✓"),
+          }, isSuggestion ? "تم الاطلاع والاعتماد ✓" : "تم الإصلاح بنجاح ✓") : React.createElement("span", { className: "text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg" }, "منتهي ✓"),
           React.createElement("button", {
             onClick: function() { handleDelete(r); },
-            title: "حذف نهائي للملف والبلاغ لتوفير المساحة",
+            title: "حذف نهائي للملف والسجل لتوفير المساحة",
             className: "px-2.5 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all"
           }, "🗑️")
         )
       ),
 
-      // في حالة وجود رسالة صوتية
+      // تسجيل صوتي
       r.audioUrl ? React.createElement(
         "div",
-        { className: "p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" },
-        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300" },
+        { className: "p-3 " + (isSuggestion ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500/20" : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500/20") + " rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" },
+        React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold " + (isSuggestion ? "text-amber-800 dark:text-amber-300" : "text-emerald-800 dark:text-emerald-300") },
           React.createElement("span", { className: "text-lg" }, "🎙️"),
-          "تسجيل صوتي من المستخدم:"
+          isSuggestion ? "استمع لشرح الاقتراح بصوت الدارس:" : "استمع لشرح المشكلة بصوت الدارس:"
         ),
         React.createElement("audio", {
           src: r.audioUrl,
@@ -15638,14 +15681,14 @@ window.ErrorReportsAdminPage = function(props) {
         })
       ) : null,
 
-      // وصف المشكلة
+      // الوصف المكتوب
       React.createElement("div", { className: "p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200" },
-        React.createElement("span", { className: "font-bold text-slate-400 block mb-0.5" }, "وصف المشكلة:"),
+        React.createElement("span", { className: "font-bold text-slate-400 block mb-0.5" }, isSuggestion ? "تفاصيل الاقتراح:" : "وصف المشكلة:"),
         r.userDescription || "لا يوجد وصف كتابي"
       ),
 
-      // التفاصيل التقنية
-      r.errorDetails ? React.createElement("div", { className: "p-3 bg-slate-900 rounded-xl text-[11px] font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap max-h-36 ltr", dir: "ltr" },
+      // التفاصيل التقنية للأعطال فقط
+      (!isSuggestion && r.errorDetails) ? React.createElement("div", { className: "p-3 bg-slate-900 rounded-xl text-[11px] font-mono text-emerald-400 overflow-x-auto whitespace-pre-wrap max-h-36 ltr", dir: "ltr" },
         r.errorDetails
       ) : null
     );
@@ -15662,24 +15705,44 @@ window.ErrorReportsAdminPage = function(props) {
         "div",
         null,
         React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2" },
-          React.createElement("span", null, "🛠️"),
-          "سجل بلاغات الأعطال والتسجيلات الصوتية"
+          React.createElement("span", null, "💡"),
+          "سجل بلاغات الأعطال والاقتراحات الصوتية"
         ),
-        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "استمع للتسجيلات الصوتية وراجع تفاصيل الأخطاء الفنية (يتم حذف البلاغات المصلحة تلقائياً بعد أسبوعين لتوفير المساحة)")
+        React.createElement("p", { className: "text-xs text-slate-500 mt-1" }, "استمع لفويسات الدارسين واقتراحاتهم وتفاصيل الأعطال دون الحاجة لإزعاج الواتساب (تنظيف أوتوماتيكي بعد 14 يوم)")
       ),
-      React.createElement("button", {
-        onClick: fetchReports,
-        className: "text-xs px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold flex items-center gap-1.5 transition-all"
-      }, "تحديث البلاغات 🔄")
+      React.createElement("div", { className: "flex items-center gap-2" },
+        React.createElement("button", {
+          onClick: fetchReports,
+          className: "text-xs px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold flex items-center gap-1.5 transition-all"
+        }, "تحديث 🔄")
+      )
     ),
 
-    // البلاغات المفتوحة
+    // تبويبات التصفية: الكل / الأعطال / الاقتراحات
+    React.createElement(
+      "div",
+      { className: "flex items-center gap-2" },
+      React.createElement("button", {
+        onClick: function() { setFilterTab("all"); },
+        className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all " + (filterTab === "all" ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+      }, "الكل (" + reports.length + ")"),
+      React.createElement("button", {
+        onClick: function() { setFilterTab("bugs"); },
+        className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all " + (filterTab === "bugs" ? "bg-rose-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+      }, "🚨 الأعطال (" + reports.filter(function(r) { return r.type !== "suggestion"; }).length + ")"),
+      React.createElement("button", {
+        onClick: function() { setFilterTab("suggestions"); },
+        className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all " + (filterTab === "suggestions" ? "bg-amber-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+      }, "💡 الاقتراحات (" + reports.filter(function(r) { return r.type === "suggestion"; }).length + ")")
+    ),
+
+    // السجلات المفتوحة
     React.createElement(
       "div",
       { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
       React.createElement("div", { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "بلاغات بحاجة للإصلاح (" + openReports.length + ")"),
-        React.createElement("span", { className: "text-xs bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2.5 py-0.5 rounded-full font-bold" }, "مفتوحة")
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "رسائل وبلاغات معلقة (" + openReports.length + ")"),
+        React.createElement("span", { className: "text-xs bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 px-2.5 py-0.5 rounded-full font-bold" }, "جديدة / مفتوحة")
       ),
 
       openReports.length > 0 ? React.createElement(
@@ -15689,17 +15752,17 @@ window.ErrorReportsAdminPage = function(props) {
       ) : React.createElement(
         "div",
         { className: "p-6 text-center text-xs text-slate-400" },
-        "ممتاز جداً! لا توجد أي بلاغات أعطال معلقة حالياً 🎉"
+        "رائع جداً! لا توجد أي بلاغات أو اقتراحات معلقة حالياً 🎉"
       )
     ),
 
-    // البلاغات التي تم حلها
+    // السجلات المنتهية
     resolvedReports.length > 0 ? React.createElement(
       "div",
       { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
       React.createElement("div", { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "بلاغات تم إصلاحها سابقاً (" + resolvedReports.length + ")"),
-        React.createElement("span", { className: "text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-bold" }, "محلولة")
+        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "سجلات تم التعامل معها سابقاً (" + resolvedReports.length + ")"),
+        React.createElement("span", { className: "text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-bold" }, "منتهية")
       ),
       React.createElement(
         "div",
