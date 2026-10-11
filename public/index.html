@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791715722",
-  buildTime: "2026-10-11T10:48:42",
+  version: "1.2.1791715915",
+  buildTime: "2026-10-11T10:51:55",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -992,8 +992,8 @@ window.NotificationService = {
     if (!window.db) return;
     try {
       var notifData = {
-        title: "📂 هاند آوت جديد: " + lecture.title,
-        body: "تمت إضافة ملف المرفقات / العرض التقديمي لمادة: " + (lecture.subject || "المشورة"),
+        title: "📂 مرفقات جديدة: " + lecture.title,
+        body: "تمت إضافة ملفات المرفقات / العرض التقديمي لمادة: " + (lecture.subject || "المشورة"),
         lectureId: lecture.id,
         type: "handout",
         target: "all",
@@ -7650,10 +7650,10 @@ window.LectureRow = function(props) {
           return React.createElement(
             "span",
             {
-              title: count > 1 ? (count + " ملفات هاند آوت متاحة") : "هاند آوت متاح",
+              title: count > 1 ? (count + " مرفقات متاحة") : "مرفقات متاحة",
               className: "px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800/50"
             },
-            count > 1 ? (count + " ملفات") : "هاند آوت"
+            count > 1 ? (count + " مرفقات") : "مرفقات"
           );
         })(),
         (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/50" }, "ملخص")
@@ -7869,7 +7869,7 @@ window.LectureViewerModal = function(props) {
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "المشاهدة والاستماع" },
-          { id: "handout", label: "الهاند آوت والمرفقات" },
+          { id: "handout", label: "المرفقات والملفات" },
           { id: "summary", label: "الملخص المكتوب" },
           { id: "audio_summary", label: "الملخص الصوتي" },
           { id: "quiz", label: "الاختبار التفاعلي" }
@@ -8155,7 +8155,7 @@ window.LectureViewerModal = function(props) {
               "div",
               { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
               React.createElement("div", { className: "text-3xl" }, "📂"),
-              React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملف هاند آوت لهذه المحاضرة بعد"),
+              React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملفات أو مذكرات لهذه المحاضرة بعد"),
               React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
                 "في حال وفر المحاضر عرض تقديمي أو مذكرات ملحقة، سيتم رفعها هنا تلقائياً لتكون متاحة للقراءة والتحميل."
               ),
@@ -8166,7 +8166,7 @@ window.LectureViewerModal = function(props) {
                   onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
                   className: "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm hover:scale-102 transition-all mt-2"
                 },
-                "⬆️ رفع ملف هاند آوت الآن"
+                "⬆️ رفع ملفات أو مرفقات الآن"
               )
             )
           );
@@ -9827,9 +9827,9 @@ window.LecturesPage = function(props) {
       if (window.NotificationService && typeof window.NotificationService.broadcastHandoutNotification === "function" && editingLecture) {
         window.NotificationService.broadcastHandoutNotification(editingLecture);
       }
-      alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " ملفات هاند آوت بنجاح!" : "✅ تم رفع ملف الهاند آوت بنجاح وإضافته للمحاضرة!");
+      alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " مرفقات بنجاح!" : "✅ تم رفع الملف وإضافته للمرفقات بنجاح!");
     } catch(err) {
-      alert("خطأ أثناء رفع ملف الهاند آوت: " + err.message);
+      alert("خطأ أثناء رفع المرفقات: " + err.message);
     } finally {
       setIsUploadingHandout(false);
     }

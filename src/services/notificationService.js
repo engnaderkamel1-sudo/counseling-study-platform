@@ -79,8 +79,8 @@ window.NotificationService = {
     if (!window.db) return;
     try {
       var notifData = {
-        title: "📂 هاند آوت جديد: " + lecture.title,
-        body: "تمت إضافة ملف المرفقات / العرض التقديمي لمادة: " + (lecture.subject || "المشورة"),
+        title: "📂 مرفقات جديدة: " + lecture.title,
+        body: "تمت إضافة ملفات المرفقات / العرض التقديمي لمادة: " + (lecture.subject || "المشورة"),
         lectureId: lecture.id,
         type: "handout",
         target: "all",

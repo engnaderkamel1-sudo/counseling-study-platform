@@ -467,9 +467,9 @@ window.LecturesPage = function(props) {
       if (window.NotificationService && typeof window.NotificationService.broadcastHandoutNotification === "function" && editingLecture) {
         window.NotificationService.broadcastHandoutNotification(editingLecture);
       }
-      alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " ملفات هاند آوت بنجاح!" : "✅ تم رفع ملف الهاند آوت بنجاح وإضافته للمحاضرة!");
+      alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " مرفقات بنجاح!" : "✅ تم رفع الملف وإضافته للمرفقات بنجاح!");
     } catch(err) {
-      alert("خطأ أثناء رفع ملف الهاند آوت: " + err.message);
+      alert("خطأ أثناء رفع المرفقات: " + err.message);
     } finally {
       setIsUploadingHandout(false);
     }

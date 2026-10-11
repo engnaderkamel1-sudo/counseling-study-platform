@@ -163,7 +163,7 @@ window.LectureViewerModal = function(props) {
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "المشاهدة والاستماع" },
-          { id: "handout", label: "الهاند آوت والمرفقات" },
+          { id: "handout", label: "المرفقات والملفات" },
           { id: "summary", label: "الملخص المكتوب" },
           { id: "audio_summary", label: "الملخص الصوتي" },
           { id: "quiz", label: "الاختبار التفاعلي" }
@@ -449,7 +449,7 @@ window.LectureViewerModal = function(props) {
               "div",
               { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
               React.createElement("div", { className: "text-3xl" }, "📂"),
-              React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملف هاند آوت لهذه المحاضرة بعد"),
+              React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لم يتم إرفاق ملفات أو مذكرات لهذه المحاضرة بعد"),
               React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
                 "في حال وفر المحاضر عرض تقديمي أو مذكرات ملحقة، سيتم رفعها هنا تلقائياً لتكون متاحة للقراءة والتحميل."
               ),
@@ -460,7 +460,7 @@ window.LectureViewerModal = function(props) {
                   onClick: function() { if (openEditModal) openEditModal(activeLecture, "handout"); },
                   className: "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-sm hover:scale-102 transition-all mt-2"
                 },
-                "⬆️ رفع ملف هاند آوت الآن"
+                "⬆️ رفع ملفات أو مرفقات الآن"
               )
             )
           );
