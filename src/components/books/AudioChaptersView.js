@@ -61,8 +61,31 @@ window.AudioChaptersView = function(props) {
   var [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
   var [audioHasError, setAudioHasError] = React.useState(false);
   var [useIframePlayer, setUseIframePlayer] = React.useState(false);
-  var [resumedNotice, setResumedNotice] = React.useState("");
   var restoredPosRef = React.useRef({});
+
+  // سجل الفصول المكتملة والمدروسة للكتاب النشط
+  var [completedChapterIds, setCompletedChapterIds] = React.useState(function() {
+    return (activeBook && activeBook.id) ? utils.getLocal("counsel_completed_chapters_" + activeBook.id, []) : [];
+  });
+
+  React.useEffect(function() {
+    if (activeBook && activeBook.id) {
+      setCompletedChapterIds(utils.getLocal("counsel_completed_chapters_" + activeBook.id, []));
+    }
+  }, [activeBook && activeBook.id]);
+
+  var handleToggleChapterCompleted = function(chapId, e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!activeBook || !activeBook.id) return;
+    var next = completedChapterIds.indexOf(chapId) === -1
+      ? completedChapterIds.concat([chapId])
+      : completedChapterIds.filter(function(id) { return id !== chapId; });
+    setCompletedChapterIds(next);
+    utils.setLocal("counsel_completed_chapters_" + activeBook.id, next);
+    try {
+      window.dispatchEvent(new Event("counsel_book_progress_change"));
+    } catch (eEv) {}
+  };
 
   // استعادة موضع الاستماع المحفوظ في التخزين المحلي لكل فصل
   var restoreSavedPosition = function(audioEl, chapterId) {
@@ -510,6 +533,74 @@ window.AudioChaptersView = function(props) {
         )
       ) : null
     ),
+
+    // بطاقة متابعة إنجاز فصول الكتاب (Book Chapter Progress Tracker)
+    (function() {
+      if (!chaps || chaps.length === 0) return null;
+      var totalChaps = chaps.length;
+      var doneChaps = chaps.filter(function(c) {
+        return completedChapterIds.indexOf(c.id) !== -1;
+      }).length;
+      var chapPct = Math.min(100, Math.round((doneChaps / totalChaps) * 100));
+
+      return React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5 transition-all animate-in fade-in" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between gap-2 flex-wrap" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-xl sm:text-2xl" }, "📖"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement(
+                "h5",
+                { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight" },
+                "إنجازك في قراءة وسماع فصول هذا المرجع"
+              ),
+              React.createElement(
+                "p",
+                { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" },
+                chapPct === 100
+                  ? "🎉 مبارك! أتممت دراسة وسماع كافة فصول هذا الكتاب بنجاح."
+                  : (doneChaps > 0
+                      ? ("أتممت دراسة " + doneChaps + " من أصل " + totalChaps + " فصول حتى الآن 🌿")
+                      : "اضغط على علامة (✓) بجوار كل فصل تنتهي من قراءته أو سماعه لاحتسابه في إنجازك.")
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "span",
+              { className: "text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 font-mono" },
+              doneChaps + " من " + totalChaps + " فصول"
+            ),
+            React.createElement(
+              "span",
+              { className: "text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono" },
+              chapPct + "%"
+            )
+          )
+        ),
+        // شريط التقدم المرئي
+        React.createElement(
+          "div",
+          { className: "w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60" },
+          chapPct > 0 && React.createElement(
+            "div",
+            {
+              className: "h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 rounded-full transition-all duration-500 shadow-xs",
+              style: { width: chapPct + "%" }
+            }
+          )
+        )
+      );
+    })(),
 
     // درج أدوات المعالجة بالذكاء الاصطناعي للأدمن (يفتح عند الضغط على زر الأدوات فقط للحفاظ على نظافة وهدوء الشاشة)
     currentUser && currentUser.role === "admin" && (showAdminTools || !!batchProgress || !!audioBatchProgress) ? React.createElement(
@@ -1282,6 +1373,7 @@ window.AudioChaptersView = function(props) {
         }
 
         var isNextInPlaylist = isPlaylistMode && curAudioIdx >= 0 && (curAudioIdx < audioChaptersList.length - 1) && (audioChaptersList[curAudioIdx + 1].id === chap.id);
+        var isChapDone = completedChapterIds.indexOf(chap.id) !== -1;
 
         return React.createElement(
           "div",
@@ -1295,11 +1387,29 @@ window.AudioChaptersView = function(props) {
                   ? "border-teal-500/60 dark:border-teal-500/40 shadow-xs bg-teal-50/10 dark:bg-teal-950/20"
                   : isExtractingThis
                     ? "border-emerald-500/70 shadow-md ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/20"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
+                    : isChapDone
+                      ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-950/20 shadow-xs"
+                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
           },
           React.createElement(
             "div",
             { className: "flex items-start gap-3 flex-1 min-w-0" },
+            // زر تحديد إتمام دراسة الفصل
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function(e) {
+                  handleToggleChapterCompleted(chap.id, e);
+                },
+                title: isChapDone ? "تمت دراسة هذا الفصل بنجاح (اضغط للإلغاء)" : "اضغط لتحديد إتمام دراسة هذا الفصل",
+                className: "w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer mt-1 " +
+                  (isChapDone
+                    ? "bg-emerald-500 text-white shadow-xs scale-105"
+                    : "border border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600 hover:border-emerald-400 hover:text-emerald-500")
+              },
+              React.createElement("span", { className: "text-xs font-black" }, isChapDone ? "✓" : "")
+            ),
             React.createElement(
               "div",
               { className: "flex flex-col items-center gap-1 shrink-0" },

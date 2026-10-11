@@ -170,8 +170,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791729704",
-  buildTime: "2026-10-11T14:41:44",
+  version: "1.2.1791729946",
+  buildTime: "2026-10-11T14:45:46",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -7042,8 +7042,31 @@ window.AudioChaptersView = function(props) {
   var [isAudioPlaying, setIsAudioPlaying] = React.useState(false);
   var [audioHasError, setAudioHasError] = React.useState(false);
   var [useIframePlayer, setUseIframePlayer] = React.useState(false);
-  var [resumedNotice, setResumedNotice] = React.useState("");
   var restoredPosRef = React.useRef({});
+
+  // سجل الفصول المكتملة والمدروسة للكتاب النشط
+  var [completedChapterIds, setCompletedChapterIds] = React.useState(function() {
+    return (activeBook && activeBook.id) ? utils.getLocal("counsel_completed_chapters_" + activeBook.id, []) : [];
+  });
+
+  React.useEffect(function() {
+    if (activeBook && activeBook.id) {
+      setCompletedChapterIds(utils.getLocal("counsel_completed_chapters_" + activeBook.id, []));
+    }
+  }, [activeBook && activeBook.id]);
+
+  var handleToggleChapterCompleted = function(chapId, e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!activeBook || !activeBook.id) return;
+    var next = completedChapterIds.indexOf(chapId) === -1
+      ? completedChapterIds.concat([chapId])
+      : completedChapterIds.filter(function(id) { return id !== chapId; });
+    setCompletedChapterIds(next);
+    utils.setLocal("counsel_completed_chapters_" + activeBook.id, next);
+    try {
+      window.dispatchEvent(new Event("counsel_book_progress_change"));
+    } catch (eEv) {}
+  };
 
   // استعادة موضع الاستماع المحفوظ في التخزين المحلي لكل فصل
   var restoreSavedPosition = function(audioEl, chapterId) {
@@ -7491,6 +7514,74 @@ window.AudioChaptersView = function(props) {
         )
       ) : null
     ),
+
+    // بطاقة متابعة إنجاز فصول الكتاب (Book Chapter Progress Tracker)
+    (function() {
+      if (!chaps || chaps.length === 0) return null;
+      var totalChaps = chaps.length;
+      var doneChaps = chaps.filter(function(c) {
+        return completedChapterIds.indexOf(c.id) !== -1;
+      }).length;
+      var chapPct = Math.min(100, Math.round((doneChaps / totalChaps) * 100));
+
+      return React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5 transition-all animate-in fade-in" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between gap-2 flex-wrap" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-xl sm:text-2xl" }, "📖"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement(
+                "h5",
+                { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight" },
+                "إنجازك في قراءة وسماع فصول هذا المرجع"
+              ),
+              React.createElement(
+                "p",
+                { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" },
+                chapPct === 100
+                  ? "🎉 مبارك! أتممت دراسة وسماع كافة فصول هذا الكتاب بنجاح."
+                  : (doneChaps > 0
+                      ? ("أتممت دراسة " + doneChaps + " من أصل " + totalChaps + " فصول حتى الآن 🌿")
+                      : "اضغط على علامة (✓) بجوار كل فصل تنتهي من قراءته أو سماعه لاحتسابه في إنجازك.")
+              )
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "span",
+              { className: "text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 font-mono" },
+              doneChaps + " من " + totalChaps + " فصول"
+            ),
+            React.createElement(
+              "span",
+              { className: "text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono" },
+              chapPct + "%"
+            )
+          )
+        ),
+        // شريط التقدم المرئي
+        React.createElement(
+          "div",
+          { className: "w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-700/60" },
+          chapPct > 0 && React.createElement(
+            "div",
+            {
+              className: "h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 rounded-full transition-all duration-500 shadow-xs",
+              style: { width: chapPct + "%" }
+            }
+          )
+        )
+      );
+    })(),
 
     // درج أدوات المعالجة بالذكاء الاصطناعي للأدمن (يفتح عند الضغط على زر الأدوات فقط للحفاظ على نظافة وهدوء الشاشة)
     currentUser && currentUser.role === "admin" && (showAdminTools || !!batchProgress || !!audioBatchProgress) ? React.createElement(
@@ -8263,6 +8354,7 @@ window.AudioChaptersView = function(props) {
         }
 
         var isNextInPlaylist = isPlaylistMode && curAudioIdx >= 0 && (curAudioIdx < audioChaptersList.length - 1) && (audioChaptersList[curAudioIdx + 1].id === chap.id);
+        var isChapDone = completedChapterIds.indexOf(chap.id) !== -1;
 
         return React.createElement(
           "div",
@@ -8276,11 +8368,29 @@ window.AudioChaptersView = function(props) {
                   ? "border-teal-500/60 dark:border-teal-500/40 shadow-xs bg-teal-50/10 dark:bg-teal-950/20"
                   : isExtractingThis
                     ? "border-emerald-500/70 shadow-md ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/20"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
+                    : isChapDone
+                      ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-950/20 shadow-xs"
+                      : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm")
           },
           React.createElement(
             "div",
             { className: "flex items-start gap-3 flex-1 min-w-0" },
+            // زر تحديد إتمام دراسة الفصل
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function(e) {
+                  handleToggleChapterCompleted(chap.id, e);
+                },
+                title: isChapDone ? "تمت دراسة هذا الفصل بنجاح (اضغط للإلغاء)" : "اضغط لتحديد إتمام دراسة هذا الفصل",
+                className: "w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 cursor-pointer mt-1 " +
+                  (isChapDone
+                    ? "bg-emerald-500 text-white shadow-xs scale-105"
+                    : "border border-slate-300 dark:border-slate-700 text-slate-300 dark:text-slate-600 hover:border-emerald-400 hover:text-emerald-500")
+              },
+              React.createElement("span", { className: "text-xs font-black" }, isChapDone ? "✓" : "")
+            ),
             React.createElement(
               "div",
               { className: "flex flex-col items-center gap-1 shrink-0" },
@@ -12074,9 +12184,19 @@ window.BooksPage = function(props) {
   }, [activeBook]);
   var [showAddModal, setShowAddModal] = React.useState(false);
   var [selectedChapter, setSelectedChapter] = React.useState(null);
-  var [activeTabByChapter, setActiveTabByChapter] = React.useState({}); // idx -> "written" | "audio"
   var [activeChapterAudioIdx, setActiveChapterAudioIdx] = React.useState(null); // idx of playing track
-  
+
+  // مراقبة تقدم إنجاز فصول وقراءة المراجع لتحديث البطاقات في المعرض فوراً
+  var [progressTick, setProgressTick] = React.useState(0);
+  React.useEffect(function() {
+    var onProgChange = function() {
+      setProgressTick(function(t) { return t + 1; });
+    };
+    window.addEventListener("counsel_book_progress_change", onProgChange);
+    return function() {
+      window.removeEventListener("counsel_book_progress_change", onProgChange);
+    };
+  }, []);
   // حالات عارض الـ PDF بدون إنترنت وحفظ الصفحة
   var [pdfDoc, setPdfDoc] = React.useState(null);
   var [pdfCurrentPage, setPdfCurrentPage] = React.useState(function() {
@@ -15586,6 +15706,38 @@ window.BooksPage = function(props) {
           var totalExtractedChars = extractedChapsList.reduce(function(sum, c) { return sum + (c.text ? c.text.length : 0); }, 0);
           var extractPercent = totalChaps > 0 ? Math.round((extractedCount / totalChaps) * 100) : 0;
 
+          // إنجاز دراسة وقراءة المرجع للدارس
+          var bookCompChaps = utils.getLocal("counsel_completed_chapters_" + b.id, []);
+          var bookDoneChaps = (b.audioChapters || []).filter(function(c) { return bookCompChaps.indexOf(c.id) !== -1; }).length;
+          var bookSavedPage = Number(utils.getLocal("counsel_book_page_" + b.id) || 1);
+          var bookTotalPages = Number(b.totalPages || 0);
+
+          var studyProgressInfo = (function() {
+            if (totalChaps > 0) {
+              var pct = Math.min(100, Math.round((bookDoneChaps / totalChaps) * 100));
+              return {
+                pct: pct,
+                label: bookDoneChaps > 0 ? ("إنجازك: " + bookDoneChaps + " من " + totalChaps + " فصول") : "لم تبدأ بعد",
+                sub: bookDoneChaps > 0 ? (pct + "% من فصول الكتاب") : "اضغط للبدء",
+                isStarted: bookDoneChaps > 0
+              };
+            } else if (bookTotalPages > 1 && bookSavedPage > 1) {
+              var pPct = Math.min(100, Math.round((bookSavedPage / bookTotalPages) * 100));
+              return {
+                pct: pPct,
+                label: "قراءة: ص " + bookSavedPage + " من " + bookTotalPages,
+                sub: pPct + "% من صفحات الكتاب",
+                isStarted: true
+              };
+            }
+            return {
+              pct: 0,
+              label: "لم تبدأ بعد",
+              sub: "اضغط لتصفح الكتاب",
+              isStarted: false
+            };
+          })();
+
           return React.createElement(
             "div",
             {
@@ -15711,33 +15863,46 @@ window.BooksPage = function(props) {
                 ) : null
               ),
 
-              // بطاقة تقدم التفريغ السحابي للفصول (تظهر بوضوح على اللاب والموبايل)
-              extractedCount > 0 ? React.createElement(
+              // بطاقة تقدم دراسة وقراءة المرجع للدارس (Personal Study Progress)
+              React.createElement(
                 "div",
-                { className: "mt-2 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] space-y-1" },
+                {
+                  className: "mt-2 p-2 rounded-xl text-[11px] space-y-1 transition-all " +
+                    (studyProgressInfo.isStarted
+                      ? "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
+                      : "bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400")
+                },
                 React.createElement(
                   "div",
-                  { className: "flex items-center justify-between font-bold text-emerald-800 dark:text-emerald-300" },
-                  React.createElement("span", { className: "flex items-center gap-1 text-[11px]" },
-                    React.createElement("span", null, "✨"),
-                    React.createElement("span", null, "تفريغ " + extractedCount + " من " + totalChaps + " فصول")
+                  { className: "flex items-center justify-between font-bold" },
+                  React.createElement(
+                    "span",
+                    { className: "flex items-center gap-1 text-[11px] truncate" },
+                    React.createElement("span", null, studyProgressInfo.isStarted ? "🎓" : "📖"),
+                    React.createElement("span", { className: "truncate" }, studyProgressInfo.label)
                   ),
-                  React.createElement("span", { className: "font-mono text-[10px]" }, extractPercent + "%")
+                  React.createElement(
+                    "span",
+                    { className: "font-mono text-[10px] shrink-0 font-black " + (studyProgressInfo.isStarted ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400") },
+                    studyProgressInfo.pct + "%"
+                  )
                 ),
                 React.createElement(
                   "div",
-                  { className: "w-full bg-emerald-200 dark:bg-emerald-900 rounded-full h-1.5 overflow-hidden" },
-                  React.createElement("div", {
-                    className: "bg-emerald-600 dark:bg-emerald-400 h-full rounded-full transition-all",
-                    style: { width: extractPercent + "%" }
+                  { className: "w-full bg-slate-200/80 dark:bg-slate-700/60 rounded-full h-1.5 overflow-hidden" },
+                  studyProgressInfo.pct > 0 && React.createElement("div", {
+                    className: "bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 h-full rounded-full transition-all shadow-2xs",
+                    style: { width: studyProgressInfo.pct + "%" }
                   })
-                ),
-                React.createElement(
-                  "div",
-                  { className: "text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between" },
-                  React.createElement("span", null, "جاهز للقراءة والاستماع"),
-                  React.createElement("span", { className: "font-bold" }, extractedCount + " من " + totalChaps + " فصول")
                 )
+              ),
+
+              // شارة تقدم التفريغ السحابي للفصول (تظهر للمسؤول فقط كأداة إدارية)
+              (isAdmin && extractedCount > 0 && extractedCount < totalChaps) ? React.createElement(
+                "div",
+                { className: "mt-1 p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[10px] flex items-center justify-between text-blue-700 dark:text-blue-300 font-bold" },
+                React.createElement("span", null, "⚙️ تفريغ AI: " + extractedCount + " / " + totalChaps),
+                React.createElement("span", { className: "font-mono" }, extractPercent + "%")
               ) : null,
 
               // الفوتر: عدد الفصول وزر الفتح
