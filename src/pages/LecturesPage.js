@@ -172,6 +172,9 @@ window.LecturesPage = function(props) {
   var itemSeqInfo = {};
   var lectureCounter = 0;
   var examCounter = 0;
+  var passedLecturesCount = 0;
+  var todayDateStr = new Date().toISOString().split("T")[0];
+
   chronoList.forEach(function(lec) {
     if (isItemExam(lec)) {
       examCounter++;
@@ -183,6 +186,10 @@ window.LecturesPage = function(props) {
       };
     } else {
       lectureCounter++;
+      var lecDateStr = (lec.date || "").trim();
+      if ((lecDateStr && lecDateStr <= todayDateStr) || (lec.mediaUrl && lec.mediaUrl.trim())) {
+        passedLecturesCount++;
+      }
       itemSeqInfo[lec.id] = {
         isExam: false,
         num: lectureCounter,
@@ -191,6 +198,8 @@ window.LecturesPage = function(props) {
       };
     }
   });
+
+  var totalLecturesCount = lectureCounter;
 
   var filteredLectures = lectures.filter(function(lec) {
     var matchQuery = (lec.title + " " + (lec.subject || "") + " " + (lec.speaker || "") + " " + (lec.notes || "")).toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
@@ -531,16 +540,21 @@ window.LecturesPage = function(props) {
     // ترويسة
     React.createElement(
       "div",
-      { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
+      { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm" },
       React.createElement(
         "div",
-        null,
-        React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المحاضرات الدراسية"),
-        React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ موضع الاستماع التلقائي")
+        { className: "flex items-center gap-3 flex-wrap" },
+        React.createElement("h2", { className: "text-lg sm:text-xl font-bold text-slate-900 dark:text-white" }, "المحاضرات الدراسية"),
+        totalLecturesCount > 0 && React.createElement(
+          "div",
+          { className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold" },
+          React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
+          React.createElement("span", null, passedLecturesCount + " من " + totalLecturesCount + " محاضرة")
+        )
       ),
       React.createElement(
         "div",
-        { className: "flex flex-wrap items-center gap-2" },
+        { className: "flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end" },
         // زر الفلترة والبحث المخصص لجميع المستخدمين
         lectures.length > 0 && React.createElement(
           "button",
