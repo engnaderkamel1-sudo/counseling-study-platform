@@ -100,6 +100,19 @@ window.LectureRow = function(props) {
       currentUser.role === "admin" && React.createElement(
         "div",
         { className: "flex items-center gap-1" },
+        lec.zoomUrl && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function(e) {
+              e.stopPropagation();
+              if (props.onClearZoom) props.onClearZoom(lec);
+            },
+            title: "إلغاء ومسح رابط الزوم لهذه المحاضرة",
+            className: "p-1.5 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-600 hover:bg-rose-100 transition-colors"
+          },
+          "🚫"
+        ),
         React.createElement(
           "button",
           {

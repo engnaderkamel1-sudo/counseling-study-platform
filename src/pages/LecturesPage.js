@@ -554,6 +554,22 @@ window.LecturesPage = function(props) {
     }
   };
 
+  // إلغاء ومسح رابط الزوم للمحاضرة فوراً (في حال إلغاء اللقاء أو تغييره)
+  var handleClearZoomLink = function(lec) {
+    if (!lec) return;
+    if (!window.confirm("هل تريد بالتأكيد إلغاء ومسح رابط الزوم لمحاضرة «" + (lec.title || "") + "»؟\n(في حال إلغاء اللقاء المباشر)")) return;
+    var updated = Object.assign({}, lec, {
+      zoomUrl: "",
+      meetingId: "",
+      passcode: "",
+      zoomTimeStr: ""
+    });
+    cloud.saveLecture(updated);
+    if (activeLecture && activeLecture.id === updated.id) {
+      setActiveLecture(updated);
+    }
+  };
+
   var handleSavePosition = function(sec) {
     if (!activeLecture) return;
     setActiveLecture(Object.assign({}, activeLecture, { lastPosition: sec }));
@@ -791,7 +807,8 @@ window.LecturesPage = function(props) {
           utils: utils,
           onSelect: function(item) { setActiveLecture(item); },
           onEdit: function(item) { openEditModal(item); },
-          onDelete: function(item) { handleDeleteLecture(item); }
+          onDelete: function(item) { handleDeleteLecture(item); },
+          onClearZoom: function(item) { handleClearZoomLink(item); }
         });
       })
     ) : React.createElement(
@@ -821,6 +838,7 @@ window.LecturesPage = function(props) {
       getLectureStatus: getLectureStatus,
       openEditModal: openEditModal,
       handleDeleteLecture: handleDeleteLecture,
+      handleClearZoom: handleClearZoomLink,
       handleSavePosition: handleSavePosition,
       filteredLectures: filteredLectures,
       onSelectLecture: function(item) { setActiveLecture(item); }
