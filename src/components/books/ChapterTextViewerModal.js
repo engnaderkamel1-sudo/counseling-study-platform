@@ -718,7 +718,10 @@ window.ChapterTextViewerModal = function(props) {
         "div",
         {
           ref: textContainerRef,
-          className: "overflow-y-auto flex-1 p-3 sm:p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-relaxed font-sans select-text selection:bg-blue-600 selection:text-white space-y-1.5",
+          className: "overflow-y-auto flex-1 p-3 sm:p-5 rounded-2xl border leading-relaxed font-sans select-text space-y-1.5 transition-colors " +
+            (readerTheme === "sepia"
+              ? "bg-[#fbf0d9] border-[#edd9be] text-[#433422] selection:bg-amber-300 selection:text-amber-950"
+              : "bg-slate-50 dark:bg-slate-950/70 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 selection:bg-blue-600 selection:text-white"),
           style: { fontSize: fontSize + "px" }
         },
         segments.length > 0 ? segments.map(function(seg, idx) {

@@ -437,6 +437,33 @@ window.AudioChaptersView = function(props) {
     };
   }, [playingChapterId, chapterAudioRef, isPlaylistMode, chaps, viewingChapterText, activeBook]);
 
+  // مزامنة حالة المشغل الصوتي العائم (Global Mini-Player Bridge)
+  React.useEffect(function() {
+    var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
+    if (playingChapterId && activeChap) {
+      window.__ACTIVE_PLAYING_AUDIO = {
+        title: activeChap.title || "فصل صوتي",
+        book: (activeBook && activeBook.title) || "كتاب صوتي",
+        isPlaying: isAudioPlaying,
+        togglePlay: function() {
+          if (chapterAudioRef.current) {
+            if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
+            else chapterAudioRef.current.pause();
+          }
+        },
+        stop: function() {
+          if (chapterAudioRef.current) chapterAudioRef.current.pause();
+          setPlayingChapterId(null);
+        }
+      };
+    } else {
+      window.__ACTIVE_PLAYING_AUDIO = null;
+    }
+    try {
+      window.dispatchEvent(new Event("counsel_audio_state_change"));
+    } catch (eEv) {}
+  }, [playingChapterId, activeBook, isAudioPlaying]);
+
   return React.createElement(
     "div",
     { className: "space-y-4 " + (playingChapterId ? "pb-44 sm:pb-8" : "pb-12 sm:pb-4") },

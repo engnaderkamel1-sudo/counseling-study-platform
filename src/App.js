@@ -23,6 +23,34 @@ function App() {
     }
   }, [activeTab]);
 
+  var [hasVisitedBooks, setHasVisitedBooks] = React.useState(function() {
+    return activeTab === "books";
+  });
+  var [hasVisitedLectures, setHasVisitedLectures] = React.useState(function() {
+    return activeTab === "lectures";
+  });
+
+  React.useEffect(function() {
+    if (activeTab === "books") setHasVisitedBooks(true);
+    if (activeTab === "lectures") setHasVisitedLectures(true);
+  }, [activeTab]);
+
+  var [floatingAudio, setFloatingAudio] = React.useState(null);
+
+  React.useEffect(function() {
+    var updateFloatingAudio = function() {
+      if (window.__ACTIVE_PLAYING_AUDIO) {
+        setFloatingAudio(Object.assign({}, window.__ACTIVE_PLAYING_AUDIO));
+      } else {
+        setFloatingAudio(null);
+      }
+    };
+    window.addEventListener("counsel_audio_state_change", updateFloatingAudio);
+    return function() {
+      window.removeEventListener("counsel_audio_state_change", updateFloatingAudio);
+    };
+  }, []);
+
   // تنظيف فوري ومضمون عند إقلاع التطبيق لأي مخلفات لكتب محذوفة (Zero Ghost Books)
   React.useEffect(function() {
     try {
@@ -490,20 +518,88 @@ function App() {
       React.createElement(
         "main",
         { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (hasUpdateAvailable ? "pt-28 sm:pt-32" : "pt-20 sm:pt-22") },
-        activeTab === "lectures" && React.createElement(window.LecturesPage, {
-          currentUser: currentUser,
-          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
-        }),
-        activeTab === "books" && React.createElement(window.BooksPage, {
-          currentUser: currentUser,
-          onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
-        }),
+        hasVisitedLectures && React.createElement(
+          "div",
+          { className: activeTab === "lectures" ? "block" : "hidden" },
+          React.createElement(window.LecturesPage, {
+            currentUser: currentUser,
+            onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+          })
+        ),
+        hasVisitedBooks && React.createElement(
+          "div",
+          { className: activeTab === "books" ? "block" : "hidden" },
+          React.createElement(window.BooksPage, {
+            currentUser: currentUser,
+            onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
+          })
+        ),
         activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: currentUser }),
         activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
         activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
         activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
         activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: currentUser }),
         activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser })
+      )
+    ),
+
+    // مشغل عائم مصغر دائم عند الانتقال لأي تبويب آخر أثناء تشغيل الصوت (Floating Mini-Player)
+    (floatingAudio && activeTab !== "books") && React.createElement(
+      "div",
+      {
+        className: "fixed bottom-16 md:bottom-6 right-3 sm:right-6 left-3 sm:left-auto sm:w-[22rem] z-40 bg-slate-900/95 text-white backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-2xl border border-amber-500/30 flex items-center justify-between gap-3 animate-fade-in cursor-pointer select-none ring-1 ring-white/10",
+        onClick: function() {
+          setActiveTab("books");
+        }
+      },
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-2.5 min-w-0 flex-1" },
+        React.createElement(
+          "div",
+          {
+            className: "w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 text-base " + (floatingAudio.isPlaying ? "animate-pulse" : "")
+          },
+          "🎧"
+        ),
+        React.createElement(
+          "div",
+          { className: "min-w-0 flex-1" },
+          React.createElement("p", { className: "text-xs font-black text-amber-300 truncate" }, floatingAudio.title || "فصل صوتي"),
+          React.createElement("p", { className: "text-[10px] text-slate-400 truncate" }, floatingAudio.book || "الكتاب الصوتي")
+        )
+      ),
+      React.createElement(
+        "div",
+        {
+          className: "flex items-center gap-1.5 shrink-0",
+          onClick: function(e) { e.stopPropagation(); }
+        },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              if (floatingAudio.togglePlay) floatingAudio.togglePlay();
+            },
+            className: "w-8 h-8 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-md transition-transform active:scale-90 text-xs",
+            title: floatingAudio.isPlaying ? "إيقاف مؤقت" : "تشغيل"
+          },
+          floatingAudio.isPlaying ? "⏸" : "▶"
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              if (floatingAudio.stop) floatingAudio.stop();
+              setFloatingAudio(null);
+            },
+            className: "w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-red-400 font-bold flex items-center justify-center transition-colors text-xs",
+            title: "إغلاق المشغل"
+          },
+          "✕"
+        )
       )
     ),
 

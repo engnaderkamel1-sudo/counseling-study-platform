@@ -28,7 +28,13 @@ window.LectureViewerModal = function(props) {
     return parseInt(saved) || 1;
   });
 
-  // إعادة ضبط إجابات الكويز والهاند آوت عند تغيير المحاضرة
+  // حالة تدوين الملاحظات السريعة من داخل المحاضرة
+  var [quickNoteText, setQuickNoteText] = React.useState("");
+  var [lectureNotesList, setLectureNotesList] = React.useState([]);
+  var [isSavingQuickNote, setIsSavingQuickNote] = React.useState(false);
+  var [noteSavedToast, setNoteSavedToast] = React.useState(false);
+
+  // إعادة ضبط إجابات الكويز والهاند آوت وتحميل الملاحظات عند تغيير المحاضرة
   React.useEffect(function() {
     setQuizUserAnswers({});
     setQuizSubmitted(false);
@@ -36,11 +42,50 @@ window.LectureViewerModal = function(props) {
     setIsHandoutFullScreen(false);
     setHandoutRotation(0);
     setHandoutZoom(100);
+    setQuickNoteText("");
     if (activeLecture && activeLecture.id && utils.getLocal) {
       var saved = utils.getLocal("handout_page_" + activeLecture.id, 1);
       setHandoutCurrentPage(parseInt(saved) || 1);
+
+      var userIdentifier = currentUser ? (currentUser.id || currentUser.email || "user") : "guest";
+      var userKey = "counsel_study_personal_notes_" + userIdentifier;
+      var allNotes = utils.getLocal(userKey, []) || [];
+      var matching = allNotes.filter(function(n) {
+        return (n.lectureId && n.lectureId === activeLecture.id) || (n.lectureRef && n.lectureRef === activeLecture.title);
+      });
+      setLectureNotesList(matching);
     }
   }, [activeLecture ? activeLecture.id : null]);
+
+  var handleSaveQuickNote = function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!quickNoteText.trim() || !activeLecture) return;
+    setIsSavingQuickNote(true);
+
+    var userIdentifier = currentUser ? (currentUser.id || currentUser.email || "user") : "guest";
+    var userKey = "counsel_study_personal_notes_" + userIdentifier;
+    var allN = utils.getLocal ? utils.getLocal(userKey, []) : [];
+
+    var newNote = {
+      id: "note-" + Date.now(),
+      title: "خاطرة: " + (activeLecture.title || "المحاضرة"),
+      date: new Date().toISOString().split("T")[0],
+      lectureRef: activeLecture.title || "محاضرة",
+      lectureId: activeLecture.id || "",
+      content: quickNoteText.trim(),
+      userId: userIdentifier
+    };
+
+    var updated = [newNote].concat(allN);
+    if (utils.setLocal) utils.setLocal(userKey, updated);
+    if (cloud && cloud.saveNote) cloud.saveNote(newNote, currentUser);
+
+    setLectureNotesList([newNote].concat(lectureNotesList));
+    setQuickNoteText("");
+    setIsSavingQuickNote(false);
+    setNoteSavedToast(true);
+    setTimeout(function() { setNoteSavedToast(false); }, 3000);
+  };
 
   var handleHandoutPageChange = function(newPage) {
     var p = Math.max(1, newPage);
@@ -270,7 +315,8 @@ window.LectureViewerModal = function(props) {
           { id: "handout", label: "المرفقات والملفات" },
           { id: "summary", label: "الملخص المكتوب" },
           { id: "audio_summary", label: "الملخص الصوتي" },
-          { id: "quiz", label: "الاختبار التفاعلي" }
+          { id: "quiz", label: "الاختبار التفاعلي" },
+          { id: "notes", label: "✍️ تدوين الملاحظات" }
         ].map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
@@ -766,6 +812,78 @@ window.LectureViewerModal = function(props) {
             },
             "📝 إعداد أسئلة الكويز الآن"
           )
+        )
+      ),
+
+      // 6. تبويب تدوين الملاحظات السريعة للمحاضرة
+      activeSubTab === "notes" && React.createElement(
+        "div",
+        { className: "space-y-4 animate-in fade-in duration-200" },
+        // نموذج كتابة ملاحظة جديدة
+        React.createElement(
+          "div",
+          { className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 space-y-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between" },
+            React.createElement("h4", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5" },
+              React.createElement("span", null, "✍️"),
+              "تدوين فكرة أو ملخص لمحاضرة: " + activeLecture.title
+            ),
+            noteSavedToast && React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-pulse" }, "✓ تم حفظ الملاحظة بنجاح!")
+          ),
+          React.createElement("textarea", {
+            rows: 4,
+            value: quickNoteText,
+            onChange: function(e) { setQuickNoteText(e.target.value); },
+            placeholder: "سجل أفكارك وتأملاتك العميقة أثناء استماعك للمحاضرة...",
+            className: "w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed"
+          }),
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between pt-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-400" }, "تُحفظ تلقائياً في حسابك ومزامنة مع صفحة ملاحظاتي"),
+            React.createElement("button", {
+              type: "button",
+              disabled: isSavingQuickNote || !quickNoteText.trim(),
+              onClick: handleSaveQuickNote,
+              className: "px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+            },
+              React.createElement("span", null, "💾"),
+              React.createElement("span", null, isSavingQuickNote ? "جاري الحفظ..." : "حفظ الملاحظة")
+            )
+          )
+        ),
+        // قائمة الملاحظات السابقة المسجلة لهذه المحاضرة
+        lectureNotesList.length > 0 ? React.createElement(
+          "div",
+          { className: "space-y-2 pt-2" },
+          React.createElement("h5", { className: "text-xs font-bold text-slate-500 dark:text-slate-400" }, "ملاحظاتك المسجلة على هذه المحاضرة (" + lectureNotesList.length + "):"),
+          lectureNotesList.map(function(n) {
+            return React.createElement(
+              "div",
+              { key: n.id, className: "p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5 shadow-2xs" },
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between text-[11px] text-slate-400" },
+                React.createElement("span", { className: "font-mono font-bold text-emerald-600 dark:text-emerald-400" }, n.date),
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() {
+                    var shareTxt = "📝 *" + (activeLecture.title || "محاضرة") + "*\n" + n.content;
+                    var u = "https://api.whatsapp.com/send?text=" + encodeURIComponent(shareTxt);
+                    window.open(u, "_blank");
+                  },
+                  className: "text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1"
+                }, "💬 مشاركة بالواتساب")
+              ),
+              React.createElement("p", { className: "text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap" }, n.content)
+            );
+          })
+        ) : React.createElement(
+          "div",
+          { className: "p-6 text-center text-slate-400 text-xs border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl" },
+          "لا توجد ملاحظات سابقة مسجلة على هذه المحاضرة بعد. ابدأ بكتابة أول فكرة أعلاه!"
         )
       ),
 

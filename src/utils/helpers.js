@@ -93,11 +93,14 @@ window.APP_UTILS = {
         reject(new Error("IndexedDB غير مدعوم"));
         return;
       }
-      var req = indexedDB.open("counsel_offline_storage", 1);
+      var req = indexedDB.open("counsel_offline_storage", 2);
       req.onupgradeneeded = function(e) {
         var db = e.target.result;
         if (!db.objectStoreNames.contains("books_pdf")) {
           db.createObjectStore("books_pdf", { keyPath: "bookId" });
+        }
+        if (!db.objectStoreNames.contains("pages_cache")) {
+          db.createObjectStore("pages_cache", { keyPath: "key" });
         }
       };
       req.onsuccess = function(e) { resolve(e.target.result); };
@@ -191,10 +194,32 @@ window.APP_UTILS = {
 
   setCachedPageText: function(bookId, pageNum, text) {
     if (!bookId || !pageNum || !text) return;
+    var key = "counsel_ocr_p_" + bookId + "_" + pageNum;
+
+    // 1. حفظ في المستودع الموسع IndexedDB غير المحدود بـ 5MB
+    if ("indexedDB" in window && window.APP_UTILS.openOfflineDb) {
+      window.APP_UTILS.openOfflineDb().then(function(db) {
+        if (db && db.objectStoreNames.contains("pages_cache")) {
+          var tx = db.transaction("pages_cache", "readwrite");
+          tx.objectStore("pages_cache").put({ key: key, text: text, time: Date.now() });
+        }
+      }).catch(function() {});
+    }
+
+    // 2. حفظ احتياطي سريع في localStorage مع حماية من انهيار الحصة QuotaExceeded
     try {
-      var key = "counsel_ocr_p_" + bookId + "_" + pageNum;
       localStorage.setItem(key, text);
-    } catch (e) {}
+    } catch (eQuota) {
+      try {
+        var toRemove = [];
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf("counsel_ocr_p_") === 0) toRemove.push(k);
+        }
+        toRemove.slice(0, 15).forEach(function(k) { localStorage.removeItem(k); });
+        localStorage.setItem(key, text);
+      } catch (eFinal) {}
+    }
   },
 
   // تدقيق وفحص سلامة الكتاب وفصوله إلزامياً قبل النشر للدارسين (Quality Gate)
