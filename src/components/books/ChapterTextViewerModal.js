@@ -474,21 +474,37 @@ window.ChapterTextViewerModal = function(props) {
                     onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
                     className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
                       (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
-                    title: autoScrollEnabled ? "المتابعة التلقائية وتمرير الشاشة مع الصوت مفعلة (اضغط للإيقاف)" : "المتابعة التلقائية متوقفة (اضغط للتفعيل)"
-                  }, autoScrollEnabled ? "📍 متابعة ✓" : "📍 متوقفة"),
+                    title: autoScrollEnabled ? "تحريك الشاشة تلقائياً مع قراءة الصوت مفعل (اضغط للإيقاف)" : "تحريك الشاشة التلقائي متوقف (اضغط للتفعيل)"
+                  }, autoScrollEnabled ? "📍 تحريك الشاشة ✓" : "📍 تحريك متوقف"),
                   setIsPlaylistMode ? React.createElement("button", {
                     type: "button",
                     onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
                     className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
                       (isPlaylistMode ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
-                    title: isPlaylistMode ? "التشغيل المتتالي مفعل" : "التشغيل المتتالي متوقف"
-                  }, "🔁 " + (isPlaylistMode ? "متتالي ✓" : "فردي")) : null,
-                  React.createElement("button", {
-                    type: "button",
-                    onClick: cycleSpeed,
-                    className: "px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-mono font-bold active:scale-95 transition-all shadow-xs",
-                    title: "تغيير سرعة الصوت"
-                  }, localSpeed.toFixed(1) + "x"),
+                    title: isPlaylistMode ? "تشغيل التراك التالي تلقائياً بعد انتهاء الحالي مفعل" : "تشغيل التراك التالي تلقائياً متوقف"
+                  }, "🔁 " + (isPlaylistMode ? "التالي تلقائياً ✓" : "تشغيل مفرد")) : null,
+                  React.createElement("div", {
+                    className: "flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-800 border border-slate-700 text-[11px] font-bold shadow-xs",
+                    title: "شريط ضبط سرعة الصوت"
+                  },
+                    React.createElement("span", { className: "text-slate-400 text-[10px]" }, "السرعة:"),
+                    React.createElement("input", {
+                      type: "range",
+                      min: "0.75",
+                      max: "2.0",
+                      step: "0.25",
+                      value: localSpeed,
+                      onChange: function(e) {
+                        var spd = parseFloat(e.target.value);
+                        setLocalSpeed(spd);
+                        if (chapterAudioRef && chapterAudioRef.current) {
+                          chapterAudioRef.current.playbackRate = spd;
+                        }
+                      },
+                      className: "w-14 sm:w-16 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                    }),
+                    React.createElement("span", { className: "text-amber-300 font-mono text-[11px] min-w-[28px] text-center" }, localSpeed.toFixed(1) + "x")
+                  ),
                   React.createElement("button", {
                     type: "button",
                     onClick: toggleAudioCollapse,
