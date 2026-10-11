@@ -50,20 +50,22 @@ window.LectureViewerModal = function(props) {
     }
   };
 
+  var handoutScrollContainerRef = React.useRef(null);
+
   var handleRotateHandout = function() {
     setHandoutRotation(function(prev) { return (prev + 90) % 360; });
   };
 
-  var handleZoomInHandout = function() {
-    setHandoutZoom(function(prev) { return Math.min(250, prev + 25); });
+  var handleHandoutPageUp = function() {
+    if (handoutScrollContainerRef.current) {
+      handoutScrollContainerRef.current.scrollBy({ top: -window.innerHeight * 0.8, behavior: "smooth" });
+    }
   };
 
-  var handleZoomOutHandout = function() {
-    setHandoutZoom(function(prev) { return Math.max(75, prev - 25); });
-  };
-
-  var handleResetZoomHandout = function() {
-    setHandoutZoom(100);
+  var handleHandoutPageDown = function() {
+    if (handoutScrollContainerRef.current) {
+      handoutScrollContainerRef.current.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" });
+    }
   };
 
   if (!activeLecture) return null;
