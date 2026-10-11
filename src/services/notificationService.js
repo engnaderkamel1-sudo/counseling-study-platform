@@ -39,7 +39,7 @@ window.NotificationService = {
     try {
       var notifData = {
         title: "👤 طلب انضمام دارس جديد",
-        body: (userData.fullName || "دارس جديد") + " • " + (userData.studyType || "دراسة المشورة") + " (" + (userData.studyYear || "السنة الأولى") + ") • كنيسة " + (userData.church || "غير محدد"),
+        body: (userData.fullName || "دارس جديد") + " • " + (userData.studyType || "") + " (" + (userData.studyYear || "") + ") • " + (userData.church || "") + " (" + (userData.diocese || "") + " - " + (userData.governorate || "") + ")",
         type: "user_registration",
         userId: userData.id || userData.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()

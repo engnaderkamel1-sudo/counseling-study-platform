@@ -1,10 +1,38 @@
-// شاشة إدارة طلبات المستخدمين واعتماد الدارسين (خاصة بالمشرف فقط)
+// شاشة إدارة طلبات المستخدمين واعتماد الدارسين وأكواد التخطي السريع (خاصة بالمشرف فقط)
 window.UsersManagementPage = function(props) {
   var currentUser = props.currentUser;
   var [users, setUsers] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
   var [searchQuery, setSearchQuery] = React.useState("");
   var [activeFilter, setActiveFilter] = React.useState("pending"); // "pending", "approved", "rejected", "all"
+
+  // إعدادات كود التخطي والقائمة البيضاء
+  var [bypassCode, setBypassCode] = React.useState("counsel2026");
+  var [whitelistedEmails, setWhitelistedEmails] = React.useState([]);
+  var [newWhitelistEmail, setNewWhitelistEmail] = React.useState("");
+  var [showBypassSettings, setShowBypassSettings] = React.useState(false);
+  var [isSavingSettings, setIsSavingSettings] = React.useState(false);
+
+  // نافذة إضافة دارس يدوياً ومعتمد فوراً
+  var [showManualAddModal, setShowManualAddModal] = React.useState(false);
+  var [manualFullName, setManualFullName] = React.useState("");
+  var [manualEmail, setManualEmail] = React.useState("");
+  var [manualPassword, setManualPassword] = React.useState("");
+  var [manualStudyType, setManualStudyType] = React.useState("أكاديمي");
+  var [manualStudyYear, setManualStudyYear] = React.useState("السنة الأولى");
+  var [manualChurch, setManualChurch] = React.useState("");
+  var [manualDiocese, setManualDiocese] = React.useState("");
+  var [manualGov, setManualGov] = React.useState("القاهرة");
+  var [isSavingManual, setIsSavingManual] = React.useState(false);
+
+  var governoratesList = [
+    "القاهرة", "الجيزة", "الإسكندرية", "القليوبية", "الدقهلية",
+    "الشرقية", "المنوفية", "الغربية", "كفر الشيخ", "دمياط",
+    "بورسعيد", "الإسماعيلية", "السويس", "البحيرة", "بني سويف",
+    "الفيوم", "المنيا", "أسيوط", "سوهاج", "قنا",
+    "الأقصر", "أسوان", "البحر الأحمر", "الوادي الجديد", "مطروح",
+    "شمال سيناء", "جنوب سيناء", "خارج مصر / مقيم بالخارج"
+  ];
 
   var fetchUsers = async function() {
     if (!window.db) return;
@@ -15,13 +43,20 @@ window.UsersManagementPage = function(props) {
       snap.forEach(function(doc) {
         list.push(Object.assign({ id: doc.id }, doc.data()));
       });
-      // ترتيب حسب الأحدث
       list.sort(function(a, b) {
         var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
         var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
         return tB - tA;
       });
       setUsers(list);
+
+      // جلب إعدادات التخطي
+      var confDoc = await window.db.collection("system_settings").doc("auth_config").get();
+      if (confDoc.exists) {
+        var d = confDoc.data();
+        if (d.bypassCode) setBypassCode(d.bypassCode);
+        if (Array.isArray(d.whitelistedEmails)) setWhitelistedEmails(d.whitelistedEmails);
+      }
     } catch (e) {
       console.error("Error fetching users:", e);
     } finally {
@@ -61,6 +96,84 @@ window.UsersManagementPage = function(props) {
     }
   };
 
+  // حفظ كود التخطي والقائمة البيضاء
+  var handleSaveBypassSettings = async function() {
+    if (!window.db) return;
+    setIsSavingSettings(true);
+    try {
+      await window.db.collection("system_settings").doc("auth_config").set({
+        bypassCode: bypassCode.trim(),
+        whitelistedEmails: whitelistedEmails,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      alert("تم حفظ إعدادات كود التخطي والقائمة البيضاء بنجاح! ✓");
+      setShowBypassSettings(false);
+    } catch (err) {
+      alert("خطأ أثناء حفظ الإعدادات: " + err.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  var handleAddWhitelistEmail = function(e) {
+    e.preventDefault();
+    var em = newWhitelistEmail.trim().toLowerCase();
+    if (!em) return;
+    if (whitelistedEmails.indexOf(em) !== -1) {
+      alert("هذا البريد موجود بالقائمة بالفعل.");
+      return;
+    }
+    setWhitelistedEmails([em].concat(whitelistedEmails));
+    setNewWhitelistEmail("");
+  };
+
+  var handleRemoveWhitelistEmail = function(em) {
+    setWhitelistedEmails(whitelistedEmails.filter(function(x) { return x !== em; }));
+  };
+
+  // إنشاء حساب دارس معتمد يدوياً بواسطة المشرف
+  var handleCreateManualUser = async function(e) {
+    e.preventDefault();
+    if (!window.db) return;
+    setIsSavingManual(true);
+    try {
+      var cleanEmail = manualEmail.trim().toLowerCase();
+      var cleanDocId = "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
+
+      var newUserData = {
+        id: cleanDocId,
+        fullName: manualFullName.trim(),
+        email: cleanEmail,
+        password: manualPassword.trim() || "123456",
+        studyType: manualStudyType,
+        studyYear: manualStudyYear,
+        church: manualChurch.trim() || "غير محدد",
+        diocese: manualDiocese.trim() || "غير محدد",
+        governorate: manualGov,
+        role: "student",
+        status: "approved", // معتمد فوراً بواسطة المشرف
+        bypassed: true,
+        createdByAdmin: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await window.db.collection("users").doc(cleanDocId).set(newUserData, { merge: true });
+
+      setUsers([newUserData].concat(users));
+      alert("تم إنشاء حساب الدارس وتفعيله بنجاح! يمكنه تسجيل الدخول فوراً بالبريد وكلمة المرور.");
+      setShowManualAddModal(false);
+      setManualFullName("");
+      setManualEmail("");
+      setManualPassword("");
+      setManualChurch("");
+      setManualDiocese("");
+    } catch (err) {
+      alert("خطأ: " + err.message);
+    } finally {
+      setIsSavingManual(false);
+    }
+  };
+
   var pendingUsers = users.filter(function(u) { return u.status === "pending"; });
   var approvedUsers = users.filter(function(u) { return u.status === "approved" && u.role !== "admin"; });
   var rejectedUsers = users.filter(function(u) { return u.status === "rejected"; });
@@ -74,9 +187,10 @@ window.UsersManagementPage = function(props) {
       var q = searchQuery.trim().toLowerCase();
       var matchName = (u.fullName || "").toLowerCase().indexOf(q) !== -1;
       var matchEmail = (u.email || "").toLowerCase().indexOf(q) !== -1;
-      var matchPhone = (u.phone || "").indexOf(q) !== -1;
       var matchChurch = (u.church || "").toLowerCase().indexOf(q) !== -1;
-      return matchName || matchEmail || matchPhone || matchChurch;
+      var matchDiocese = (u.diocese || "").toLowerCase().indexOf(q) !== -1;
+      var matchGov = (u.governorate || "").toLowerCase().indexOf(q) !== -1;
+      return matchName || matchEmail || matchChurch || matchDiocese || matchGov;
     }
     return true;
   });
@@ -109,19 +223,127 @@ window.UsersManagementPage = function(props) {
           )
         ),
         React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" },
-          "مراجعة بيانات الزملاء الدارسين، نوع دراستهم وكنائسهم قبل منحهم تصريح الدخول للمنصة"
+          "مراجعة بيانات الدارسين وكنائسهم وأبرشياتهم أو تفعيل حسابات فورية"
         )
       ),
       React.createElement(
         "div",
-        { className: "flex items-center gap-2" },
+        { className: "flex items-center gap-2 flex-wrap" },
+        React.createElement("button", {
+          onClick: function() { setShowBypassSettings(!showBypassSettings); },
+          className: "text-xs px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-100 transition-all flex items-center gap-1.5 shadow-2xs"
+        },
+          React.createElement("span", null, "⚡"),
+          React.createElement("span", null, "إعدادات كود التخطي (Bypass)")
+        ),
+        React.createElement("button", {
+          onClick: function() { setShowManualAddModal(true); },
+          className: "text-xs px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-xs"
+        },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", null, "إضافة دارس معتمد فوراً")
+        ),
         React.createElement("button", {
           onClick: fetchUsers,
-          className: "text-xs px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all flex items-center gap-1.5"
-        },
-          React.createElement("span", null, "🔄"),
-          React.createElement("span", null, "تحديث البيانات")
+          className: "text-xs px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all"
+        }, "🔄")
+      )
+    ),
+
+    // لوحة إعدادات التخطي المباشر (Bypass & Whitelist)
+    showBypassSettings && React.createElement(
+      "div",
+      { className: "bg-white dark:bg-slate-900 p-5 rounded-3xl border-2 border-amber-400/80 dark:border-amber-500/50 shadow-md space-y-4 animate-in fade-in zoom-in-95 duration-150" },
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between border-b pb-3" },
+        React.createElement("div", null,
+          React.createElement("h3", { className: "text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2" },
+            React.createElement("span", null, "⚡"),
+            "خيارات تخطي المراجعة والاعتماد الفوري (Bypass Approval)"
+          ),
+          React.createElement("p", { className: "text-xs text-slate-500 mt-0.5" },
+            "يمكنك إعطاء كود موحد لأشخاص تثق بهم ليُعتمد حسابهم تلقائياً، أو إضافة إيميلات محددة مسبقاً."
+          )
+        ),
+        React.createElement("button", { onClick: function() { setShowBypassSettings(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
+      ),
+
+      React.createElement(
+        "div",
+        { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+        // 1. كود التخطي الموحد
+        React.createElement(
+          "div",
+          { className: "p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200" }, "كود التفعيل الفوري (Bypass Code)"),
+          React.createElement("div", { className: "flex items-center gap-2" },
+            React.createElement("input", {
+              type: "text",
+              value: bypassCode,
+              onChange: function(e) { setBypassCode(e.target.value); },
+              placeholder: "مثال: counsel2026",
+              className: "flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono font-bold"
+            }),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() {
+                navigator.clipboard.writeText(bypassCode);
+                alert("تم نسخ الكود: " + bypassCode);
+              },
+              className: "px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 text-xs font-semibold"
+            }, "نسخ 📋")
+          ),
+          React.createElement("p", { className: "text-[11px] text-slate-400" }, "أي شخص يكتب هذا الكود في خانة كود الاعتماد الفوري أثناء التسجيل يدخل للمنصة فوراً دون انتظار.")
+        ),
+
+        // 2. القائمة البيضاء للإيميلات المعتمدة مسبقاً
+        React.createElement(
+          "div",
+          { className: "p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200" }, "القائمة البيضاء للإيميلات (Pre-approved Emails)"),
+          React.createElement(
+            "form",
+            { onSubmit: handleAddWhitelistEmail, className: "flex items-center gap-2" },
+            React.createElement("input", {
+              type: "email",
+              value: newWhitelistEmail,
+              onChange: function(e) { setNewWhitelistEmail(e.target.value); },
+              placeholder: "user@example.com",
+              className: "flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+            }),
+            React.createElement("button", {
+              type: "submit",
+              className: "px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+            }, "إضافة +")
+          ),
+          whitelistedEmails.length > 0 ? React.createElement(
+            "div",
+            { className: "flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pt-1" },
+            whitelistedEmails.map(function(em) {
+              return React.createElement(
+                "span",
+                { key: em, className: "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-900 border text-[11px] font-mono" },
+                em,
+                React.createElement("button", {
+                  type: "button",
+                  onClick: function() { handleRemoveWhitelistEmail(em); },
+                  className: "text-rose-500 hover:text-rose-700 font-bold mr-1"
+                }, "✕")
+              );
+            })
+          ) : React.createElement("p", { className: "text-[11px] text-slate-400" }, "لا توجد إيميلات بالقائمة حالياً.")
         )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800" },
+        React.createElement("button", {
+          onClick: handleSaveBypassSettings,
+          disabled: isSavingSettings,
+          className: "px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-sm transition-all"
+        }, isSavingSettings ? "جاري الحفظ..." : "حفظ إعدادات التخطي السحابية ✓")
       )
     ),
 
@@ -176,7 +398,7 @@ window.UsersManagementPage = function(props) {
         type: "text",
         value: searchQuery,
         onChange: function(e) { setSearchQuery(e.target.value); },
-        placeholder: "بحث باسم الدارس، الهاتف، الكنيسة، أو الإيميل...",
+        placeholder: "بحث باسم الدارس، الكنيسة، الإيبارشية، المحافظة، أو الإيميل...",
         className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
       }),
       searchQuery && React.createElement(
@@ -234,6 +456,11 @@ window.UsersManagementPage = function(props) {
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
                         : "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300")
                 }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
+                
+                // شارة الاعتماد السريع إذا وجد
+                u.bypassed && React.createElement("span", { className: "text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold px-2 py-0.5 rounded-md" },
+                  "⚡ تخطي سريع"
+                ),
                 // شارة نوع الدراسة
                 u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
                   u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
@@ -243,8 +470,11 @@ window.UsersManagementPage = function(props) {
                   u.studyYear
                 )
               ),
-              React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" },
-                "كنيسة: " + (u.church || "غير محدد") + " • الهاتف: " + (u.phone || "—") + " • البريد: " + (u.email || "—")
+              React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed" },
+                "كنيسة: " + (u.church || "—") +
+                " • إيبارشية: " + (u.diocese || "—") +
+                " • محافظة: " + (u.governorate || "—") +
+                " • البريد: " + (u.email || "—")
               )
             ),
 
@@ -301,7 +531,7 @@ window.UsersManagementPage = function(props) {
             )
           ),
 
-          // السطر السفلي: تفاصيل إضافية
+          // تفاصيل إضافية
           React.createElement(
             "div",
             { className: "flex items-center justify-between text-[11px] text-slate-400 pt-1" },
@@ -314,6 +544,124 @@ window.UsersManagementPage = function(props) {
           )
         );
       })
+    ),
+
+    // نافذة منبثقة لإضافة وتفعيل دارس يدوياً
+    showManualAddModal && React.createElement(
+      "div",
+      { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto animate-in fade-in zoom-in-95" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "➕ إضافة دارس معتمد فوراً"),
+          React.createElement("button", { onClick: function() { setShowManualAddModal(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
+        ),
+
+        React.createElement(
+          "form",
+          { onSubmit: handleCreateManualUser, className: "space-y-3" },
+          React.createElement("div", null,
+            React.createElement("label", { className: "block text-xs font-bold mb-1" }, "الاسم بالكامل *"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: manualFullName,
+              onChange: function(e) { setManualFullName(e.target.value); },
+              placeholder: "اسم الدارس...",
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+            })
+          ),
+          React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "البريد الإلكتروني *"),
+              React.createElement("input", {
+                type: "email",
+                required: true,
+                value: manualEmail,
+                onChange: function(e) { setManualEmail(e.target.value); },
+                placeholder: "email@example.com",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "كلمة المرور *"),
+              React.createElement("input", {
+                type: "text",
+                required: true,
+                value: manualPassword,
+                onChange: function(e) { setManualPassword(e.target.value); },
+                placeholder: "123456",
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            )
+          ),
+          React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "نوع الدراسة"),
+              React.createElement("select", {
+                value: manualStudyType,
+                onChange: function(e) { setManualStudyType(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              },
+                React.createElement("option", { value: "أكاديمي" }, "أكاديمي"),
+                React.createElement("option", { value: "ثقافي" }, "ثقافي")
+              )
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "السنة الدراسية"),
+              React.createElement("select", {
+                value: manualStudyYear,
+                onChange: function(e) { setManualStudyYear(e.target.value); },
+                className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              },
+                React.createElement("option", { value: "السنة الأولى" }, "السنة الأولى"),
+                React.createElement("option", { value: "السنة الثانية" }, "السنة الثانية"),
+                React.createElement("option", { value: "السنة الثالثة" }, "السنة الثالثة"),
+                React.createElement("option", { value: "السنة الرابعة" }, "السنة الرابعة"),
+                React.createElement("option", { value: "خريج / متابع عام" }, "خريج / متابع عام")
+              )
+            )
+          ),
+          React.createElement("div", { className: "grid grid-cols-3 gap-2" },
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "الكنيسة"),
+              React.createElement("input", {
+                type: "text",
+                value: manualChurch,
+                onChange: function(e) { setManualChurch(e.target.value); },
+                placeholder: "الكنيسة...",
+                className: "w-full px-2 py-1.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "الإيبارشية"),
+              React.createElement("input", {
+                type: "text",
+                value: manualDiocese,
+                onChange: function(e) { setManualDiocese(e.target.value); },
+                placeholder: "الإيبارشية...",
+                className: "w-full px-2 py-1.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              })
+            ),
+            React.createElement("div", null,
+              React.createElement("label", { className: "block text-xs font-bold mb-1" }, "المحافظة"),
+              React.createElement("select", {
+                value: manualGov,
+                onChange: function(e) { setManualGov(e.target.value); },
+                className: "w-full px-2 py-1.5 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              }, governoratesList.map(function(g) { return React.createElement("option", { key: g, value: g }, g); }))
+            )
+          ),
+          React.createElement("button", {
+            type: "submit",
+            disabled: isSavingManual,
+            className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-md mt-2"
+          }, isSavingManual ? "جاري الإضافة..." : "إضافة وتفعيل الحساب فوراً ✓")
+        )
+      )
     )
   );
 };
