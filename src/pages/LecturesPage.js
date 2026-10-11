@@ -9,6 +9,10 @@ window.LecturesPage = function(props) {
   var [lectures, setLectures] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.lectures, []);
   });
+  var [isLoadingLectures, setIsLoadingLectures] = React.useState(function() {
+    var cached = utils.getLocal(cfg.storageKeys.lectures, []);
+    return !cached || cached.length === 0;
+  });
 
   var [activeLecture, setActiveLecture] = React.useState(null);
   var [showAddModal, setShowAddModal] = React.useState(false);
@@ -121,6 +125,7 @@ window.LecturesPage = function(props) {
   // الاشتراك الحي في المحاضرات عبر Firebase
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
+      setIsLoadingLectures(false);
       if (cloudList) {
         cloudList.sort(function(a, b) {
           var dateA = new Date(a.date).getTime() || 0;
@@ -602,7 +607,13 @@ window.LecturesPage = function(props) {
     ),
 
     // قائمة أسطر المحاضرات المدمجة والواضحة
-    filteredLectures.length > 0 ? React.createElement(
+    isLoadingLectures ? React.createElement(
+      "div",
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 animate-pulse" },
+      React.createElement("div", { className: "text-3xl animate-spin inline-block" }, "⏳"),
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "في انتظار تحميل المحاضرات..."),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "جاري الاتصال بقاعدة البيانات ومزامنة أحدث المحاضرات والملفات الدراسية.")
+    ) : (filteredLectures.length > 0 ? React.createElement(
       "div",
       { className: "space-y-2" },
       filteredLectures.map(function(lec) {
@@ -625,11 +636,17 @@ window.LecturesPage = function(props) {
       })
     ) : React.createElement(
       "div",
-      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 space-y-3" },
+      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
       React.createElement("div", { className: "text-3xl" }, "🎧"),
-      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الأرشيف نظيف وجاهز لرفع محاضراتك الفعلية"),
-      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يمكنك إضافة رابط يوتيوب مباشر أو رفع ملف المحاضرة من جهازك.")
-    ),
+      React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+        currentUser.role === "admin" ? "الأرشيف نظيف وجاهز لرفع محاضراتك الفعلية" : "لا توجد محاضرات متاحة حالياً"
+      ),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" },
+        currentUser.role === "admin"
+          ? "يمكنك إضافة رابط يوتيوب مباشر أو رفع ملف المحاضرة من جهازك."
+          : "سيتم إشعارك فور قيام المشرف برفع وإتاحة محاضرات جديدة للمنهج الدراسي."
+      )
+    )),
 
     // مشغل المحاضرة ومحتواها التفاعلي في نافذة منبثقة مستقلة
     activeLecture && React.createElement(window.LectureViewerModal, {

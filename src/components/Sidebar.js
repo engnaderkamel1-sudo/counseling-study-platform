@@ -27,9 +27,8 @@ window.Sidebar = function(props) {
     });
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
     menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
+    menuItems.push({ id: "settings", label: "الإعدادات العامة للربط السحابي", icon: "⚙️" });
   }
-
-  menuItems.push({ id: "settings", label: "الإعدادات العامة", icon: "⚙️" });
 
   return React.createElement(
     React.Fragment,

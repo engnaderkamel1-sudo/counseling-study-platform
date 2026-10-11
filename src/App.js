@@ -207,7 +207,7 @@ function App() {
   // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
   React.useEffect(function() {
     if (currentUser && currentUser.role !== "admin") {
-      if (activeTab === "users" || activeTab === "errors") {
+      if (activeTab === "users" || activeTab === "errors" || activeTab === "settings") {
         setActiveTab("lectures");
       }
     }
