@@ -39,6 +39,17 @@ window.AddLectureModal = function(props) {
   var newQuizText = props.newQuizText;
   var setNewQuizText = props.setNewQuizText;
 
+  var newZoomUrl = props.newZoomUrl;
+  var setNewZoomUrl = props.setNewZoomUrl;
+  var newMeetingId = props.newMeetingId;
+  var setNewMeetingId = props.setNewMeetingId;
+  var newPasscode = props.newPasscode;
+  var setNewPasscode = props.setNewPasscode;
+  var newZoomTimeStr = props.newZoomTimeStr;
+  var setNewZoomTimeStr = props.setNewZoomTimeStr;
+  var newBroadcastZoom = props.newBroadcastZoom;
+  var setNewBroadcastZoom = props.setNewBroadcastZoom;
+
   if (!isOpen) return null;
 
   return React.createElement(
@@ -60,11 +71,109 @@ window.AddLectureModal = function(props) {
         "form",
         { onSubmit: onSubmit, className: "space-y-3" },
 
-        // خيار 1: رابط يوتيوب مباشر
+        // قسم بارز في البداية: رابط زوم واللصق الذكي المباشر من واتساب
+        React.createElement(
+          "div",
+          { className: "p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border-2 border-blue-200 dark:border-blue-800 space-y-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between" },
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-xl" }, "🎥"),
+              React.createElement("h4", { className: "text-xs font-bold text-blue-950 dark:text-blue-200" }, "رابط زوم المباشر (Zoom Meeting)")
+            ),
+            React.createElement("span", { className: "text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white shadow-2xs" }, "⚡ لصق ذكي سريع")
+          ),
+
+          // مربع اللصق الذكي المباشر
+          React.createElement(
+            "div",
+            { className: "space-y-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-800 dark:text-slate-200" }, "انسخ رسالة الواتساب هنا بالكامل:"),
+            React.createElement("textarea", {
+              rows: 3,
+              placeholder: "انسخ رسالة الواتساب بالكامل هنا (Topic, Join Zoom Meeting, Meeting ID, Passcode)... وسيتعرف النظام عليها فوراً ويستخرج كل البيانات!",
+              onChange: function(e) {
+                var text = e.target.value;
+                if (!text || !text.trim()) return;
+                var utils = window.APP_UTILS || {};
+                if (typeof utils.parseZoomInvitation === "function") {
+                  var parsed = utils.parseZoomInvitation(text);
+                  if (parsed.zoomUrl && setNewZoomUrl) setNewZoomUrl(parsed.zoomUrl);
+                  if (parsed.meetingId && setNewMeetingId) setNewMeetingId(parsed.meetingId);
+                  if (parsed.passcode && setNewPasscode) setNewPasscode(parsed.passcode);
+                  if (parsed.timeStr && setNewZoomTimeStr) setNewZoomTimeStr(parsed.timeStr);
+                  if (parsed.topic && !props.newTitle && props.setNewTitle) props.setNewTitle(parsed.topic);
+                }
+              },
+              className: "w-full px-3 py-2 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-xs font-mono placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500"
+            }),
+            React.createElement("p", { className: "text-[11px] text-blue-700 dark:text-blue-300" }, "💡 مجرد لصق الرسالة، النظام هيستخرج اللينك والـ Passcode وعنوان المحاضرة أوتوماتيك.")
+          ),
+
+          // الحقول المستخرجة للمعاينة
+          React.createElement(
+            "div",
+            { className: "space-y-2 pt-1" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5" }, "رابط الزوم المستخرج:"),
+              React.createElement("input", {
+                type: "url",
+                value: newZoomUrl || "",
+                onChange: function(e) { if (setNewZoomUrl) setNewZoomUrl(e.target.value); },
+                placeholder: "https://us02web.zoom.us/j/...",
+                className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-mono"
+              })
+            ),
+            React.createElement(
+              "div",
+              { className: "grid grid-cols-2 gap-2" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5" }, "Meeting ID"),
+                React.createElement("input", {
+                  type: "text",
+                  value: newMeetingId || "",
+                  onChange: function(e) { if (setNewMeetingId) setNewMeetingId(e.target.value); },
+                  placeholder: "836 4136 2038",
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-mono"
+                })
+              ),
+              React.createElement(
+                "div",
+                null,
+                React.createElement("label", { className: "block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5" }, "Passcode"),
+                React.createElement("input", {
+                  type: "text",
+                  value: newPasscode || "",
+                  onChange: function(e) { if (setNewPasscode) setNewPasscode(e.target.value); },
+                  placeholder: "100100",
+                  className: "w-full px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-xs font-mono"
+                })
+              )
+            ),
+            newZoomUrl && React.createElement(
+              "label",
+              { className: "flex items-center gap-2 cursor-pointer pt-1" },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: newBroadcastZoom !== false,
+                onChange: function(e) { if (setNewBroadcastZoom) setNewBroadcastZoom(e.target.checked); },
+                className: "w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+              }),
+              React.createElement("span", { className: "text-xs font-bold text-blue-900 dark:text-blue-200" }, "إرسال إشعار فوري للدارسين برابط الزوم فور الحفظ 📢")
+            )
+          )
+        ),
+
+        // خيار 1: رابط يوتيوب مباشر (تسجيل المحاضرة بعد انتهائها)
         React.createElement(
           "div",
           null,
-          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رابط المحاضرة على YouTube أو Google Drive (اختياري)"),
+          React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "رابط تسجيل المحاضرة على YouTube أو Google Drive (اختياري)"),
           React.createElement("input", {
             type: "url",
             value: newMediaUrl,

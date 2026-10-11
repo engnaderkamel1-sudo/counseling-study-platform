@@ -1,16 +1,9 @@
-<<<<<<< HEAD
-// شاشة دليل الدارس والوثائق واللوائح الرسمية
-window.StudentGuidePage = function(props) {
-  var currentUser = props.currentUser || {};
-  var isAdmin = !!(currentUser && currentUser.role === "admin");
-=======
 // شاشة دليل الدارس والوثائق واللوائح الرسمية مع دعم السحب والإفلات والرفع المباشر
 window.StudentGuidePage = function(props) {
   var currentUser = props.currentUser || {};
   var isAdmin = !!(currentUser && currentUser.role === "admin");
   var utils = window.APP_UTILS || {};
   var cfg = window.APP_CONFIG || {};
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
 
   var [documents, setDocuments] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
@@ -25,15 +18,12 @@ window.StudentGuidePage = function(props) {
   var [iconInput, setIconInput] = React.useState("📜");
   var [isSaving, setIsSaving] = React.useState(false);
 
-<<<<<<< HEAD
-=======
   // حالة السحب والإفلات ورفع الملف
   var [selectedFile, setSelectedFile] = React.useState(null);
   var [isDragging, setIsDragging] = React.useState(false);
   var [uploadProgress, setUploadProgress] = React.useState(null);
   var [uploadStatusText, setUploadStatusText] = React.useState("");
 
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
   // حالة عارض الـ PDF
   var [activeViewingDoc, setActiveViewingDoc] = React.useState(null);
 
@@ -68,10 +58,6 @@ window.StudentGuidePage = function(props) {
     try {
       var snap = await window.db.collection("student_guide_docs").orderBy("order", "asc").get();
       if (snap.empty) {
-<<<<<<< HEAD
-        // إذا كانت فارغة لأول مرة، نضيف القوالب الافتراضية في قاعدة البيانات
-=======
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
         var batch = window.db.batch();
         defaultDocs.forEach(function(d) {
           var ref = window.db.collection("student_guide_docs").doc(d.id);
@@ -90,11 +76,7 @@ window.StudentGuidePage = function(props) {
       }
     } catch (e) {
       console.warn("fetch documents error:", e);
-<<<<<<< HEAD
-      var localCached = window.APP_UTILS.getLocal("counsel_guide_docs_backup", defaultDocs);
-=======
       var localCached = utils.getLocal ? utils.getLocal("counsel_guide_docs_backup", defaultDocs) : defaultDocs;
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
       setDocuments(localCached);
     } finally {
       setIsLoading(false);
@@ -112,13 +94,10 @@ window.StudentGuidePage = function(props) {
     setDescInput("");
     setCategoryInput("لوائح ومنهج");
     setIconInput("📜");
-<<<<<<< HEAD
-=======
     setSelectedFile(null);
     setIsDragging(false);
     setUploadProgress(null);
     setUploadStatusText("");
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
     setIsModalOpen(true);
   };
 
@@ -130,11 +109,6 @@ window.StudentGuidePage = function(props) {
     setDescInput(doc.description || "");
     setCategoryInput(doc.category || "لوائح ومنهج");
     setIconInput(doc.icon || "📜");
-<<<<<<< HEAD
-    setIsModalOpen(true);
-  };
-
-=======
     setSelectedFile(null);
     setIsDragging(false);
     setUploadProgress(null);
@@ -166,21 +140,12 @@ window.StudentGuidePage = function(props) {
     }
   };
 
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
   var handleSaveDoc = async function(e) {
     e.preventDefault();
     if (!titleInput.trim()) {
       alert("يرجى إدخال عنوان الملف");
       return;
     }
-<<<<<<< HEAD
-    setIsSaving(true);
-    try {
-      var docId = editingDoc ? editingDoc.id : ("doc_" + Date.now());
-      var payload = {
-        title: titleInput.trim(),
-        driveUrl: driveUrlInput.trim(),
-=======
 
     if (!selectedFile && !driveUrlInput.trim()) {
       alert("يرجى اختيار ملف لرفعه أو إدخال رابط Google Drive");
@@ -222,7 +187,6 @@ window.StudentGuidePage = function(props) {
       var payload = {
         title: titleInput.trim(),
         driveUrl: finalUrl,
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
         description: descInput.trim(),
         category: categoryInput.trim(),
         icon: iconInput.trim() || "📄",
@@ -241,17 +205,11 @@ window.StudentGuidePage = function(props) {
       await fetchDocuments();
       setIsModalOpen(false);
     } catch (err) {
-<<<<<<< HEAD
-      alert("خطأ أثناء الحفظ: " + err.message);
-    } finally {
-      setIsSaving(false);
-=======
       alert("خطأ أثناء حفظ ورفع الملف: " + err.message);
     } finally {
       setIsSaving(false);
       setUploadProgress(null);
       setUploadStatusText("");
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
     }
   };
 
@@ -270,11 +228,7 @@ window.StudentGuidePage = function(props) {
 
   var getEmbedUrl = function(url) {
     if (!url) return "";
-<<<<<<< HEAD
-    var driveId = window.APP_UTILS.extractDriveId(url);
-=======
     var driveId = utils.extractDriveId ? utils.extractDriveId(url) : "";
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
     if (driveId) {
       return "https://drive.google.com/file/d/" + driveId + "/preview";
     }
@@ -380,11 +334,7 @@ window.StudentGuidePage = function(props) {
               "span",
               { className: "text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5" },
               React.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-500" }),
-<<<<<<< HEAD
-              isAdmin ? "اضغط لربط رابط درايف 🔗" : "قيد التجهيز من الإدارة ⏳"
-=======
               isAdmin ? "اضغط لرفع الملف أو ربطه 🔗" : "قيد التجهيز من الإدارة ⏳"
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
             ),
 
             React.createElement(
@@ -412,39 +362,25 @@ window.StudentGuidePage = function(props) {
       })
     ),
 
-<<<<<<< HEAD
-    // نافذة إضافة / تعديل ملف (للأدمن)
-=======
     // نافذة إضافة / تعديل ملف (للأدمن) مع منطقة السحب والإفلات
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
     isModalOpen && React.createElement(
       "div",
       { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", dir: "rtl" },
       React.createElement(
         "div",
-<<<<<<< HEAD
-        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
-=======
         { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto" },
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
         React.createElement(
           "div",
           { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
             editingDoc ? "تعديل بيانات الملف" : "إضافة ملف جديد لدليل الدارس"
           ),
-<<<<<<< HEAD
-          React.createElement("button", { onClick: function() { setIsModalOpen(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
-=======
           React.createElement("button", { onClick: function() { if (!isSaving) setIsModalOpen(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
         ),
 
         React.createElement(
           "form",
           { onSubmit: handleSaveDoc, className: "space-y-4" },
-<<<<<<< HEAD
-=======
 
           // منطقة السحب والإفلات للملف (Drag and Drop)
           React.createElement(
@@ -505,7 +441,6 @@ window.StudentGuidePage = function(props) {
             )
           ),
 
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
           React.createElement("div", null,
             React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "عنوان الملف (مثلاً: اللائحة أو جدول الامتحانات) *"),
             React.createElement("input", {
@@ -519,19 +454,6 @@ window.StudentGuidePage = function(props) {
           ),
 
           React.createElement("div", null,
-<<<<<<< HEAD
-            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "رابط ملف الـ PDF من Google Drive *"),
-            React.createElement("input", {
-              type: "url",
-              required: true,
-              value: driveUrlInput,
-              onChange: function(e) { setDriveUrlInput(e.target.value); },
-              placeholder: "https://drive.google.com/file/d/.../view",
-              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 ltr",
-              dir: "ltr"
-            }),
-            React.createElement("span", { className: "text-[11px] text-slate-400 mt-1 block" }, "تأكد من ضبط مشاركة الملف في جوجل درايف على (Anyone with the link can view)")
-=======
             React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, 
               selectedFile ? "رابط Google Drive (سيتم تعيينه تلقائياً بعد رفع الملف أعلاه)" : "أو ضع رابط Google Drive يدوياً (اختياري لو رفعت ملف من الجهاز)"
             ),
@@ -543,7 +465,6 @@ window.StudentGuidePage = function(props) {
               className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 ltr",
               dir: "ltr"
             })
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
           ),
 
           React.createElement("div", null,
@@ -595,23 +516,15 @@ window.StudentGuidePage = function(props) {
             { className: "flex justify-end gap-2 pt-3" },
             React.createElement("button", {
               type: "button",
-<<<<<<< HEAD
-=======
               disabled: isSaving,
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
               onClick: function() { setIsModalOpen(false); },
               className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             }, "إلغاء"),
             React.createElement("button", {
               type: "submit",
               disabled: isSaving,
-<<<<<<< HEAD
-              className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20"
-            }, isSaving ? "جاري الحفظ..." : "حفظ الملف ✓")
-=======
               className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
             }, isSaving ? "جاري الرفع والحفظ..." : "حفظ الملف ✓")
->>>>>>> cd07d7d (feat: add smart zoom invitation parser, direct join, and automatic reminders)
           )
         )
       )
