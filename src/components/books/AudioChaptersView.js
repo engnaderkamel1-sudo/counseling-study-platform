@@ -233,7 +233,7 @@ window.AudioChaptersView = function(props) {
     if (canPlayPrev) {
       var prevChap = audioChaptersList[curAudioIdx - 1];
       setPlayingChapterId(prevChap.id);
-      if (viewingChapterText && setViewingChapterText) setViewingChapterText(prevChap);
+      if (setViewingChapterText) setViewingChapterText(prevChap);
       setTimeout(function() {
         try {
           var el = document.getElementById("chapter-card-" + prevChap.id);
@@ -247,7 +247,7 @@ window.AudioChaptersView = function(props) {
     if (canPlayNext) {
       var nextChap = audioChaptersList[curAudioIdx + 1];
       setPlayingChapterId(nextChap.id);
-      if (viewingChapterText && setViewingChapterText) setViewingChapterText(nextChap);
+      if (setViewingChapterText) setViewingChapterText(nextChap);
       setTimeout(function() {
         try {
           var el = document.getElementById("chapter-card-" + nextChap.id);
@@ -301,7 +301,7 @@ window.AudioChaptersView = function(props) {
     }
 
     setPlayingChapterId(targetChap.id);
-    if (viewingChapterText && setViewingChapterText) setViewingChapterText(targetChap);
+    if (setViewingChapterText) setViewingChapterText(targetChap);
     setTimeout(function() {
       try {
         var el = document.getElementById("chapter-card-" + targetChap.id);
@@ -389,8 +389,8 @@ window.AudioChaptersView = function(props) {
         if (cIdx >= 0 && cIdx < aList.length - 1) {
           var nextCh = aList[cIdx + 1];
           setPlayingChapterId(nextCh.id);
-          // إذا كانت شاشة قراءة النص مفتوحة، تنتقل تلقائياً لنص الفصل الجديد
-          if (viewingChapterText && setViewingChapterText) {
+          // الانتقال التلقائي لنص الفصل الجديد في عارض النصوص
+          if (setViewingChapterText) {
             setViewingChapterText(nextCh);
           }
           setTimeout(function() {
