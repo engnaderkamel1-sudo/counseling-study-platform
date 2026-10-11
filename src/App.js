@@ -440,4 +440,11 @@ function App() {
   );
 }
 
-ReactDOM.render(React.createElement(App, null), document.getElementById("root"));
+ReactDOM.render(
+  React.createElement(
+    window.ErrorBoundary,
+    null,
+    React.createElement(App, null)
+  ),
+  document.getElementById("root")
+);

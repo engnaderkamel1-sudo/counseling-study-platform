@@ -30,6 +30,7 @@ function Build-App {
         "components/Header.js",
         "components/BottomNav.js",
         "components/AuthModal.js",
+        "components/ErrorBoundary.js",
         "components/ErrorReporterModal.js",
         "components/InstallPromptModal.js",
         "components/NotificationCenterModal.js",

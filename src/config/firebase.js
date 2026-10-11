@@ -21,6 +21,13 @@ window.FIREBASE_CONFIG = {
         console.warn("Firebase auth init warning:", authErr);
       }
     }
+    if (typeof firebase.storage === "function") {
+      try {
+        window.storage = firebase.storage();
+      } catch (storageErr) {
+        console.warn("Firebase storage init warning:", storageErr);
+      }
+    }
     
     // تم تعطيل enablePersistence لحماية الأجهزة من التخزين المؤقت القديم (IndexedDB Cache Poisoning)
     // التطبيق يعتمد على التخزين المحلي النظيف localStorage مع المزامنة المباشرة
