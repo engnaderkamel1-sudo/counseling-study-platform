@@ -859,7 +859,19 @@ window.AudioChaptersView = function(props) {
           controls: false,
           autoPlay: true,
           className: "hidden",
-          onError: function() { setAudioHasError(true); }
+          onError: function(e) {
+            var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
+            var audioEl = chapterAudioRef.current;
+            if (driveId && audioEl && !audioEl._triedCandidate2) {
+              audioEl._triedCandidate2 = true;
+              audioEl.src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+              audioEl.play().catch(function() {
+                setAudioHasError(true);
+              });
+              return;
+            }
+            setAudioHasError(true);
+          }
         }),
 
         // تنبيه المشغل البديل إذا كان هناك خطأ في تشغيل درايف

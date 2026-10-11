@@ -693,7 +693,14 @@ window.LecturesPage = function(props) {
           React.createElement("audio", {
             controls: true,
             src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl || activeLecture.mediaUrl),
-            className: "w-full rounded-xl mt-2 accent-emerald-500"
+            className: "w-full rounded-xl mt-2 accent-emerald-500",
+            onError: function(e) {
+              var dId = utils.extractDriveId ? utils.extractDriveId(activeLecture.audioSummaryUrl || activeLecture.mediaUrl) : null;
+              if (dId && e.target && !e.target._triedCandidate2) {
+                e.target._triedCandidate2 = true;
+                e.target.src = "https://drive.usercontent.google.com/download?id=" + dId + "&export=download&confirm=t";
+              }
+            }
           })
         ) : React.createElement(
           "div",

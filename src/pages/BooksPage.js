@@ -2965,6 +2965,14 @@ window.BooksPage = function(props) {
                     } catch (err) {}
                   }
                 },
+                onError: function(e) {
+                  var driveId = utils.extractDriveId ? utils.extractDriveId(activeBook.audioUrl) : null;
+                  var audioEl = track1AudioRef.current;
+                  if (driveId && audioEl && !audioEl._triedCandidate2) {
+                    audioEl._triedCandidate2 = true;
+                    audioEl.src = "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+                  }
+                },
                 onEnded: function() {
                   setIsTrack1Playing(false);
                   try { localStorage.removeItem("counsel_audio_pos_" + activeBook.id); } catch (err) {}
