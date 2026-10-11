@@ -170,8 +170,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791721529",
-  buildTime: "2026-10-11T12:25:29",
+  version: "1.2.1791721620",
+  buildTime: "2026-10-11T12:27:00",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -15220,7 +15220,7 @@ window.BooksPage = function(props) {
 
 
 // Module: pages/StudentGuidePage.js
-// شاشة دليل الدارس والوثائق واللوائح الرسمية مع دعم السحب والإفلات والرفع المباشر
+// شاشة دليل الدارس والوثائق واللوائح الرسمية مع دعم تعدد الملفات لكل قسم والرفع التلقائي لـ Google Drive
 window.StudentGuidePage = function(props) {
   var currentUser = props.currentUser || {};
   var isAdmin = !!(currentUser && currentUser.role === "admin");
@@ -15230,30 +15230,32 @@ window.StudentGuidePage = function(props) {
   var [documents, setDocuments] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
 
-  // حالة النافذة (إضافة / تعديل)
+  // حالة النافذة (إضافة / تعديل قسم)
   var [isModalOpen, setIsModalOpen] = React.useState(false);
   var [editingDoc, setEditingDoc] = React.useState(null);
   var [titleInput, setTitleInput] = React.useState("");
-  var [driveUrlInput, setDriveUrlInput] = React.useState("");
   var [descInput, setDescInput] = React.useState("");
   var [categoryInput, setCategoryInput] = React.useState("لوائح ومنهج");
   var [iconInput, setIconInput] = React.useState("📜");
+  
+  // قائمة الملفات داخل القسم الحالي: [{ name, url, size }]
+  var [docFiles, setDocFiles] = React.useState([]);
   var [isSaving, setIsSaving] = React.useState(false);
 
-  // حالة السحب والإفلات ورفع الملف
-  var [selectedFile, setSelectedFile] = React.useState(null);
+  // حالة السحب والإفلات والرفع
   var [isDragging, setIsDragging] = React.useState(false);
-  var [uploadProgress, setUploadProgress] = React.useState(null);
-  var [uploadStatusText, setUploadStatusText] = React.useState("");
+  var [uploadingStatus, setUploadingStatus] = React.useState("");
 
   // حالة عارض الـ PDF
   var [activeViewingDoc, setActiveViewingDoc] = React.useState(null);
+  var [activeFileIndex, setActiveFileIndex] = React.useState(0);
 
   var defaultDocs = [
     {
       id: "doc_curriculum",
       title: "المنهج الدراسي وخطة المشورة",
       description: "المقرر الشامل لمواد ودراسة المشورة لجميع الفصول الدراسية",
+      files: [],
       driveUrl: "",
       category: "لوائح ومنهج",
       icon: "📑",
@@ -15263,6 +15265,7 @@ window.StudentGuidePage = function(props) {
       id: "doc_bylaws",
       title: "لائحة معهد المشورة ونظام الدراسة",
       description: "القواعد المنظمة للحضور والغياب، التقييم، ونظام الامتحانات والتخرج",
+      files: [],
       driveUrl: "",
       category: "لوائح ومنهج",
       icon: "📜",
@@ -15270,9 +15273,21 @@ window.StudentGuidePage = function(props) {
     }
   ];
 
+  var normalizeDocFiles = function(d) {
+    var files = Array.isArray(d.files) ? d.files.slice() : [];
+    if (files.length === 0 && d.driveUrl && d.driveUrl.trim()) {
+      files.push({
+        name: d.title || "الملف الرئيسي",
+        url: d.driveUrl.trim(),
+        size: "ملف درايف"
+      });
+    }
+    return Object.assign({}, d, { files: files });
+  };
+
   var fetchDocuments = async function() {
     if (!window.db) {
-      setDocuments(defaultDocs);
+      setDocuments(defaultDocs.map(normalizeDocFiles));
       setIsLoading(false);
       return;
     }
@@ -15288,18 +15303,18 @@ window.StudentGuidePage = function(props) {
           }));
         });
         await batch.commit();
-        setDocuments(defaultDocs);
+        setDocuments(defaultDocs.map(normalizeDocFiles));
       } else {
         var list = [];
         snap.forEach(function(doc) {
-          list.push(Object.assign({ id: doc.id }, doc.data()));
+          list.push(normalizeDocFiles(Object.assign({ id: doc.id }, doc.data())));
         });
         setDocuments(list);
       }
     } catch (e) {
       console.warn("fetch documents error:", e);
       var localCached = utils.getLocal ? utils.getLocal("counsel_guide_docs_backup", defaultDocs) : defaultDocs;
-      setDocuments(localCached);
+      setDocuments(localCached.map(normalizeDocFiles));
     } finally {
       setIsLoading(false);
     }
@@ -15312,103 +15327,128 @@ window.StudentGuidePage = function(props) {
   var handleOpenAddModal = function() {
     setEditingDoc(null);
     setTitleInput("");
-    setDriveUrlInput("");
     setDescInput("");
     setCategoryInput("لوائح ومنهج");
     setIconInput("📜");
-    setSelectedFile(null);
+    setDocFiles([]);
     setIsDragging(false);
-    setUploadProgress(null);
-    setUploadStatusText("");
+    setUploadingStatus("");
     setIsModalOpen(true);
   };
 
   var handleOpenEditModal = function(doc, e) {
     if (e) e.stopPropagation();
-    setEditingDoc(doc);
-    setTitleInput(doc.title || "");
-    setDriveUrlInput(doc.driveUrl || "");
-    setDescInput(doc.description || "");
-    setCategoryInput(doc.category || "لوائح ومنهج");
-    setIconInput(doc.icon || "📜");
-    setSelectedFile(null);
+    var normalized = normalizeDocFiles(doc);
+    setEditingDoc(normalized);
+    setTitleInput(normalized.title || "");
+    setDescInput(normalized.description || "");
+    setCategoryInput(normalized.category || "لوائح ومنهج");
+    setIconInput(normalized.icon || "📜");
+    setDocFiles(normalized.files || []);
     setIsDragging(false);
-    setUploadProgress(null);
-    setUploadStatusText("");
+    setUploadingStatus("");
     setIsModalOpen(true);
   };
 
-  var handleFileSelect = function(e) {
-    var file = e.target.files && e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      if (!titleInput.trim()) {
-        var cleanName = file.name.replace(/\.[^/.]+$/, "");
-        setTitleInput(cleanName);
+  // رفع ملف إلى Google Drive
+  var uploadSingleFileToDrive = async function(file, customName) {
+    var endpoint = cfg.driveUploadEndpoint;
+    if (!endpoint) throw new Error("بوابة الرفع السحابية غير معرفة");
+
+    var cleanName = (customName || file.name).replace(/\.[^/.]+$/, "");
+    var customFileName = "دليل_الدارس_" + cleanName.replace(/\s+/g, "_") + "_" + Date.now() + ".pdf";
+
+    var resData = await utils.uploadToDriveWithProgress(endpoint, file, null, customFileName);
+    if (resData && (resData.fileUrl || resData.viewUrl)) {
+      return resData.fileUrl || resData.viewUrl;
+    } else if (resData && resData.fileId) {
+      return "https://drive.google.com/file/d/" + resData.fileId + "/view";
+    }
+    throw new Error("فشل استخراج رابط الملف بعد الرفع: " + (resData && resData.message ? resData.message : "خطأ غير معروف"));
+  };
+
+  // معالجة الملفات المحددة أو المسحوبة
+  var handleFilesIncoming = async function(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    var arr = Array.from(fileList);
+
+    if (!titleInput.trim() && arr[0]) {
+      setTitleInput(arr[0].name.replace(/\.[^/.]+$/, ""));
+    }
+
+    setUploadingStatus("جاري رفع " + arr.length + " ملف إلى Google Drive...");
+    var newFilesList = docFiles.slice();
+
+    for (var i = 0; i < arr.length; i++) {
+      var f = arr[i];
+      try {
+        setUploadingStatus("جاري رفع (" + (i + 1) + " من " + arr.length + "): " + f.name + " ⏳");
+        var url = await uploadSingleFileToDrive(f, f.name);
+        newFilesList.push({
+          name: f.name.replace(/\.[^/.]+$/, ""),
+          url: url,
+          size: (f.size ? (f.size / (1024 * 1024)).toFixed(2) + " MB" : "")
+        });
+        setDocFiles(newFilesList.slice());
+      } catch (err) {
+        alert("خطأ أثناء رفع ملف (" + f.name + "): " + err.message);
       }
+    }
+    setUploadingStatus("");
+  };
+
+  var handleFileSelect = function(e) {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFilesIncoming(e.target.files);
     }
   };
 
   var handleFileDrop = function(e) {
     e.preventDefault();
     setIsDragging(false);
-    var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) {
-      setSelectedFile(file);
-      if (!titleInput.trim()) {
-        var cleanName = file.name.replace(/\.[^/.]+$/, "");
-        setTitleInput(cleanName);
-      }
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesIncoming(e.dataTransfer.files);
     }
+  };
+
+  var handleAddManualUrl = function() {
+    var name = prompt("اكتب اسم الملف الفرعي (مثال: اللائحة - الجزء الثاني):");
+    if (!name || !name.trim()) return;
+    var url = prompt("الصق رابط Google Drive للملف:");
+    if (!url || !url.trim()) return;
+
+    setDocFiles(docFiles.concat([{
+      name: name.trim(),
+      url: url.trim(),
+      size: "رابط خارجي"
+    }]));
+  };
+
+  var handleRemoveFile = function(index) {
+    setDocFiles(docFiles.filter(function(_, idx) { return idx !== index; }));
   };
 
   var handleSaveDoc = async function(e) {
     e.preventDefault();
     if (!titleInput.trim()) {
-      alert("يرجى إدخال عنوان الملف");
+      alert("يرجى إدخال عنوان القسم أو الوثيقة");
       return;
     }
 
-    if (!selectedFile && !driveUrlInput.trim()) {
-      alert("يرجى اختيار ملف لرفعه أو إدخال رابط Google Drive");
+    if (docFiles.length === 0) {
+      alert("يرجى اختيار ملف لرفعه أولاً أو إضافة رابط مباشر.");
       return;
     }
 
     setIsSaving(true);
     try {
-      var finalUrl = driveUrlInput.trim();
-
-      // إذا اختار المستخدم ملفاً من جهازه، نقوم برفعه إلى Google Drive عبر السكربت السحابي
-      if (selectedFile) {
-        setUploadStatusText("جاري رفع الملف إلى Google Drive...");
-        var endpoint = cfg.driveUploadEndpoint;
-        if (!endpoint) {
-          throw new Error("بوابة الرفع السحابية غير معرفة");
-        }
-
-        var customFileName = "دليل_الدارس_" + titleInput.trim().replace(/\s+/g, "_") + "_" + Date.now() + ".pdf";
-        var resData = await utils.uploadToDriveWithProgress(
-          endpoint,
-          selectedFile,
-          function(p) {
-            setUploadProgress(p);
-          },
-          customFileName
-        );
-
-        if (resData && (resData.fileUrl || resData.viewUrl)) {
-          finalUrl = resData.fileUrl || resData.viewUrl;
-        } else if (resData && resData.fileId) {
-          finalUrl = "https://drive.google.com/file/d/" + resData.fileId + "/view";
-        } else {
-          throw new Error("فشل الحصول على رابط الملف بعد الرفع: " + (resData && resData.message ? resData.message : "خطأ غير معروف"));
-        }
-      }
-
       var docId = editingDoc ? editingDoc.id : ("doc_" + Date.now());
+      var mainUrl = docFiles[0] ? docFiles[0].url : "";
+
       var payload = {
         title: titleInput.trim(),
-        driveUrl: finalUrl,
+        files: docFiles,
+        driveUrl: mainUrl,
         description: descInput.trim(),
         category: categoryInput.trim(),
         icon: iconInput.trim() || "📄",
@@ -15427,17 +15467,15 @@ window.StudentGuidePage = function(props) {
       await fetchDocuments();
       setIsModalOpen(false);
     } catch (err) {
-      alert("خطأ أثناء حفظ ورفع الملف: " + err.message);
+      alert("خطأ أثناء حفظ البيانات: " + err.message);
     } finally {
       setIsSaving(false);
-      setUploadProgress(null);
-      setUploadStatusText("");
     }
   };
 
   var handleDeleteDoc = async function(doc, e) {
     if (e) e.stopPropagation();
-    if (!confirm("هل أنت متأكد من حذف ملف '" + doc.title + "'؟")) return;
+    if (!confirm("هل أنت متأكد من حذف قسم '" + doc.title + "' وجميع ملفاته؟")) return;
     try {
       if (window.db) {
         await window.db.collection("student_guide_docs").doc(doc.id).delete();
@@ -15481,26 +15519,23 @@ window.StudentGuidePage = function(props) {
           className: "px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2 transition-all"
         },
         React.createElement("span", null, "➕"),
-        "إضافة ملف جديد"
+        "إضافة قسم أو مجلد ملفات جديد"
       )
     ),
 
-    // شبكة الملفات
+    // شبكة البطاقات
     React.createElement(
       "div",
       { className: "grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" },
       documents.map(function(doc) {
-        var hasUrl = !!(doc.driveUrl && doc.driveUrl.trim());
+        var filesList = (doc.files && doc.files.length > 0) ? doc.files : (doc.driveUrl ? [{ name: doc.title, url: doc.driveUrl }] : []);
+        var hasFiles = filesList.length > 0;
+
         return React.createElement(
           "div",
           {
             key: doc.id,
-            onClick: function() {
-              if (hasUrl) setActiveViewingDoc(doc);
-              else if (isAdmin) handleOpenEditModal(doc);
-              else alert("جاري تجهيز ورفع هذا الملف قريباً من قبل إدارة المعهد.");
-            },
-            className: "group bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-indigo-400 dark:hover:border-indigo-500 transition-all cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden"
+            className: "group bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-indigo-400 dark:hover:border-indigo-500 transition-all flex flex-col justify-between space-y-4 relative overflow-hidden"
           },
 
           React.createElement(
@@ -15517,20 +15552,25 @@ window.StudentGuidePage = function(props) {
                   "div",
                   null,
                   React.createElement("h3", { className: "text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" }, doc.title),
-                  React.createElement("span", { className: "text-[11px] font-semibold text-slate-400 dark:text-slate-500" }, doc.category || "وثيقة رسمية")
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 mt-0.5" },
+                    React.createElement("span", { className: "text-[11px] font-semibold text-slate-400 dark:text-slate-500" }, doc.category || "وثيقة رسمية"),
+                    filesList.length > 1 && React.createElement("span", { className: "text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800" }, filesList.length + " ملفات مجمعة")
+                  )
                 )
               ),
               isAdmin && React.createElement(
                 "div",
-                { className: "flex items-center gap-1.5 opacity-90", onClick: function(e) { e.stopPropagation(); } },
+                { className: "flex items-center gap-1.5 opacity-90" },
                 React.createElement("button", {
                   onClick: function(e) { handleOpenEditModal(doc, e); },
-                  title: "تعديل الملف أو الرابط",
+                  title: "إضافة ملفات أو تعديل البيانات",
                   className: "p-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all"
                 }, "✏️"),
                 React.createElement("button", {
                   onClick: function(e) { handleDeleteDoc(doc, e); },
-                  title: "حذف الملف",
+                  title: "حذف القسم وملفاته",
                   className: "p-2 rounded-xl text-xs bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 transition-all"
                 }, "🗑️")
               )
@@ -15540,51 +15580,80 @@ window.StudentGuidePage = function(props) {
               "p",
               { className: "text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed" },
               doc.description
-            ) : null
+            ) : null,
+
+            // قائمة الملفات المندرجة تحت هذا القسم
+            hasFiles ? React.createElement(
+              "div",
+              { className: "space-y-1.5 pt-1" },
+              filesList.map(function(f, idx) {
+                return React.createElement(
+                  "div",
+                  {
+                    key: idx,
+                    onClick: function() {
+                      setActiveViewingDoc(doc);
+                      setActiveFileIndex(idx);
+                    },
+                    className: "p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-2 cursor-pointer transition-all text-xs"
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 truncate" },
+                    React.createElement("span", { className: "text-indigo-600 dark:text-indigo-400 font-bold" }, (idx + 1) + "."),
+                    React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200 truncate" }, f.name || ("الملف رقم " + (idx + 1))),
+                    f.size ? React.createElement("span", { className: "text-[10px] text-slate-400" }, "(" + f.size + ")") : null
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-1 shrink-0" },
+                    React.createElement("a", {
+                      href: f.url,
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      onClick: function(e) { e.stopPropagation(); },
+                      className: "p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-700 transition-all",
+                      title: "تحميل"
+                    }, "📥"),
+                    React.createElement("span", { className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400" }, "عرض 👁️")
+                  )
+                );
+              })
+            ) : React.createElement(
+              "div",
+              { className: "p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 text-xs text-amber-700 dark:text-amber-300 text-center" },
+              isAdmin ? "لا توجد ملفات مرفوعة بعد، اضغط ✏️ لإضافة ورفع الملفات" : "جاري تجهيز ورفع الملفات من قبل الإدارة ⏳"
+            )
           ),
 
-          // شريط الأزرار والحالة
+          // شريط الحالة السفلي
           React.createElement(
             "div",
-            { className: "pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between" },
-            hasUrl ? React.createElement(
-              "span",
-              { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5" },
-              React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
-              "جاهز للقراءة والاطلاع"
-            ) : React.createElement(
-              "span",
-              { className: "text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5" },
-              React.createElement("span", { className: "w-2 h-2 rounded-full bg-amber-500" }),
-              isAdmin ? "اضغط لرفع الملف أو ربطه 🔗" : "قيد التجهيز من الإدارة ⏳"
-            ),
-
+            { className: "pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs" },
             React.createElement(
-              "div",
-              { className: "flex items-center gap-2" },
-              hasUrl && React.createElement("a", {
-                href: doc.driveUrl,
-                target: "_blank",
-                rel: "noopener noreferrer",
-                onClick: function(e) { e.stopPropagation(); },
-                title: "تحميل الملف من جوجل درايف",
-                className: "p-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
-              }, "📥 تحميل"),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  className: "px-4 py-2 rounded-xl text-xs font-bold " + (hasUrl ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400") + " transition-all flex items-center gap-1"
+              "span",
+              { className: "font-bold text-slate-400 flex items-center gap-1.5" },
+              React.createElement("span", { className: "w-2 h-2 rounded-full " + (hasFiles ? "bg-emerald-500" : "bg-amber-500") }),
+              hasFiles ? (filesList.length + " ملف متوفر للقراءة") : "في انتظار الرفع"
+            ),
+            hasFiles && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  setActiveViewingDoc(doc);
+                  setActiveFileIndex(0);
                 },
-                "عرض الملف 👁️"
-              )
+                className: "px-3 py-1.5 rounded-xl font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1"
+              },
+              "فتح واستعراض 📖"
             )
           )
         );
       })
     ),
 
-    // نافذة إضافة / تعديل ملف (للأدمن) مع منطقة السحب والإفلات
+    // نافذة إضافة / تعديل قسم (للأدمن) مع دعم رفع عدة ملفات
     isModalOpen && React.createElement(
       "div",
       { className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4", dir: "rtl" },
@@ -15595,16 +15664,28 @@ window.StudentGuidePage = function(props) {
           "div",
           { className: "flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3" },
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
-            editingDoc ? "تعديل بيانات الملف" : "إضافة ملف جديد لدليل الدارس"
+            editingDoc ? "تعديل وإضافة ملفات للقسم" : "إضافة قسم ووثائق جديدة لدليل الدارس"
           ),
-          React.createElement("button", { onClick: function() { if (!isSaving) setIsModalOpen(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
+          React.createElement("button", { onClick: function() { if (!isSaving && !uploadingStatus) setIsModalOpen(false); }, className: "text-slate-400 hover:text-slate-600" }, "✕")
         ),
 
         React.createElement(
           "form",
           { onSubmit: handleSaveDoc, className: "space-y-4" },
 
-          // منطقة السحب والإفلات للملف (Drag and Drop)
+          React.createElement("div", null,
+            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "عنوان القسم (مثلاً: اللائحة أو المنهج الدراسي) *"),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: titleInput,
+              onChange: function(e) { setTitleInput(e.target.value); },
+              placeholder: "اكتب العنوان الرئيسي...",
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200"
+            })
+          ),
+
+          // منطقة سحب وإفلات لعدة ملفات
           React.createElement(
             "div",
             {
@@ -15615,87 +15696,99 @@ window.StudentGuidePage = function(props) {
                 (isDragging ? "border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 scale-[1.01]" : "border-slate-300 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 hover:border-indigo-400")
             },
             React.createElement("label", { className: "cursor-pointer block space-y-2 select-none" },
-              React.createElement("div", { className: "text-3xl" }, isDragging ? "📥" : (selectedFile ? "📑" : "☁️")),
+              React.createElement("div", { className: "text-3xl" }, isDragging ? "📥" : "☁️"),
               React.createElement("div", { className: "text-xs font-bold text-slate-700 dark:text-slate-200" },
-                selectedFile ? ("الملف المختار: " + selectedFile.name) : (isDragging ? "أفلت الملف هنا للرفع مباشرة..." : "اسحب وأفلت ملف الـ PDF هنا من جهازك")
+                isDragging ? "أفلت الملفات هنا للرفع التلقائي..." : "اسحب وأفلت ملف أو عدة ملفات (PDF) هنا"
               ),
-              React.createElement("span", { className: "inline-block text-[11px] text-indigo-600 dark:text-indigo-400 underline font-semibold" }, "أو اضغط لتصفح واختيار الملف من الجهاز"),
+              React.createElement("span", { className: "inline-block text-[11px] text-indigo-600 dark:text-indigo-400 underline font-semibold" }, "أو اضغط لتصفح واختيار ملفات من جهازك (يمكن اختيار أكثر من ملف دفعة واحدة)"),
               React.createElement("input", {
                 type: "file",
+                multiple: true,
                 accept: "application/pdf,image/*",
                 onChange: handleFileSelect,
-                disabled: isSaving,
+                disabled: isSaving || !!uploadingStatus,
                 className: "hidden"
               })
-            ),
-            selectedFile && React.createElement(
-              "div",
-              { className: "flex items-center justify-center gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-xs" },
-              React.createElement("span", { className: "text-slate-400 text-[11px]" }, (selectedFile.size ? (selectedFile.size / (1024 * 1024)).toFixed(2) + " MB" : "")),
-              !isSaving && React.createElement("button", {
-                type: "button",
-                onClick: function() { setSelectedFile(null); },
-                className: "text-[11px] text-rose-500 hover:underline font-bold"
-              }, "إلغاء الملف ✕")
             )
           ),
 
-          // شريط تقدم الرفع
-          (isSaving && (uploadProgress || uploadStatusText)) && React.createElement(
+          // حالة الرفع السحابي المتتابع
+          uploadingStatus ? React.createElement(
             "div",
-            { className: "p-3 bg-slate-900 text-white rounded-2xl border border-slate-700 space-y-2 animate-fadeIn" },
+            { className: "p-3 bg-slate-900 text-white rounded-2xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-pulse" },
+            React.createElement("span", { className: "animate-spin" }, "⏳"),
+            React.createElement("span", null, uploadingStatus)
+          ) : null,
+
+          // قائمة الملفات المرفوعة تحت هذا القسم
+          React.createElement(
+            "div",
+            { className: "space-y-2" },
             React.createElement(
               "div",
-              { className: "flex items-center justify-between text-xs font-bold" },
-              React.createElement("span", { className: "truncate text-slate-200 flex items-center gap-1.5" },
-                React.createElement("span", { className: "animate-spin" }, "⏳"),
-                uploadProgress && uploadProgress.message ? uploadProgress.message : (uploadStatusText || "جاري رفع الملف...")
-              ),
-              uploadProgress && uploadProgress.percent !== undefined && React.createElement("span", { className: "font-mono text-emerald-400" }, uploadProgress.percent + "%")
+              { className: "flex items-center justify-between" },
+              React.createElement("label", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "الملفات المرفقة في هذا القسم (" + docFiles.length + ")"),
+              React.createElement("button", {
+                type: "button",
+                onClick: handleAddManualUrl,
+                className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              }, "+ إضافة رابط خارجي 🔗")
             ),
-            React.createElement(
+
+            docFiles.length > 0 ? React.createElement(
               "div",
-              { className: "w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700" },
-              React.createElement("div", {
-                className: "bg-indigo-500 h-full transition-all duration-300",
-                style: { width: (uploadProgress && uploadProgress.percent ? uploadProgress.percent : 40) + "%" }
+              { className: "space-y-1.5 max-h-44 overflow-y-auto" },
+              docFiles.map(function(fileItem, idx) {
+                return React.createElement(
+                  "div",
+                  {
+                    key: idx,
+                    className: "p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 text-xs"
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 truncate" },
+                    React.createElement("span", { className: "font-bold text-indigo-600 dark:text-indigo-400" }, (idx + 1) + "."),
+                    React.createElement("input", {
+                      type: "text",
+                      value: fileItem.name,
+                      onChange: function(e) {
+                        var val = e.target.value;
+                        setDocFiles(docFiles.map(function(item, i) {
+                          if (i === idx) return Object.assign({}, item, { name: val });
+                          return item;
+                        }));
+                      },
+                      placeholder: "اسم الملف...",
+                      className: "bg-transparent font-bold text-slate-800 dark:text-slate-200 border-b border-transparent hover:border-slate-400 focus:border-indigo-500 outline-none px-1 py-0.5"
+                    })
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 shrink-0" },
+                    fileItem.size ? React.createElement("span", { className: "text-[10px] text-slate-400" }, fileItem.size) : null,
+                    React.createElement("button", {
+                      type: "button",
+                      onClick: function() { handleRemoveFile(idx); },
+                      className: "text-rose-500 hover:text-rose-700 font-bold text-xs p-1"
+                    }, "✕")
+                  )
+                );
               })
+            ) : React.createElement(
+              "div",
+              { className: "p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-400" },
+              "لم تقم بإضافة ملفات بعد. اختر ملفاً أو عدة ملفات من جهازك لرفعها."
             )
           ),
 
           React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "عنوان الملف (مثلاً: اللائحة أو جدول الامتحانات) *"),
-            React.createElement("input", {
-              type: "text",
-              required: true,
-              value: titleInput,
-              onChange: function(e) { setTitleInput(e.target.value); },
-              placeholder: "اكتب اسم الملف...",
-              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200"
-            })
-          ),
-
-          React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, 
-              selectedFile ? "رابط Google Drive (سيتم تعيينه تلقائياً بعد رفع الملف أعلاه)" : "أو ضع رابط Google Drive يدوياً (اختياري لو رفعت ملف من الجهاز)"
-            ),
-            React.createElement("input", {
-              type: "url",
-              value: driveUrlInput,
-              onChange: function(e) { setDriveUrlInput(e.target.value); },
-              placeholder: selectedFile ? "سيتم توليد الرابط تلقائياً فور الرفع..." : "https://drive.google.com/file/d/.../view",
-              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-800 dark:text-slate-200 ltr",
-              dir: "ltr"
-            })
-          ),
-
-          React.createElement("div", null,
-            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "وصف مختصر للملف"),
+            React.createElement("label", { className: "block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300" }, "وصف مختصر للقسم"),
             React.createElement("textarea", {
               rows: 2,
               value: descInput,
               onChange: function(e) { setDescInput(e.target.value); },
-              placeholder: "نبذة عن محتوى الملف وأهميته للدارس...",
+              placeholder: "نبذة عن محتوى الملفات وأهميتها للدارس...",
               className: "w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-200"
             })
           ),
@@ -15738,74 +15831,106 @@ window.StudentGuidePage = function(props) {
             { className: "flex justify-end gap-2 pt-3" },
             React.createElement("button", {
               type: "button",
-              disabled: isSaving,
+              disabled: isSaving || !!uploadingStatus,
               onClick: function() { setIsModalOpen(false); },
               className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             }, "إلغاء"),
             React.createElement("button", {
               type: "submit",
-              disabled: isSaving,
+              disabled: isSaving || !!uploadingStatus,
               className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-            }, isSaving ? "جاري الرفع والحفظ..." : "حفظ الملف ✓")
+            }, isSaving ? "جاري الحفظ..." : "حفظ القسم وملفاته ✓")
           )
         )
       )
     ),
 
-    // نافذة عارض الـ PDF المدمج
-    activeViewingDoc && React.createElement(
-      "div",
-      {
-        className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col p-2 sm:p-4 animate-fadeIn",
-        dir: "rtl"
-      },
-      React.createElement(
+    // عارض الـ PDF المدمج
+    activeViewingDoc && (function() {
+      var filesList = (activeViewingDoc.files && activeViewingDoc.files.length > 0)
+        ? activeViewingDoc.files
+        : (activeViewingDoc.driveUrl ? [{ name: activeViewingDoc.title, url: activeViewingDoc.driveUrl }] : []);
+      
+      var currentFile = filesList[activeFileIndex] || filesList[0];
+      if (!currentFile) return null;
+
+      return React.createElement(
         "div",
-        { className: "bg-white dark:bg-slate-900 rounded-3xl flex-1 flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl" },
-        // ترويسة العارض
+        {
+          className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col p-2 sm:p-4 animate-fadeIn",
+          dir: "rtl"
+        },
         React.createElement(
           "div",
-          { className: "px-4 sm:px-6 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50" },
+          { className: "bg-white dark:bg-slate-900 rounded-3xl flex-1 flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl" },
+          // ترويسة العارض
           React.createElement(
             "div",
-            { className: "flex items-center gap-2.5 truncate" },
-            React.createElement("span", { className: "text-2xl" }, activeViewingDoc.icon || "📄"),
+            { className: "px-4 sm:px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50" },
             React.createElement(
               "div",
-              { className: "truncate" },
-              React.createElement("h3", { className: "text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate" }, activeViewingDoc.title),
-              React.createElement("p", { className: "text-[11px] text-slate-400 truncate" }, activeViewingDoc.category || "دليل الدارس")
+              { className: "flex items-center gap-2.5 truncate" },
+              React.createElement("span", { className: "text-2xl" }, activeViewingDoc.icon || "📄"),
+              React.createElement(
+                "div",
+                { className: "truncate" },
+                React.createElement("h3", { className: "text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate" }, 
+                  activeViewingDoc.title + (filesList.length > 1 ? (" - " + currentFile.name) : "")
+                ),
+                React.createElement("p", { className: "text-[11px] text-slate-400 truncate" }, activeViewingDoc.category || "دليل الدارس")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 shrink-0" },
+              React.createElement("a", {
+                href: currentFile.url,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1 transition-all"
+              }, "📥 تحميل"),
+              React.createElement("button", {
+                onClick: function() { setActiveViewingDoc(null); },
+                className: "w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-500 hover:text-white text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center transition-all"
+              }, "✕")
             )
           ),
+
+          // شريط التبديل بين الملفات المتعددة
+          filesList.length > 1 && React.createElement(
+            "div",
+            { className: "px-4 py-2 bg-indigo-50/60 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 overflow-x-auto" },
+            React.createElement("span", { className: "text-xs font-bold text-slate-500 shrink-0" }, "أجزاء الملف:"),
+            filesList.map(function(f, idx) {
+              var isSel = idx === activeFileIndex;
+              return React.createElement(
+                "button",
+                {
+                  key: idx,
+                  onClick: function() { setActiveFileIndex(idx); },
+                  className: "px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1 " +
+                    (isSel ? "bg-indigo-600 text-white shadow-xs" : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-200")
+                },
+                React.createElement("span", null, (idx + 1) + "."),
+                React.createElement("span", null, f.name || ("الملف " + (idx + 1)))
+              );
+            })
+          ),
+
+          // إطار عرض الـ PDF المباشر
           React.createElement(
             "div",
-            { className: "flex items-center gap-2 shrink-0" },
-            React.createElement("a", {
-              href: activeViewingDoc.driveUrl,
-              target: "_blank",
-              rel: "noopener noreferrer",
-              className: "px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1 transition-all"
-            }, "📥 تحميل"),
-            React.createElement("button", {
-              onClick: function() { setActiveViewingDoc(null); },
-              className: "w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-500 hover:text-white text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center transition-all"
-            }, "✕")
+            { className: "flex-1 bg-slate-950 relative" },
+            React.createElement("iframe", {
+              src: getEmbedUrl(currentFile.url),
+              className: "w-full h-full border-0",
+              allow: "autoplay",
+              title: currentFile.name || activeViewingDoc.title
+            })
           )
-        ),
-
-        // إطار عرض الـ PDF المباشر من جوجل درايف
-        React.createElement(
-          "div",
-          { className: "flex-1 bg-slate-950 relative" },
-          React.createElement("iframe", {
-            src: getEmbedUrl(activeViewingDoc.driveUrl),
-            className: "w-full h-full border-0",
-            allow: "autoplay",
-            title: activeViewingDoc.title
-          })
         )
-      )
-    )
+      );
+    })()
   );
 };
 
