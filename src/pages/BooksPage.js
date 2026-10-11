@@ -281,7 +281,14 @@ window.BooksPage = function(props) {
                   return Object.assign({}, foundSaved, { currentPage: pNum });
                 }
               }
-              // عند فتح التطبيق لأول مرة أو على جهاز جديد: البقاء في رف الكتب ليرى المستخدم الكتب المنشورة
+              // إذا كان هناك كتاب منشور وحيد، نحدده تلقائياً للمستخدم لتجربة قراءة فورية وسلسة
+              var publishedBooks = mergedList.filter(function(b) { return b.isPublished !== false && b.publishStatus !== "draft"; });
+              if (publishedBooks.length === 1) {
+                var singleBook = publishedBooks[0];
+                var sPage = utils.getLocal("counsel_book_page_" + singleBook.id);
+                var pNum = sPage ? Number(sPage) : (singleBook.currentPage || 1);
+                return Object.assign({}, singleBook, { currentPage: pNum });
+              }
               return null;
             }
             var found = mergedList.find(function(b) { return b.id === prev.id; });
@@ -295,7 +302,14 @@ window.BooksPage = function(props) {
         }
       }
     });
+
+    // مؤقت حماية لمنع بقاء مؤشر التحميل معلقاً في حالة ضعف الشبكة
+    var safetyTimer = setTimeout(function() {
+      setIsLoadingBooks(false);
+    }, 4000);
+
     return function() {
+      clearTimeout(safetyTimer);
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, []);
@@ -2423,7 +2437,7 @@ window.BooksPage = function(props) {
     try {
       // 1. جلب القائمة الرسمية المعتمدة من السحابة أولاً عبر REST API (Pull from Cloud)
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
       var cloudBooks = [];
       var pullError = null;
       try {
@@ -2455,8 +2469,8 @@ window.BooksPage = function(props) {
         utils.removeLocal("counsel_active_book_id");
       }
 
-      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين
-      var finalBooks = cloudBooks.length > 0 ? cloudBooks : (pullError ? localBooks : []);
+      // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين بأمان تام (عدم تصفير الكتب المحلية إذا تعثر جلب السحابة)
+      var finalBooks = cloudBooks.length > 0 ? cloudBooks : localBooks;
       finalBooks = sanitizeBooksList(finalBooks);
       utils.setLocal(cfg.storageKeys.books, finalBooks);
       setBooks(finalBooks);
@@ -2762,15 +2776,15 @@ window.BooksPage = function(props) {
               React.createElement("span", null, "المؤلف: " + (activeBook.author || "غير محدد")),
               React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
               React.createElement("span", null, (activeBook.totalPages || 0) + " صفحة"),
-              (activeBook.uploadedAt || activeBook.createdAt) ? React.createElement(
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
                 "span",
-                { className: "flex items-center gap-1 text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md" },
-                React.createElement("span", null, "📅 تم الرفع:"),
-                React.createElement("span", null, (function() {
-                  try {
-                    return new Date(activeBook.uploadedAt || activeBook.createdAt).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
-                  } catch(e) { return ""; }
-                })())
+                { className: "text-slate-300 dark:text-slate-700" },
+                "•"
+              ) : null,
+              (activeBook.audioChapters && activeBook.audioChapters.length > 0) ? React.createElement(
+                "span",
+                { className: "text-blue-600 dark:text-blue-400 font-semibold" },
+                activeBook.audioChapters.length + " فصول"
               ) : null
             )
           )
@@ -3598,21 +3612,16 @@ window.BooksPage = function(props) {
                 React.createElement(
                   "div",
                   { className: "text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center justify-between" },
-                  React.createElement("span", null, "☁️ متزامن سحابياً"),
-                  React.createElement("span", { className: "font-mono font-bold" }, totalExtractedChars.toLocaleString() + " حرف")
+                  React.createElement("span", null, "جاهز للقراءة والاستماع"),
+                  React.createElement("span", { className: "font-bold" }, extractedCount + " من " + totalChaps + " فصول")
                 )
               ) : null,
 
-              // الفوتر: تاريخ الرفع وزر الفتح
+              // الفوتر: عدد الفصول وزر الفتح
               React.createElement(
                 "div",
                 { className: "pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400 mt-2" },
-                uploadDateStr ? React.createElement(
-                  "span",
-                  { className: "flex items-center gap-1 text-slate-400", title: "تاريخ رفع الكتاب" },
-                  React.createElement("span", null, "📅"),
-                  React.createElement("span", null, uploadDateStr)
-                ) : React.createElement("span", null, ((b.chapters || []).length || (b.audioChapters || []).length || 0) + " فصول"),
+                React.createElement("span", null, ((b.audioChapters || []).length || (b.chapters || []).length || 0) + " فصول"),
                 React.createElement(
                   "span",
                   { className: "text-teal-600 dark:text-teal-400 font-bold group-hover:translate-x-[-2px] transition-transform flex items-center gap-0.5" },

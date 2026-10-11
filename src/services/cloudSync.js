@@ -98,11 +98,13 @@ window.CloudSyncService = {
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
       };
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey + "&nocache=" + Date.now();
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?key=" + apiKey;
+      if (controller) fetchOpts.signal = controller.signal;
 
       fetch(restUrl, fetchOpts)
         .then(function(res) {
           if (timeoutId) clearTimeout(timeoutId);
+          if (!res.ok) throw new Error("HTTP " + res.status);
           return res.json();
         })
         .then(function(data) {
@@ -110,6 +112,8 @@ window.CloudSyncService = {
             var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
             restList = restList.filter(function(b) { return !b.isDeleted; });
             handleUpdate(restList);
+          } else if (data && !data.documents) {
+            handleUpdate([]);
           }
         })
         .catch(function(errRest) {
