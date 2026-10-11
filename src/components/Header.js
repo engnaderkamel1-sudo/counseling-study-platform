@@ -28,10 +28,9 @@ window.Header = function(props) {
           {
             onClick: onOpenSidebar,
             title: props.isSidebarOpen ? "إخفاء القائمة الجانبية لتوسيع الشاشة" : "إظهار القائمة الجانبية",
-            className: "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700 shadow-2xs active:scale-95"
+            className: "hidden md:flex items-center justify-center w-9 h-9 rounded-xl text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all border border-slate-300 dark:border-slate-700 shadow-2xs active:scale-95 text-base"
           },
-          React.createElement("span", { className: "text-base" }, "☰"),
-          React.createElement("span", { className: "text-[11px]" }, props.isSidebarOpen ? "إخفاء القائمة" : "القائمة")
+          "☰"
         ),
         React.createElement(
           "div",
@@ -105,17 +104,6 @@ window.Header = function(props) {
             className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
           },
           theme === "dark" ? "☀️" : "🌙"
-        ),
-
-        // زر تسجيل الخروج
-        onLogout && React.createElement(
-          "button",
-          {
-            onClick: onLogout,
-            title: "تسجيل الخروج",
-            className: "w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/40 flex items-center justify-center transition-all text-sm"
-          },
-          "🚪"
         )
       )
     )
