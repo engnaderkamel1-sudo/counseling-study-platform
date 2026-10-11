@@ -44,12 +44,12 @@ window.Sidebar = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-3" },
-          React.createElement("div", { className: "w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-lg shadow-sm" }, "🌿"),
+          React.createElement("img", { src: "/icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-xl shadow-xs object-cover border border-slate-200 dark:border-slate-700" }),
           React.createElement(
             "div",
             null,
-            React.createElement("h2", { className: "text-base font-bold text-slate-900 dark:text-white" }, "دراسة المشورة"),
-            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "منظومة متابعة الدارسين")
+            React.createElement("h2", { className: "text-base font-bold text-slate-900 dark:text-white" }, "رفيق المشورة"),
+            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "الرفيق الدراسي لدارسي المعهد")
           )
         ),
         React.createElement("button", {

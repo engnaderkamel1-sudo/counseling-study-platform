@@ -31,8 +31,8 @@ window.Header = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-2" },
-          React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white" }, "منصة متابعة المشورة"),
-          React.createElement("span", { className: "hidden sm:inline-block text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2.5 py-0.5 rounded-full font-medium" }, "دفعة المشورة")
+          React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white" }, "رفيق المشورة"),
+          React.createElement("span", { className: "hidden sm:inline-block text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full font-medium" }, "لدارسي معهد المشورة")
         )
       ),
 

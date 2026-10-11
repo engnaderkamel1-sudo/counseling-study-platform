@@ -874,17 +874,42 @@ window.AudioChaptersView = function(props) {
           }
         }),
 
-        // تنبيه المشغل البديل إذا كان هناك خطأ في تشغيل درايف
-        audioHasError ? React.createElement(
-          "div",
-          { className: "p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-2" },
-          React.createElement("span", { className: "text-[11px]" }, "⚠️ تعذر البث المباشر. اضغط للتبديل:"),
-          React.createElement("button", {
-            type: "button",
-            onClick: function() { setUseIframePlayer(true); },
-            className: "px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-black rounded-lg text-xs transition-all shadow-sm shrink-0"
-          }, "مشغل Google ↗")
-        ) : null,
+        // تنبيه المشغل عند وجود خطأ في الرابط
+        audioHasError ? (function() {
+          var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
+          var isExpiredGradio = activeChap.audioUrl && (activeChap.audioUrl.indexOf("/tmp/gradio/") !== -1 || activeChap.audioUrl.indexOf("gradio_api/file") !== -1);
+
+          if (isExpiredGradio) {
+            return React.createElement(
+              "div",
+              { className: "p-2.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm animate-fade-in" },
+              React.createElement("div", { className: "flex items-center gap-2" },
+                React.createElement("span", { className: "text-lg" }, "⚠️"),
+                React.createElement("span", { className: "text-[11px] leading-tight" }, "رابط الصوت المؤقت انتهت صلاحيته من السيرفر الخارجي. اضغط لتوليده وحفظه تلقائياً على Google Drive:")
+              ),
+              isAdmin && typeof handleGenerateChapterAudio === "function" ? React.createElement("button", {
+                type: "button",
+                onClick: function() { handleGenerateChapterAudio(activeChap); },
+                className: "px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 active:scale-95 flex items-center gap-1 self-end sm:self-auto"
+              }, React.createElement("span", null, "🎙️"), React.createElement("span", null, "توليد وحفظ على Drive")) : null
+            );
+          }
+
+          if (driveId) {
+            return React.createElement(
+              "div",
+              { className: "p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-2" },
+              React.createElement("span", { className: "text-[11px]" }, "⚠️ تعذر البث المباشر. اضغط للتبديل لمشغل Google:"),
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setUseIframePlayer(true); },
+                className: "px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-black rounded-lg text-xs transition-all shadow-sm shrink-0"
+              }, "مشغل Google ↗")
+            );
+          }
+
+          return null;
+        })() : null,
 
         useIframePlayer ? React.createElement(
           "div",
