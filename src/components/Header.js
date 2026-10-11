@@ -33,7 +33,8 @@ window.Header = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2" },
+          { className: "flex items-center gap-2.5" },
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-8 h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
           React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white" }, "رفيق المشورة"),
           React.createElement("span", { className: "hidden sm:inline-block text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full font-medium" }, "لدارسي معهد المشورة")
         )

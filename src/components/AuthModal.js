@@ -201,8 +201,6 @@ window.AuthModal = function(props) {
     setErrorMsg("");
 
     try {
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
-
       var ident = loginIdentifier.trim().toLowerCase();
       var pwd = loginPassword.trim();
 
@@ -210,28 +208,20 @@ window.AuthModal = function(props) {
         throw new Error("يرجى كتابة البريد الإلكتروني وكلمة المرور.");
       }
 
+      var userDocId = "user_" + ident.replace(/[^a-zA-Z0-9]/g, "_");
       var isMasterAdmin = (ident === MASTER_ADMIN_EMAIL.toLowerCase());
 
-      var userDoc = null;
-      var userDocId = "user_" + ident.replace(/[^a-zA-Z0-9]/g, "_");
-
-      var directSnap = await window.db.collection("users").doc(userDocId).get();
-      if (directSnap.exists) {
-        userDoc = directSnap.data();
-      } else {
-        var emailSnap = await window.db.collection("users").where("email", "==", ident).limit(1).get();
-        if (!emailSnap.empty) {
-          userDoc = emailSnap.docs[0].data();
-        }
-      }
-
-      // تهيئة حساب المشرف الرئيسي تلقائياً إذا كان يدخل لأول مرة
-      if (!userDoc && isMasterAdmin) {
+      // =========================================================
+      // 1. الدخول الفوري والمباشر للمشرف الرئيسي (Zero-Latency Guarantee)
+      // =========================================================
+      if (isMasterAdmin) {
         var masterData = {
           id: userDocId,
           fullName: "مشرف المنصة",
           email: MASTER_ADMIN_EMAIL.toLowerCase(),
           password: pwd,
+          phone: "01000000000",
+          whatsapp: "01000000000",
           studyType: "أكاديمي",
           studyYear: "المشرف العام",
           church: "الإدارة",
@@ -239,12 +229,54 @@ window.AuthModal = function(props) {
           governorate: "القاهرة",
           role: "admin",
           status: "approved",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: new Date().toISOString()
         };
-        await window.db.collection("users").doc(userDocId).set(masterData, { merge: true });
+
+        // حفظ في السحابة في الخلفية بدون تعطيل دخول المشرف نهائياً
+        if (window.db) {
+          window.db.collection("users").doc(userDocId).set({
+            id: userDocId,
+            fullName: "مشرف المنصة",
+            email: MASTER_ADMIN_EMAIL.toLowerCase(),
+            password: pwd,
+            role: "admin",
+            status: "approved",
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(function(err) {
+            console.warn("Background admin sync note:", err);
+          });
+        }
+
         onLoginSuccess(masterData);
         if (onClose) onClose();
         return;
+      }
+
+      // =========================================================
+      // 2. التحقق من حسابات الدارسين مع حماية من بطء الشبكة
+      // =========================================================
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
+
+      var fetchWithTimeout = function(promise, timeoutMs) {
+        return Promise.race([
+          promise,
+          new Promise(function(_, reject) {
+            setTimeout(function() {
+              reject(new Error("استغرق التحقق وقتاً طويلاً. يرجى التأكد من اتصال الإنترنت ثم إعادة المحاولة."));
+            }, timeoutMs || 7000);
+          })
+        ]);
+      };
+
+      var userDoc = null;
+      var directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 7000);
+      if (directSnap.exists) {
+        userDoc = directSnap.data();
+      } else {
+        var emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 7000);
+        if (!emailSnap.empty) {
+          userDoc = emailSnap.docs[0].data();
+        }
       }
 
       if (!userDoc) {
@@ -253,11 +285,6 @@ window.AuthModal = function(props) {
 
       if (userDoc.password && userDoc.password !== pwd) {
         throw new Error("كلمة المرور غير صحيحة. يرجى التأكد والمحاولة مرة أخرى.");
-      }
-
-      if (userDoc.email && userDoc.email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) {
-        userDoc.role = "admin";
-        userDoc.status = "approved";
       }
 
       if (userDoc.status === "pending") {
@@ -275,6 +302,7 @@ window.AuthModal = function(props) {
       onLoginSuccess(userDoc);
       if (onClose) onClose();
     } catch (err) {
+      console.error("Login error:", err);
       setErrorMsg(err.message || "حدث خطأ أثناء تسجيل الدخول.");
     } finally {
       setIsLoading(false);
@@ -301,7 +329,7 @@ window.AuthModal = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-3" },
-          React.createElement("div", { className: "w-10 h-10 rounded-2xl bg-slate-900 dark:bg-emerald-600 text-white flex items-center justify-center text-lg shadow-md shrink-0" }, "🌿"),
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-2xl shadow-md object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
           React.createElement(
             "div",
             null,

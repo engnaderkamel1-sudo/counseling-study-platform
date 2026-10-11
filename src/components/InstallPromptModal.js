@@ -35,8 +35,8 @@ window.InstallPromptModal = function(props) {
         { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
         React.createElement(
           "div",
-          { className: "flex items-center gap-2" },
-          React.createElement("span", { className: "text-2xl" }, "📲"),
+          { className: "flex items-center gap-3" },
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-9 h-9 rounded-xl shadow-xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
           React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, "تثبيت تطبيق المشورة")
         ),
         React.createElement(

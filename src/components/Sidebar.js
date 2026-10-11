@@ -51,7 +51,7 @@ window.Sidebar = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-3" },
-          React.createElement("img", { src: "/icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-xl shadow-xs object-cover border border-slate-200 dark:border-slate-700" }),
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-xl shadow-xs object-cover border border-slate-200 dark:border-slate-700" }),
           React.createElement(
             "div",
             null,
