@@ -16,6 +16,7 @@ window.LecturesPage = function(props) {
 
   var [activeLecture, setActiveLecture] = React.useState(null);
   var [showAddModal, setShowAddModal] = React.useState(false);
+  var [showFilterModal, setShowFilterModal] = React.useState(false);
 
   // حقول الفلترة والبحث
   var [searchQuery, setSearchQuery] = React.useState("");
@@ -113,14 +114,15 @@ window.LecturesPage = function(props) {
   React.useEffect(function() {
     var handleKeyDown = function(e) {
       if (e.key === "Escape") {
-        if (editingLecture) setEditingLecture(null);
+        if (showFilterModal) setShowFilterModal(false);
+        else if (editingLecture) setEditingLecture(null);
         else if (showAddModal) setShowAddModal(false);
         else if (activeLecture) setActiveLecture(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return function() { window.removeEventListener("keydown", handleKeyDown); };
-  }, [editingLecture, showAddModal, activeLecture]);
+  }, [showFilterModal, editingLecture, showAddModal, activeLecture]);
 
   // الاشتراك الحي في المحاضرات عبر Firebase
   React.useEffect(function() {
@@ -209,6 +211,20 @@ window.LecturesPage = function(props) {
       return (b.sessionOrder || 1) - (a.sessionOrder || 1);
     }
   });
+  var activeFiltersCount = (searchQuery.trim() ? 1 : 0) +
+    (selectedSubject !== "الكل" ? 1 : 0) +
+    (selectedSpeaker !== "الكل" ? 1 : 0) +
+    (selectedDate !== "الكل" ? 1 : 0) +
+    (sortByDate !== "asc" ? 1 : 0);
+  var isFiltered = activeFiltersCount > 0;
+
+  var resetFilters = function() {
+    setSearchQuery("");
+    setSelectedSubject("الكل");
+    setSelectedSpeaker("الكل");
+    setSelectedDate("الكل");
+    setSortByDate("asc");
+  };
 
   var processSelectedFile = function(file) {
     if (!file) return;
@@ -439,6 +455,9 @@ window.LecturesPage = function(props) {
         });
       });
 
+      if (window.NotificationService && typeof window.NotificationService.broadcastHandoutNotification === "function" && editingLecture) {
+        window.NotificationService.broadcastHandoutNotification(editingLecture);
+      }
       alert(uploadedItems.length > 1 ? "✅ تم رفع " + uploadedItems.length + " ملفات هاند آوت بنجاح!" : "✅ تم رفع ملف الهاند آوت بنجاح وإضافته للمحاضرة!");
     } catch(err) {
       alert("خطأ أثناء رفع ملف الهاند آوت: " + err.message);
@@ -519,90 +538,190 @@ window.LecturesPage = function(props) {
         React.createElement("h2", { className: "text-xl font-bold text-slate-900 dark:text-white" }, "المحاضرات الدراسية"),
         React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" }, "أرشيف المحاضرات مع دعم روابط يوتيوب وجوجل درايف وحفظ موضع الاستماع التلقائي")
       ),
-      currentUser.role === "admin" && React.createElement(
+      React.createElement(
         "div",
-        { className: "flex items-center gap-2" },
-        props.onOpenRecycleBin && React.createElement(
+        { className: "flex flex-wrap items-center gap-2" },
+        // زر الفلترة والبحث المخصص لجميع المستخدمين
+        lectures.length > 0 && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowFilterModal(true); },
+            className: "px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all shadow-xs active:scale-95 border " +
+              (isFiltered
+                ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750")
+          },
+          React.createElement("span", null, "🔍"),
+          React.createElement("span", null, "تصفية وبحث"),
+          isFiltered && React.createElement(
+            "span",
+            { className: "px-1.5 py-0.5 text-[10px] bg-emerald-600 text-white rounded-full font-bold" },
+            activeFiltersCount
+          )
+        ),
+        currentUser.role === "admin" && props.onOpenRecycleBin && React.createElement(
           "button",
           {
             type: "button",
             onClick: props.onOpenRecycleBin,
             title: "سلة المحذوفات والأرشيف المؤقت (حفظ واسترجاع العناصر المحذوفة لمدة 7 أيام)",
-            className: "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
+            className: "px-3.5 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-all shadow-xs active:scale-95"
           },
           React.createElement("span", null, "🗑️"),
           React.createElement("span", null, "سلة المحذوفات")
         ),
-        React.createElement(
+        currentUser.role === "admin" && React.createElement(
           "button",
           {
             onClick: function() { setShowAddModal(true); },
             className: "bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm shadow-md flex items-center gap-2"
           },
           React.createElement("span", null, "➕"),
-          React.createElement("span", null, "إضافة أو رفع محاضرة")
+          React.createElement("span", null, "إضافة محاضرة")
         )
       )
     ),
 
-    // شريط الفرز والبحث
-    lectures.length > 0 && React.createElement(
+    // شريط إشعار وتنبيه بسيط عند وجود فلترة نشطة مع زر لإلغائها سريعاً
+    isFiltered && React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3" },
+      { className: "flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-4 py-2.5 rounded-xl text-xs text-emerald-800 dark:text-emerald-300" },
       React.createElement(
         "div",
-        null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "بحث بالكلمة"),
-        React.createElement("input", {
-          type: "text",
-          value: searchQuery,
-          onChange: function(e) { setSearchQuery(e.target.value); },
-          placeholder: "عنوان، مادة، محاضر...",
-          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        })
+        { className: "flex items-center gap-2" },
+        React.createElement("span", null, "🎯"),
+        React.createElement("span", { className: "font-medium" }, "النتائج معروضة حسب الفلترة المحددة (" + filteredLectures.length + " من " + lectures.length + ")")
       ),
       React.createElement(
-        "div",
-        null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "المادة الدراسية"),
-        React.createElement("select", {
-          value: selectedSubject,
-          onChange: function(e) { setSelectedSubject(e.target.value); },
-          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        }, subjectsList.map(function(sub) { return React.createElement("option", { key: sub, value: sub }, sub); }))
-      ),
+        "button",
+        {
+          type: "button",
+          onClick: resetFilters,
+          className: "text-[11px] font-bold underline hover:text-emerald-950 dark:hover:text-white"
+        },
+        "إلغاء الفلترة"
+      )
+    ),
+
+    // نافذة الفلترة والبحث المنبثقة
+    showFilterModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn",
+        onClick: function(e) {
+          if (e.target === e.currentTarget) setShowFilterModal(false);
+        }
+      },
       React.createElement(
         "div",
-        null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "المحاضر"),
-        React.createElement("select", {
-          value: selectedSpeaker,
-          onChange: function(e) { setSelectedSpeaker(e.target.value); },
-          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        }, speakersList.map(function(s) { return React.createElement("option", { key: s, value: s }, s); }))
-      ),
-      React.createElement(
-        "div",
-        null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "يوم معين"),
-        React.createElement("select", {
-          value: selectedDate,
-          onChange: function(e) { setSelectedDate(e.target.value); },
-          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        }, datesList.map(function(d) { return React.createElement("option", { key: d, value: d }, d); }))
-      ),
-      React.createElement(
-        "div",
-        null,
-        React.createElement("label", { className: "block text-xs font-semibold text-slate-500 mb-1" }, "ترتيب المحاضرات"),
-        React.createElement("select", {
-          value: sortByDate,
-          onChange: function(e) { setSortByDate(e.target.value); },
-          className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
-        }, [
-          React.createElement("option", { key: "asc", value: "asc" }, "تسلسلي (المحاضرة 1 ⬅ الأخيرة)"),
-          React.createElement("option", { key: "desc", value: "desc" }, "عكسي (الأحدث أولاً)")
-        ])
+        { className: "bg-white dark:bg-slate-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto" },
+        
+        // ترويسة المودال
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between pb-3 border-b border-slate-150 dark:border-slate-800" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-lg" }, "🔍"),
+            React.createElement("h3", { className: "font-bold text-sm text-slate-900 dark:text-white" }, "تصفية وبحث المحاضرات")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowFilterModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 font-bold text-xs"
+            },
+            "✕"
+          )
+        ),
+
+        // حقول الفلترة
+        React.createElement(
+          "div",
+          { className: "space-y-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1" }, "بحث بالكلمة"),
+            React.createElement("input", {
+              type: "text",
+              value: searchQuery,
+              onChange: function(e) { setSearchQuery(e.target.value); },
+              placeholder: "عنوان المحاضرة، اسم المادة، المحاضر...",
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
+            })
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1" }, "المادة الدراسية"),
+            React.createElement("select", {
+              value: selectedSubject,
+              onChange: function(e) { setSelectedSubject(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+            }, subjectsList.map(function(sub) { return React.createElement("option", { key: sub, value: sub }, sub); }))
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1" }, "المحاضر"),
+            React.createElement("select", {
+              value: selectedSpeaker,
+              onChange: function(e) { setSelectedSpeaker(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+            }, speakersList.map(function(s) { return React.createElement("option", { key: s, value: s }, s); }))
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1" }, "يوم وتاريخ معين"),
+            React.createElement("select", {
+              value: selectedDate,
+              onChange: function(e) { setSelectedDate(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+            }, datesList.map(function(d) { return React.createElement("option", { key: d, value: d }, d); }))
+          ),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1" }, "ترتيب العرض"),
+            React.createElement("select", {
+              value: sortByDate,
+              onChange: function(e) { setSortByDate(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white outline-none"
+            }, [
+              React.createElement("option", { key: "asc", value: "asc" }, "تسلسلي (المحاضرة 1 ⬅ الأخيرة)"),
+              React.createElement("option", { key: "desc", value: "desc" }, "عكسي (الأحدث أولاً)")
+            ])
+          )
+        ),
+
+        // أزرار التحكم
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 pt-3 border-t border-slate-150 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowFilterModal(false); },
+              className: "flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+            },
+            "عرض النتائج (" + filteredLectures.length + ")"
+          ),
+          isFiltered && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: resetFilters,
+              className: "px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium"
+            },
+            "مسح الكل"
+          )
+        )
       )
     ),
 

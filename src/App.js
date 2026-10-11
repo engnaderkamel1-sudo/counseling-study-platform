@@ -60,6 +60,11 @@ function App() {
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);
   var [isRecycleBinOpen, setIsRecycleBinOpen] = React.useState(false);
+  var [isNotificationCenterOpen, setIsNotificationCenterOpen] = React.useState(false);
+  var [notificationsList, setNotificationsList] = React.useState([]);
+  var [readNotifIds, setReadNotifIds] = React.useState(function() {
+    return utils.getLocal("counsel_read_notif_ids", []);
+  });
 
   var [isInstallPromptOpen, setIsInstallPromptOpen] = React.useState(false);
   var [deferredPrompt, setDeferredPrompt] = React.useState(null);
@@ -118,6 +123,7 @@ function App() {
     if (window.NotificationService && typeof window.NotificationService.subscribeNotifications === "function") {
       var initialLoad = true;
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
+        setNotificationsList(list || []);
         if (!initialLoad && list.length > 0) {
           var latest = list[0];
           var isRegistration = (latest.type === "user_registration");
@@ -338,19 +344,28 @@ function App() {
         ),
 
         // ترويسة التطبيق الرئيسية
-        React.createElement(window.Header, {
-          isSidebarOpen: isSidebarOpen,
-          onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
-          theme: theme,
-          onToggleTheme: handleToggleTheme,
-          currentUser: currentUser,
-          onOpenAuth: function() { setIsAuthOpen(true); },
-          onLogout: handleLogout,
-          onOpenErrorReport: function() { setIsErrorReportOpen(true); },
-          hasNotificationPermission: hasNotificationPermission,
-          onToggleNotification: handleToggleNotification,
-          onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); }
-        })
+        (function() {
+          var unreadCount = notificationsList.filter(function(n) {
+            if (n.type === "user_registration" && (!currentUser || currentUser.role !== "admin")) return false;
+            if (n.type === "password_reset" && (!currentUser || currentUser.role !== "admin")) return false;
+            return readNotifIds.indexOf(n.id) === -1;
+          }).length;
+          return React.createElement(window.Header, {
+            isSidebarOpen: isSidebarOpen,
+            onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
+            theme: theme,
+            onToggleTheme: handleToggleTheme,
+            currentUser: currentUser,
+            onOpenAuth: function() { setIsAuthOpen(true); },
+            onLogout: handleLogout,
+            onOpenErrorReport: function() { setIsErrorReportOpen(true); },
+            hasNotificationPermission: hasNotificationPermission,
+            onToggleNotification: handleToggleNotification,
+            onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
+            onOpenNotifications: function() { setIsNotificationCenterOpen(true); },
+            unreadNotificationsCount: unreadCount
+          });
+        })()
       ),
 
       React.createElement(
@@ -404,6 +419,22 @@ function App() {
       onInstalled: function() {
         setDeferredPrompt(null);
         alert("تهانينا! تم تثبيت تطبيق منصة المشورة بنجاح على جهازك.");
+      }
+    }),
+
+    React.createElement(window.NotificationCenterModal, {
+      isOpen: isNotificationCenterOpen,
+      onClose: function() {
+        setIsNotificationCenterOpen(false);
+        setReadNotifIds(utils.getLocal("counsel_read_notif_ids", []));
+      },
+      currentUser: currentUser,
+      notifications: notificationsList,
+      onSelectNotification: function(notif) {
+        if (notif.linkTab) setActiveTab(notif.linkTab);
+        else if (notif.lectureId) setActiveTab("lectures");
+        else if (notif.type === "user_registration") setActiveTab("users");
+        setReadNotifIds(utils.getLocal("counsel_read_notif_ids", []));
       }
     })
   );

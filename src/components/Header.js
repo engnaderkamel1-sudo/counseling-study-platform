@@ -7,6 +7,8 @@ window.Header = function(props) {
   var onOpenErrorReport = props.onOpenErrorReport;
   var onLogout = props.onLogout;
   var onOpenAuth = props.onOpenAuth;
+  var onOpenNotifications = props.onOpenNotifications;
+  var unreadNotificationsCount = props.unreadNotificationsCount || 0;
   var isAdmin = !!(currentUser && currentUser.role === "admin");
 
   return React.createElement(
@@ -76,6 +78,22 @@ window.Header = function(props) {
           },
           React.createElement("span", null, "🔄"),
           React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
+        ),
+
+        // زر مركز الإشعارات والتنبيهات
+        React.createElement(
+          "button",
+          {
+            onClick: onOpenNotifications,
+            title: unreadNotificationsCount > 0 ? ("لديك " + unreadNotificationsCount + " إشعار جديد") : "مركز الإشعارات والتنبيهات",
+            className: "relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all text-sm border border-slate-200 dark:border-slate-700 active:scale-95"
+          },
+          React.createElement("span", null, "🔔"),
+          unreadNotificationsCount > 0 && React.createElement(
+            "span",
+            { className: "absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold font-mono flex items-center justify-center shadow-xs animate-pulse" },
+            unreadNotificationsCount > 9 ? "9+" : unreadNotificationsCount
+          )
         ),
 
         // تبديل المظهر

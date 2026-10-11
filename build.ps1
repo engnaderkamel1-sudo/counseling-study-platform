@@ -32,6 +32,7 @@ function Build-App {
         "components/AuthModal.js",
         "components/ErrorReporterModal.js",
         "components/InstallPromptModal.js",
+        "components/NotificationCenterModal.js",
         "components/RecycleBinModal.js",
         "components/books/AddBookModal.js",
         "components/books/BookCoverModal.js",
