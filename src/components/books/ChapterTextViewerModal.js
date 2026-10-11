@@ -25,6 +25,99 @@ window.ChapterTextViewerModal = function(props) {
   var [localDuration, setLocalDuration] = React.useState(0);
   var [localIsPlaying, setLocalIsPlaying] = React.useState(false);
   var [localSpeed, setLocalSpeed] = React.useState(1);
+  var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
+  var textContainerRef = React.useRef(null);
+
+  // تقسيم نص الفصل إلى فقرات/جمل متناسقة وحساب النسبة التراكمية لكل منها
+  var segments = React.useMemo(function() {
+    var raw = (viewingChapterText && viewingChapterText.text) || "";
+    if (!raw.trim()) return [];
+
+    // 1. تقسيم النص أولاً إلى فقرات حسب الأسطر الفارغة
+    var parts = raw.split(/\n\s*\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
+
+    // إذا كانت الفقرات قليلة جداً (مثلاً فقرة واحدة طويلة لكامل الفصل)، نقسم حسب السطر العادي
+    if (parts.length <= 1) {
+      parts = raw.split(/\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
+    }
+
+    // إذا كان النص كتلة واحدة بدون فواصل أسطر نهائياً، نقسمه حسب نهايات الجمل
+    if (parts.length <= 1) {
+      var sentenceRegex = /([.!?؟]+(?:\s+|$))/;
+      var rawTokens = raw.split(sentenceRegex);
+      var sentences = [];
+      for (var t = 0; t < rawTokens.length; t += 2) {
+        var sText = (rawTokens[t] || "").trim();
+        var sPunct = (rawTokens[t + 1] || "").trim();
+        var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
+        if (combined) sentences.push(combined);
+      }
+      if (sentences.length > 1) {
+        parts = sentences;
+      }
+    }
+
+    if (parts.length === 0) {
+      parts = [raw.trim()];
+    }
+
+    // حساب الوزن النسبي لعدد الحروف في كل فقرة
+    var totalChars = 0;
+    for (var i = 0; i < parts.length; i++) {
+      totalChars += parts[i].length;
+    }
+    if (totalChars === 0) totalChars = 1;
+
+    var cumulative = 0;
+    return parts.map(function(partText, idx) {
+      var startRatio = cumulative / totalChars;
+      cumulative += partText.length;
+      var endRatio = cumulative / totalChars;
+      return {
+        id: idx,
+        text: partText,
+        startRatio: startRatio,
+        endRatio: endRatio
+      };
+    });
+  }, [viewingChapterText && viewingChapterText.text]);
+
+  // تحديد الفقرة النشطة حالياً بناءً على موضع الصوت
+  var activeSegmentIdx = React.useMemo(function() {
+    if (!isPlayingThis || !localDuration || segments.length === 0) return -1;
+    var ratio = Math.max(0, Math.min(1, localProgress / localDuration));
+    for (var i = 0; i < segments.length; i++) {
+      if (ratio >= segments[i].startRatio && ratio < segments[i].endRatio) {
+        return i;
+      }
+    }
+    return segments.length - 1;
+  }, [isPlayingThis, localProgress, localDuration, segments]);
+
+  // التمرير السلس للفقرة النشطة تلقائياً أثناء تشغيل الصوت
+  React.useEffect(function() {
+    if (autoScrollEnabled && isPlayingThis && activeSegmentIdx >= 0) {
+      var targetEl = document.getElementById("chapter-segment-" + activeSegmentIdx);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [activeSegmentIdx, autoScrollEnabled, isPlayingThis]);
+
+  // القفز في الصوت مباشرة للفقرة التي ينقر عليها المستخدم
+  var handleSegmentClick = function(seg) {
+    if (chapterAudioRef && chapterAudioRef.current && localDuration > 0) {
+      var targetTime = seg.startRatio * localDuration;
+      chapterAudioRef.current.currentTime = targetTime;
+      setLocalProgress(targetTime);
+      if (!isPlayingThis) {
+        if (setPlayingChapterId) setPlayingChapterId(viewingChapterText.id);
+      } else if (chapterAudioRef.current.paused) {
+        var p = chapterAudioRef.current.play();
+        if (p && typeof p.catch === "function") p.catch(function() {});
+      }
+    }
+  };
 
   React.useEffect(function() {
     var audio = chapterAudioRef && chapterAudioRef.current;
@@ -167,7 +260,14 @@ window.ChapterTextViewerModal = function(props) {
               React.createElement("span", null, "🎧 استماع وقراءة متزامنة:"),
               curAudioIdx >= 0 ? React.createElement("span", { className: "text-amber-300" }, "تراك (" + (curAudioIdx + 1) + " من " + allAudioChaps.length + ")") : null
             ),
-            React.createElement("div", { className: "flex items-center gap-1.5" },
+            React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
+              React.createElement("button", {
+                type: "button",
+                onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
+                className: "px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
+                  (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs" : "bg-slate-800 text-slate-400 border-slate-700"),
+                title: autoScrollEnabled ? "المتابعة التلقائية وتمرير الشاشة مع الصوت مفعلة (اضغط للإيقاف)" : "المتابعة التلقائية متوقفة (اضغط للتفعيل)"
+              }, autoScrollEnabled ? "📍 متابعة تلقائية ✓" : "📍 متابعة متوقفة"),
               setIsPlaylistMode ? React.createElement("button", {
                 type: "button",
                 onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
@@ -270,14 +370,31 @@ window.ChapterTextViewerModal = function(props) {
         )
       ) : null,
 
-      // مساحة قراءة النص التفاعلية مع دعم التمرير السلس للموبايل
+      // مساحة قراءة النص التفاعلية مع دعم التمرير السلس والمزامنة مع الصوت (Read-Along)
       React.createElement(
         "div",
         {
-          className: "overflow-y-auto flex-1 p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-loose font-sans whitespace-pre-wrap select-text selection:bg-blue-600 selection:text-white",
+          ref: textContainerRef,
+          className: "overflow-y-auto flex-1 p-3 sm:p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-loose font-sans select-text selection:bg-blue-600 selection:text-white space-y-3",
           style: { fontSize: fontSize + "px" }
         },
-        viewingChapterText.text
+        segments.length > 0 ? segments.map(function(seg, idx) {
+          var isActive = (idx === activeSegmentIdx);
+          return React.createElement(
+            "div",
+            {
+              key: seg.id,
+              id: "chapter-segment-" + idx,
+              onClick: hasAudio ? function() { handleSegmentClick(seg); } : undefined,
+              className: "p-2.5 sm:p-3.5 rounded-2xl transition-all duration-300 " +
+                (isActive
+                  ? "bg-amber-100 dark:bg-amber-950/70 text-amber-950 dark:text-amber-100 border-r-4 border-amber-500 shadow-sm font-medium ring-1 ring-amber-400/40"
+                  : "hover:bg-slate-100/80 dark:hover:bg-slate-900/60 " + (hasAudio ? "cursor-pointer" : "")),
+              title: hasAudio ? "اضغط للاستماع بدءاً من هنا" : undefined
+            },
+            React.createElement("p", { className: "whitespace-pre-wrap" }, seg.text)
+          );
+        }) : React.createElement("p", { className: "whitespace-pre-wrap text-slate-400" }, (viewingChapterText && viewingChapterText.text) || "لا يوجد نص متاح لهذا الفصل.")
       ),
 
       // شريط الأزرار السفلي
