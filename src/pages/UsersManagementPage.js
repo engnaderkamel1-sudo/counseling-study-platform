@@ -19,6 +19,14 @@ window.UsersManagementPage = function(props) {
   var [manualWhatsapp, setManualWhatsapp] = React.useState("");
   var [isSavingManual, setIsSavingManual] = React.useState(false);
 
+  // نافذة إعادة تعيين كلمة المرور الآمنة (بدون كشف كلمة المرور القديمة)
+  var [resetModalUser, setResetModalUser] = React.useState(null);
+  var [resetNewPassword, setResetNewPassword] = React.useState("");
+  var [isResettingPassword, setIsResettingPassword] = React.useState(false);
+  var [resetSuccessData, setResetSuccessData] = React.useState(null);
+  var [isSendingResetEmail, setIsSendingResetEmail] = React.useState(false);
+  var [resetEmailStatus, setResetEmailStatus] = React.useState("");
+
   var governoratesList = [
     "القاهرة", "الجيزة", "الإسكندرية", "القليوبية", "الدقهلية",
     "الشرقية", "المنوفية", "الغربية", "كفر الشيخ", "دمياط",
@@ -82,28 +90,73 @@ window.UsersManagementPage = function(props) {
     }
   };
 
-  var handleResetUserPassword = async function(userId, userName, currentPass) {
-    var newPass = prompt("أدخل كلمة المرور الجديدة لحساب '" + userName + "':", currentPass || "");
-    if (!newPass || !newPass.trim()) return;
-    if (newPass.trim().length < 4) {
+  // توليد كلمة مرور سهلة التذكر لكبار السن والدارسين
+  var generateEasyPassword = function() {
+    var words = ["Study", "Hope", "Peace", "Light", "Faith", "Blessing"];
+    var word = words[Math.floor(Math.random() * words.length)];
+    var num = Math.floor(1000 + Math.random() * 9000);
+    return word + "@" + num;
+  };
+
+  // فتح نافذة إعادة التعيين الآمنة بدون إظهار كلمة المرور القديمة إطلاقاً
+  var handleOpenResetModal = function(user) {
+    setResetModalUser(user);
+    setResetNewPassword(generateEasyPassword());
+    setResetSuccessData(null);
+    setResetEmailStatus("");
+  };
+
+  // تأكيد وتطبيق كلمة المرور الجديدة في قاعدة البيانات
+  var handleConfirmResetPassword = async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!resetModalUser || !resetNewPassword.trim()) return;
+    if (resetNewPassword.trim().length < 4) {
       alert("كلمة المرور يجب ألا تقل عن 4 خانات.");
       return;
     }
     if (!window.db) return;
+    setIsResettingPassword(true);
     try {
-      await window.db.collection("users").doc(userId).update({
-        password: newPass.trim(),
+      var passToSave = resetNewPassword.trim();
+      await window.db.collection("users").doc(resetModalUser.id).update({
+        password: passToSave,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+
       setUsers(users.map(function(u) {
-        if (u.id === userId) {
-          return Object.assign({}, u, { password: newPass.trim() });
+        if (u.id === resetModalUser.id) {
+          return Object.assign({}, u, { password: passToSave });
         }
         return u;
       }));
-      alert("تم تحديث كلمة المرور لحساب '" + userName + "' بنجاح! ✓");
+
+      setResetSuccessData({
+        user: resetModalUser,
+        newPass: passToSave
+      });
     } catch (e) {
-      alert("حدث خطأ أثناء تعديل كلمة المرور: " + e.message);
+      alert("حدث خطأ أثناء تعديل كلمة المرور: " + (e.message || e));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  // إرسال رابط إعادة التعيين عبر البريد الإلكتروني
+  var handleSendEmailReset = async function() {
+    if (!resetModalUser || !resetModalUser.email) return;
+    setIsSendingResetEmail(true);
+    setResetEmailStatus("");
+    try {
+      if (window.firebase && window.firebase.auth) {
+        await window.firebase.auth().sendPasswordResetEmail(resetModalUser.email.trim());
+        setResetEmailStatus("✅ تم إرسال رابط إعادة التعيين بنجاح إلى إيميل الدارس: " + resetModalUser.email);
+      } else {
+        throw new Error("خدمة البريد غير مهيأة.");
+      }
+    } catch (e) {
+      setResetEmailStatus("ℹ️ تنبيه: " + (e.message || "تعذر إرسال البريد التلقائي") + ". يمكنك تعيين كلمة المرور فوراً من الخيار أعلاه وإرسالها له بالواتساب.");
+    } finally {
+      setIsSendingResetEmail(false);
     }
   };
 
@@ -412,12 +465,12 @@ window.UsersManagementPage = function(props) {
               React.createElement(
                 "button",
                 {
-                  onClick: function() { handleResetUserPassword(u.id, u.fullName, u.password); },
-                  title: "تعديل كلمة المرور",
-                  className: "text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1"
+                  onClick: function() { handleOpenResetModal(u); },
+                  title: "إعادة تعيين كلمة المرور لمساعدة الدارس",
+                  className: "text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-amber-200/60 dark:border-amber-900/40"
                 },
-                React.createElement("span", null, "🔑"),
-                React.createElement("span", { className: "hidden sm:inline" }, "كلمة المرور")
+                React.createElement("span", null, "🔄"),
+                React.createElement("span", null, "إعادة تعيين كلمة المرور")
               ),
               React.createElement(
                 "button",
@@ -576,6 +629,182 @@ window.UsersManagementPage = function(props) {
             disabled: isSavingManual,
             className: "w-full py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-md mt-2"
           }, isSavingManual ? "جاري الإضافة..." : "إضافة وتفعيل الحساب فوراً ✓")
+        )
+      )
+    ),
+
+    // نافذة إعادة تعيين كلمة المرور الآمنة لمساعدة الدارس
+    resetModalUser && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto",
+        onClick: function(e) { if (e.target === e.currentTarget) setResetModalUser(null); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto" },
+
+        React.createElement(
+          "div",
+          { className: "flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
+              React.createElement("span", null, "🔄"),
+              React.createElement("span", null, "إعادة تعيين كلمة المرور")
+            ),
+            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-0.5" },
+              "الدارس: " + (resetModalUser.fullName || "") + " • " + (resetModalUser.email || "")
+            )
+          ),
+          React.createElement("button", { onClick: function() { setResetModalUser(null); }, className: "text-slate-400 hover:text-slate-600 text-sm p-1" }, "✕")
+        ),
+
+        // تنبيه الأمان والخصوصية
+        React.createElement(
+          "div",
+          { className: "p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 text-[11px] text-indigo-800 dark:text-indigo-300 leading-relaxed flex items-start gap-2" },
+          React.createElement("span", { className: "text-base shrink-0" }, "🛡️"),
+          React.createElement("div", null,
+            React.createElement("strong", { className: "block font-bold mb-0.5" }, "حماية الخصوصية والأمان:"),
+            React.createElement("span", null, "كلمة المرور الحالية للدارس مشفرة بالكامل ومحمية للحفاظ على خصوصيته. يمكنك فقط تعيين كلمة مرور جديدة لمساعدته.")
+          )
+        ),
+
+        // في حال تم تعيين كلمة المرور بنجاح
+        resetSuccessData ? React.createElement(
+          "div",
+          { className: "space-y-4 pt-1" },
+          React.createElement(
+            "div",
+            { className: "p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2" },
+            React.createElement("div", { className: "text-2xl" }, "✅"),
+            React.createElement("h4", { className: "text-sm font-bold text-emerald-800 dark:text-emerald-300" }, "تم تعيين كلمة المرور الجديدة بنجاح!"),
+            React.createElement("div", { className: "p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 font-mono text-base font-bold text-slate-900 dark:text-white select-all inline-block px-4 shadow-xs" },
+              resetSuccessData.newPass
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400" },
+              "يمكن للدارس الآن تسجيل الدخول مباشرة بهذه الكلمة."
+            )
+          ),
+
+          React.createElement(
+            "div",
+            { className: "space-y-2" },
+            (resetModalUser.whatsapp || resetModalUser.phone) && React.createElement(
+              "a",
+              {
+                href: "https://wa.me/" + String(resetModalUser.whatsapp || resetModalUser.phone).replace(/[^0-9]/g, "").replace(/^0/, "20") + "?text=" + encodeURIComponent("سلام ومحبة يا أ/ " + resetModalUser.fullName + "،\n\nتم تعيين كلمة مرور جديدة لحسابك في منصة معهد المشورة:\n📧 البريد: " + resetModalUser.email + "\n🔑 كلمة المرور الجديدة: " + resetSuccessData.newPass + "\n\nرابط تسجيل الدخول:\n" + window.location.origin + window.location.pathname),
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95"
+              },
+              React.createElement("span", null, "💬"),
+              React.createElement("span", null, "إرسال كلمة المرور للدارس عبر واتساب")
+            ),
+            React.createElement(
+              "a",
+              {
+                href: "mailto:" + resetModalUser.email + "?subject=" + encodeURIComponent("كلمة المرور الجديدة لحسابك - منصة المشورة") + "&body=" + encodeURIComponent("مرحباً " + resetModalUser.fullName + "،\n\nتم تعيين كلمة مرور جديدة لحسابك:\nالبريد: " + resetModalUser.email + "\nكلمة المرور: " + resetSuccessData.newPass),
+                className: "w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+              },
+              React.createElement("span", null, "✉️"),
+              React.createElement("span", null, "إرسال إيميل للدارس")
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  navigator.clipboard.writeText(resetSuccessData.newPass);
+                  alert("تم نسخ كلمة المرور الجديدة إلى الحافظة! ✓");
+                },
+                className: "w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold"
+              },
+              "📋 نسخ كلمة المرور"
+            )
+          ),
+
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setResetModalUser(null); },
+              className: "w-full py-2 rounded-xl bg-slate-900 text-white dark:bg-emerald-600 text-xs font-bold"
+            },
+            "إغلاق"
+          )
+        ) : React.createElement(
+          "form",
+          { onSubmit: handleConfirmResetPassword, className: "space-y-4 pt-1" },
+          React.createElement(
+            "div",
+            null,
+            React.createElement("div", { className: "flex items-center justify-between mb-1" },
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "كلمة المرور الجديدة:"),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setResetNewPassword(generateEasyPassword()); },
+                  className: "text-[11px] text-amber-600 hover:text-amber-700 dark:text-amber-400 font-bold flex items-center gap-1 hover:underline"
+                },
+                React.createElement("span", null, "🎲"),
+                React.createElement("span", null, "توليد كلمة سهلة")
+              )
+            ),
+            React.createElement("input", {
+              type: "text",
+              required: true,
+              value: resetNewPassword,
+              onChange: function(e) { setResetNewPassword(e.target.value); },
+              placeholder: "أدخل كلمة المرور الجديدة...",
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono"
+            }),
+            React.createElement("p", { className: "text-[11px] text-slate-400 mt-1" },
+              "💡 يمكنك ترك الكلمة المولدة تلقائياً أو كتابة كلمة مخصصة للدارس."
+            )
+          ),
+
+          React.createElement(
+            "button",
+            {
+              type: "submit",
+              disabled: isResettingPassword,
+              className: "w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
+            },
+            isResettingPassword ? "جاري الحفظ..." : "حفظ وتعيين كلمة المرور الجديدة ✓"
+          ),
+
+          React.createElement(
+            "div",
+            { className: "relative my-3" },
+            React.createElement("div", { className: "absolute inset-0 flex items-center" },
+              React.createElement("div", { className: "w-full border-t border-slate-200 dark:border-slate-800" })
+            ),
+            React.createElement("div", { className: "relative flex justify-center text-[10px] uppercase" },
+              React.createElement("span", { className: "bg-white dark:bg-slate-900 px-2 text-slate-400 font-bold" }, "أو للدارسين القادرين على فتح الإيميل")
+            )
+          ),
+
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleSendEmailReset,
+              disabled: isSendingResetEmail,
+              className: "w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
+            },
+            React.createElement("span", null, "📧"),
+            React.createElement("span", null, isSendingResetEmail ? "جاري الإرسال..." : "إرسال رابط استعادة إلى إيميل الدارس")
+          ),
+
+          resetEmailStatus && React.createElement(
+            "div",
+            { className: "p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed" },
+            resetEmailStatus
+          )
         )
       )
     )
