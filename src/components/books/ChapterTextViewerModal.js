@@ -28,54 +28,66 @@ window.ChapterTextViewerModal = function(props) {
   var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
   var textContainerRef = React.useRef(null);
 
-  // تقسيم نص الفصل إلى فقرات/جمل متناسقة وحساب النسبة التراكمية لكل منها
+  // تقسيم نص الفصل إلى جُمل وعبارات دقيقة وقصيرة (سطر بسطر) للحفاظ على تركيز القارئ ودقة المتابعة
   var segments = React.useMemo(function() {
     var raw = (viewingChapterText && viewingChapterText.text) || "";
     if (!raw.trim()) return [];
 
-    // 1. تقسيم النص أولاً إلى فقرات حسب الأسطر الفارغة
-    var parts = raw.split(/\n\s*\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
+    // 1. تقسيم مبدئي عند نهايات الجمل والأسطر (. أو ! أو ؟ أو \n)
+    var rawParts = raw.split(/([.!?؟\n]+)/);
+    var sentences = [];
 
-    // إذا كانت الفقرات قليلة جداً (مثلاً فقرة واحدة طويلة لكامل الفصل)، نقسم حسب السطر العادي
-    if (parts.length <= 1) {
-      parts = raw.split(/\n+/).map(function(p) { return p.trim(); }).filter(Boolean);
-    }
+    for (var i = 0; i < rawParts.length; i += 2) {
+      var sText = (rawParts[i] || "").trim();
+      var sPunct = (rawParts[i + 1] || "").trim();
+      if (!sText && !sPunct) continue;
+      var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
+      if (!combined) continue;
 
-    // إذا كان النص كتلة واحدة بدون فواصل أسطر نهائياً، نقسمه حسب نهايات الجمل
-    if (parts.length <= 1) {
-      var sentenceRegex = /([.!?؟]+(?:\s+|$))/;
-      var rawTokens = raw.split(sentenceRegex);
-      var sentences = [];
-      for (var t = 0; t < rawTokens.length; t += 2) {
-        var sText = (rawTokens[t] || "").trim();
-        var sPunct = (rawTokens[t + 1] || "").trim();
-        var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
-        if (combined) sentences.push(combined);
+      // 2. إذا كانت الجملة طويلة (أكثر من 85 حرف) وبها فواصل (، أو ؛)، نقسمها لعبارات ألطف سطر بسطر
+      if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {
+        var subParts = combined.split(/([،؛]+)/);
+        var currentChunk = "";
+        for (var j = 0; j < subParts.length; j += 2) {
+          var cText = (subParts[j] || "").trim();
+          var cPunct = (subParts[j + 1] || "").trim();
+          var piece = (cText + (cPunct ? " " + cPunct : "")).trim();
+          if (!piece) continue;
+
+          if ((currentChunk.length + piece.length) > 85 && currentChunk.length >= 30) {
+            sentences.push(currentChunk.trim());
+            currentChunk = piece;
+          } else {
+            currentChunk = (currentChunk ? currentChunk + " " : "") + piece;
+          }
+        }
+        if (currentChunk.trim()) {
+          sentences.push(currentChunk.trim());
+        }
+      } else {
+        sentences.push(combined);
       }
-      if (sentences.length > 1) {
-        parts = sentences;
-      }
     }
 
-    if (parts.length === 0) {
-      parts = [raw.trim()];
+    if (sentences.length === 0) {
+      sentences = [raw.trim()];
     }
 
-    // حساب الوزن النسبي لعدد الحروف في كل فقرة
+    // حساب الوزن النسبي لعدد الحروف في كل عبارة/سطر
     var totalChars = 0;
-    for (var i = 0; i < parts.length; i++) {
-      totalChars += parts[i].length;
+    for (var k = 0; k < sentences.length; k++) {
+      totalChars += sentences[k].length;
     }
     if (totalChars === 0) totalChars = 1;
 
     var cumulative = 0;
-    return parts.map(function(partText, idx) {
+    return sentences.map(function(itemText, idx) {
       var startRatio = cumulative / totalChars;
-      cumulative += partText.length;
+      cumulative += itemText.length;
       var endRatio = cumulative / totalChars;
       return {
         id: idx,
-        text: partText,
+        text: itemText,
         startRatio: startRatio,
         endRatio: endRatio
       };
@@ -370,12 +382,12 @@ window.ChapterTextViewerModal = function(props) {
         )
       ) : null,
 
-      // مساحة قراءة النص التفاعلية مع دعم التمرير السلس والمزامنة مع الصوت (Read-Along)
+      // مساحة قراءة النص التفاعلية مع دعم التمرير السلس والمزامنة الدقيقة (سطر بسطر)
       React.createElement(
         "div",
         {
           ref: textContainerRef,
-          className: "overflow-y-auto flex-1 p-3 sm:p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-loose font-sans select-text selection:bg-blue-600 selection:text-white space-y-3",
+          className: "overflow-y-auto flex-1 p-3 sm:p-5 bg-slate-50 dark:bg-slate-950/70 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-relaxed font-sans select-text selection:bg-blue-600 selection:text-white space-y-1.5",
           style: { fontSize: fontSize + "px" }
         },
         segments.length > 0 ? segments.map(function(seg, idx) {
@@ -386,13 +398,13 @@ window.ChapterTextViewerModal = function(props) {
               key: seg.id,
               id: "chapter-segment-" + idx,
               onClick: hasAudio ? function() { handleSegmentClick(seg); } : undefined,
-              className: "p-2.5 sm:p-3.5 rounded-2xl transition-all duration-300 " +
+              className: "px-3 py-1.5 rounded-xl transition-all duration-200 " +
                 (isActive
-                  ? "bg-amber-100 dark:bg-amber-950/70 text-amber-950 dark:text-amber-100 border-r-4 border-amber-500 shadow-sm font-medium ring-1 ring-amber-400/40"
-                  : "hover:bg-slate-100/80 dark:hover:bg-slate-900/60 " + (hasAudio ? "cursor-pointer" : "")),
-              title: hasAudio ? "اضغط للاستماع بدءاً من هنا" : undefined
+                  ? "bg-amber-100/90 dark:bg-amber-950/80 text-amber-950 dark:text-amber-100 border-r-4 border-amber-500 font-bold shadow-xs ring-1 ring-amber-400/40"
+                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900/50 " + (hasAudio ? "cursor-pointer" : "")),
+              title: hasAudio ? "اضغط للاستماع بدءاً من هذا السطر" : undefined
             },
-            React.createElement("p", { className: "whitespace-pre-wrap" }, seg.text)
+            React.createElement("p", { className: "whitespace-pre-wrap leading-relaxed" }, seg.text)
           );
         }) : React.createElement("p", { className: "whitespace-pre-wrap text-slate-400" }, (viewingChapterText && viewingChapterText.text) || "لا يوجد نص متاح لهذا الفصل.")
       ),
