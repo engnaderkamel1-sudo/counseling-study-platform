@@ -37,14 +37,7 @@ window.ChapterTextViewerModal = function(props) {
       return "normal";
     }
   });
-  var [isAudioCollapsed, setIsAudioCollapsed] = React.useState(function() {
-    try {
-      var saved = localStorage.getItem("counsel_reader_audio_collapsed");
-      return saved !== null ? saved === "true" : false;
-    } catch (e) {
-      return false;
-    }
-  });
+  var [isAudioCollapsed, setIsAudioCollapsed] = React.useState(false);
 
   // حالة إزاحة تزامن الصوت مع النص (Time Shift بالثواني مع الكسور مثل +1.5s أو -2s)
   var [timeOffset, setTimeOffset] = React.useState(function() {
@@ -128,13 +121,7 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   var toggleAudioCollapse = function() {
-    setIsAudioCollapsed(function(prev) {
-      var nextVal = !prev;
-      try {
-        localStorage.setItem("counsel_reader_audio_collapsed", nextVal ? "true" : "false");
-      } catch (e) {}
-      return nextVal;
-    });
+    setIsAudioCollapsed(function(prev) { return !prev; });
   };
 
   var textContainerRef = React.useRef(null);
