@@ -172,6 +172,8 @@ window.AuthModal = function(props) {
     setErrorMsg("");
 
     try {
+      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
+
       var ident = loginIdentifier.trim().toLowerCase();
       var pwd = loginPassword.trim();
 
@@ -182,80 +184,43 @@ window.AuthModal = function(props) {
       var userDocId = "user_" + ident.replace(/[^a-zA-Z0-9]/g, "_");
       var isMasterAdmin = (ident === MASTER_ADMIN_EMAIL.toLowerCase());
 
-      // =========================================================
-      // 1. الدخول الفوري والمباشر للمشرف الرئيسي (Zero-Latency Guarantee)
-      // =========================================================
-      if (isMasterAdmin) {
-        var masterData = {
-          id: userDocId,
-          fullName: "مشرف المنصة",
-          email: MASTER_ADMIN_EMAIL.toLowerCase(),
-          password: pwd,
-          phone: "01000000000",
-          whatsapp: "01000000000",
-          studyType: "أكاديمي",
-          studyYear: "المشرف العام",
-          church: "الإدارة",
-          diocese: "العامة",
-          governorate: "القاهرة",
-          role: "admin",
-          status: "approved",
-          createdAt: new Date().toISOString()
-        };
-
-        // حفظ في السحابة في الخلفية بدون تعطيل دخول المشرف نهائياً
-        if (window.db) {
-          window.db.collection("users").doc(userDocId).set({
-            id: userDocId,
-            fullName: "مشرف المنصة",
-            email: MASTER_ADMIN_EMAIL.toLowerCase(),
-            password: pwd,
-            role: "admin",
-            status: "approved",
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true }).catch(function(err) {
-            console.warn("Background admin sync note:", err);
-          });
-        }
-
-        onLoginSuccess(masterData);
-        if (onClose) onClose();
-        return;
-      }
-
-      // =========================================================
-      // 2. التحقق من حسابات الدارسين مع حماية من بطء الشبكة
-      // =========================================================
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
-
       var fetchWithTimeout = function(promise, timeoutMs) {
         return Promise.race([
           promise,
           new Promise(function(_, reject) {
             setTimeout(function() {
               reject(new Error("استغرق التحقق وقتاً طويلاً. يرجى التأكد من اتصال الإنترنت ثم إعادة المحاولة."));
-            }, timeoutMs || 7000);
+            }, timeoutMs || 8000);
           })
         ]);
       };
 
       var userDoc = null;
-      var directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 7000);
+      var directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 8000);
       if (directSnap.exists) {
         userDoc = directSnap.data();
       } else {
-        var emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 7000);
+        var emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 8000);
         if (!emailSnap.empty) {
           userDoc = emailSnap.docs[0].data();
         }
       }
 
       if (!userDoc) {
-        throw new Error("لا يوجد حساب مسجل بهذا البريد. يرجى إنشاء حساب جديد كدارس أولاً.");
+        throw new Error("لا يوجد حساب مسجل بهذا البريد الإلكتروني. يرجى التحقق من البريد أو إنشاء حساب جديد.");
       }
 
-      if (userDoc.password && userDoc.password !== pwd) {
+      // =================================================================
+      // التحقق الصارم من صحة كلمة المرور لجميع الحسابات بدون أي استثناء
+      // =================================================================
+      if (!userDoc.password || userDoc.password !== pwd) {
         throw new Error("كلمة المرور غير صحيحة. يرجى التأكد والمحاولة مرة أخرى.");
+      }
+
+      // تثبيت الصلاحية المعتمدة للمشرف الرئيسي
+      if (isMasterAdmin) {
+        userDoc.role = "admin";
+        userDoc.status = "approved";
       }
 
       if (userDoc.status === "pending") {
