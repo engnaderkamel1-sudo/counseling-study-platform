@@ -1027,6 +1027,7 @@ window.LecturesPage = function(props) {
       filteredLectures.map(function(lec) {
         var seq = itemSeqInfo[lec.id] || { isExam: isItemExam(lec), num: 1, titleBadge: "#1", fullLabel: "المحاضرة" };
         var st = getLectureStatus(lec);
+        var isCurrent = activeLecture && activeLecture.id === lec.id;
         var isDone = completedIds.indexOf(lec.id) !== -1 || (lec.lastPosition > 0);
 
         return React.createElement(window.LectureRow, {
