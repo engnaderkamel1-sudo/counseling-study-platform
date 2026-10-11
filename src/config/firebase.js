@@ -15,10 +15,13 @@ window.FIREBASE_CONFIG = {
     }
     window.db = firebase.firestore();
     
-    // تفعيل التخزين المؤقت المحلي للعمل دون اتصال
-    window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-      console.warn("Firebase persistence notice:", err.code);
-    });
+    // محاولة تفعيل التخزين المؤقت دون التأثير على وضع التصفح الخفي (Incognito Resilient)
+    if (window.db && typeof window.db.enablePersistence === "function") {
+      window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+        // في المتصفح الخفي يرفض المتصفح IndexedDB وهذا طبيعي، نكمل الاتصال الشبكي المباشر بسلاسة
+        console.warn("Firebase persistence notice (safe in incognito):", err.code || err.message);
+      });
+    }
     
     console.log("Firebase connected successfully to counseling-study-app");
   } catch (e) {

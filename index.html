@@ -158,8 +158,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791698325",
-  buildTime: "2026-10-11T05:58:45",
+  version: "1.2.1791698577",
+  buildTime: "2026-10-11T06:02:57",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -192,10 +192,13 @@ window.FIREBASE_CONFIG = {
     }
     window.db = firebase.firestore();
     
-    // تفعيل التخزين المؤقت المحلي للعمل دون اتصال
-    window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
-      console.warn("Firebase persistence notice:", err.code);
-    });
+    // محاولة تفعيل التخزين المؤقت دون التأثير على وضع التصفح الخفي (Incognito Resilient)
+    if (window.db && typeof window.db.enablePersistence === "function") {
+      window.db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+        // في المتصفح الخفي يرفض المتصفح IndexedDB وهذا طبيعي، نكمل الاتصال الشبكي المباشر بسلاسة
+        console.warn("Firebase persistence notice (safe in incognito):", err.code || err.message);
+      });
+    }
     
     console.log("Firebase connected successfully to counseling-study-app");
   } catch (e) {
@@ -285,20 +288,50 @@ window.CloudSyncService = {
   // الاشتراك اللحظي في الكتب مع جلب مباشر فوري ومضمون (Direct REST Fetch + Realtime Listener)
   subscribeBooks: function(onUpdate) {
     var self = this;
-    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو تعليق الـ WebSockets
-    fetch("https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?nocache=" + Date.now())
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data && data.documents && Array.isArray(data.documents)) {
-          var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
-          if (restList.length > 0 && typeof onUpdate === "function") {
-            onUpdate(restList);
+    var hasDelivered = false;
+
+    var handleUpdate = function(list) {
+      if (!list || !Array.isArray(list)) return;
+      hasDelivered = true;
+      if (typeof onUpdate === "function") {
+        onUpdate(list);
+      }
+    };
+
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو المتصفح الخفي (Incognito)
+    var fetchRestBooks = function(retryCount) {
+      var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 12000) : null;
+      var fetchOpts = {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+      };
+      if (controller) fetchOpts.signal = controller.signal;
+
+      fetch("https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?nocache=" + Date.now(), fetchOpts)
+        .then(function(res) {
+          if (timeoutId) clearTimeout(timeoutId);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.documents && Array.isArray(data.documents)) {
+            var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
           }
-        }
-      })
-      .catch(function(errRest) {
-        console.warn("Direct REST books fetch notice:", errRest);
-      });
+        })
+        .catch(function(errRest) {
+          if (timeoutId) clearTimeout(timeoutId);
+          console.warn("Direct REST books fetch notice:", errRest && errRest.message);
+          // إعادة محاولة واحدة سريعة إذا لم يكن قد تم تسليم أي بيانات بعد
+          if (!hasDelivered && (retryCount || 0) < 2) {
+            setTimeout(function() { fetchRestBooks((retryCount || 0) + 1); }, 1500);
+          }
+        });
+    };
+
+    fetchRestBooks(0);
 
     if (!window.db) return function() {};
     try {
@@ -308,9 +341,7 @@ window.CloudSyncService = {
         snapshot.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
         });
-        if (typeof onUpdate === "function") {
-          onUpdate(list);
-        }
+        handleUpdate(list);
       }, function(err) {
         console.warn("Firestore subscribeBooks realtime error:", err);
       });
@@ -7625,6 +7656,10 @@ window.BooksPage = function(props) {
   var [books, setBooks] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.books, []);
   });
+  var [isLoadingBooks, setIsLoadingBooks] = React.useState(function() {
+    var cached = utils.getLocal(cfg.storageKeys.books, []);
+    return !cached || cached.length === 0;
+  });
 
   var [activeBook, setActiveBook] = React.useState(null);
   var activeBookRef = React.useRef(activeBook);
@@ -7850,6 +7885,7 @@ window.BooksPage = function(props) {
         });
 
         setBooks(mergedList);
+        setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
         if (mergedList.length > 0) {
           setActiveBook(function(prev) {
@@ -10931,6 +10967,17 @@ window.BooksPage = function(props) {
         if (isAdmin) return true;
         return b.isPublished !== false && b.publishStatus !== "draft";
       });
+
+      if (isLoadingBooks && books.length === 0) {
+        return React.createElement(
+          "div",
+          { className: "p-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm" },
+          React.createElement("div", { className: "text-4xl animate-bounce" }, "📖"),
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "جاري جلب المراجع والكتب المعتمدة من السحابة..."),
+          React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يرجى الانتظار لحظات لمزامنة أحدث المراجع والفصول الدراسية."),
+          React.createElement("div", { className: "inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mt-2" })
+        );
+      }
 
       if (visibleBooks.length === 0) {
         return React.createElement(

@@ -79,20 +79,50 @@ window.CloudSyncService = {
   // الاشتراك اللحظي في الكتب مع جلب مباشر فوري ومضمون (Direct REST Fetch + Realtime Listener)
   subscribeBooks: function(onUpdate) {
     var self = this;
-    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو تعليق الـ WebSockets
-    fetch("https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?nocache=" + Date.now())
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data && data.documents && Array.isArray(data.documents)) {
-          var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
-          if (restList.length > 0 && typeof onUpdate === "function") {
-            onUpdate(restList);
+    var hasDelivered = false;
+
+    var handleUpdate = function(list) {
+      if (!list || !Array.isArray(list)) return;
+      hasDelivered = true;
+      if (typeof onUpdate === "function") {
+        onUpdate(list);
+      }
+    };
+
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو المتصفح الخفي (Incognito)
+    var fetchRestBooks = function(retryCount) {
+      var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 12000) : null;
+      var fetchOpts = {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+      };
+      if (controller) fetchOpts.signal = controller.signal;
+
+      fetch("https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books?nocache=" + Date.now(), fetchOpts)
+        .then(function(res) {
+          if (timeoutId) clearTimeout(timeoutId);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.documents && Array.isArray(data.documents)) {
+            var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
           }
-        }
-      })
-      .catch(function(errRest) {
-        console.warn("Direct REST books fetch notice:", errRest);
-      });
+        })
+        .catch(function(errRest) {
+          if (timeoutId) clearTimeout(timeoutId);
+          console.warn("Direct REST books fetch notice:", errRest && errRest.message);
+          // إعادة محاولة واحدة سريعة إذا لم يكن قد تم تسليم أي بيانات بعد
+          if (!hasDelivered && (retryCount || 0) < 2) {
+            setTimeout(function() { fetchRestBooks((retryCount || 0) + 1); }, 1500);
+          }
+        });
+    };
+
+    fetchRestBooks(0);
 
     if (!window.db) return function() {};
     try {
@@ -102,9 +132,7 @@ window.CloudSyncService = {
         snapshot.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
         });
-        if (typeof onUpdate === "function") {
-          onUpdate(list);
-        }
+        handleUpdate(list);
       }, function(err) {
         console.warn("Firestore subscribeBooks realtime error:", err);
       });

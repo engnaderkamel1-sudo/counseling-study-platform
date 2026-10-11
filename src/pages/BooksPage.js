@@ -9,6 +9,10 @@ window.BooksPage = function(props) {
   var [books, setBooks] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.books, []);
   });
+  var [isLoadingBooks, setIsLoadingBooks] = React.useState(function() {
+    var cached = utils.getLocal(cfg.storageKeys.books, []);
+    return !cached || cached.length === 0;
+  });
 
   var [activeBook, setActiveBook] = React.useState(null);
   var activeBookRef = React.useRef(activeBook);
@@ -234,6 +238,7 @@ window.BooksPage = function(props) {
         });
 
         setBooks(mergedList);
+        setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
         if (mergedList.length > 0) {
           setActiveBook(function(prev) {
@@ -3315,6 +3320,17 @@ window.BooksPage = function(props) {
         if (isAdmin) return true;
         return b.isPublished !== false && b.publishStatus !== "draft";
       });
+
+      if (isLoadingBooks && books.length === 0) {
+        return React.createElement(
+          "div",
+          { className: "p-16 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm" },
+          React.createElement("div", { className: "text-4xl animate-bounce" }, "📖"),
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "جاري جلب المراجع والكتب المعتمدة من السحابة..."),
+          React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يرجى الانتظار لحظات لمزامنة أحدث المراجع والفصول الدراسية."),
+          React.createElement("div", { className: "inline-block w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mt-2" })
+        );
+      }
 
       if (visibleBooks.length === 0) {
         return React.createElement(
