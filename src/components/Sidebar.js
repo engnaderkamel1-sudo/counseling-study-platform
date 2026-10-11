@@ -25,9 +25,9 @@ window.Sidebar = function(props) {
       icon: "👥",
       badge: pendingCount > 0 ? pendingCount : null
     });
-    menuItems.push({ id: "errors", label: "بلاغات الأعطال والصيانة", icon: "🛠️" });
-    menuItems.push({ id: "recycle_bin", label: "سلة المحذوفات والأرشيف", icon: "🗑️", isModal: true });
-    menuItems.push({ id: "settings", label: "الإعدادات العامة للربط السحابي", icon: "⚙️" });
+    menuItems.push({ id: "errors", label: "بلاغات الأعطال", icon: "🛠️" });
+    menuItems.push({ id: "recycle_bin", label: "المحذوفات", icon: "🗑️", isModal: true });
+    menuItems.push({ id: "settings", label: "إعدادات الربط السحابي", icon: "⚙️" });
   }
 
   return React.createElement(

@@ -70,20 +70,20 @@ window.LecturesPage = function(props) {
       if (hasMedia || lec.handoutUrl) {
         return {
           type: "ready",
-          label: "📝 تفاصيل الامتحان متوفرة",
+          label: "امتحان متاح",
           badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
         };
       }
       if (lecDate && lecDate > todayStr) {
         return {
           type: "upcoming",
-          label: "📝 امتحان مجدول",
+          label: "امتحان مجدول",
           badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
         };
       }
       return {
         type: "waiting",
-        label: "📝 موعد الامتحان",
+        label: "موعد الامتحان",
         badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
       };
     }
@@ -91,21 +91,21 @@ window.LecturesPage = function(props) {
     if (hasMedia) {
       return {
         type: "ready",
-        label: "✅ متوفرة ومكتملة",
+        label: "مرفوعة",
         badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
       };
     }
     if (lecDate && lecDate > todayStr) {
       return {
         type: "upcoming",
-        label: "⏳ محاضرة قادمة",
+        label: "مجدولة",
         badgeClass: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
       };
     }
     return {
       type: "waiting",
-      label: "🔄 بانتظار رفع التسجيل",
-      badgeClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+      label: "لم تُرفع بعد",
+      badgeClass: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
     };
   };
 
@@ -639,7 +639,7 @@ window.LecturesPage = function(props) {
       { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
       React.createElement("div", { className: "text-3xl" }, "🎧"),
       React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
-        currentUser.role === "admin" ? "الأرشيف نظيف وجاهز لرفع محاضراتك الفعلية" : "لا توجد محاضرات متاحة حالياً"
+        currentUser.role === "admin" ? "لا توجد محاضرات مضافة بعد" : "لا توجد محاضرات متاحة حالياً"
       ),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" },
         currentUser.role === "admin"
