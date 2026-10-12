@@ -85,13 +85,20 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
         "Stack: " + (this.state.error && this.state.error.stack ? this.state.error.stack : "") + "\n" +
         "ComponentStack: " + (this.state.errorInfo ? this.state.errorInfo.componentStack : "");
 
+      var cachedUser = null;
+      try {
+        var rawUser = localStorage.getItem("counsel_user");
+        if (rawUser) cachedUser = JSON.parse(rawUser);
+      } catch(e) {}
+      var activeUser = (this.props && this.props.currentUser) || cachedUser || {};
+
       await window.ErrorReportService.sendReport({
         page: "انهيار كلي (" + hash + ")",
         userDescription: "انهيار مفاجئ للشاشة تم الإبلاغ عنه من شاشة الخطأ التلقائية",
         errorDetails: errText,
-        senderName: (this.props.currentUser && this.props.currentUser.fullName) || "مستخدم غير مسجل",
-        senderPhone: (this.props.currentUser && this.props.currentUser.phone) || "-",
-        senderEmail: (this.props.currentUser && this.props.currentUser.email) || "-",
+        senderName: activeUser.fullName || activeUser.email || "دارس بالمنصة",
+        senderPhone: activeUser.phone || activeUser.whatsapp || "-",
+        senderEmail: activeUser.email || "-",
         deviceInfo: navigator.userAgent,
         audioUrl: audioData ? audioData.audioUrl : null,
         audioStoragePath: audioData ? audioData.storagePath : null
