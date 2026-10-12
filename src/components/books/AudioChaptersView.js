@@ -922,7 +922,7 @@ window.AudioChaptersView = function(props) {
             srtBtnLabel
           );
         })() : null,
-        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress && !audioBatchProgress ? React.createElement(
+        chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress && !audioBatchProgress && !srtBatchProgress ? React.createElement(
           "button",
           {
             type: "button",
@@ -931,7 +931,126 @@ window.AudioChaptersView = function(props) {
           },
           "🗑️ مسح الفصول والبدء من جديد"
         ) : null
-      )
+      ),
+
+      // ==========================================
+      // لوحات مؤشر التقدم الحية (Live Progress Bars)
+      // ==========================================
+
+      // 1. مؤشر تقدم استخراج النصوص بالـ AI
+      batchProgress ? (function() {
+        var pct = Math.min(100, Math.max(0, batchProgress.percent || 0));
+        return React.createElement(
+          "div",
+          { className: "mt-3 p-3.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 space-y-2 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs gap-2" },
+            React.createElement("div", { className: "flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-200 truncate" },
+              React.createElement("span", { className: "animate-spin" }, "⏳"),
+              React.createElement("span", { className: "truncate" }, "جاري استخراج: " + (batchProgress.currentChapterTitle || "الفصل"))
+            ),
+            React.createElement("div", { className: "flex items-center gap-2 shrink-0 font-mono font-black text-emerald-700 dark:text-emerald-300" },
+              React.createElement("span", null, "(" + (batchProgress.pagesDone || 0) + "/" + (batchProgress.totalPages || 0) + " صفحة)"),
+              React.createElement("span", { className: "text-sm bg-emerald-200/60 dark:bg-emerald-900/80 px-2 py-0.5 rounded-lg" }, pct + "%")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full h-2.5 bg-emerald-200/50 dark:bg-emerald-900/50 rounded-full overflow-hidden p-0.5" },
+            React.createElement("div", {
+              className: "h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300 shadow-xs",
+              style: { width: pct + "%" }
+            })
+          ),
+          typeof handleStopBatchExtraction === "function" ? React.createElement(
+            "div",
+            { className: "flex justify-end pt-1" },
+            React.createElement("button", {
+              type: "button",
+              onClick: handleStopBatchExtraction,
+              className: "px-2.5 py-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/40 rounded-lg transition-all"
+            }, "⏹️ إيقاف مؤقت للاستخراج")
+          ) : null
+        );
+      })() : null,
+
+      // 2. مؤشر تقدم توليد الصوت لكافة الفصول
+      audioBatchProgress ? (function() {
+        var curIdx = audioBatchProgress.currentIndex || 0;
+        var total = audioBatchProgress.total || 1;
+        var pct = Math.min(100, Math.max(0, audioBatchProgress.percent !== undefined ? audioBatchProgress.percent : Math.round((curIdx / total) * 100)));
+        return React.createElement(
+          "div",
+          { className: "mt-3 p-3.5 rounded-xl bg-purple-50/90 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-800 space-y-2 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs gap-2" },
+            React.createElement("div", { className: "flex items-center gap-2 font-bold text-purple-900 dark:text-purple-200 truncate" },
+              React.createElement("span", { className: "animate-pulse" }, "🎙️"),
+              React.createElement("span", { className: "truncate" }, "جاري توليد صوت: " + (audioBatchProgress.currentTitle || ("فصل " + curIdx)))
+            ),
+            React.createElement("div", { className: "flex items-center gap-2 shrink-0 font-mono font-black text-purple-700 dark:text-purple-300" },
+              React.createElement("span", null, "(" + curIdx + " من " + total + " فصول)"),
+              React.createElement("span", { className: "text-sm bg-purple-200/60 dark:bg-purple-900/80 px-2 py-0.5 rounded-lg" }, pct + "%")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full h-2.5 bg-purple-200/50 dark:bg-purple-900/50 rounded-full overflow-hidden p-0.5" },
+            React.createElement("div", {
+              className: "h-full bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-400 rounded-full transition-all duration-300 shadow-xs",
+              style: { width: pct + "%" }
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-[11px] text-purple-700 dark:text-purple-300 pt-1" },
+            React.createElement("span", { className: "truncate" }, audioStatusText || "جاري الاتصال بمحرك الصوت والتجهيز..."),
+            typeof handleStopBatchAudio === "function" ? React.createElement("button", {
+              type: "button",
+              onClick: handleStopBatchAudio,
+              className: "px-2.5 py-1 font-bold text-rose-700 dark:text-rose-300 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/40 rounded-lg transition-all shrink-0"
+            }, "⏹️ إيقاف توليد الصوت") : null
+          )
+        );
+      })() : null,
+
+      // 3. مؤشر تقدم توليد الـ SRT لكافة الفصول
+      srtBatchProgress ? (function() {
+        var cur = srtBatchProgress.current || 0;
+        var tot = srtBatchProgress.total || 1;
+        var pct = Math.min(100, Math.max(0, Math.round((cur / tot) * 100)));
+        return React.createElement(
+          "div",
+          { className: "mt-3 p-3.5 rounded-xl bg-violet-50/90 dark:bg-violet-950/50 border border-violet-300 dark:border-violet-800 space-y-2 animate-fade-in" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between text-xs gap-2" },
+            React.createElement("div", { className: "flex items-center gap-2 font-bold text-violet-900 dark:text-violet-200 truncate" },
+              React.createElement("span", { className: "animate-pulse" }, "⚡"),
+              React.createElement("span", { className: "truncate" }, "جاري ضبط توقيتات SRT: " + (srtBatchProgress.title || ("فصل " + cur)))
+            ),
+            React.createElement("div", { className: "flex items-center gap-2 shrink-0 font-mono font-black text-violet-700 dark:text-violet-300" },
+              React.createElement("span", null, "(" + cur + " من " + tot + " فصول)"),
+              React.createElement("span", { className: "text-sm bg-violet-200/60 dark:bg-violet-900/80 px-2 py-0.5 rounded-lg" }, pct + "%")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full h-2.5 bg-violet-200/50 dark:bg-violet-900/50 rounded-full overflow-hidden p-0.5" },
+            React.createElement("div", {
+              className: "h-full bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-400 rounded-full transition-all duration-300 shadow-xs",
+              style: { width: pct + "%" }
+            })
+          ),
+          React.createElement(
+            "div",
+            { className: "text-[11px] text-violet-600 dark:text-violet-300 pt-0.5" },
+            "يتم حساب التوقيتات بدقة الأجزاء من الثانية وحفظها للمشغل مباشرة..."
+          )
+        );
+      })() : null
     ) : null,
 
     // لوحة بوابة الجودة واعتماد النشر للدارسين (Quality Gate Card)
