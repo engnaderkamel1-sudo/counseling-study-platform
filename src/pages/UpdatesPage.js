@@ -60,10 +60,10 @@ window.UpdatesPage = function(props) {
         relative = "منذ " + diffDays + " يوم";
       }
 
-      // تنسيق بصيغة 12 ساعة (مثلاً 06:54 م)
+      // تنسيق بصيغة 12 ساعة (مثلاً 06:54 PM)
       var hours = d.getHours();
       var minutes = d.getMinutes();
-      var period = hours >= 12 ? "م" : "ص";
+      var period = hours >= 12 ? "PM" : "AM";
       var h12 = hours % 12;
       if (h12 === 0) h12 = 12;
       var pad = function(n) { return (n < 10 ? "0" : "") + n; };
