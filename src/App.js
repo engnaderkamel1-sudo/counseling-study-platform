@@ -404,7 +404,19 @@ function App() {
     setCurrentUser(userData);
     utils.setLocal("counsel_current_user", userData);
     setIsAuthOpen(false);
+    if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
+      window.CloudSyncService.recordLoginLog(userData);
+    }
   };
+
+  // تسجيل جلسة الدخول للدارس عند فتح التطبيق بحساب محفوظ
+  React.useEffect(function() {
+    if (currentUser && currentUser.status === "approved") {
+      if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
+        window.CloudSyncService.recordLoginLog(currentUser);
+      }
+    }
+  }, [currentUser && currentUser.id]);
 
   var handleLogout = function() {
     if (confirm("هل تريد بالتأكيد تسجيل الخروج من حسابك؟")) {

@@ -61,9 +61,51 @@ window.UsersManagementPage = function(props) {
     }
   };
 
+  var [mainTab, setMainTab] = React.useState("approval"); // "approval" أو "tracking"
+  var [loginLogs, setLoginLogs] = React.useState([]);
+  var [isLoadingLogs, setIsLoadingLogs] = React.useState(false);
+  var [logSearchQuery, setLogSearchQuery] = React.useState("");
+  var [isClearingLogs, setIsClearingLogs] = React.useState(false);
+
+  // جلب سجلات الدخول والتتبع
+  var fetchLoginLogs = async function() {
+    if (!window.CloudSyncService || typeof window.CloudSyncService.getLoginLogs !== "function") return;
+    setIsLoadingLogs(true);
+    try {
+      var logs = await window.CloudSyncService.getLoginLogs(200);
+      setLoginLogs(logs);
+    } catch (e) {
+      console.warn("fetchLoginLogs error:", e);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  var handleClearLogs = async function() {
+    if (!confirm("هل تريد بالتأكيد تفريغ سجلات الدخول القديمة لتوفير المساحة في السحابة؟")) return;
+    setIsClearingLogs(true);
+    try {
+      if (window.CloudSyncService && typeof window.CloudSyncService.clearLoginLogs === "function") {
+        await window.CloudSyncService.clearLoginLogs();
+        setLoginLogs([]);
+        alert("✅ تم تفريغ سجل الدخول بنجاح.");
+      }
+    } catch (e) {
+      alert("حدث خطأ أثناء تفريغ السجل: " + (e.message || e));
+    } finally {
+      setIsClearingLogs(false);
+    }
+  };
+
   React.useEffect(function() {
     fetchUsers();
   }, []);
+
+  React.useEffect(function() {
+    if (mainTab === "tracking") {
+      fetchLoginLogs();
+    }
+  }, [mainTab]);
 
   var handleUpdateStatus = async function(userId, newStatus) {
     if (!window.db) return;
@@ -302,239 +344,431 @@ window.UsersManagementPage = function(props) {
       )
     ),
 
-    // إحصائيات سريعة للطلبات
+    // التبويبات الرئيسية: إدارة الطلبات مقابل سجل التتبع والدخول
     React.createElement(
       "div",
-      { className: "grid grid-cols-3 gap-3" },
+      { className: "flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2" },
       React.createElement(
         "button",
         {
-          onClick: function() { setActiveFilter("pending"); },
-          className: "p-4 rounded-2xl border text-right transition-all " +
-            (activeFilter === "pending"
-              ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-300")
+          onClick: function() { setMainTab("approval"); },
+          className: "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 " +
+            (mainTab === "approval"
+              ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800")
         },
-        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "بانتظار الموافقة"),
-        React.createElement("span", { className: "text-2xl font-black text-amber-600 block mt-1" }, pendingUsers.length)
+        React.createElement("span", null, "👥"),
+        React.createElement("span", null, "طلبات واعتماد الدارسين"),
+        pendingUsers.length > 0 && React.createElement("span", { className: "bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black" }, pendingUsers.length)
       ),
       React.createElement(
         "button",
         {
-          onClick: function() { setActiveFilter("approved"); },
-          className: "p-4 rounded-2xl border text-right transition-all " +
-            (activeFilter === "approved"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-300")
+          onClick: function() { setMainTab("tracking"); },
+          className: "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 " +
+            (mainTab === "tracking"
+              ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800")
         },
-        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "الدارسون المعتمدون"),
-        React.createElement("span", { className: "text-2xl font-black text-emerald-600 block mt-1" }, approvedUsers.length)
-      ),
+        React.createElement("span", null, "🌍"),
+        React.createElement("span", null, "سجل نشاط وتتبع الدخول"),
+        loginLogs.length > 0 && React.createElement("span", { className: "bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" }, loginLogs.length)
+      )
+    ),
+
+    // ==========================================
+    // القسم الأول: طلبات الدارسين والاعتماد
+    // ==========================================
+    mainTab === "approval" && React.createElement(
+      React.Fragment,
+      null,
+
+      // إحصائيات سريعة للطلبات
       React.createElement(
-        "button",
-        {
-          onClick: function() { setActiveFilter("rejected"); },
-          className: "p-4 rounded-2xl border text-right transition-all " +
-            (activeFilter === "rejected"
-              ? "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 ring-2 ring-rose-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-rose-300")
-        },
-        React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "المرفوض / المعلق"),
-        React.createElement("span", { className: "text-2xl font-black text-rose-600 block mt-1" }, rejectedUsers.length)
+        "div",
+        { className: "grid grid-cols-3 gap-3" },
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter("pending"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "pending"
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 ring-2 ring-amber-500/20"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-amber-300")
+          },
+          React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "بانتظار الموافقة"),
+          React.createElement("span", { className: "text-2xl font-black text-amber-600 block mt-1" }, pendingUsers.length)
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter("approved"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "approved"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-500/20"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-300")
+          },
+          React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "الدارسون المعتمدون"),
+          React.createElement("span", { className: "text-2xl font-black text-emerald-600 block mt-1" }, approvedUsers.length)
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter("rejected"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "rejected"
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300 ring-2 ring-rose-500/20"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-rose-300")
+          },
+          React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "المرفوض / المعلق"),
+          React.createElement("span", { className: "text-2xl font-black text-rose-600 block mt-1" }, rejectedUsers.length)
+        )
       )
     ),
 
-    // شريط البحث والفلترة
-    React.createElement(
-      "div",
-      { className: "bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-2xs" },
-      React.createElement("span", { className: "text-slate-400 text-sm" }, "🔍"),
-      React.createElement("input", {
-        type: "text",
-        value: searchQuery,
-        onChange: function(e) { setSearchQuery(e.target.value); },
-        placeholder: "بحث باسم الدارس، الكنيسة، الإيبارشية، المحافظة، أو الإيميل...",
-        className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-      }),
-      searchQuery && React.createElement(
-        "button",
-        { onClick: function() { setSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
-        "مسح"
+    // شريط البحث والفلترة وقائمة الدارسين (تتبع تبويب الطلبات والاعتماد)
+    mainTab === "approval" && React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3 shadow-2xs" },
+        React.createElement("span", { className: "text-slate-400 text-sm" }, "🔍"),
+        React.createElement("input", {
+          type: "text",
+          value: searchQuery,
+          onChange: function(e) { setSearchQuery(e.target.value); },
+          placeholder: "بحث باسم الدارس، الكنيسة، الإيبارشية، المحافظة، أو الإيميل...",
+          className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+        }),
+        searchQuery && React.createElement(
+          "button",
+          { onClick: function() { setSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
+          "مسح"
+        )
+      ),
+
+      isLoading ? React.createElement(
+        "div",
+        { className: "p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2" },
+        React.createElement("span", { className: "animate-spin text-base" }, "⏳"),
+        "جاري تحميل قائمة المستخدمين من السحابة..."
+      ) : filteredUsers.length === 0 ? React.createElement(
+        "div",
+        { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
+        React.createElement("div", { className: "text-3xl" }, "📭"),
+        React.createElement("p", null, "لا توجد نتائج مطابقة في هذا القسم.")
+      ) : React.createElement(
+        "div",
+        { className: "space-y-3" },
+        filteredUsers.map(function(u) {
+          var isPending = u.status === "pending";
+          var isApproved = u.status === "approved";
+          var isRejected = u.status === "rejected";
+
+          return React.createElement(
+            "div",
+            {
+              key: u.id,
+              className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border transition-all shadow-xs space-y-3 " +
+                (isPending
+                  ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/20 dark:bg-amber-950/10"
+                  : isApproved
+                    ? "border-slate-200 dark:border-slate-800"
+                    : "border-rose-200 dark:border-rose-900/40 opacity-75")
+            },
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3" },
+              React.createElement(
+                "div",
+                { className: "space-y-1" },
+                React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
+                  React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, u.fullName),
+                  React.createElement("span", {
+                    className: "text-[10px] font-black px-2.5 py-0.5 rounded-full " +
+                      (isPending
+                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 animate-pulse"
+                        : isApproved
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                          : "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300")
+                  }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
+                  u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
+                    u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
+                  ),
+                  u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
+                    u.studyYear
+                  )
+                ),
+                React.createElement("div", { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed space-y-1.5" },
+                  React.createElement("p", null,
+                    "كنيسة: " + (u.church || "—") +
+                    " • إيبارشية: " + (u.diocese || "—") +
+                    " • محافظة: " + (u.governorate || "—") +
+                    " • البريد: " + (u.email || "—")
+                  ),
+                  (u.whatsapp || u.phone) && React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2 pt-0.5" },
+                    React.createElement(
+                      "a",
+                      {
+                        href: "https://wa.me/" + String(u.whatsapp || u.phone).replace(/[^0-9]/g, "").replace(/^0/, "20"),
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        title: "فتح محادثة واتساب مباشرة مع الدارس",
+                        className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800/60 transition-all shadow-2xs hover:scale-105 active:scale-95"
+                      },
+                      React.createElement("span", null, "💬"),
+                      React.createElement("span", null, "مراسلة واتساب:"),
+                      React.createElement("span", { dir: "ltr", className: "underline font-mono" }, u.whatsapp || u.phone)
+                    )
+                  )
+                )
+              ),
+
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 shrink-0 self-end sm:self-center" },
+                isPending && React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleUpdateStatus(u.id, "approved"); },
+                    className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
+                  },
+                  React.createElement("span", null, "✓"),
+                  React.createElement("span", null, "قبول واعتماد")
+                ),
+                isPending && React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleUpdateStatus(u.id, "rejected"); },
+                    className: "px-3 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold text-xs transition-all active:scale-95"
+                  },
+                  "رفض"
+                ),
+                isApproved && React.createElement(
+                  "button",
+                  {
+                    onClick: function() {
+                      if (confirm("هل تريد تعليق حساب الدارس '" + u.fullName + "' ومنعه من الدخول؟")) {
+                        handleUpdateStatus(u.id, "rejected");
+                      }
+                    },
+                    className: "text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2.5 py-1.5 rounded-lg font-semibold transition-colors"
+                  },
+                  "تعليق الحساب ⏸"
+                ),
+                isRejected && React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleUpdateStatus(u.id, "approved"); },
+                    className: "text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors"
+                  },
+                  "إعادة التفعيل ✓"
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleSendTestNotifToUser(u); },
+                    disabled: sendingNotifUserId === u.id,
+                    title: "إرسال إشعار تجريبي خاص لهذا الدارس فقط للتأكد من وصول الإشعارات له دون إزعاج باقي الدارسين",
+                    className: "text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-blue-200/60 dark:border-blue-900/40 disabled:opacity-50"
+                  },
+                  React.createElement("span", null, "🔔"),
+                  React.createElement("span", null, sendingNotifUserId === u.id ? "جاري الإرسال..." : "إشعار تجريبي")
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleOpenResetModal(u); },
+                    title: "إعادة تعيين كلمة المرور لمساعدة الدارس",
+                    className: "text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-amber-200/60 dark:border-amber-900/40"
+                  },
+                  React.createElement("span", null, "🔄"),
+                  React.createElement("span", null, "إعادة تعيين كلمة المرور")
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    onClick: function() { handleDeleteUser(u.id, u.fullName); },
+                    title: "حذف نهائي",
+                    className: "text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
+                  },
+                  "🗑️"
+                )
+              )
+            ),
+
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-1 border-t border-slate-50 dark:border-slate-800/50" },
+              React.createElement("div", { className: "flex items-center gap-3 flex-wrap" },
+                React.createElement("span", null,
+                  "تاريخ التسجيل: " + (u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString("ar-EG") : "حديثاً")
+                ),
+                u.lastLoginCountry && React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-semibold" },
+                  "📍 آخر دخول: " + u.lastLoginCountry + (u.lastDevice ? " (" + u.lastDevice + ")" : "")
+                )
+              ),
+              React.createElement("span", { className: "font-mono text-[10px] text-slate-400" },
+                "معرف: " + u.id
+              )
+            )
+          );
+        })
       )
     ),
 
-    // قائمة المستخدمين
-    isLoading ? React.createElement(
+    // ==========================================
+    // القسم الثاني: سجل نشاط وتتبع الدخول والـ IP
+    // ==========================================
+    mainTab === "tracking" && React.createElement(
       "div",
-      { className: "p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2" },
-      React.createElement("span", { className: "animate-spin text-base" }, "⏳"),
-      "جاري تحميل قائمة المستخدمين من السحابة..."
-    ) : filteredUsers.length === 0 ? React.createElement(
-      "div",
-      { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
-      React.createElement("div", { className: "text-3xl" }, "📭"),
-      React.createElement("p", null, "لا توجد نتائج مطابقة في هذا القسم.")
-    ) : React.createElement(
-      "div",
-      { className: "space-y-3" },
-      filteredUsers.map(function(u) {
-        var isPending = u.status === "pending";
-        var isApproved = u.status === "approved";
-        var isRejected = u.status === "rejected";
+      { className: "space-y-4 animate-in fade-in duration-200" },
+
+      // بطاقة شريط أدوات التتبع والتفريغ
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h3", { className: "text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2" },
+            React.createElement("span", null, "🌍"),
+            "سجل الدخول الجغرافي ونشاط الدارسين"
+          ),
+          React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" },
+            "يتتبع الدولة، المدينة، الـ IP، ونوع الجهاز عند تسجيل أو فتح كل دارس للمنصة."
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 shrink-0 flex-wrap" },
+          React.createElement(
+            "button",
+            {
+              onClick: fetchLoginLogs,
+              disabled: isLoadingLogs,
+              className: "px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5"
+            },
+            React.createElement("span", null, "🔄"),
+            React.createElement("span", null, isLoadingLogs ? "جاري التحديث..." : "تحديث السجل")
+          ),
+          React.createElement(
+            "button",
+            {
+              onClick: handleClearLogs,
+              disabled: isClearingLogs || loginLogs.length === 0,
+              className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 font-bold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            },
+            React.createElement("span", null, "🗑️"),
+            React.createElement("span", null, isClearingLogs ? "جاري المسح..." : "تفريغ السجل القديم")
+          )
+        )
+      ),
+
+      // شريط بحث في السجل
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2.5 shadow-2xs" },
+        React.createElement("span", { className: "text-slate-400 text-xs" }, "🔍"),
+        React.createElement("input", {
+          type: "text",
+          value: logSearchQuery,
+          onChange: function(e) { setLogSearchQuery(e.target.value); },
+          placeholder: "تصفية السجل باسم الدارس، الدولة، المدينة، أو الـ IP...",
+          className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+        }),
+        logSearchQuery && React.createElement(
+          "button",
+          { onClick: function() { setLogSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
+          "مسح"
+        )
+      ),
+
+      // عرض السجلات
+      isLoadingLogs ? React.createElement(
+        "div",
+        { className: "p-12 text-center text-slate-400 text-xs flex items-center justify-center gap-2" },
+        React.createElement("span", { className: "animate-spin text-base" }, "⏳"),
+        "جاري جلب سجل النشاط من السحابة..."
+      ) : (function() {
+        var filteredLogs = loginLogs.filter(function(log) {
+          if (!logSearchQuery.trim()) return true;
+          var q = logSearchQuery.trim().toLowerCase();
+          var mName = (log.fullName || "").toLowerCase().indexOf(q) !== -1;
+          var mEmail = (log.email || "").toLowerCase().indexOf(q) !== -1;
+          var mCountry = (log.country || "").toLowerCase().indexOf(q) !== -1;
+          var mCity = (log.city || "").toLowerCase().indexOf(q) !== -1;
+          var mIp = (log.ip || "").toLowerCase().indexOf(q) !== -1;
+          return mName || mEmail || mCountry || mCity || mIp;
+        });
+
+        if (filteredLogs.length === 0) {
+          return React.createElement(
+            "div",
+            { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
+            React.createElement("div", { className: "text-3xl" }, "🌐"),
+            React.createElement("p", null, loginLogs.length === 0 ? "لا توجد سجلات دخول مسجلة حتى الآن." : "لا توجد سجلات تطابق بحثك.")
+          );
+        }
 
         return React.createElement(
           "div",
-          {
-            key: u.id,
-            className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border transition-all shadow-xs space-y-3 " +
-              (isPending
-                ? "border-amber-300 dark:border-amber-500/40 bg-amber-50/20 dark:bg-amber-950/10"
-                : isApproved
-                  ? "border-slate-200 dark:border-slate-800"
-                  : "border-rose-200 dark:border-rose-900/40 opacity-75")
-          },
-          // السطر العلوي: اسم الدارس + الشارات + أزرار الإجراء
-          React.createElement(
-            "div",
-            { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3" },
-            React.createElement(
+          { className: "space-y-2.5" },
+          filteredLogs.map(function(item) {
+            var timeFormatted = "الآن";
+            try {
+              if (item.timestamp && item.timestamp.toDate) {
+                timeFormatted = item.timestamp.toDate().toLocaleString("ar-EG");
+              } else if (item.createdAtClient) {
+                timeFormatted = new Date(item.createdAtClient).toLocaleString("ar-EG");
+              }
+            } catch (e) {}
+
+            var isEgypt = (item.countryCode === "EG" || (item.country || "").indexOf("Egypt") !== -1 || (item.country || "").indexOf("مصر") !== -1);
+
+            return React.createElement(
               "div",
-              { className: "space-y-1" },
-              React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
-                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, u.fullName),
-                // شارة الحالة
-                React.createElement("span", {
-                  className: "text-[10px] font-black px-2.5 py-0.5 rounded-full " +
-                    (isPending
-                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 animate-pulse"
-                      : isApproved
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
-                        : "bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300")
-                }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
-                
-                // شارة نوع الدراسة
-                u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
-                  u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
-                ),
-                // شارة السنة
-                u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
-                  u.studyYear
-                )
-              ),
-              React.createElement("div", { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed space-y-1.5" },
-                React.createElement("p", null,
-                  "كنيسة: " + (u.church || "—") +
-                  " • إيبارشية: " + (u.diocese || "—") +
-                  " • محافظة: " + (u.governorate || "—") +
-                  " • البريد: " + (u.email || "—")
-                ),
-                (u.whatsapp || u.phone) && React.createElement(
+              {
+                key: item.id,
+                className: "bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs"
+              },
+              React.createElement(
+                "div",
+                { className: "space-y-1" },
+                React.createElement(
                   "div",
-                  { className: "flex items-center gap-2 pt-0.5" },
+                  { className: "flex items-center gap-2 flex-wrap" },
+                  React.createElement("span", { className: "font-bold text-xs text-slate-900 dark:text-white" }, item.fullName),
+                  React.createElement("span", { className: "text-[11px] text-slate-400 font-mono" }, "(" + item.email + ")"),
+                  item.role === "admin" && React.createElement("span", { className: "text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 px-2 py-0.5 rounded-full font-bold" }, "مشرف")
+                ),
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap pt-0.5" },
                   React.createElement(
-                    "a",
-                    {
-                      href: "https://wa.me/" + String(u.whatsapp || u.phone).replace(/[^0-9]/g, "").replace(/^0/, "20"),
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                      title: "فتح محادثة واتساب مباشرة مع الدارس",
-                      className: "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800/60 transition-all shadow-2xs hover:scale-105 active:scale-95"
-                    },
-                    React.createElement("span", null, "💬"),
-                    React.createElement("span", null, "مراسلة واتساب:"),
-                    React.createElement("span", { dir: "ltr", className: "underline font-mono" }, u.whatsapp || u.phone)
-                  )
+                    "span",
+                    { className: "font-semibold flex items-center gap-1 " + (isEgypt ? "text-slate-700 dark:text-slate-300" : "text-amber-600 dark:text-amber-400 font-bold") },
+                    React.createElement("span", null, isEgypt ? "🇪🇬" : "🌍"),
+                    (item.country || "دولة غير محددة") + (item.city && item.city !== "غير محدد" ? " - " + item.city : "")
+                  ),
+                  React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
+                  React.createElement("span", { className: "font-mono text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300" }, "IP: " + (item.ip || "—")),
+                  React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
+                  React.createElement("span", null, item.device || "جهاز غير محدد")
                 )
+              ),
+              React.createElement(
+                "div",
+                { className: "shrink-0 self-end sm:self-center text-left text-[11px] text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-xl font-mono" },
+                timeFormatted
               )
-            ),
-
-            // أزرار اتخاذ القرار
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2 shrink-0 self-end sm:self-center" },
-              isPending && React.createElement(
-                "button",
-                {
-                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
-                  className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
-                },
-                React.createElement("span", null, "✓"),
-                React.createElement("span", null, "قبول واعتماد")
-              ),
-              isPending && React.createElement(
-                "button",
-                {
-                  onClick: function() { handleUpdateStatus(u.id, "rejected"); },
-                  className: "px-3 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-bold text-xs transition-all active:scale-95"
-                },
-                "رفض"
-              ),
-              isApproved && React.createElement(
-                "button",
-                {
-                  onClick: function() {
-                    if (confirm("هل تريد تعليق حساب الدارس '" + u.fullName + "' ومنعه من الدخول؟")) {
-                      handleUpdateStatus(u.id, "rejected");
-                    }
-                  },
-                  className: "text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2.5 py-1.5 rounded-lg font-semibold transition-colors"
-                },
-                "تعليق الحساب ⏸"
-              ),
-              isRejected && React.createElement(
-                "button",
-                {
-                  onClick: function() { handleUpdateStatus(u.id, "approved"); },
-                  className: "text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors"
-                },
-                "إعادة التفعيل ✓"
-              ),
-              React.createElement(
-                "button",
-                {
-                  onClick: function() { handleSendTestNotifToUser(u); },
-                  disabled: sendingNotifUserId === u.id,
-                  title: "إرسال إشعار تجريبي خاص لهذا الدارس فقط للتأكد من وصول الإشعارات له دون إزعاج باقي الدارسين",
-                  className: "text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-blue-200/60 dark:border-blue-900/40 disabled:opacity-50"
-                },
-                React.createElement("span", null, "🔔"),
-                React.createElement("span", null, sendingNotifUserId === u.id ? "جاري الإرسال..." : "إشعار تجريبي")
-              ),
-              React.createElement(
-                "button",
-                {
-                  onClick: function() { handleOpenResetModal(u); },
-                  title: "إعادة تعيين كلمة المرور لمساعدة الدارس",
-                  className: "text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 px-2.5 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-2xs border border-amber-200/60 dark:border-amber-900/40"
-                },
-                React.createElement("span", null, "🔄"),
-                React.createElement("span", null, "إعادة تعيين كلمة المرور")
-              ),
-              React.createElement(
-                "button",
-                {
-                  onClick: function() { handleDeleteUser(u.id, u.fullName); },
-                  title: "حذف نهائي",
-                  className: "text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
-                },
-                "🗑️"
-              )
-            )
-          ),
-
-          // تفاصيل إضافية
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-[11px] text-slate-400 pt-1" },
-            React.createElement("span", null,
-              "تاريخ التسجيل: " + (u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString("ar-EG") : "حديثاً")
-            ),
-            React.createElement("span", { className: "font-mono text-[10px]" },
-              "معرف: " + u.id
-            )
-          )
+            );
+          })
         );
-      })
+      })()
     ),
 
     // نافذة منبثقة لإضافة وتفعيل دارس يدوياً

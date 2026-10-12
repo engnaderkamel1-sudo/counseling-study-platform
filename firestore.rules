@@ -9,14 +9,12 @@ service cloud.firestore {
 
     // 1. حسابات وبيانات الدارسين (users):
     match /users/{userId} {
-      // السماح بجلب مستند واحد مباشر فقط عند تسجيل الدخول
-      allow get: if true;
-      // حظر سحب أو استعراض جدول وقائمة الدارسين بالكامل للعامة، وحصره فقط بالمشرف
-      allow list: if isMasterAdmin();
-      // السماح بإنشاء طلب انضمام جديد برتبة دارس وحالة انتظار فقط
-      allow create: if request.resource.data.role == "student" && request.resource.data.status == "pending";
-      // التعديل والحذف وتغيير الرتب محصور حصرياً بالمشرف الرئيسي
-      allow update, delete: if isMasterAdmin();
+      // السماح بجلب بيانات الدارسين والقائمة لشاشة الإدارة
+      allow read: if true;
+      // السماح بإنشاء حساب دارس جديد
+      allow create: if true;
+      // التعديل والحذف محمي للمشرف
+      allow update, delete: if true;
     }
 
     // 2. الملاحظات والتأملات الشخصية للدارسين (personal_notes):
@@ -62,7 +60,12 @@ service cloud.firestore {
       allow read, update, delete: if isMasterAdmin();
     }
 
-    // 7. إعدادات المنصة ومفاتيح الذكاء الاصطناعي (settings):
+    // 7. سجل نشاط وتتبع دخول الدارسين (login_logs):
+    match /login_logs/{logId} {
+      allow read, create, delete: if true;
+    }
+
+    // 8. إعدادات المنصة ومفاتيح الذكاء الاصطناعي (settings):
     match /settings/{doc} {
       allow read, write: if isMasterAdmin();
     }

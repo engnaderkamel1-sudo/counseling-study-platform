@@ -451,5 +451,145 @@ window.CloudSyncService = {
       }
     } catch (e) {}
     return true;
+  },
+
+  // تسجيل وتتبع دخول الدارس (IP والموقع الجغرافي ونوع الجهاز)
+  recordLoginLog: async function(userData) {
+    if (!userData || !userData.email) return;
+    try {
+      // تجنب تكرار التسجيل المتتالي السريع في نفس الجلسة (خلال 5 دقائق)
+      var sessionKey = "last_log_record_" + (userData.email || "user");
+      var lastRecorded = parseInt(sessionStorage.getItem(sessionKey) || "0", 10);
+      var now = Date.now();
+      if (now - lastRecorded < 5 * 60 * 1000) {
+        return; // مسجل بالفعل مؤخراً في نفس الجلسة
+      }
+
+      // جلب بيانات الموقع الجغرافي والـ IP بخفة وأمان عبر خدمة سريعة ومجانية
+      var geoData = { ip: "غير متوفر", country: "غير محدد", city: "غير محدد", countryCode: "" };
+      try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 4000);
+        var resp = await fetch("https://freeipapi.com/api/json", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (resp.ok) {
+          var j = await resp.json();
+          geoData = {
+            ip: j.ipAddress || "غير متوفر",
+            country: j.countryName || "غير محدد",
+            city: j.cityName || "غير محدد",
+            countryCode: (j.countryCode || "").toUpperCase()
+          };
+        }
+      } catch (geoErr) {
+        // بديل احتياطي سريع وخفيف في حال تعذر المصدر الأول
+        try {
+          var resp2 = await fetch("https://api.ipify.org?format=json");
+          if (resp2.ok) {
+            var j2 = await resp2.json();
+            geoData.ip = j2.ip || geoData.ip;
+          }
+        } catch (e2) {}
+      }
+
+      // تحديد نوع جهاز الدارس
+      var ua = navigator.userAgent || "";
+      var deviceType = "كمبيوتر 💻";
+      if (/android/i.test(ua)) deviceType = "هاتف أندرويد 📱";
+      else if (/iphone|ipad|ipod/i.test(ua)) deviceType = "آيفون / آيباد 🍏";
+      else if (/mobile/i.test(ua)) deviceType = "هاتف ذكي 📱";
+      else if (/macintosh|mac os x/i.test(ua)) deviceType = "ماك 💻";
+      else if (/windows/i.test(ua)) deviceType = "ويندوز 💻";
+
+      var logPayload = {
+        userId: userData.id || userData.email,
+        fullName: userData.fullName || "دارس غير معروف",
+        email: userData.email,
+        role: userData.role || "student",
+        church: userData.church || "غير محدد",
+        diocese: userData.diocese || "غير محدد",
+        governorate: userData.governorate || "غير محدد",
+        ip: geoData.ip,
+        country: geoData.country,
+        city: geoData.city,
+        countryCode: geoData.countryCode,
+        device: deviceType,
+        userAgent: ua.substring(0, 150),
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        createdAtClient: new Date().toISOString()
+      };
+
+      if (window.db) {
+        await window.db.collection("login_logs").add(logPayload);
+
+        // تحديث آخر دخول في وثيقة الدارس نفسه أيضاً كمرجع إضافي
+        if (userData.id) {
+          try {
+            await window.db.collection("users").doc(userData.id).set({
+              lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+              lastLoginCountry: geoData.country + (geoData.city ? " (" + geoData.city + ")" : ""),
+              lastLoginIp: geoData.ip,
+              lastDevice: deviceType
+            }, { merge: true });
+          } catch (uErr) {}
+        }
+      }
+
+      sessionStorage.setItem(sessionKey, String(now));
+    } catch (err) {
+      console.warn("recordLoginLog warning:", err);
+    }
+  },
+
+  // جلب سجلات الدخول (بحد أقصى محدد لمنع استهلاك الذاكرة وفايربيز)
+  getLoginLogs: async function(limitCount) {
+    if (!window.db) return [];
+    var limitNum = limitCount || 200;
+    try {
+      var snap = await window.db.collection("login_logs")
+        .orderBy("timestamp", "desc")
+        .limit(limitNum)
+        .get();
+      var list = [];
+      snap.forEach(function(doc) {
+        list.push(Object.assign({ id: doc.id }, doc.data()));
+      });
+      return list;
+    } catch (err) {
+      // في حال عدم وجود فهرس مركب timestamp، نحاول الجلب المباشر
+      try {
+        var snapFallback = await window.db.collection("login_logs").limit(limitNum).get();
+        var listFallback = [];
+        snapFallback.forEach(function(doc) {
+          listFallback.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        listFallback.sort(function(a, b) {
+          var tA = a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : (new Date(a.createdAtClient || 0).getTime() / 1000);
+          var tB = b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : (new Date(b.createdAtClient || 0).getTime() / 1000);
+          return tB - tA;
+        });
+        return listFallback;
+      } catch (err2) {
+        console.warn("getLoginLogs error:", err2);
+        return [];
+      }
+    }
+  },
+
+  // تفريغ السجل (يدوياً أو تلقائياً للحفاظ على المساحة وخفة السحابة)
+  clearLoginLogs: async function() {
+    if (!window.db) return true;
+    try {
+      var snap = await window.db.collection("login_logs").limit(300).get();
+      var batch = window.db.batch();
+      snap.forEach(function(doc) {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      return true;
+    } catch (e) {
+      console.warn("clearLoginLogs error:", e);
+      throw e;
+    }
   }
 };
