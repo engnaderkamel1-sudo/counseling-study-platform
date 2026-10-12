@@ -31,6 +31,10 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
         stack: (error && error.stack) ? error.stack : (errorInfo ? errorInfo.componentStack : ""),
         time: new Date().toISOString()
       };
+      // إرسال تقرير الخطأ تلقائياً للمشرفين
+      try {
+        this.handleSendCrashReport();
+      } catch (eAuto) {}
     }
   }
 
@@ -147,9 +151,9 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
         React.createElement(
           "div",
           { className: "space-y-2" },
-          React.createElement("h2", { className: "text-xl sm:text-2xl font-bold text-white" }, "عذراً، حدث خطأ غير متوقع بالصفحة"),
+          React.createElement("h2", { className: "text-xl sm:text-2xl font-bold text-white" }, "نعتذر عن هذا التوقف المؤقت"),
           React.createElement("p", { className: "text-xs sm:text-sm text-slate-300 leading-relaxed" }, 
-            "بدلاً من توقف التطبيق أو ظهور صفحة بيضاء، يمكنك إرسال هذا العطل مباشرة مع تسجيل صوتي لنقوم بإصلاحه فوراً، أو العودة للصفحة الرئيسية."
+            "تم إرسال تفاصيل الخطأ تلقائياً إلى المشرفين، وسيتم الإصلاح في أقرب وقت. يمكنك الانتقال للصفحة الرئيسية لمتابعة استخدام المنصة بشكل طبيعي."
           )
         ),
 
