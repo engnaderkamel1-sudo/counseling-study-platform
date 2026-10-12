@@ -258,6 +258,44 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار فوري للأدمن عند تقديم دارس لاقتراح ميزة جديدة
+  notifyAdminNewFeatureRequest: async function(feat) {
+    if (!window.db || !feat) return;
+    try {
+      var notifData = {
+        title: "💡 اقتراح ميزة جديدة: " + (feat.featureTitle || feat.category || "فكرة تطوير"),
+        body: (feat.senderName ? "من الدارس: " + feat.senderName + " • " : "") + (feat.userDescription || "اضغط للاطلاع على فكرة الميزة والرد عليها"),
+        type: "feature_request",
+        target: "admin",
+        linkTab: "errors",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not send admin feature request notification:", e);
+    }
+  },
+
+  // إرسال رد المشرف في إشعار شخصي خاص للدارس صاحب الاقتراح
+  notifyStudentFeatureReply: async function(studentEmail, studentId, featureTitle, replyText, status) {
+    if (!window.db || !studentEmail) return;
+    try {
+      var statusBadgeText = (status === "implemented") ? "🎉 تم تنفيذ الميزة بنجاح!" : (status === "in_progress" ? "🛠️ معتمد وجاري البرمجة" : "⏳ قيد الدراسة");
+      var notifData = {
+        title: "💬 رد من مشرف المنصة بخصوص: " + (featureTitle || "اقتراحك"),
+        body: statusBadgeText + " • " + (replyText || "تمت مراجعة اقتراحك من قِبل المشرف."),
+        type: "feature_reply",
+        target: "user",
+        targetUserEmail: (studentEmail || "").toLowerCase().trim(),
+        targetUserId: studentId || "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not dispatch student feature reply notification:", e);
+    }
+  },
+
   // إرسال إشعار فوري عند نشر رابط زوم للمحاضرة
   broadcastZoomLinkNotification: async function(lecture) {
     if (!window.db || !lecture) return;

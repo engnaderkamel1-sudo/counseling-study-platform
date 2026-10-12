@@ -126,6 +126,19 @@ window.Sidebar = function(props) {
             ),
             React.createElement("span", { className: "text-[11px] opacity-75" }, props.hasNotificationPermission ? "✓" : "👈")
           ),
+          // زر اقترح ميزة جديدة
+          React.createElement(
+            "button",
+            {
+              onClick: function() {
+                if (props.onOpenFeatureRequest) props.onOpenFeatureRequest();
+                if (onClose) onClose();
+              },
+              className: "w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
+            },
+            React.createElement("span", { className: "text-base" }, "💡"),
+            React.createElement("span", null, "اقترح ميزة أو وظيفة جديدة")
+          ),
           React.createElement(
             "div",
             { className: "grid grid-cols-2 gap-2" },
@@ -139,7 +152,7 @@ window.Sidebar = function(props) {
               React.createElement("span", null, "📲"),
               React.createElement("span", null, "تثبيت التطبيق")
             ),
-            // زر إبلاغ عن عطل أو اقتراح
+            // زر إبلاغ عن عطل
             React.createElement(
               "button",
               {
@@ -147,10 +160,10 @@ window.Sidebar = function(props) {
                   if (props.onOpenErrorReport) props.onOpenErrorReport();
                   if (onClose) onClose();
                 },
-                className: "text-[11px] py-1.5 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 font-bold flex items-center justify-center gap-1.5 shadow-2xs hover:bg-amber-100 transition-colors"
+                className: "text-[11px] py-1.5 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-300 font-bold flex items-center justify-center gap-1.5 shadow-2xs hover:bg-rose-100 transition-colors"
               },
-              React.createElement("span", null, "💡"),
-              React.createElement("span", null, "عطل أو اقتراح")
+              React.createElement("span", null, "🚨"),
+              React.createElement("span", null, "إبلاغ عن عطل")
             )
           )
         )

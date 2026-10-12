@@ -32,6 +32,7 @@ function Build-App {
         "components/AuthModal.js",
         "components/ErrorBoundary.js",
         "components/ErrorReporterModal.js",
+        "components/FeatureRequestModal.js",
         "components/InstallPromptModal.js",
         "components/NotificationCenterModal.js",
         "components/RecycleBinModal.js",

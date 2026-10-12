@@ -89,6 +89,7 @@ function App() {
   var [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   var [isAuthOpen, setIsAuthOpen] = React.useState(false);
   var [isErrorReportOpen, setIsErrorReportOpen] = React.useState(false);
+  var [isFeatureRequestOpen, setIsFeatureRequestOpen] = React.useState(false);
   var [isRecycleBinOpen, setIsRecycleBinOpen] = React.useState(false);
   var [isNotificationCenterOpen, setIsNotificationCenterOpen] = React.useState(false);
   var [notificationsList, setNotificationsList] = React.useState([]);
@@ -493,6 +494,7 @@ function App() {
       onToggleNotification: handleToggleNotification,
       onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
       onOpenErrorReport: function() { setIsErrorReportOpen(true); },
+      onOpenFeatureRequest: function() { setIsFeatureRequestOpen(true); },
       onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
     }),
 
@@ -667,6 +669,12 @@ function App() {
       onClose: function() { setIsErrorReportOpen(false); },
       currentUser: currentUser,
       activeTab: activeTab
+    }),
+
+    React.createElement(window.FeatureRequestModal, {
+      isOpen: isFeatureRequestOpen,
+      onClose: function() { setIsFeatureRequestOpen(false); },
+      currentUser: currentUser
     }),
 
     React.createElement(window.RecycleBinModal, {
