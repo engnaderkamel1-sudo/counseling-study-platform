@@ -19,7 +19,8 @@ window.APP_UTILS.getAudioStreamUrl = function(url) {
   if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    return "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+    // استخدام بروكسي البث الصوتي المباشر النقي لتجاوز قيود CORP و CORS الصارمة في المتصفحات
+    return "/api/audio-proxy?id=" + driveId;
   }
   return url;
 };
