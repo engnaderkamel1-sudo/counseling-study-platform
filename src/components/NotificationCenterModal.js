@@ -21,6 +21,10 @@ window.NotificationCenterModal = function(props) {
   var [readIds, setReadIds] = React.useState(function() {
     return utils.getLocal ? utils.getLocal("counsel_read_notif_ids", []) : [];
   });
+  // معرفات الإشعارات المحذوفة محلياً لضمان اختفائها الفوري
+  var [dismissedIds, setDismissedIds] = React.useState(function() {
+    return utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+  });
   var [isClearing, setIsClearing] = React.useState(false);
   var [selectedIds, setSelectedIds] = React.useState([]);
 
@@ -34,9 +38,8 @@ window.NotificationCenterModal = function(props) {
   if (!isOpen) return null;
 
   // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي) مع استبعاد المحذوفة محلياً
-  var dismissedNotifIds = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
   var allowedNotifications = notifications.filter(function(n) {
-    if (dismissedNotifIds.indexOf(n.id) !== -1) return false;
+    if (dismissedIds.indexOf(n.id) !== -1) return false;
     if (n.target === "user") {
       var currentUserId = currentUser ? (currentUser.id || "") : "";
       var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
@@ -69,14 +72,17 @@ window.NotificationCenterModal = function(props) {
     if (!notif || !notif.id) return;
     if (!confirm("هل أنت متأكد من حذف هذا التنبيه؟")) return;
 
-    // 1. إخفاء التنبيه محلياً فوراً لمنع ظهوره مجدداً على الجهاز
-    var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
-    if (dismissed.indexOf(notif.id) === -1) dismissed.push(notif.id);
-    if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+    // 1. إخفاء التنبيه محلياً فوراً وفي حالة المكون لمنع عودته للشاشة إطلاقاً
+    var newDismissed = dismissedIds.indexOf(notif.id) === -1 ? dismissedIds.concat([notif.id]) : dismissedIds;
+    setDismissedIds(newDismissed);
+    if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", newDismissed);
     setSelectedIds(function(prev) { return prev.filter(function(x) { return x !== notif.id; }); });
+    if (props.onNotificationsDeleted) {
+      props.onNotificationsDeleted([notif.id]);
+    }
 
-    // 2. محاولة الحذف السحابي للمشرف
-    if (isAdmin && window.db) {
+    // 2. محاولة الحذف السحابي في Firestore
+    if (window.db && notif.id) {
       try {
         await window.db.collection("notifications").doc(notif.id).delete();
       } catch(err) {
@@ -92,25 +98,33 @@ window.NotificationCenterModal = function(props) {
     setIsClearing(true);
     var idsToDelete = selectedIds.slice();
     try {
-      // 1. إخفاء التنبيهات محلياً فوراً لتختفي لحظياً ولا تعود
-      var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+      // 1. إخفاء التنبيهات محلياً وفورياً
+      var newDismissed = dismissedIds.slice();
       idsToDelete.forEach(function(id) {
-        if (dismissed.indexOf(id) === -1) dismissed.push(id);
+        if (newDismissed.indexOf(id) === -1) newDismissed.push(id);
       });
-      if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+      setDismissedIds(newDismissed);
       setSelectedIds([]);
+      if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", newDismissed);
+      if (props.onNotificationsDeleted) {
+        props.onNotificationsDeleted(idsToDelete);
+      }
 
-      // 2. محاولة الحذف السحابي للمشرف في Firestore
-      if (isAdmin && window.db && idsToDelete.length > 0) {
+      // 2. محاولة الحذف السحابي في Firestore دفعة وفردياً كاحتياط
+      if (window.db && idsToDelete.length > 0) {
         try {
           var batch = window.db.batch();
           idsToDelete.forEach(function(id) {
-            var ref = window.db.collection("notifications").doc(id);
-            batch.delete(ref);
+            batch.delete(window.db.collection("notifications").doc(id));
           });
           await batch.commit();
         } catch(cloudErr) {
-          console.warn("Cloud batch delete notice:", cloudErr.message);
+          console.warn("Cloud batch delete notice, trying fallback single deletes:", cloudErr.message);
+          for (var i = 0; i < idsToDelete.length; i++) {
+            try {
+              await window.db.collection("notifications").doc(idsToDelete[i]).delete();
+            } catch(e) {}
+          }
         }
       }
       alert("✅ تم حذف التنبيهات المحددة بنجاح!");
@@ -130,24 +144,32 @@ window.NotificationCenterModal = function(props) {
     var allIds = allowedNotifications.map(function(n) { return n.id; }).filter(Boolean);
     try {
       // 1. إخفاء كافة التنبيهات محلياً فوراً لمنع عودتها للشاشة إطلاقاً
-      var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+      var newDismissed = dismissedIds.slice();
       allIds.forEach(function(id) {
-        if (dismissed.indexOf(id) === -1) dismissed.push(id);
+        if (newDismissed.indexOf(id) === -1) newDismissed.push(id);
       });
-      if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+      setDismissedIds(newDismissed);
       setSelectedIds([]);
+      if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", newDismissed);
+      if (props.onNotificationsDeleted) {
+        props.onNotificationsDeleted(allIds);
+      }
 
-      // 2. محاولة الحذف السحابي في Firestore
-      if (isAdmin && window.db && allIds.length > 0) {
+      // 2. محاولة الحذف السحابي في Firestore دفعة وفردياً كاحتياط
+      if (window.db && allIds.length > 0) {
         try {
           var batch = window.db.batch();
           allIds.forEach(function(id) {
-            var ref = window.db.collection("notifications").doc(id);
-            batch.delete(ref);
+            batch.delete(window.db.collection("notifications").doc(id));
           });
           await batch.commit();
         } catch(cloudErr) {
-          console.warn("Cloud batch deleteAll notice:", cloudErr.message);
+          console.warn("Cloud batch deleteAll notice, trying fallback single deletes:", cloudErr.message);
+          for (var j = 0; j < allIds.length; j++) {
+            try {
+              await window.db.collection("notifications").doc(allIds[j]).delete();
+            } catch(e) {}
+          }
         }
       }
       alert("✅ تم مسح جميع التنبيهات بنجاح!");

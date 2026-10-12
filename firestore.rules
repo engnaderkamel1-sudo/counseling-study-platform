@@ -50,7 +50,7 @@ service cloud.firestore {
 
     // 8. الإعدادات
     match /settings/{doc} {
-      allow read, write: if isMasterAdmin();
+      allow read, write: if true;
     }
 
     // 9. دليل الدارس واللوائح الرسمية

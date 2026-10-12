@@ -98,6 +98,9 @@ function App() {
   var [readNotifIds, setReadNotifIds] = React.useState(function() {
     return utils.getLocal("counsel_read_notif_ids", []);
   });
+  var [dismissedNotifIds, setDismissedNotifIds] = React.useState(function() {
+    return utils.getLocal("counsel_dismissed_notifs", []);
+  });
 
   var [activeToast, setActiveToast] = React.useState(null);
 
@@ -166,6 +169,8 @@ function App() {
       var initialLoad = true;
       var lastNotifiedId = null;
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
+        var curDismissed = utils.getLocal("counsel_dismissed_notifs", []);
+        setDismissedNotifIds(curDismissed);
         setNotificationsList(list || []);
         if (list && list.length > 0) {
           var latest = list[0];
@@ -575,7 +580,9 @@ function App() {
 
         // ترويسة التطبيق الرئيسية
         (function() {
+          var currentDismissed = dismissedNotifIds || (utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : []);
           var unreadCount = notificationsList.filter(function(n) {
+            if (currentDismissed.indexOf(n.id) !== -1) return false;
             if (n.type === "user_registration" && (!currentUser || currentUser.role !== "admin")) return false;
             if (n.type === "password_reset" && (!currentUser || currentUser.role !== "admin")) return false;
             return readNotifIds.indexOf(n.id) === -1;
@@ -734,9 +741,19 @@ function App() {
       onClose: function() {
         setIsNotificationCenterOpen(false);
         setReadNotifIds(utils.getLocal("counsel_read_notif_ids", []));
+        setDismissedNotifIds(utils.getLocal("counsel_dismissed_notifs", []));
       },
       currentUser: currentUser,
-      notifications: notificationsList,
+      notifications: notificationsList.filter(function(n) {
+        return (dismissedNotifIds || []).indexOf(n.id) === -1;
+      }),
+      onNotificationsDeleted: function(deletedIds) {
+        var cur = utils.getLocal("counsel_dismissed_notifs", []);
+        setDismissedNotifIds(cur);
+        setNotificationsList(function(prev) {
+          return prev.filter(function(n) { return deletedIds.indexOf(n.id) === -1; });
+        });
+      },
       onSelectNotification: function(notif) {
         if (notif.linkTab) setActiveTab(notif.linkTab);
         else if (notif.lectureId) setActiveTab("lectures");

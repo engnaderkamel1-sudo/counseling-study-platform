@@ -1,8 +1,12 @@
 // مكون شاشة البداية والترحيب الأنيقة (Splash Screen)
 // تظهر لمدة 5 ثوانٍ مع مؤشر تحميل من 0% إلى 100%، آية اليوم المتغيرة، والاسم المعتمد
+// ميزة تفاعلية ذكية: عند لمس الشاشة أو الضغط عليها يتوقف شريط التحميل مؤقتاً لقراءة الآية، وعند رفع الإصبع يُستأنف التحميل تلقائياً
 window.SplashScreen = function(props) {
   var onFinish = props.onFinish;
   var [progress, setProgress] = React.useState(0);
+  var [isPaused, setIsPaused] = React.useState(false);
+  var isPausedRef = React.useRef(false);
+
   var [verse, setVerse] = React.useState(function() {
     return (window.getTodayVerse && typeof window.getTodayVerse === "function")
       ? window.getTodayVerse()
@@ -12,12 +16,26 @@ window.SplashScreen = function(props) {
         };
   });
 
+  // تحديث الـ ref لضمان عدم تأثر interval
+  var handlePause = function() {
+    isPausedRef.current = true;
+    setIsPaused(true);
+  };
+
+  var handleResume = function() {
+    isPausedRef.current = false;
+    setIsPaused(false);
+  };
+
   React.useEffect(function() {
     var duration = 5000; // 5 ثوانٍ ثابتة
     var intervalTime = 50; // تحديث سلس كل 50 ملي ثانية
     var step = (intervalTime / duration) * 100;
 
     var timer = setInterval(function() {
+      // إذا كان الدارس يلمس الشاشة، لا نزيد التقدم حتى يرفع يده
+      if (isPausedRef.current) return;
+
       setProgress(function(prev) {
         var next = prev + step;
         if (next >= 100) {
@@ -39,12 +57,28 @@ window.SplashScreen = function(props) {
   return React.createElement(
     "div",
     {
-      className: "fixed inset-0 z-[99999] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col justify-between items-center px-6 py-8 select-none transition-opacity duration-500",
-      dir: "rtl"
+      className: "fixed inset-0 z-[99999] bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex flex-col justify-between items-center px-6 py-8 select-none transition-opacity duration-500 cursor-pointer active:cursor-grabbing",
+      dir: "rtl",
+      // دعم لمس الشاشة في الموبايل والماوس في الكمبيوتر
+      onTouchStart: handlePause,
+      onTouchEnd: handleResume,
+      onTouchCancel: handleResume,
+      onMouseDown: handlePause,
+      onMouseUp: handleResume,
+      onMouseLeave: handleResume
     },
 
-    // المنطقة العلوية الفارغة للتوازن البصري
-    React.createElement("div", { className: "w-full flex justify-end items-center" }),
+    // المنطقة العلوية: شارة إرشادية خفيفة تظهر عند إيقاف التحميل باللمس
+    React.createElement(
+      "div",
+      { className: "w-full flex justify-center items-center h-6" },
+      isPaused ? React.createElement(
+        "div",
+        { className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold animate-pulse" },
+        React.createElement("span", null, "⏸"),
+        React.createElement("span", null, "تم إيقاف التحميل مؤقتاً للقراءة")
+      ) : null
+    ),
 
     // المنطقة الوسطى (الشعار، الاسم، والآية)
     React.createElement(
@@ -61,7 +95,7 @@ window.SplashScreen = function(props) {
         React.createElement("img", {
           src: "icon-192.png",
           alt: "أيقونة التطبيق",
-          className: "relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-2xl object-cover border-2 border-slate-700/80 bg-slate-900"
+          className: "relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl shadow-2xl object-cover border-2 border-slate-700/80 bg-slate-900 pointer-events-none"
         })
       ),
 
@@ -85,7 +119,8 @@ window.SplashScreen = function(props) {
       React.createElement(
         "div",
         {
-          className: "w-full bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden text-center mt-2"
+          className: "w-full bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden text-center mt-2 transition-all duration-300 " +
+            (isPaused ? "ring-2 ring-amber-400/50 scale-[1.02] bg-slate-800/80" : "")
         },
         React.createElement(
           "div",
@@ -121,7 +156,13 @@ window.SplashScreen = function(props) {
         React.createElement(
           "div",
           { className: "flex justify-between items-center text-[11px] text-slate-400 font-mono px-1" },
-          React.createElement("span", { className: "font-cairo text-slate-300" }, "جاري تجهيز المنصة..."),
+          React.createElement(
+            "span",
+            { className: "font-cairo text-slate-300 flex items-center gap-1" },
+            isPaused
+              ? React.createElement("span", { className: "text-amber-400 font-bold" }, "مُتوقف مؤقتاً باللمس...")
+              : "جاري تجهيز المنصة..."
+          ),
           React.createElement("span", { className: "font-bold text-amber-400" }, Math.min(100, Math.round(progress)) + "%")
         ),
         React.createElement(
@@ -134,11 +175,20 @@ window.SplashScreen = function(props) {
         )
       ),
 
-      // التنويه القانوني الهادئ بعدم التبعية الرسمية المباشرة
+      // تلميح لمس الشاشة + التنويه بعدم التبعية الرسمية
       React.createElement(
-        "p",
-        { className: "text-[11px] sm:text-xs text-slate-400 text-center font-normal pt-1" },
-        "تطبيق غير رسمي لمساعدة وتيسير دراسة الطلاب"
+        "div",
+        { className: "flex flex-col items-center gap-1 pt-1" },
+        React.createElement(
+          "span",
+          { className: "text-[10px] text-slate-500 dark:text-slate-400 font-medium" },
+          "💡 المس الشاشة باستمرار لإيقاف المؤقت وإكمال القراءة"
+        ),
+        React.createElement(
+          "p",
+          { className: "text-[11px] sm:text-xs text-slate-400 text-center font-normal" },
+          "تطبيق غير رسمي لمساعدة وتيسير دراسة الطلاب"
+        )
       )
     )
   );
