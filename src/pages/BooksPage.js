@@ -1948,12 +1948,16 @@ window.BooksPage = function(props) {
       var cIdx = chaps.findIndex(function(c) { return c.id === chap.id; });
       if (cIdx >= 0) {
         var updatedChap = Object.assign({}, chaps[cIdx], { audioUrl: audioUrl });
+        if (genRes && genRes.duration) {
+          updatedChap.audioDuration = genRes.duration;
+        }
         if (subtitles && Array.isArray(subtitles) && subtitles.length > 0) {
           updatedChap.subtitles = subtitles;
         }
         chaps[cIdx] = updatedChap;
         latestBook.audioChapters = chaps;
         setActiveBook(latestBook);
+        setPlayingChapterId(chap.id);
         utils.setLocal("counsel_book_data_" + latestBook.id, latestBook);
         var allB = utils.getLocal(cfg.storageKeys.books, []) || [];
         var bIdx = allB.findIndex(function(b) { return b.id === latestBook.id; });

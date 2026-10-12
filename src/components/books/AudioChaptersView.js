@@ -589,6 +589,11 @@ window.AudioChaptersView = function(props) {
 
     var onCanPlay = function() {
       restoreSavedPosition(audio, playingChapterId);
+      if (audio.paused) {
+        audio.play().catch(function(err) {
+          console.warn("Autoplay was prevented by browser policy:", err);
+        });
+      }
     };
 
     var updatePlayState = function() {
@@ -1501,6 +1506,9 @@ window.AudioChaptersView = function(props) {
           onCanPlay: function(e) {
             setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
+            if (e.target && e.target.paused) {
+              e.target.play().catch(function() {});
+            }
           },
           onError: function(e) {
             // التحقق مما إذا كان هناك خطأ حقيقي في الرابط أم مجرد تفريغ مؤقت للـ buffer أثناء الانتقال
