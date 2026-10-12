@@ -327,8 +327,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791793831",
-  buildTime: "2026-10-12T08:30:31",
+  version: "1.2.1791794039",
+  buildTime: "2026-10-12T08:33:59",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -5959,6 +5959,192 @@ window.ChapterTextViewerModal = function(props) {
     setIsAudioCollapsed(function(prev) { return !prev; });
   };
 
+  // دالة النمذجة الصوتية لإنتاج توقيتات الجمل بدقة بناءً على طول الصوت الفعلي
+  var generateSubtitlesFromDuration = function(rawText, totalDuration) {
+    if (!rawText || !totalDuration || totalDuration <= 0) return [];
+    var rawParts = rawText.split(/([.!?؟\n]+)/);
+    var sentences = [];
+
+    for (var i = 0; i < rawParts.length; i += 2) {
+      var sText = (rawParts[i] || "").trim();
+      var sPunct = (rawParts[i + 1] || "").trim();
+      if (!sText && !sPunct) continue;
+      var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
+      if (!combined) continue;
+
+      if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {
+        var subParts = combined.split(/([،؛]+)/);
+        var curSub = "";
+        for (var j = 0; j < subParts.length; j += 2) {
+          var pText = (subParts[j] || "").trim();
+          var pPunct = (subParts[j + 1] || "").trim();
+          var piece = (pText + (pPunct ? " " + pPunct : "")).trim();
+          if (!piece) continue;
+          if ((curSub.length + piece.length) > 85 && curSub.length >= 30) {
+            sentences.push(curSub.trim());
+            curSub = piece;
+          } else {
+            curSub = (curSub ? curSub + " " : "") + piece;
+          }
+        }
+        if (curSub.trim()) sentences.push(curSub.trim());
+      } else {
+        sentences.push(combined);
+      }
+    }
+
+    if (sentences.length === 0) sentences = [rawText.trim()];
+
+    var totalChars = 0;
+    var pauseSeconds = 0;
+    var itemStats = sentences.map(function(s) {
+      var chars = s.length;
+      totalChars += chars;
+      var p = 0;
+      if (/[.!?؟]/.test(s)) p += 0.70;
+      if (/\n/.test(s)) p += 0.35;
+      if (/[،؛]/.test(s)) p += 0.40;
+      pauseSeconds += p;
+      return { chars: chars, pause: p, text: s };
+    });
+
+    var speechDuration = Math.max(totalDuration * 0.4, totalDuration - pauseSeconds);
+    var charsPerSec = totalChars > 0 ? (totalChars / speechDuration) : 15;
+
+    var cumTime = 0;
+    var subs = [];
+    for (var k = 0; k < itemStats.length; k++) {
+      var item = itemStats[k];
+      var dur = (item.chars / charsPerSec) + item.pause;
+      var sStart = Math.round(cumTime * 100) / 100;
+      var sEnd = (k === itemStats.length - 1) ? totalDuration : (Math.round((cumTime + dur) * 100) / 100);
+      subs.push({
+        start: sStart,
+        end: sEnd,
+        text: item.text
+      });
+      cumTime += dur;
+    }
+    return subs;
+  };
+
+  // توليد وحفظ تزامن الـ SRT سحابياً للفصل بناءً على طول الصوت الفعلي
+  var handleAutoGenerateSrt = async function() {
+    if (!viewingChapterText || !onSaveChapterSubtitles) return;
+    var dur = localDuration;
+    if (!dur || dur <= 0) {
+      if (chapterAudioRef && chapterAudioRef.current && chapterAudioRef.current.duration > 0) {
+        dur = chapterAudioRef.current.duration;
+      }
+    }
+    if (!dur || dur <= 0) {
+      alert("⚠️ يرجى بدء تشغيل الصوت لثوانٍ أولاً ليتمكن التطبيق من قراءة المدة الزمنية الدقيقة للتسجيل.");
+      return;
+    }
+    setIsGeneratingSrt(true);
+    try {
+      var subs = generateSubtitlesFromDuration(viewingChapterText.text, dur);
+      if (!subs || subs.length === 0) throw new Error("تعذر إنشاء التوقيتات.");
+      await onSaveChapterSubtitles(viewingChapterText.id, subs);
+      setSrtNotice("✅ تم توليد وحفظ تزامن (" + subs.length + " جملة) بنجاح!");
+      setTimeout(function() { setSrtNotice(""); }, 4000);
+    } catch (err) {
+      alert("حدث خطأ أثناء حفظ التزامن: " + (err.message || err));
+    } finally {
+      setIsGeneratingSrt(false);
+    }
+  };
+
+  // تنزيل ملف SRT على جهاز المستخدم
+  var handleExportSrtFile = function() {
+    var subs = viewingChapterText && viewingChapterText.subtitles;
+    if (!subs || subs.length === 0) {
+      var dur = localDuration || (chapterAudioRef && chapterAudioRef.current && chapterAudioRef.current.duration);
+      if (dur > 0 && viewingChapterText && viewingChapterText.text) {
+        subs = generateSubtitlesFromDuration(viewingChapterText.text, dur);
+      }
+    }
+    if (!subs || subs.length === 0) {
+      alert("⚠️ لا توجد توقيتات مسجلة بعد لهذا الفصل لتنزيلها كملف SRT.");
+      return;
+    }
+
+    var formatSrtTime = function(sec) {
+      var s = Math.max(0, sec || 0);
+      var hours = Math.floor(s / 3600);
+      var minutes = Math.floor((s % 3600) / 60);
+      var secs = Math.floor(s % 60);
+      var millis = Math.floor((s % 1) * 1000);
+      var pad = function(n, len) { return (new Array(len + 1).join("0") + n).slice(-len); };
+      return pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(secs, 2) + "," + pad(millis, 3);
+    };
+
+    var content = subs.map(function(item, idx) {
+      return (idx + 1) + "\n" +
+        formatSrtTime(item.start) + " --> " + formatSrtTime(item.end) + "\n" +
+        item.text.trim() + "\n";
+    }).join("\n");
+
+    var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = ((viewingChapterText.title || "chapter") + " - subtitles").replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".srt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setSrtNotice("📥 تم تنزيل ملف الـ SRT بنجاح!");
+    setTimeout(function() { setSrtNotice(""); }, 3000);
+  };
+
+  // استيراد ملف SRT من جهاز المستخدم
+  var handleImportSrtFile = function(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = async function(evt) {
+      try {
+        var srtText = evt.target.result;
+        var blocks = srtText.split(/\n\s*\n/);
+        var parsed = [];
+        var parseSec = function(str) {
+          var p = str.trim().replace(",", ".").split(":");
+          if (p.length === 3) return (parseFloat(p[0]) * 3600) + (parseFloat(p[1]) * 60) + parseFloat(p[2]);
+          if (p.length === 2) return (parseFloat(p[0]) * 60) + parseFloat(p[1]);
+          return parseFloat(p[0]) || 0;
+        };
+
+        for (var b = 0; b < blocks.length; b++) {
+          var lines = blocks[b].trim().split("\n");
+          if (lines.length >= 2) {
+            var timeLine = lines[0].indexOf("-->") !== -1 ? lines[0] : lines[1];
+            var textLines = lines.slice(lines.indexOf(timeLine) + 1).join(" ").trim();
+            if (timeLine && timeLine.indexOf("-->") !== -1 && textLines) {
+              var tParts = timeLine.split("-->");
+              parsed.push({
+                start: Math.round(parseSec(tParts[0]) * 100) / 100,
+                end: Math.round(parseSec(tParts[1]) * 100) / 100,
+                text: textLines
+              });
+            }
+          }
+        }
+
+        if (parsed.length === 0) throw new Error("تعذر استخراج أسطر توقيت صالحة من الملف.");
+        if (onSaveChapterSubtitles) {
+          await onSaveChapterSubtitles(viewingChapterText.id, parsed);
+          setSrtNotice("✅ تم استيراد وحفظ (" + parsed.length + " جملة) من ملف SRT بنجاح!");
+          setTimeout(function() { setSrtNotice(""); }, 4000);
+        }
+      } catch (impErr) {
+        alert("خطأ أثناء قراءة ملف SRT: " + impErr.message);
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+    e.target.value = "";
+  };
+
   var textContainerRef = React.useRef(null);
 
   // تقسيم نص الفصل إلى جُمل وعبارات دقيقة وقصيرة (سطر بسطر) للحفاظ على تركيز القارئ ودقة المتابعة
@@ -6631,6 +6817,65 @@ window.ChapterTextViewerModal = function(props) {
           },
             React.createElement("span", null, "💾"),
             React.createElement("span", null, isSavingOffset ? "جاري الحفظ..." : "حفظ التزامن لجميع الطلبة")
+          ) : null
+        )
+      ) : null,
+
+      // لوحة أدوات ملفات التزامن الدقيق (SRT Subtitles Tool)
+      hasAudio && showSyncSettings ? React.createElement(
+        "div",
+        { className: "p-2.5 sm:p-3 rounded-2xl bg-indigo-50/95 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 text-xs shadow-sm animate-fade-in" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 min-w-0" },
+          React.createElement("span", { className: "text-base shrink-0" }, "📄"),
+          React.createElement("div", null,
+            React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
+              React.createElement("span", { className: "font-black text-slate-900 dark:text-white text-xs" }, "ملف التزامن الدقيق (SRT):"),
+              (viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length > 0)
+                ? React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]" }, "🎯 متزامن بدقة (" + viewingChapterText.subtitles.length + " جملة)")
+                : React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold text-[10px]" }, "تزامن تقديري (لم يتم حفظ SRT)")
+            ),
+            React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 block" },
+              "توليد توقيتات حقيقية لكل جملة بالمللي ثانية، وتنزيل أو استيراد ملف الـ SRT."
+            )
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-1.5 flex-wrap shrink-0" },
+          srtNotice ? React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in" }, srtNotice) : null,
+          isAdmin && onSaveChapterSubtitles ? React.createElement("button", {
+            type: "button",
+            disabled: isGeneratingSrt,
+            onClick: handleAutoGenerateSrt,
+            className: "px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50",
+            title: "توليد توقيتات دقيقة لكل جملة بناءً على طول الصوت الفعلي وحفظها سحابياً لجميع الدارسين"
+          },
+            React.createElement("span", null, isGeneratingSrt ? "⏳" : "⚡"),
+            React.createElement("span", null, isGeneratingSrt ? "جاري التوليد..." : "توليد وحفظ الـ SRT")
+          ) : null,
+          React.createElement("button", {
+            type: "button",
+            onClick: handleExportSrtFile,
+            className: "px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs shadow-2xs flex items-center gap-1 transition-all active:scale-95",
+            title: "تنزيل ملف SRT للتوقيتات على جهازك"
+          },
+            React.createElement("span", null, "📥"),
+            React.createElement("span", null, "تنزيل SRT")
+          ),
+          isAdmin && onSaveChapterSubtitles ? React.createElement("label", {
+            className: "px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-bold text-xs shadow-2xs flex items-center gap-1 transition-all active:scale-95 cursor-pointer",
+            title: "استيراد ملف SRT خارجي من جهازك"
+          },
+            React.createElement("span", null, "📤"),
+            React.createElement("span", null, "استيراد SRT"),
+            React.createElement("input", {
+              type: "file",
+              accept: ".srt,.vtt",
+              onChange: handleImportSrtFile,
+              className: "hidden"
+            })
           ) : null
         )
       ) : null,
@@ -14316,6 +14561,31 @@ window.BooksPage = function(props) {
     if (bIdx >= 0) allBooks[bIdx] = updatedBook;
     utils.setLocal(cfg.storageKeys.books, allBooks);
     setBooks(allBooks.slice());
+  };
+
+  // حفظ توقيتات التزامن الدقيقة (SRT / Subtitles) للفصل سحابياً ومحلياً
+  var handleSaveChapterSubtitles = async function(chapterId, subtitles) {
+    if (!activeBook || !chapterId) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapterId; });
+    if (idx === -1) return;
+
+    var chap = Object.assign({}, chaps[idx]);
+    chap.subtitles = subtitles;
+    chaps[idx] = chap;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
+
+    await safeCloudSaveBook(updatedBook, { silent: false });
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+    if (viewingChapterText && viewingChapterText.id === chapterId) {
+      setViewingChapterText(chap);
+    }
   };
 
   // نشر جميع الفصول الجاهزة والمعتمدة دفعة واحدة وترك الباقي مسودة
