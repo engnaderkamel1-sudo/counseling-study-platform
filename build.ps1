@@ -83,7 +83,8 @@ function Build-App {
         }
     }
     $updatesJson = ($updatesList | ConvertTo-Json -Compress)
-    $bodyParts.Add("<script>window.APP_UPDATES_HISTORY = " + $updatesJson + ";</script>")
+    $bodyParts.Add("// Updates history")
+    $bodyParts.Add("window.APP_UPDATES_HISTORY = " + $updatesJson + ";")
 
     $buildTimestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
     $buildIso = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss")
