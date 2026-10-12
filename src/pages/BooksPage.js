@@ -3933,7 +3933,7 @@ window.BooksPage = function(props) {
       totalPages: pdfDoc ? pdfDoc.numPages : 500
     }),
     // نافذة عرض النص المفرغ للفصل (تدعم الاستماع والقراءة المتزامنة والتحكم بحجم الخط للموبايل)
-    React.createElement(window.ChapterTextViewerModal, {
+    viewingChapterText ? React.createElement(window.ChapterTextViewerModal, {
       viewingChapterText: viewingChapterText,
       onClose: function() { setViewingChapterText(null); },
       fontSize: chapterTextFontSize,
@@ -3948,7 +3948,7 @@ window.BooksPage = function(props) {
       setIsPlaylistMode: setIsPlaylistMode,
       onUpdateTimeOffset: handleUpdateChapterTimeOffset,
       onSaveChapterSubtitles: handleSaveChapterSubtitles
-    }),
+    }) : null,
     // نافذة فحص الجودة الشامل واعتماد النشر للدارسين (Quality Gate)
     React.createElement(window.BookQualityAuditModal, {
       isOpen: isQualityAuditOpen,

@@ -453,17 +453,36 @@ window.CloudSyncService = {
     return true;
   },
 
+  _recordingLoginLocks: {},
+
   // تسجيل وتتبع دخول الدارس (IP والموقع الجغرافي ونوع الجهاز)
   recordLoginLog: async function(userData) {
     if (!userData || !userData.email) return;
+    var userEmail = (userData.email || "user").toLowerCase().trim();
     try {
-      // تجنب تكرار التسجيل المتتالي السريع في نفس الجلسة (خلال 5 دقائق)
-      var sessionKey = "last_log_record_" + (userData.email || "user");
-      var lastRecorded = parseInt(sessionStorage.getItem(sessionKey) || "0", 10);
+      // 1. قفل متزامن فوري في الذاكرة لمنع أي نداءين في نفس اللحظة
+      if (window.CloudSyncService._recordingLoginLocks[userEmail]) {
+        return;
+      }
+      window.CloudSyncService._recordingLoginLocks[userEmail] = true;
+
+      // 2. فحص الجلسة في localStorage (مدة الجلسة 30 دقيقة لمنع تكرار التسجيل لنفس التصفح)
+      var sessionKey = "last_log_record_" + userEmail;
+      var lastRecorded = 0;
+      try {
+        lastRecorded = parseInt(localStorage.getItem(sessionKey) || "0", 10);
+      } catch (eStorage) {}
       var now = Date.now();
-      if (now - lastRecorded < 5 * 60 * 1000) {
+      var sessionCooldown = 30 * 60 * 1000; // 30 دقيقة
+      if (now - lastRecorded < sessionCooldown) {
+        window.CloudSyncService._recordingLoginLocks[userEmail] = false;
         return; // مسجل بالفعل مؤخراً في نفس الجلسة
       }
+
+      // حفظ التوقيت فوراً قبل بدء الاتصال الخارجي لحجز القفل عبر كافة التبويبات
+      try {
+        localStorage.setItem(sessionKey, String(now));
+      } catch (eSet) {}
 
       // جلب بيانات الموقع الجغرافي (الدولة، المحافظة، المدينة) والـ IP بدقة وموثوقية عالية
       var geoData = { ip: "غير متوفر", country: "غير محدد", region: "", city: "غير محدد", countryCode: "" };
@@ -561,10 +580,10 @@ window.CloudSyncService = {
           } catch (uErr) {}
         }
       }
-
-      sessionStorage.setItem(sessionKey, String(now));
     } catch (err) {
       console.warn("recordLoginLog warning:", err);
+    } finally {
+      window.CloudSyncService._recordingLoginLocks[userEmail] = false;
     }
   },
 

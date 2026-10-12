@@ -21,6 +21,8 @@ window.NotificationCenterModal = function(props) {
   var [readIds, setReadIds] = React.useState(function() {
     return utils.getLocal ? utils.getLocal("counsel_read_notif_ids", []) : [];
   });
+  var [isClearing, setIsClearing] = React.useState(false);
+  var [selectedIds, setSelectedIds] = React.useState([]);
 
   var markAsRead = function(id) {
     if (!id || readIds.indexOf(id) !== -1) return;
@@ -48,9 +50,6 @@ window.NotificationCenterModal = function(props) {
     if (n.type === "error_report" && !isAdmin) return false;
     return true;
   });
-
-  var [isClearing, setIsClearing] = React.useState(false);
-  var [selectedIds, setSelectedIds] = React.useState([]);
 
   // تبديل اختيار إشعار محدد
   var toggleSelectNotification = function(id, e) {

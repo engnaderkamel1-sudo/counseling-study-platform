@@ -440,9 +440,6 @@ function App() {
     setCurrentUser(userData);
     utils.setLocal("counsel_current_user", userData);
     setIsAuthOpen(false);
-    if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
-      window.CloudSyncService.recordLoginLog(userData);
-    }
   };
 
   // تسجيل جلسة الدخول للدارس عند فتح التطبيق بحساب محفوظ
@@ -688,7 +685,7 @@ function App() {
       }
     }),
 
-    React.createElement(window.NotificationCenterModal, {
+    isNotificationCenterOpen ? React.createElement(window.NotificationCenterModal, {
       isOpen: isNotificationCenterOpen,
       onClose: function() {
         setIsNotificationCenterOpen(false);
@@ -703,7 +700,7 @@ function App() {
         else if (notif.type === "error_report") setActiveTab("errors");
         setReadNotifIds(utils.getLocal("counsel_read_notif_ids", []));
       }
-    }),
+    }) : null,
 
     // تنبيه الإشعار المنبثق التفاعلي داخل التطبيق (In-App Live Toast)
     activeToast && React.createElement(
