@@ -65,6 +65,7 @@ window.UsersManagementPage = function(props) {
   var [loginLogs, setLoginLogs] = React.useState([]);
   var [isLoadingLogs, setIsLoadingLogs] = React.useState(false);
   var [logSearchQuery, setLogSearchQuery] = React.useState("");
+  var [logFilterType, setLogFilterType] = React.useState("students_only"); // "students_only", "all", "admin_only"
   var [isClearingLogs, setIsClearingLogs] = React.useState(false);
 
   // جلب سجلات الدخول والتتبع
@@ -600,21 +601,73 @@ window.UsersManagementPage = function(props) {
               )
             ),
 
-            React.createElement(
-              "div",
-              { className: "flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-1 border-t border-slate-50 dark:border-slate-800/50" },
-              React.createElement("div", { className: "flex items-center gap-3 flex-wrap" },
-                React.createElement("span", null,
-                  "تاريخ التسجيل: " + (u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString("ar-EG") : "حديثاً")
+            (function() {
+              var lastLoginDate = null;
+              if (u.lastLoginAt && typeof u.lastLoginAt.toDate === "function") {
+                lastLoginDate = u.lastLoginAt.toDate();
+              } else if (u.lastLoginAt) {
+                lastLoginDate = new Date(u.lastLoginAt);
+              }
+
+              var isOnlineNow = false;
+              var lastSeenStr = "لم يسجل دخول بعد";
+              if (lastLoginDate && !isNaN(lastLoginDate.getTime())) {
+                var diffMs = Date.now() - lastLoginDate.getTime();
+                var diffMins = Math.floor(diffMs / 60000);
+                var diffHours = Math.floor(diffMins / 60);
+                var diffDays = Math.floor(diffHours / 24);
+
+                // يعتبر متصلاً الآن إذا كان آخر دخول له خلال الـ 15 دقيقة الماضية
+                if (diffMins < 15) {
+                  isOnlineNow = true;
+                  lastSeenStr = "متواجد الآن 🟢";
+                } else if (diffMins < 60) {
+                  lastSeenStr = "منذ " + diffMins + " دقيقة";
+                } else if (diffHours < 24) {
+                  lastSeenStr = "منذ " + diffHours + " ساعة";
+                } else if (diffDays === 1) {
+                  lastSeenStr = "أمس";
+                } else if (diffDays < 7) {
+                  lastSeenStr = "منذ " + diffDays + " أيام";
+                } else {
+                  lastSeenStr = lastLoginDate.toLocaleDateString("ar-EG");
+                }
+              }
+
+              return React.createElement(
+                "div",
+                { className: "flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1.5 gap-2 border-t border-slate-50 dark:border-slate-800/50" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-3 flex-wrap" },
+                  // شارة التواجد والنشاط
+                  React.createElement(
+                    "span",
+                    {
+                      className: "px-2 py-0.5 rounded-md font-bold flex items-center gap-1.5 " +
+                        (isOnlineNow
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                          : lastLoginDate
+                            ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            : "bg-slate-50 text-slate-400 dark:bg-slate-800/40")
+                    },
+                    React.createElement("span", { className: "w-2 h-2 rounded-full " + (isOnlineNow ? "bg-emerald-500 animate-ping" : lastLoginDate ? "bg-slate-400" : "bg-slate-300") }),
+                    "آخر نشاط: " + lastSeenStr
+                  ),
+                  u.lastLoginCountry && React.createElement(
+                    "span",
+                    { className: "text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1" },
+                    "📍 " + u.lastLoginCountry + (u.lastDevice ? " (" + u.lastDevice + ")" : "")
+                  ),
+                  React.createElement("span", { className: "text-slate-400" },
+                    "تاريخ التسجيل: " + (u.createdAt && u.createdAt.toDate ? u.createdAt.toDate().toLocaleDateString("ar-EG") : "حديثاً")
+                  )
                 ),
-                u.lastLoginCountry && React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-semibold" },
-                  "📍 آخر دخول: " + u.lastLoginCountry + (u.lastDevice ? " (" + u.lastDevice + ")" : "")
+                React.createElement("span", { className: "font-mono text-[10px] text-slate-400 self-end sm:self-center" },
+                  "معرف: " + u.id
                 )
-              ),
-              React.createElement("span", { className: "font-mono text-[10px] text-slate-400" },
-                "معرف: " + u.id
-              )
-            )
+              );
+            })()
           );
         })
       )
@@ -668,22 +721,61 @@ window.UsersManagementPage = function(props) {
         )
       ),
 
-      // شريط بحث في السجل
+      // شريط بحث وأزرار تصفية السجل (الدارسون فقط / الكل)
       React.createElement(
         "div",
-        { className: "bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-2.5 shadow-2xs" },
-        React.createElement("span", { className: "text-slate-400 text-xs" }, "🔍"),
-        React.createElement("input", {
-          type: "text",
-          value: logSearchQuery,
-          onChange: function(e) { setLogSearchQuery(e.target.value); },
-          placeholder: "تصفية السجل باسم الدارس، الدولة، المدينة، أو الـ IP...",
-          className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-        }),
-        logSearchQuery && React.createElement(
-          "button",
-          { onClick: function() { setLogSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
-          "مسح"
+        { className: "bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-2xs" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2.5 flex-1" },
+          React.createElement("span", { className: "text-slate-400 text-xs" }, "🔍"),
+          React.createElement("input", {
+            type: "text",
+            value: logSearchQuery,
+            onChange: function(e) { setLogSearchQuery(e.target.value); },
+            placeholder: "تصفية السجل باسم الدارس، الدولة، المدينة، أو الـ IP...",
+            className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+          }),
+          logSearchQuery && React.createElement(
+            "button",
+            { onClick: function() { setLogSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600 px-2" },
+            "مسح"
+          )
+        ),
+        // أزرار فرز المشرف مقابل الدارسين
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl self-end sm:self-center shrink-0 text-xs" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setLogFilterType("students_only"); },
+              className: "px-3 py-1 rounded-lg font-bold transition-all " +
+                (logFilterType === "students_only" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-2xs" : "text-slate-500 hover:text-slate-800")
+            },
+            "👥 الدارسين فقط"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setLogFilterType("all"); },
+              className: "px-3 py-1 rounded-lg font-bold transition-all " +
+                (logFilterType === "all" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800")
+            },
+            "الكل (" + loginLogs.length + ")"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setLogFilterType("admin_only"); },
+              className: "px-3 py-1 rounded-lg font-bold transition-all " +
+                (logFilterType === "admin_only" ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-2xs" : "text-slate-500 hover:text-slate-800")
+            },
+            "🛡️ المشرف"
+          )
         )
       ),
 
@@ -695,14 +787,20 @@ window.UsersManagementPage = function(props) {
         "جاري جلب سجل النشاط من السحابة..."
       ) : (function() {
         var filteredLogs = loginLogs.filter(function(log) {
+          // تصفية حسب الرتبة (المشرف / الدارسين)
+          var isAdminLog = log.role === "admin" || (log.email || "").toLowerCase().indexOf("eng.naderkamel") !== -1;
+          if (logFilterType === "students_only" && isAdminLog) return false;
+          if (logFilterType === "admin_only" && !isAdminLog) return false;
+
           if (!logSearchQuery.trim()) return true;
           var q = logSearchQuery.trim().toLowerCase();
           var mName = (log.fullName || "").toLowerCase().indexOf(q) !== -1;
           var mEmail = (log.email || "").toLowerCase().indexOf(q) !== -1;
           var mCountry = (log.country || "").toLowerCase().indexOf(q) !== -1;
           var mCity = (log.city || "").toLowerCase().indexOf(q) !== -1;
+          var mRegion = (log.region || "").toLowerCase().indexOf(q) !== -1;
           var mIp = (log.ip || "").toLowerCase().indexOf(q) !== -1;
-          return mName || mEmail || mCountry || mCity || mIp;
+          return mName || mEmail || mCountry || mCity || mRegion || mIp;
         });
 
         if (filteredLogs.length === 0) {
@@ -710,7 +808,7 @@ window.UsersManagementPage = function(props) {
             "div",
             { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
             React.createElement("div", { className: "text-3xl" }, "🌐"),
-            React.createElement("p", null, loginLogs.length === 0 ? "لا توجد سجلات دخول مسجلة حتى الآن." : "لا توجد سجلات تطابق بحثك.")
+            React.createElement("p", null, logFilterType === "students_only" ? "لا توجد سجلات دخول للدارسين بعد." : "لا توجد سجلات تطابق بحثك.")
           );
         }
 
