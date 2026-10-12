@@ -210,6 +210,8 @@
     };
 
     window.__preReactClearCacheAndReload = function() {
+      var reloadBtn = document.getElementById('pre-react-reload-btn');
+      if (reloadBtn) reloadBtn.innerText = '⏳ جاري تنظيف الكاش وجلب أحدث كود...';
       try {
         if ('caches' in window) {
           caches.keys().then(function(keys) {
@@ -218,18 +220,50 @@
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.getRegistrations().then(function(regs) {
                 regs.forEach(function(r) { r.unregister(); });
-                window.location.reload(true);
-              }).catch(function() { window.location.reload(true); });
+                var target = window.location.origin + window.location.pathname + '?fresh=' + Date.now();
+                window.location.replace(target);
+              }).catch(function() {
+                var target = window.location.origin + window.location.pathname + '?fresh=' + Date.now();
+                window.location.replace(target);
+              });
             } else {
-              window.location.reload(true);
+              var target = window.location.origin + window.location.pathname + '?fresh=' + Date.now();
+              window.location.replace(target);
             }
           });
         } else {
-          window.location.reload(true);
+          var target = window.location.origin + window.location.pathname + '?fresh=' + Date.now();
+          window.location.replace(target);
         }
       } catch(e) {
-        window.location.reload(true);
+        var target = window.location.origin + window.location.pathname + '?fresh=' + Date.now();
+        window.location.replace(target);
       }
+    };
+
+    window.__preReactSendReport = function() {
+      var btn = document.getElementById('pre-react-report-btn');
+      if (btn) { btn.disabled = true; btn.innerText = '⏳ جاري إرسال البلاغ للدعم...'; }
+      var err = window.__preReactError || 'Pre-react crash';
+      var payload = {
+        fields: {
+          type: { stringValue: 'pre_react_syntax_crash' },
+          error: { stringValue: err },
+          url: { stringValue: window.location.href },
+          userAgent: { stringValue: navigator.userAgent },
+          createdAt: { timestampValue: new Date().toISOString() },
+          status: { stringValue: 'new' }
+        }
+      };
+      fetch('https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/error_reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function() {
+        if (btn) btn.innerText = '✅ تم إرسال البلاغ للإدارة فوراً';
+      }).catch(function() {
+        if (btn) btn.innerText = '⚠️ تعذر الإرسال التلقائي (انسخ الخطأ)';
+      });
     };
 
     window.__preReactCopyError = function() {
@@ -251,6 +285,7 @@
         if (e && e.filename) msg += ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')';
         window.__preReactError = msg;
         window.__showPreReactError(msg);
+        try { window.__preReactSendReport(); } catch(errRpt) {}
       }
     });
 
@@ -259,6 +294,7 @@
         var msg = e && e.reason ? (e.reason.message || String(e.reason)) : 'Unhandled rejection';
         window.__preReactError = msg;
         window.__showPreReactError(msg);
+        try { window.__preReactSendReport(); } catch(errRpt) {}
       }
     });
 
@@ -268,7 +304,7 @@
         var fallbackCard = document.getElementById('pre-react-fallback-card');
         var desc = document.getElementById('pre-react-fallback-desc');
         if (fallbackCard && fallbackCard.style.display !== 'block') {
-          if (desc) desc.textContent = 'استغرق تحميل التطبيق وقتاً أطول من المعتاد. يمكنك النقر لتحديث ومسح الكاش فوراً:';
+          if (desc) desc.textContent = 'استغرق تحميل التطبيق وقتاً أطول من المعتاد (قد يكون ضعف اتصال أو كاش قديم). يمكنك جلب أحدث نسخة فوراً:';
           fallbackCard.style.display = 'block';
         }
       }
@@ -297,19 +333,24 @@
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
             <span style="font-size: 1.2rem;">⚠️</span>
             <h3 id="pre-react-fallback-title" style="font-size: 0.95rem; font-weight: 700; color: #f87171; margin: 0;">
-              تنبيه في تحميل الصفحة
+              تعذر تحميل واجهة التطبيق
             </h3>
           </div>
           <p id="pre-react-fallback-desc" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0 0 0.75rem 0;">
-            إذا استمرت الشاشة دون فتح التطبيق، يمكنك مسح الكاش وتحديث الصفحة فوراً:
+            حدث تعذر أثناء قراءة كود التحديث المنشور، أو أن الكاش القديم محتفظ بنسخة سابقة:
           </p>
           <div id="pre-react-error-details" style="display: none; background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 0.6rem; font-family: monospace; font-size: 0.75rem; color: #fca5a5; word-break: break-all; margin-bottom: 0.85rem; direction: ltr; text-align: left;">
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button type="button" onclick="window.__preReactClearCacheAndReload()" style="width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 10px; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
+            <button type="button" id="pre-react-reload-btn" onclick="window.__preReactClearCacheAndReload()" style="width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 10px; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
               <span>🔄</span>
-              <span>تحديث ومسح الكاش (Reload & Fix)</span>
+              <span>جلب أحدث كود نظيف من السيرفر</span>
+            </button>
+
+            <button type="button" id="pre-react-report-btn" onclick="window.__preReactSendReport()" style="width: 100%; background: #dc2626; color: #ffffff; border: none; border-radius: 10px; padding: 0.65rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
+              <span>📨</span>
+              <span>إرسال بلاغ فوري بالخطأ للدعم الفني</span>
             </button>
 
             <button type="button" onclick="window.__preReactCopyError()" id="pre-react-copy-btn" style="width: 100%; background: #334155; color: #e2e8f0; border: none; border-radius: 10px; padding: 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
