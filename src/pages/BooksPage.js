@@ -1898,9 +1898,11 @@ window.BooksPage = function(props) {
     setAudioStatusText("جاري الاتصال بمحرك الصوت...");
 
     try {
-      var audioUrl = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
+      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
         setAudioStatusText(msg);
       });
+      var audioUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
+      var subtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
 
       if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
 
@@ -1920,7 +1922,11 @@ window.BooksPage = function(props) {
       var chaps = (latestBook.audioChapters || []).slice();
       var cIdx = chaps.findIndex(function(c) { return c.id === chap.id; });
       if (cIdx >= 0) {
-        chaps[cIdx] = Object.assign({}, chaps[cIdx], { audioUrl: audioUrl });
+        var updatedChap = Object.assign({}, chaps[cIdx], { audioUrl: audioUrl });
+        if (subtitles && Array.isArray(subtitles) && subtitles.length > 0) {
+          updatedChap.subtitles = subtitles;
+        }
+        chaps[cIdx] = updatedChap;
         latestBook.audioChapters = chaps;
         setActiveBook(latestBook);
         utils.setLocal("counsel_book_data_" + latestBook.id, latestBook);
@@ -1981,9 +1987,11 @@ window.BooksPage = function(props) {
       setGeneratingAudioChapterId(curTarget.id);
 
       try {
-        var generatedUrl = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
+        var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
           setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + status);
         });
+        var generatedUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
+        var batchSubtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
 
         if (generatedUrl) {
           // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
@@ -1997,7 +2005,11 @@ window.BooksPage = function(props) {
 
           var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
           if (chapIdx >= 0) {
-            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], { audioUrl: finalUrl });
+            var updatedChap = Object.assign({}, workingChapters[chapIdx], { audioUrl: finalUrl });
+            if (batchSubtitles && Array.isArray(batchSubtitles) && batchSubtitles.length > 0) {
+              updatedChap.subtitles = batchSubtitles;
+            }
+            workingChapters[chapIdx] = updatedChap;
             workingBook = Object.assign({}, workingBook, { audioChapters: workingChapters.slice() });
             setActiveBook(workingBook);
             utils.setLocal("counsel_book_data_" + workingBook.id, workingBook);
