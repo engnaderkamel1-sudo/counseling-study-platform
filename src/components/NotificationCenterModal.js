@@ -31,8 +31,10 @@ window.NotificationCenterModal = function(props) {
 
   if (!isOpen) return null;
 
-  // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي)
+  // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي) مع استبعاد المحذوفة محلياً
+  var dismissedNotifIds = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
   var allowedNotifications = notifications.filter(function(n) {
+    if (dismissedNotifIds.indexOf(n.id) !== -1) return false;
     if (n.target === "user") {
       var currentUserId = currentUser ? (currentUser.id || "") : "";
       var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
@@ -48,24 +50,95 @@ window.NotificationCenterModal = function(props) {
   });
 
   var [isClearing, setIsClearing] = React.useState(false);
+  var [selectedIds, setSelectedIds] = React.useState([]);
 
-  var handleClearErrorNotifications = async function() {
-    if (!isAdmin || !window.db) return;
-    if (!confirm("هل تريد حذف جميع إشعارات الأعطال الفنية من القائمة؟")) return;
+  // تبديل اختيار إشعار محدد
+  var toggleSelectNotification = function(id, e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setSelectedIds(function(prev) {
+      if (prev.indexOf(id) !== -1) {
+        return prev.filter(function(x) { return x !== id; });
+      } else {
+        return prev.concat([id]);
+      }
+    });
+  };
+
+  // حذف إشعار فردي
+  var handleDeleteSingle = async function(notif, e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!isAdmin) {
+      // للمستخدم العادي: إخفاء الإشعار محلياً
+      var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+      dismissed.push(notif.id);
+      if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+      setSelectedIds(function(prev) { return prev.filter(function(x) { return x !== notif.id; }); });
+      return;
+    }
+    if (!confirm("هل أنت متأكد من حذف هذا التنبيه نهائياً؟")) return;
+    try {
+      if (window.db && notif.id) {
+        await window.db.collection("notifications").doc(notif.id).delete();
+      }
+      setSelectedIds(function(prev) { return prev.filter(function(x) { return x !== notif.id; }); });
+    } catch(err) {
+      alert("تعذر حذف التنبيه: " + (err.message || err));
+    }
+  };
+
+  // حذف التنبيهات المحددة
+  var handleDeleteSelected = async function() {
+    if (selectedIds.length === 0) return;
+    if (!confirm("هل تريد حذف التنبيهات المحددة (" + selectedIds.length + ") نهائياً؟")) return;
     setIsClearing(true);
     try {
-      var errNotifs = allowedNotifications.filter(function(n) { return n.type === "error_report"; });
-      var batch = window.db.batch();
-      errNotifs.forEach(function(n) {
-        if (n.id) {
-          var ref = window.db.collection("notifications").doc(n.id);
+      if (isAdmin && window.db) {
+        var batch = window.db.batch();
+        selectedIds.forEach(function(id) {
+          var ref = window.db.collection("notifications").doc(id);
           batch.delete(ref);
-        }
-      });
-      await batch.commit();
-      alert("✅ تم تنظيف إشعارات الأعطال الفنية بنجاح!");
+        });
+        await batch.commit();
+      } else {
+        var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+        dismissed = dismissed.concat(selectedIds);
+        if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+      }
+      setSelectedIds([]);
+      alert("✅ تم حذف التنبيهات المحددة بنجاح!");
     } catch(err) {
-      alert("حدث خطأ أثناء التنظيف: " + (err.message || err));
+      alert("حدث خطأ أثناء الحذف: " + (err.message || err));
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  // مسح جميع التنبيهات المعروضة دفعة واحدة
+  var handleDeleteAll = async function() {
+    var count = allowedNotifications.length;
+    if (count === 0) return;
+    if (!confirm("هل أنت متأكد من مسح جميع التنبيهات (" + count + ") بالكامل؟")) return;
+    setIsClearing(true);
+    try {
+      if (isAdmin && window.db) {
+        var batch = window.db.batch();
+        allowedNotifications.forEach(function(n) {
+          if (n.id) {
+            var ref = window.db.collection("notifications").doc(n.id);
+            batch.delete(ref);
+          }
+        });
+        await batch.commit();
+      } else {
+        var allIds = allowedNotifications.map(function(n) { return n.id; }).filter(Boolean);
+        var dismissed = utils.getLocal ? utils.getLocal("counsel_dismissed_notifs", []) : [];
+        dismissed = dismissed.concat(allIds);
+        if (utils.setLocal) utils.setLocal("counsel_dismissed_notifs", dismissed);
+      }
+      setSelectedIds([]);
+      alert("✅ تم مسح جميع التنبيهات بنجاح!");
+    } catch(err) {
+      alert("حدث خطأ أثناء مسح التنبيهات: " + (err.message || err));
     } finally {
       setIsClearing(false);
     }
@@ -278,16 +351,28 @@ window.NotificationCenterModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2" },
-          isAdmin && allowedNotifications.some(function(n) { return n.type === "error_report"; }) && React.createElement(
+          { className: "flex items-center gap-2 flex-wrap justify-end" },
+          // زر حذف التنبيهات المحددة
+          selectedIds.length > 0 && React.createElement(
             "button",
             {
               type: "button",
               disabled: isClearing,
-              onClick: handleClearErrorNotifications,
+              onClick: handleDeleteSelected,
+              className: "text-[11px] bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60 px-2 py-1 rounded-lg font-bold transition-all"
+            },
+            isClearing ? "جاري الحذف..." : "حذف المحدد (" + selectedIds.length + ") 🗑️"
+          ),
+          // زر مسح الكل
+          allowedNotifications.length > 0 && React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearing,
+              onClick: handleDeleteAll,
               className: "text-[11px] text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 font-bold hover:underline"
             },
-            isClearing ? "جاري الحذف..." : "حذف إشعارات الأعطال 🗑️"
+            "مسح الكل 🗑️"
           ),
           unreadCount > 0 && React.createElement(
             "button",
@@ -313,6 +398,7 @@ window.NotificationCenterModal = function(props) {
           React.createElement("p", { className: "text-xs text-slate-400" }, "ستصلك هنا تنبيهات فور نزول أي محاضرة أو ملف دراسي جديد.")
         ) : filteredNotifications.map(function(item) {
           var isRead = readIds.indexOf(item.id) !== -1;
+          var isSelected = selectedIds.indexOf(item.id) !== -1;
           var timeStr = formatNotifTime(item.createdAt);
 
           return React.createElement(
@@ -324,15 +410,30 @@ window.NotificationCenterModal = function(props) {
                 if (onSelectNotification) onSelectNotification(item);
                 if (onClose) onClose();
               },
-              className: "p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 " +
+              className: "p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-2.5 " +
+                (isSelected ? "ring-2 ring-blue-500 " : "") +
                 (isRead
                   ? "bg-slate-50/60 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/60"
                   : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70 text-slate-900 dark:text-white shadow-2xs hover:bg-emerald-50/70")
             },
+            // مربع تحديد الإشعار (Checkbox)
+            React.createElement(
+              "div",
+              {
+                className: "pt-1 shrink-0",
+                onClick: function(e) { toggleSelectNotification(item.id, e); }
+              },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: isSelected,
+                onChange: function(e) { toggleSelectNotification(item.id, e); },
+                className: "w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              })
+            ),
             // نقطة حالة القراءة
-            React.createElement("div", { className: "pt-1 shrink-0" },
-              !isRead ? React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 block shadow-xs" })
-                      : React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 block" })
+            React.createElement("div", { className: "pt-1.5 shrink-0" },
+              !isRead ? React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 block shadow-xs" })
+                      : React.createElement("span", { className: "w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 block" })
             ),
             // محتوى الإشعار
             React.createElement(
@@ -344,7 +445,21 @@ window.NotificationCenterModal = function(props) {
                 React.createElement("h4", { className: "text-xs font-bold truncate " + (isRead ? "text-slate-700 dark:text-slate-300" : "text-slate-900 dark:text-white") },
                   item.title
                 ),
-                React.createElement("span", { className: "text-[10px] text-slate-400 font-mono shrink-0" }, timeStr)
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-1.5 shrink-0" },
+                  React.createElement("span", { className: "text-[10px] text-slate-400 font-mono" }, timeStr),
+                  React.createElement(
+                    "button",
+                    {
+                      type: "button",
+                      title: "حذف هذا التنبيه",
+                      onClick: function(e) { handleDeleteSingle(item, e); },
+                      className: "text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-0.5 rounded transition-colors text-xs"
+                    },
+                    "🗑️"
+                  )
+                )
               ),
               React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed" },
                 item.body
