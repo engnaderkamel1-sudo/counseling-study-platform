@@ -1,8 +1,5 @@
 {
   "name": "counseling-study-platform",
   "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "edge-tts-universal": "^1.1.1"
-  }
+  "private": true
 }
