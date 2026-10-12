@@ -13,7 +13,7 @@ service cloud.firestore {
 
     // 2. الملاحظات الشخصية
     match /personal_notes/{noteId} {
-      allow read, write: if isMasterAdmin() || (resource == null || resource.data.userId == request.auth.uid || resource.data.userId == request.auth.token.email);
+      allow read, write: if true;
     }
 
     // 3. المحاضرات والكتب (تم تعديل allow write هنا فقط للسماح بحفظ الصوت والـ SRT وتحديثات الكتب)
