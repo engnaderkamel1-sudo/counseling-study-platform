@@ -16,6 +16,7 @@ window.ChapterTextViewerModal = function(props) {
 
   var currentUser = props.currentUser;
   var onUpdateTimeOffset = props.onUpdateTimeOffset;
+  var onSaveChapterSubtitles = props.onSaveChapterSubtitles;
 
   var utils = window.APP_UTILS || {};
   var isAdmin = !!(currentUser && currentUser.role === "admin");

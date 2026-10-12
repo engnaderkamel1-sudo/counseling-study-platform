@@ -14,14 +14,6 @@ window.FIREBASE_CONFIG = {
       firebase.initializeApp(window.FIREBASE_CONFIG);
     }
     window.db = firebase.firestore();
-    try {
-      window.db.settings({
-        experimentalForceLongPolling: true,
-        merge: true
-      });
-    } catch (settingErr) {
-      console.warn("Firestore settings notice:", settingErr);
-    }
     if (typeof firebase.auth === "function") {
       try {
         window.auth = firebase.auth();
