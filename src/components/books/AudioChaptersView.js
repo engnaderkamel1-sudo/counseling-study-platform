@@ -589,16 +589,22 @@ window.AudioChaptersView = function(props) {
 
     var onCanPlay = function() {
       restoreSavedPosition(audio, playingChapterId);
-      if (audio.paused) {
-        audio.play().catch(function(err) {
-          console.warn("Autoplay was prevented by browser policy:", err);
-        });
-      }
     };
 
     var updatePlayState = function() {
       var isPlaying = !audio.paused;
       setIsAudioPlaying(isPlaying);
+      if (isPlaying) {
+        // قاعدة المشغل الحصري: إيقاف أي مشغل صوتي آخر في الصفحة فوراً لمنع تكرار الصوت
+        try {
+          var allAudios = document.querySelectorAll("audio");
+          for (var ai = 0; ai < allAudios.length; ai++) {
+            if (allAudios[ai] !== audio && !allAudios[ai].paused) {
+              allAudios[ai].pause();
+            }
+          }
+        } catch (e) {}
+      }
       if (!isPlaying && activeBook && activeBook.id && playingChapterId && audio.currentTime > 0) {
         try {
           localStorage.setItem("counsel_audio_pos_" + activeBook.id + "_" + playingChapterId, audio.currentTime.toString());
@@ -1506,9 +1512,6 @@ window.AudioChaptersView = function(props) {
           onCanPlay: function(e) {
             setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
-            if (e.target && e.target.paused) {
-              e.target.play().catch(function() {});
-            }
           },
           onError: function(e) {
             // التحقق مما إذا كان هناك خطأ حقيقي في الرابط أم مجرد تفريغ مؤقت للـ buffer أثناء الانتقال
@@ -1516,6 +1519,9 @@ window.AudioChaptersView = function(props) {
             if (!mediaError) return;
             var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
             if (driveId) {
+              if (e.target) {
+                try { e.target.pause(); } catch (pErr) {}
+              }
               setUseIframePlayer(true);
               return;
             }
