@@ -246,6 +246,90 @@ window.EdgeTtsService = {
     };
   },
 
+  // محرك بديل: Google Cloud Text-to-Speech باستخدام مفتاح Gemini/Google AI Studio المخزن في التطبيق
+  _generateWithGoogleTts: async function(text, onProgress) {
+    var self = this;
+    var apiKey = "";
+    if (window.GeminiAIService && typeof window.GeminiAIService.getApiKey === "function") {
+      apiKey = await window.GeminiAIService.getApiKey();
+    }
+    if (!apiKey) {
+      apiKey = window.APP_UTILS ? window.APP_UTILS.getLocal("counsel_ai_api_key", "") : "";
+    }
+
+    if (!apiKey) {
+      throw new Error("لا يوجد مفتاح Google API مخزن في التطبيق لاستخدامه كمحرك احتياطي. يرجى حفظ المفتاح من الإعدادات.");
+    }
+
+    if (typeof onProgress === "function") {
+      onProgress("جاري توليد الصوت عبر محرك Google الاحتياطي...");
+    }
+
+    // Google Cloud Text-to-Speech API
+    var endpoint = "https://texttospeech.googleapis.com/v1/text:synthesize?key=" + encodeURIComponent(apiKey);
+    var payload = {
+      input: { text: text },
+      voice: {
+        languageCode: "ar-XA",
+        name: "ar-XA-Wavenet-A" // صوت عربي أنثوي فصيح عالي النقاء
+      },
+      audioConfig: {
+        audioEncoding: "MP3",
+        speakingRate: 1.0,
+        pitch: 0.0
+      }
+    };
+
+    var resp = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+      var errData = null;
+      try { errData = await resp.json(); } catch (e) {}
+      var msg = (errData && errData.error && errData.error.message) ? errData.error.message : ("رمز الخطأ: " + resp.status);
+      throw new Error("فشل توليد الصوت عبر محرك Google: " + msg);
+    }
+
+    var result = await resp.json();
+    if (!result.audioContent) {
+      throw new Error("لم يتم استلام محتوى صوتي من محرك Google.");
+    }
+
+    // تحويل base64 إلى Blob
+    var byteChars = atob(result.audioContent);
+    var byteNums = new Array(byteChars.length);
+    for (var i = 0; i < byteChars.length; i++) {
+      byteNums[i] = byteChars.charCodeAt(i);
+    }
+    var byteArray = new Uint8Array(byteNums);
+    var blob = new Blob([byteArray], { type: "audio/mp3" });
+    var audioUrl = URL.createObjectURL(blob);
+    var duration = await self._getAudioDuration(blob);
+
+    return {
+      audioUrl: audioUrl,
+      blob: blob,
+      duration: duration
+    };
+  },
+
+  // توليد مقطع واحد مع التبديل التلقائي الذكي (Smart Failover): يحاول أولاً Edge-TTS وإذا فشل يلجأ تلقائياً إلى Google TTS
+  _generateSingleChunkWithFallback: async function(chunkText, voiceKey, onProgress) {
+    var self = this;
+    try {
+      return await self._generateSingleChunk(chunkText, voiceKey, onProgress);
+    } catch (edgeErr) {
+      console.warn("Edge-TTS chunk failed, trying Google TTS fallback:", edgeErr);
+      if (typeof onProgress === "function") {
+        onProgress("⚠️ تعذر سيرفر Edge، جاري التبديل التلقائي لمحرك Google لضمان التوليد...");
+      }
+      return await self._generateWithGoogleTts(chunkText, onProgress);
+    }
+  },
+
   // الدالة العامة: توليد مقطع صوتي لنص معين (تدعم النصوص القصيرة والضخمة عبر التقطيع والدمج التلقائي)
   generateAudioForText: async function(text, voiceKey, onProgress) {
     var self = this;
@@ -263,9 +347,9 @@ window.EdgeTtsService = {
     // حالة النص القصير (مقطع واحد فقط)
     if (chunks.length === 1) {
       if (typeof onProgress === "function") {
-        onProgress("جاري توليد الصوت بصوت سلمى...");
+        onProgress("جاري توليد الصوت بصوت سلمى (مع الحماية التلقائية)...");
       }
-      var singleRes = await self._generateSingleChunk(chunks[0], voice, onProgress);
+      var singleRes = await self._generateSingleChunkWithFallback(chunks[0], voice, onProgress);
       var singleSubs = self._buildSubtitlesForChunk(chunks[0], 0, singleRes.duration);
 
       return {
@@ -289,12 +373,12 @@ window.EdgeTtsService = {
         onProgress(progressMsg);
       }
 
-      // محاولة التوليد مع إعادة المحاولة لمرة واحدة في حال حدوث أي خطأ عابر
+      // محاولة التوليد عبر Edge أولاً ثم السقوط التلقائي الآمن إلى Google TTS
       var chunkRes = null;
       var lastErr = null;
       for (var retry = 0; retry < 2; retry++) {
         try {
-          chunkRes = await self._generateSingleChunk(chunkText, voice, onProgress);
+          chunkRes = await self._generateSingleChunkWithFallback(chunkText, voice, onProgress);
           break;
         } catch (err) {
           lastErr = err;
