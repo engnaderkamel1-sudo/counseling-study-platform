@@ -2076,13 +2076,9 @@ window.BooksPage = function(props) {
       alert("الرجاء كتابة اسم الفصل (مثال: المقدمة أو الفصل الأول)");
       return;
     }
-    if (!chapAudioUrl.trim() && !chapAudioFile) {
-      alert("الرجاء اختيار ملف الصوت (MP3) أو وضع رابط الصوت للفصل");
-      return;
-    }
-
+    // أصبح ملف الصوت وصفحة البداية اختياريين تماماً للتمكن من كتابة النص أو لصقه وتوليد الصوت لاحقاً بالذكاء الاصطناعي
     setIsSavingChapter(true);
-    setChapterSaveStatus("جاري معالجة الفصل ورفع الصوت...");
+    setChapterSaveStatus("جاري حفظ بيانات الفصل...");
 
     try {
       var finalAudio = chapAudioUrl.trim();

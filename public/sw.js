@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v5';
+const CACHE_NAME = 'counseling-pwa-v6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

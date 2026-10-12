@@ -1,4 +1,4 @@
-﻿// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ مع تحديد الموضع والترتيب
+// مودال إضافة أو تعديل الفصل الصوتي والنص المفرغ مع تحديد الموضع والترتيب
 window.ChapterEditModal = function(props) {
   var isOpen = props.isOpen;
   var onClose = props.onClose;
@@ -61,20 +61,21 @@ window.ChapterEditModal = function(props) {
         })
       ),
 
-      // نطاق الصفحات في الـ PDF (بداية ونهاية)
+      // نطاق الصفحات في الـ PDF (اختياري)
       React.createElement(
         "div",
         { className: "grid grid-cols-2 gap-3" },
         React.createElement(
           "div",
           { className: "space-y-1" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "صفحة البداية في PDF * :"),
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "صفحة البداية في PDF (اختياري):"),
           React.createElement("input", {
             type: "number",
             min: 1,
-            required: true,
-            value: chapStartPage,
+            required: false,
+            value: chapStartPage || "",
             onChange: function(e) { setChapStartPage(e.target.value); },
+            placeholder: "1",
             className: "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-bold text-center"
           })
         ),
