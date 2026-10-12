@@ -160,7 +160,7 @@ window.SplashScreen = function(props) {
             "span",
             { className: "font-cairo text-slate-300 flex items-center gap-1" },
             isPaused
-              ? React.createElement("span", { className: "text-amber-400 font-bold" }, "مُتوقف مؤقتاً باللمس...")
+              ? React.createElement("span", { className: "text-amber-400 font-bold" }, "متوقف مؤقتاً...")
               : "جاري تجهيز المنصة..."
           ),
           React.createElement("span", { className: "font-bold text-amber-400" }, Math.min(100, Math.round(progress)) + "%")
@@ -175,15 +175,10 @@ window.SplashScreen = function(props) {
         )
       ),
 
-      // تلميح لمس الشاشة + التنويه بعدم التبعية الرسمية
+      // التنويه بعدم التبعية الرسمية
       React.createElement(
         "div",
         { className: "flex flex-col items-center gap-1 pt-1" },
-        React.createElement(
-          "span",
-          { className: "text-[10px] text-slate-500 dark:text-slate-400 font-medium" },
-          "💡 المس الشاشة باستمرار لإيقاف المؤقت وإكمال القراءة"
-        ),
         React.createElement(
           "p",
           { className: "text-[11px] sm:text-xs text-slate-400 text-center font-normal" },

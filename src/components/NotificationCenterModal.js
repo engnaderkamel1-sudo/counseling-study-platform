@@ -155,14 +155,17 @@ window.NotificationCenterModal = function(props) {
         props.onNotificationsDeleted(allIds);
       }
 
-      // 2. محاولة الحذف السحابي في Firestore دفعة وفردياً كاحتياط
-      if (window.db && allIds.length > 0) {
+      // 2. الحذف السحابي الشامل لكافة الإشعارات في Firestore (حتى لا تعود الإشعارات القديمة المتراكمة)
+      if (window.db) {
         try {
-          var batch = window.db.batch();
-          allIds.forEach(function(id) {
-            batch.delete(window.db.collection("notifications").doc(id));
-          });
-          await batch.commit();
+          var fullSnap = await window.db.collection("notifications").limit(500).get();
+          if (!fullSnap.empty) {
+            var batch = window.db.batch();
+            fullSnap.forEach(function(docSnap) {
+              batch.delete(docSnap.ref);
+            });
+            await batch.commit();
+          }
         } catch(cloudErr) {
           console.warn("Cloud batch deleteAll notice, trying fallback single deletes:", cloudErr.message);
           for (var j = 0; j < allIds.length; j++) {
