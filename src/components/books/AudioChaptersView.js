@@ -287,8 +287,7 @@ window.AudioChaptersView = function(props) {
       if (handleSaveChapterSubtitles) {
         await handleSaveChapterSubtitles(targetChap.id, generatedSubs);
       }
-      downloadSubtitlesAsFile(generatedSubs);
-      alert("✅ تم توليد وحفظ تزامن SRT (" + generatedSubs.length + " جملة) وتنزيل الملف على جهازك بنجاح!");
+      alert("✅ تم ضبط وحفظ تزامن الـ SRT بنجاح (" + generatedSubs.length + " جملة)! المشغل سيتتبع ويظلل النص تلقائياً الآن.");
     } catch (err) {
       alert("⚠️ خطأ في معالجة الـ SRT: " + (err.message || err));
     } finally {
@@ -1849,10 +1848,10 @@ window.AudioChaptersView = function(props) {
                     : hasSubs
                       ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
                       : "bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-800 active:scale-95"),
-                title: hasSubs ? "ملف الـ SRT محفوظ بالفعل (اضغط لتنزيل ملف " + chap.subtitles.length + " جملة)" : "توليد توقيتات الـ SRT وحفظها وتنزيلها"
+                title: hasSubs ? ("تزامن الـ SRT محفوظ وجاهز بالمشغل (" + chap.subtitles.length + " جملة) - اضغط للتحديث") : "توليد توقيتات الـ SRT وحفظها للمشغل"
               },
-              React.createElement("span", null, isSrtGen ? "⏳" : (hasSubs ? "📥" : "⚡")),
-              React.createElement("span", null, isSrtGen ? "جاري معالجة SRT..." : (hasSubs ? "تنزيل SRT (" + chap.subtitles.length + ")" : "توليد SRT"))
+              React.createElement("span", null, isSrtGen ? "⏳" : (hasSubs ? "✓" : "⚡")),
+              React.createElement("span", null, isSrtGen ? "جاري ضبط SRT..." : (hasSubs ? "الـ SRT جاهز (" + chap.subtitles.length + " جملة)" : "توليد الـ SRT"))
               );
             })(),
 
