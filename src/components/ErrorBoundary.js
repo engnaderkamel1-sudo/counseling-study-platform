@@ -31,9 +31,27 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
         stack: (error && error.stack) ? error.stack : (errorInfo ? errorInfo.componentStack : ""),
         time: new Date().toISOString()
       };
-      // إرسال تقرير الخطأ تلقائياً للمشرفين
+      // إرسال تقرير الخطأ تلقائياً للمشرفين بشرط عدم تكرار البلاغ لنفس الخطأ خلال فترة قصيرة (Cooldown)
       try {
-        this.handleSendCrashReport();
+        var errFingerprint = (error ? (error.message || String(error)) : "Unknown") + "_" + (window.location.hash || "");
+        var lastSentKey = "counsel_last_crash_report";
+        var lastSentData = null;
+        try {
+          var rawLast = sessionStorage.getItem(lastSentKey);
+          if (rawLast) lastSentData = JSON.parse(rawLast);
+        } catch (eStorage) {}
+
+        var now = Date.now();
+        // إرسال البلاغ فقط إذا لم يُرسل نفس الخطأ خلال آخر 5 دقائق (300,000 مللي ثانية)
+        var cooldownPeriod = 5 * 60 * 1000;
+        if (!lastSentData || lastSentData.fingerprint !== errFingerprint || (now - lastSentData.time) > cooldownPeriod) {
+          try {
+            sessionStorage.setItem(lastSentKey, JSON.stringify({ fingerprint: errFingerprint, time: now }));
+          } catch(eSet) {}
+          this.handleSendCrashReport();
+        } else {
+          console.warn("ErrorBoundary: Crash report throttled (already sent recently for this error).");
+        }
       } catch (eAuto) {}
     }
   }
@@ -109,12 +127,9 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
       });
 
       this.setState({ sentSuccess: true, isSending: false });
-      var self = this;
-      setTimeout(function() {
-        self.handleRecover();
-      }, 2000);
+      // لا نقوم بعمل reload تلقائي لمنع حدوث حلقة لا نهائية إذا استمر الخطأ
     } catch (err) {
-      alert("فشل إرسال البلاغ: " + err.message);
+      console.warn("فشل إرسال البلاغ:", err);
       this.setState({ isSending: false });
     }
   };

@@ -47,6 +47,30 @@ window.NotificationCenterModal = function(props) {
     return true;
   });
 
+  var [isClearing, setIsClearing] = React.useState(false);
+
+  var handleClearErrorNotifications = async function() {
+    if (!isAdmin || !window.db) return;
+    if (!confirm("هل تريد حذف جميع إشعارات الأعطال الفنية من القائمة؟")) return;
+    setIsClearing(true);
+    try {
+      var errNotifs = allowedNotifications.filter(function(n) { return n.type === "error_report"; });
+      var batch = window.db.batch();
+      errNotifs.forEach(function(n) {
+        if (n.id) {
+          var ref = window.db.collection("notifications").doc(n.id);
+          batch.delete(ref);
+        }
+      });
+      await batch.commit();
+      alert("✅ تم تنظيف إشعارات الأعطال الفنية بنجاح!");
+    } catch(err) {
+      alert("حدث خطأ أثناء التنظيف: " + (err.message || err));
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   var markAllAsRead = function() {
     var allIds = allowedNotifications.map(function(n) { return n.id; }).filter(Boolean);
     setReadIds(allIds);
@@ -252,14 +276,28 @@ window.NotificationCenterModal = function(props) {
             unreadCount > 0 && React.createElement("span", { className: "w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-mono flex items-center justify-center font-bold" }, unreadCount)
           )
         ),
-        unreadCount > 0 && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: markAllAsRead,
-            className: "text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold"
-          },
-          "تحديد الكل كمقروء ✓"
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          isAdmin && allowedNotifications.some(function(n) { return n.type === "error_report"; }) && React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearing,
+              onClick: handleClearErrorNotifications,
+              className: "text-[11px] text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 font-bold hover:underline"
+            },
+            isClearing ? "جاري الحذف..." : "حذف إشعارات الأعطال 🗑️"
+          ),
+          unreadCount > 0 && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: markAllAsRead,
+              className: "text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold"
+            },
+            "تحديد الكل كمقروء ✓"
+          )
         )
       ),
 

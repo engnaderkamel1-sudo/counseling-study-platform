@@ -237,6 +237,21 @@ window.NotificationService = {
         linkTab: "errors",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
+
+      // فحص سريع لمنع تكرار نفس الإشعار خلال دقائق قصيرة
+      var notifKey = "counsel_last_err_notif_" + (report.page || "");
+      var lastSent = 0;
+      try {
+        lastSent = parseInt(sessionStorage.getItem(notifKey) || "0", 10);
+      } catch (eStorage) {}
+      if (Date.now() - lastSent < 5 * 60 * 1000) {
+        console.warn("notifyAdminNewErrorReport: Duplicate skipped within cooldown.");
+        return;
+      }
+      try {
+        sessionStorage.setItem(notifKey, String(Date.now()));
+      } catch (eSet) {}
+
       await window.db.collection("notifications").add(notifData);
     } catch (e) {
       console.warn("Could not send admin error report notification:", e);
