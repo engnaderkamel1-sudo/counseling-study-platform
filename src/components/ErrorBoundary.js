@@ -119,10 +119,11 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
     }
   };
 
-  handleRecover = () => {
+  handleRecover = (targetTab) => {
+    var tab = targetTab || "lectures";
     try {
-      window.location.hash = "#lectures";
-      localStorage.setItem("counsel_active_tab", "lectures");
+      window.location.hash = "#" + tab;
+      localStorage.setItem("counsel_active_tab", tab);
     } catch (e) {}
     this.setState({ hasError: false, error: null, errorInfo: null, sentSuccess: false });
     window.location.reload();
@@ -199,19 +200,36 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
           React.createElement("div", { className: "text-xs text-emerald-400" }, "جاري نقلك للصفحة الرئيسية...")
         ) : React.createElement(
           "div",
-          { className: "flex flex-col sm:flex-row items-center gap-3 pt-2" },
-          React.createElement("button", {
-            type: "button",
-            disabled: this.state.isSending,
-            onClick: this.handleSendCrashReport,
-            className: "w-full sm:w-1/2 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2 transition-all"
-          }, this.state.isSending ? "جاري إرسال البلاغ..." : "إرسال البلاغ للأدمن 🚨"),
-          
-          React.createElement("button", {
-            type: "button",
-            onClick: this.handleRecover,
-            className: "w-full sm:w-1/2 py-3 rounded-2xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all"
-          }, "العودة للرئيسية 🏠")
+          { className: "space-y-3 pt-2" },
+          React.createElement("p", { className: "text-xs font-bold text-slate-300 text-center" }, "يمكنك متابعة التصفح عبر الانتقال لقسم بديل بالمنصة:"),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-3 gap-2" },
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { self.handleRecover("lectures"); },
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+            },
+              React.createElement("span", { className: "text-base" }, "🎧"),
+              React.createElement("span", null, "المحاضرات")
+            ),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { self.handleRecover("books"); },
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+            },
+              React.createElement("span", { className: "text-base" }, "📚"),
+              React.createElement("span", null, "المكتبة")
+            ),
+            React.createElement("button", {
+              type: "button",
+              onClick: function() { self.handleRecover("guide"); },
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+            },
+              React.createElement("span", { className: "text-base" }, "📖"),
+              React.createElement("span", null, "دليل الطالب")
+            )
+          )
         ),
 
         // إظهار كود الخطأ بشكل مصغر قابل للطي

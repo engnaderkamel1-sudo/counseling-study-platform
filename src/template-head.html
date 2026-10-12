@@ -247,12 +247,13 @@
       });
     };
 
-    window.__preReactGoToWorkingPage = function() {
+    window.__preReactGoToSection = function(tabName) {
+      var tab = tabName || 'lectures';
       try {
-        localStorage.setItem('counsel_active_tab', 'lectures');
-        window.location.hash = '#lectures';
+        localStorage.setItem('counsel_active_tab', tab);
+        window.location.hash = '#' + tab;
       } catch (e) {}
-      window.location.href = window.location.origin + window.location.pathname + '#lectures';
+      window.location.href = window.location.origin + window.location.pathname + '#' + tab;
     };
 
     window.__preReactCopyError = function() {
@@ -340,13 +341,28 @@
             </div>
           </details>
 
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <button type="button" onclick="window.__preReactGoToWorkingPage()" style="width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 12px; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
-              <span>🏠</span>
-              <span>محاولة فتح الصفحة الرئيسية الشغالة</span>
-            </button>
+          <div style="margin-top: 1rem; width: 100%;">
+            <p style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-bottom: 0.6rem;">
+              يمكنك متابعة التصفح عبر الانتقال لقسم بديل بالمنصة:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <button type="button" onclick="window.__preReactGoToSection('lectures')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+                <span style="font-size: 1.1rem;">🎧</span>
+                <span>المحاضرات</span>
+              </button>
 
-            <button type="button" onclick="window.__preReactCopyError()" id="pre-react-copy-btn" style="width: 100%; background: #334155; color: #e2e8f0; border: none; border-radius: 12px; padding: 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
+              <button type="button" onclick="window.__preReactGoToSection('books')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+                <span style="font-size: 1.1rem;">📚</span>
+                <span>المكتبة</span>
+              </button>
+
+              <button type="button" onclick="window.__preReactGoToSection('guide')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+                <span style="font-size: 1.1rem;">📖</span>
+                <span>دليل الطالب</span>
+              </button>
+            </div>
+
+            <button type="button" onclick="window.__preReactCopyError()" id="pre-react-copy-btn" style="width: 100%; background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 10px; padding: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
               <span>📋</span>
               <span>نسخ تفاصيل الخطأ</span>
             </button>
