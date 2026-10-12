@@ -262,7 +262,7 @@
       }
     });
 
-    // مؤقت أمان في حال علق التحميل لأكثر من 7 ثوانٍ
+    // مؤقت أمان في حال استغرق التحميل أكثر من 3.5 ثانية (لتجربة مستخدم سريعة)
     setTimeout(function() {
       if (!window.__reactMounted) {
         var fallbackCard = document.getElementById('pre-react-fallback-card');
@@ -272,7 +272,7 @@
           fallbackCard.style.display = 'block';
         }
       }
-    }, 7000);
+    }, 3500);
   </script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen selection:bg-slate-800 selection:text-white">
