@@ -20,21 +20,24 @@ window.SettingsPage = function(props) {
   var [savedToast, setSavedToast] = React.useState(false);
   var [copiedToast, setCopiedToast] = React.useState(false);
 
-  // إعدادات محرك الصوت Microsoft Azure Speech
+  // إعدادات محرك الصوت الذكي Google Gemini TTS
   var ttsService = window.EdgeTtsService;
-  var initialAzure = ttsService ? ttsService.getAzureConfig() : { key1: "", key2: "", region: "eastus", voice: "ar-EG-SalmaNeural" };
-  var [azureKey1, setAzureKey1] = React.useState(initialAzure.key1);
-  var [azureKey2, setAzureKey2] = React.useState(initialAzure.key2);
-  var [azureRegion, setAzureRegion] = React.useState(initialAzure.region);
-  var [azureSavedToast, setAzureSavedToast] = React.useState(false);
+  var geminiVoices = (ttsService && ttsService.GEMINI_VOICES) || [
+    { id: "Aoede", name: "Aoede (صوت نسائي دافئ وهادئ - موصى به لكتب المشورة)", gender: "female" },
+    { id: "Kore", name: "Kore (صوت نسائي ناعم ومريح)", gender: "female" },
+    { id: "Leda", name: "Leda (صوت نسائي متزن وواضح)", gender: "female" },
+    { id: "Callirrhoe", name: "Callirrhoe (صوت نسائي خفيف ومشرق)", gender: "female" },
+    { id: "Puck", name: "Puck (صوت رجالي طبيعي وحيوي)", gender: "male" },
+    { id: "Fenrir", name: "Fenrir (صوت رجالي عميق ووقور)", gender: "male" },
+    { id: "Charon", name: "Charon (صوت رجالي هادئ وناضج)", gender: "male" }
+  ];
+  var initialVoice = (ttsService && ttsService.getVoiceConfig().voice) || "Aoede";
+  var [selectedVoice, setSelectedVoice] = React.useState(initialVoice);
+  var [voiceSavedToast, setVoiceSavedToast] = React.useState(false);
 
   // حالة فحص وتجربة الصوت المباشر
   var [isTestingAudio, setIsTestingAudio] = React.useState(false);
   var [audioTestMsg, setAudioTestMsg] = React.useState("");
-
-  // إحصائيات استهلاك الكوتا
-  var usageStats = ttsService ? ttsService.getUsageStats() : { key1Chars: 0, key2Chars: 0 };
-  var quotaLimit = (ttsService && ttsService.MONTHLY_QUOTA_LIMIT) || 500000;
 
   React.useEffect(function() {
     var loadCloudKey = async function() {
@@ -77,36 +80,32 @@ window.SettingsPage = function(props) {
     setTimeout(function() { setSavedToast(false); }, 2500);
   };
 
-  // حفظ إعدادات محرك Azure Speech
-  var handleSaveAzureConfig = function(e) {
+  // حفظ الصوت المختار
+  var handleSaveVoiceConfig = function(e) {
     if (e) e.preventDefault();
     if (ttsService) {
-      ttsService.saveAzureConfig({
-        key1: azureKey1,
-        key2: azureKey2,
-        region: azureRegion
-      });
+      ttsService.saveVoiceConfig({ voice: selectedVoice });
     }
-    setAzureSavedToast(true);
-    setTimeout(function() { setAzureSavedToast(false); }, 2500);
+    setVoiceSavedToast(true);
+    setTimeout(function() { setVoiceSavedToast(false); }, 2500);
   };
 
-  // تجربة صوت سلمى مباشرة والتأكد من نقائه
-  var handleTestAzureAudio = async function() {
-    if (!azureKey1 && !azureKey2) {
-      alert("يرجى إدخال مفتاح واحد على الأقل أولاً لتجربة الصوت.");
+  // تجربة الصوت المختار مباشرة عبر Gemini والتأكد من نقائه
+  var handleTestGeminiAudio = async function() {
+    var activeKey = apiKey || (utils ? utils.getLocal(cfg.storageKeys.apiKey, "") : "");
+    if (!activeKey) {
+      alert("يرجى حفظ مفتاح الذكاء الاصطناعي في الخانة أعلاه أولاً لتجربة الصوت.");
       return;
     }
 
-    // حفظ المفاتيح قبل الفحص
-    handleSaveAzureConfig();
+    handleSaveVoiceConfig();
 
     setIsTestingAudio(true);
-    setAudioTestMsg("جاري الاتصال بمحرك Azure وتوليد صوت سلمى...");
+    setAudioTestMsg("جاري توليد نبرة صوت " + selectedVoice + " عبر Gemini...");
 
     try {
-      var testText = "إن معرفة النفس وقبول مشاعرنا بصدق، هي الخطوة الأولى نحو الشفاء الداخلي والنضج الروحي الحقيقي.";
-      var res = await ttsService.generateAudioForText(testText, null, function(st) {
+      var testText = "إن معرفة النفس وقبول مشاعرنا الإنسانية بصدق، هي الخطوة الأولى نحو الشفاء الداخلي والنضج الروحي الحقيقي.";
+      var res = await ttsService.generateAudioForText(testText, selectedVoice, function(st) {
         setAudioTestMsg(st);
       });
 
@@ -114,7 +113,7 @@ window.SettingsPage = function(props) {
       if (!audioUrl) throw new Error("لم يتم استلام رابط صوتي من الخدمة.");
 
       var audio = new Audio(audioUrl);
-      setAudioTestMsg("🔊 جاري تشغيل صوت سلمى الآن...");
+      setAudioTestMsg("🔊 جاري تشغيل صوت " + selectedVoice + " الآن...");
       audio.onended = function() {
         setAudioTestMsg("✓ تم الاستماع بنجاح! الصوت شغال ونقي 100%.");
         setTimeout(function() { setAudioTestMsg(""); }, 5000);
@@ -185,7 +184,7 @@ window.SettingsPage = function(props) {
       )
     ),
 
-    // بطاقة محرك الصوت الرسمي Microsoft Azure Speech (باقة مجانية 500,000 حرف لكل حساب)
+    // بطاقة استوديو أصوات الذكاء الاصطناعي (Google Gemini AI Voice Studio)
     React.createElement(
       "div",
       { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5" },
@@ -197,96 +196,48 @@ window.SettingsPage = function(props) {
           null,
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
             React.createElement("span", null, "🎙️"),
-            "محرك الصوت الرسمي (Microsoft Azure Speech)"
+            "استوديو أصوات الذكاء الاصطناعي (Google Gemini Voice Studio)"
           ),
           React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" },
-            "توليد صوت «سلمى» الرسمي النقي (`ar-EG-SalmaNeural`) مع دعم مفتاحين للتبديل الذكي ومراقبة الكوتا."
+            "توليد الكتب الصوتية رسمياً عبر نموذج Gemini 3.8 Flash TTS باستخدام مفتاحك المحفوظ أعلاه بدون أي حسابات إضافية."
           )
         ),
         React.createElement(
           "span",
-          { className: "px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" },
-          "500,000 حرف مجاناً / حساب شهرياً"
+          { className: "px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800" },
+          "Gemini Multimodal Speech"
         )
       ),
 
       React.createElement(
         "form",
-        { onSubmit: handleSaveAzureConfig, className: "space-y-4" },
+        { onSubmit: handleSaveVoiceConfig, className: "space-y-4" },
 
-        // المفتاح الأول
+        // اختيار الصوت من القائمة المنسدلة
         React.createElement(
           "div",
-          { className: "space-y-1.5" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs" },
-            React.createElement("label", { className: "font-bold text-slate-700 dark:text-slate-300" }, "المفتاح الأساسي 1 (Account 1 Key):"),
-            React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" },
-              "الاستهلاك: " + (usageStats.key1Chars || 0).toLocaleString() + " / " + quotaLimit.toLocaleString() + " حرف"
-            )
+          { className: "space-y-2" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" },
+            "اختر صوت القراءة المعتمد للكتب والمراجع:"
           ),
-          React.createElement("input", {
-            type: "password",
-            value: azureKey1,
-            onChange: function(e) { setAzureKey1(e.target.value); },
-            placeholder: "أدخل مفتاح Azure Speech الأول...",
-            className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          // شريط استهلاك المفتاح 1
           React.createElement(
-            "div",
-            { className: "w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden" },
-            React.createElement("div", {
-              className: ((usageStats.key1Chars || 0) > 450000 ? "bg-amber-500" : "bg-teal-500") + " h-full transition-all",
-              style: { width: Math.min(100, Math.round(((usageStats.key1Chars || 0) / quotaLimit) * 100)) + "%" }
+            "select",
+            {
+              value: selectedVoice,
+              onChange: function(e) { setSelectedVoice(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            },
+            geminiVoices.map(function(v) {
+              return React.createElement(
+                "option",
+                { key: v.id, value: v.id },
+                v.name
+              );
             })
-          )
-        ),
-
-        // المفتاح الثاني (الاحتياطي لحساب آخر)
-        React.createElement(
-          "div",
-          { className: "space-y-1.5 pt-1" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs" },
-            React.createElement("label", { className: "font-bold text-slate-700 dark:text-slate-300" }, "المفتاح الثاني 2 (Account 2 Key - اختياري لحساب ثانٍ):"),
-            React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" },
-              "الاستهلاك: " + (usageStats.key2Chars || 0).toLocaleString() + " / " + quotaLimit.toLocaleString() + " حرف"
-            )
           ),
-          React.createElement("input", {
-            type: "password",
-            value: azureKey2,
-            onChange: function(e) { setAzureKey2(e.target.value); },
-            placeholder: "أدخل مفتاح حساب مايكروسوفت الثاني لمضاعفة الكوتا لمليون حرف...",
-            className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          // شريط استهلاك المفتاح 2
-          React.createElement(
-            "div",
-            { className: "w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden" },
-            React.createElement("div", {
-              className: ((usageStats.key2Chars || 0) > 450000 ? "bg-amber-500" : "bg-blue-500") + " h-full transition-all",
-              style: { width: Math.min(100, Math.round(((usageStats.key2Chars || 0) / quotaLimit) * 100)) + "%" }
-            })
+          React.createElement("p", { className: "text-[11px] text-slate-400 leading-relaxed" },
+            "صوت Aoede هو الخيار الموصى به لقراءة كتب المشورة لنبرته الدافئة والهادئة. يمكنك اختيار أي صوت وضغط زر التجربة للاستماع له فوراً."
           )
-        ),
-
-        // المنطقة السحابية (Region)
-        React.createElement(
-          "div",
-          { className: "space-y-1.5 pt-1" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "منطقة الخادم السحابي (Service Region):"),
-          React.createElement("input", {
-            type: "text",
-            value: azureRegion,
-            onChange: function(e) { setAzureRegion(e.target.value); },
-            placeholder: "الافتراضي: eastus",
-            className: "w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          React.createElement("p", { className: "text-[11px] text-slate-400" }, "الموقع الافتراضي هو eastus، اضبطه فقط إذا أنشأت المورد في منطقة جغرافية أخرى (مثل westeurope أو uaenorth).")
         ),
 
         // أزرار الحفظ والتجربة الفورية
@@ -296,25 +247,25 @@ window.SettingsPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
-            azureSavedToast ? React.createElement("span", { className: "text-xs text-emerald-600 font-bold" }, "✓ تم حفظ إعدادات الصوت!") : null,
-            audioTestMsg ? React.createElement("span", { className: "text-xs text-blue-600 dark:text-blue-400 font-bold" }, audioTestMsg) : null
+            voiceSavedToast ? React.createElement("span", { className: "text-xs text-emerald-600 font-bold" }, "✓ تم حفظ الصوت المختار!") : null,
+            audioTestMsg ? React.createElement("span", { className: "text-xs text-purple-600 dark:text-purple-400 font-bold" }, audioTestMsg) : null
           ),
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
             React.createElement("button", {
               type: "button",
-              onClick: handleTestAzureAudio,
+              onClick: handleTestGeminiAudio,
               disabled: isTestingAudio,
-              className: "bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold shadow-md shadow-teal-600/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              className: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold shadow-md shadow-purple-600/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
             },
               React.createElement("span", null, isTestingAudio ? "⏳" : "🔊"),
-              isTestingAudio ? "جاري التوليد..." : "تجربة واستماع لصوت سلمى"
+              isTestingAudio ? "جاري التوليد..." : ("تجربة واستماع لصوت " + selectedVoice)
             ),
             React.createElement("button", {
               type: "submit",
               className: "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs md:text-sm font-bold border border-slate-700 active:scale-95 transition-all"
-            }, "حفظ المفاتيح")
+            }, "اعتماد الصوت")
           )
         )
       )

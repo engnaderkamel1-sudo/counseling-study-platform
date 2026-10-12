@@ -379,8 +379,8 @@ window.APP_UPDATES_HISTORY = [{"hash":"fb8f387","date":"2026-10-12 17:22","messa
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791815155",
-  buildTime: "2026-10-12T14:25:55",
+  version: "1.2.1791815756",
+  buildTime: "2026-10-12T14:35:56",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -1764,112 +1764,35 @@ window.ErrorReportService = {
 window.ErrorReportService.initGlobalErrorHandler();
 
 // Module: services/edgeTtsService.js
-// خدمة تحويل النص إلى صوت (Text-to-Speech Service - Microsoft Azure Speech الرسمية مع إدارة الكوتا والمفتاح الاحتياطي)
+// خدمة تحويل النص إلى صوت (Text-to-Speech Service - تدعم Gemini AI TTS الرسمي و Azure Speech كخيار احتياطي)
 window.EdgeTtsService = {
-  DEFAULT_VOICE: "ar-EG-SalmaNeural",
-  DEFAULT_REGION: "eastus",
-  MONTHLY_QUOTA_LIMIT: 500000, // 500 ألف حرف لكل مفتاح
-  SAFETY_MARGIN: 20000,        // هامش أمان: إيقاف المفتاح والتحويل عند تبقي 20 ألف حرف
+  // قائمة الأصوات المدعومة رسمياً من Gemini AI مع أسمائها وتوصيفها
+  GEMINI_VOICES: [
+    { id: "Aoede", name: "Aoede (صوت نسائي دافئ وهادئ - موصى به لكتب المشورة)", gender: "female" },
+    { id: "Kore", name: "Kore (صوت نسائي ناعم ومريح)", gender: "female" },
+    { id: "Leda", name: "Leda (صوت نسائي متزن وواضح)", gender: "female" },
+    { id: "Callirrhoe", name: "Callirrhoe (صوت نسائي خفيف ومشرق)", gender: "female" },
+    { id: "Puck", name: "Puck (صوت رجالي طبيعي وحيوي)", gender: "male" },
+    { id: "Fenrir", name: "Fenrir (صوت رجالي عميق ووقور)", gender: "male" },
+    { id: "Charon", name: "Charon (صوت رجالي هادئ وناضج)", gender: "male" }
+  ],
 
-  // الحصول على مفاتيح Azure وإعدادات الحساب من التخزين المحلي
-  getAzureConfig: function() {
+  DEFAULT_GEMINI_VOICE: "Aoede",
+
+  // الحصول على إعدادات الصوت
+  getVoiceConfig: function() {
     var utils = window.APP_UTILS;
-    var key1 = utils ? utils.getLocal("counsel_azure_speech_key_1", "") : "";
-    var key2 = utils ? utils.getLocal("counsel_azure_speech_key_2", "") : "";
-    var region = utils ? utils.getLocal("counsel_azure_speech_region", this.DEFAULT_REGION) : this.DEFAULT_REGION;
-    var voice = utils ? utils.getLocal("counsel_azure_speech_voice", this.DEFAULT_VOICE) : this.DEFAULT_VOICE;
-
+    var voice = utils ? utils.getLocal("counsel_tts_gemini_voice", this.DEFAULT_GEMINI_VOICE) : this.DEFAULT_GEMINI_VOICE;
     return {
-      key1: (key1 || "").trim(),
-      key2: (key2 || "").trim(),
-      region: (region || this.DEFAULT_REGION).trim(),
-      voice: (voice || this.DEFAULT_VOICE).trim()
+      voice: voice || this.DEFAULT_GEMINI_VOICE
     };
   },
 
-  // حفظ مفاتيح وإعدادات Azure
-  saveAzureConfig: function(config) {
+  // حفظ الصوت المختار
+  saveVoiceConfig: function(config) {
     var utils = window.APP_UTILS;
     if (!utils) return;
-    if (config.key1 !== undefined) utils.setLocal("counsel_azure_speech_key_1", config.key1.trim());
-    if (config.key2 !== undefined) utils.setLocal("counsel_azure_speech_key_2", config.key2.trim());
-    if (config.region !== undefined) utils.setLocal("counsel_azure_speech_region", config.region.trim());
-    if (config.voice !== undefined) utils.setLocal("counsel_azure_speech_voice", config.voice.trim());
-  },
-
-  // استرجاع سجل استهلاك الحروف للشهر الحالي لكل مفتاح
-  getUsageStats: function() {
-    var utils = window.APP_UTILS;
-    var currentMonth = new Date().toISOString().slice(0, 7); // e.g. "2026-10"
-    var savedStats = utils ? utils.getLocal("counsel_azure_speech_usage", null) : null;
-
-    if (!savedStats || savedStats.month !== currentMonth) {
-      // تجديد العداد تلقائياً مع بداية كل شهر جديد
-      savedStats = {
-        month: currentMonth,
-        key1Chars: 0,
-        key2Chars: 0
-      };
-      if (utils) utils.setLocal("counsel_azure_speech_usage", savedStats);
-    }
-
-    return savedStats;
-  },
-
-  // تسجيل الأحرف المستهلكة في المفتاح النشط
-  recordUsage: function(keyIndex, charCount) {
-    var utils = window.APP_UTILS;
-    if (!utils || !charCount || charCount <= 0) return;
-    var stats = this.getUsageStats();
-    if (keyIndex === 1) {
-      stats.key1Chars = (stats.key1Chars || 0) + charCount;
-    } else if (keyIndex === 2) {
-      stats.key2Chars = (stats.key2Chars || 0) + charCount;
-    }
-    utils.setLocal("counsel_azure_speech_usage", stats);
-  },
-
-  // تحديد المفتاح النشط مع الفحص التلقائي الوقائي للكوتا
-  getActiveKeyInfo: function() {
-    var cfg = this.getAzureConfig();
-    var stats = this.getUsageStats();
-
-    var key1Remaining = Math.max(0, this.MONTHLY_QUOTA_LIMIT - (stats.key1Chars || 0));
-    var key2Remaining = Math.max(0, this.MONTHLY_QUOTA_LIMIT - (stats.key2Chars || 0));
-
-    // فحص المفتاح الأول: إذا كان موجوداً ومتبقياً به أكثر من هامش الأمان
-    if (cfg.key1 && key1Remaining > this.SAFETY_MARGIN) {
-      return {
-        key: cfg.key1,
-        keyIndex: 1,
-        remaining: key1Remaining,
-        region: cfg.region,
-        voice: cfg.voice,
-        statusText: "المفتاح الأساسي (1) نشط"
-      };
-    }
-
-    // التحويل التلقائي الآمن إلى المفتاح الثاني
-    if (cfg.key2 && key2Remaining > this.SAFETY_MARGIN) {
-      return {
-        key: cfg.key2,
-        keyIndex: 2,
-        remaining: key2Remaining,
-        region: cfg.region,
-        voice: cfg.voice,
-        statusText: (cfg.key1 ? "⚠️ كوتا المفتاح (1) شارفت على الانتهاء. تم الانتقال تلقائياً للمفتاح الاحتياطي (2)" : "المفتاح (2) نشط")
-      };
-    }
-
-    // إذا شارف كلاهما على النفاد لكن أحدهما ما زال يملك حروفاً
-    if (cfg.key1 && key1Remaining > 0) {
-      return { key: cfg.key1, keyIndex: 1, remaining: key1Remaining, region: cfg.region, voice: cfg.voice, statusText: "المفتاح (1) يستهلك آخر حروفه" };
-    }
-    if (cfg.key2 && key2Remaining > 0) {
-      return { key: cfg.key2, keyIndex: 2, remaining: key2Remaining, region: cfg.region, voice: cfg.voice, statusText: "المفتاح (2) يستهلك آخر حروفه" };
-    }
-
-    return null;
+    if (config.voice) utils.setLocal("counsel_tts_gemini_voice", config.voice.trim());
   },
 
   // بناء توقيتات مبسطة للجمل داخل النص (للمزامنة مع القارئ)
@@ -1928,54 +1851,99 @@ window.EdgeTtsService = {
     });
   },
 
-  // توليد الصوت مباشرة عبر Microsoft Azure Speech الرسمية
-  _synthesizeWithAzure: async function(text, voice, keyInfo, onProgress) {
+  // تحويل Base64 إلى Blob
+  _base64ToBlob: function(base64Data, contentType) {
+    contentType = contentType || "audio/wav";
+    var sliceSize = 1024;
+    var byteCharacters = atob(base64Data);
+    var bytesLength = byteCharacters.length;
+    var slicesCount = Math.ceil(bytesLength / sliceSize);
+    var byteArrays = new Array(slicesCount);
+
+    for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+      var begin = sliceIndex * sliceSize;
+      var end = Math.min(begin + sliceSize, bytesLength);
+      var bytes = new Array(end - begin);
+      for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+        bytes[i] = byteCharacters[offset].charCodeAt(0);
+      }
+      byteArrays[sliceIndex] = new Uint8Array(bytes);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  },
+
+  // توليد الصوت مباشرة عبر محرك Gemini 3.8 Flash TTS الرسمي
+  _synthesizeWithGemini: async function(text, voiceName, onProgress) {
     var self = this;
-    var endpoint = "https://" + encodeURIComponent(keyInfo.region) + ".tts.speech.microsoft.com/cognitiveservices/v1";
+    var utils = window.APP_UTILS;
+    var apiKey = "";
+    if (window.GeminiAIService && typeof window.GeminiAIService.getApiKey === "function") {
+      apiKey = await window.GeminiAIService.getApiKey();
+    }
+    if (!apiKey && utils) {
+      apiKey = utils.getLocal("counsel_ai_api_key", "");
+    }
 
-    var escText = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    if (!apiKey) {
+      throw new Error("لا يوجد مفتاح ذكاء اصطناعي محفوظ في صفحة «الإعدادات». يرجى حفظ المفتاح أولاً لتفعيل توليد الصوت.");
+    }
 
-    var ssml = "<speak version='1.0' xml:lang='ar-EG'>" +
-      "<voice xml:lang='ar-EG' xml:gender='Female' name='" + (voice || self.DEFAULT_VOICE) + "'>" +
-      escText +
-      "</voice></speak>";
+    var selectedVoice = voiceName || self.getVoiceConfig().voice || self.DEFAULT_GEMINI_VOICE;
 
     if (typeof onProgress === "function") {
-      onProgress("جاري توليد الصوت الرسمي بصوت سلمى (" + keyInfo.statusText + ")...");
+      onProgress("جاري توليد الصوت الذكي بصوت " + selectedVoice + " عبر محرك Google Gemini...");
     }
+
+    var payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: text }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: selectedVoice
+            }
+          }
+        }
+      }
+    };
+
+    var endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=" + encodeURIComponent(apiKey);
 
     var resp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Ocp-Apim-Subscription-Key": keyInfo.key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
-        "User-Agent": "CounselingStudyPlatform"
+        "Content-Type": "application/json"
       },
-      body: ssml
+      body: JSON.stringify(payload)
     });
 
     if (!resp.ok) {
-      var errTxt = "";
-      try { errTxt = await resp.text(); } catch (e) {}
-      if (resp.status === 401 || resp.status === 403) {
-        throw new Error("مفتاح Azure Speech غير صالح أو المنطقة غير صحيحة (" + resp.status + "). يرجى التأكد من المفتاح والمنطقة في الإعدادات.");
-      }
-      if (resp.status === 429) {
-        throw new Error("QUOTA_EXCEEDED");
-      }
-      throw new Error("خطأ في خدمة Azure Speech (" + resp.status + "): " + errTxt);
+      var errData = null;
+      try { errData = await resp.json(); } catch (e) {}
+      var msg = (errData && errData.error && errData.error.message) ? errData.error.message : ("رمز الخطأ: " + resp.status);
+      throw new Error("فشل توليد الصوت عبر محرك Gemini: " + msg);
     }
 
-    var blob = await resp.blob();
-    var duration = await self._getAudioDuration(blob);
-    var audioUrl = URL.createObjectURL(blob);
+    var result = await resp.json();
+    var candidate = result.candidates && result.candidates[0];
+    var part = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0];
 
-    // تسجيل استهلاك الحروف بنجاح
-    self.recordUsage(keyInfo.keyIndex, text.length);
+    if (!part || !part.inlineData || !part.inlineData.data) {
+      throw new Error("لم يتم استلام محتوى صوتي من محرك Gemini.");
+    }
+
+    var mimeType = part.inlineData.mimeType || "audio/wav";
+    var blob = self._base64ToBlob(part.inlineData.data, mimeType);
+    var audioUrl = URL.createObjectURL(blob);
+    var duration = await self._getAudioDuration(blob);
 
     return {
       audioUrl: audioUrl,
@@ -1984,7 +1952,7 @@ window.EdgeTtsService = {
     };
   },
 
-  // الدالة العامة لتوليد الصوت (تدعم Azure Speech الرسمي كخيار أساسي فائق الاستقرار)
+  // الدالة العامة لتوليد الصوت (تدعم استدعاء Gemini AI TTS الرسمي)
   generateAudioForText: async function(text, voiceKey, onProgress) {
     var self = this;
     var cleanedText = (text || "").trim();
@@ -1992,58 +1960,16 @@ window.EdgeTtsService = {
       throw new Error("لا يوجد نص لتوليد الصوت منه.");
     }
 
-    var activeKeyInfo = self.getActiveKeyInfo();
+    var res = await self._synthesizeWithGemini(cleanedText, voiceKey, onProgress);
+    var subs = self._buildSubtitlesForText(cleanedText, res.duration);
 
-    // 1. إذا كان مفتاح Azure موجوداً، نعتمد عليه كلياً وبشكل رسمي
-    if (activeKeyInfo) {
-      var voice = voiceKey || activeKeyInfo.voice || self.DEFAULT_VOICE;
-      try {
-        var res = await self._synthesizeWithAzure(cleanedText, voice, activeKeyInfo, onProgress);
-        var subs = self._buildSubtitlesForText(cleanedText, res.duration);
-
-        return {
-          audioUrl: res.audioUrl,
-          blob: res.blob,
-          duration: res.duration,
-          subtitles: subs,
-          toString: function() { return this.audioUrl; }
-        };
-      } catch (err) {
-        // في حال نفاد الكوتا أثناء الطلب (429)، نحول فوراً للمفتاح الآخر
-        if (err.message === "QUOTA_EXCEEDED" && activeKeyInfo.keyIndex === 1) {
-          var cfg = self.getAzureConfig();
-          if (cfg.key2) {
-            if (typeof onProgress === "function") {
-              onProgress("⚠️ نفدت كوتا المفتاح الأول، جاري التحويل الفوري للمفتاح الثاني...");
-            }
-            var backupKeyInfo = {
-              key: cfg.key2,
-              keyIndex: 2,
-              region: cfg.region,
-              voice: cfg.voice,
-              statusText: "المفتاح الثاني البديل"
-            };
-            var backupRes = await self._synthesizeWithAzure(cleanedText, voice, backupKeyInfo, onProgress);
-            var backupSubs = self._buildSubtitlesForText(cleanedText, backupRes.duration);
-
-            return {
-              audioUrl: backupRes.audioUrl,
-              blob: backupRes.blob,
-              duration: backupRes.duration,
-              subtitles: backupSubs,
-              toString: function() { return this.audioUrl; }
-            };
-          }
-        }
-        throw err;
-      }
-    }
-
-    // 2. إذا لم يكن المفتاح مضافاً بعد في الإعدادات، نوجه المستخدم بوضوح تام
-    throw new Error(
-      "يرجى إدخال مفتاح Azure Speech في صفحة «الإعدادات» لتفعيل توليد الصوت بصوت سلمى الرسمي مجاناً.\n" +
-      "الباقة المجانية تمنحك 500,000 حرف شهرياً لكل حساب مجاناً."
-    );
+    return {
+      audioUrl: res.audioUrl,
+      blob: res.blob,
+      duration: res.duration,
+      subtitles: subs,
+      toString: function() { return this.audioUrl; }
+    };
   }
 };
 
@@ -20155,21 +20081,24 @@ window.SettingsPage = function(props) {
   var [savedToast, setSavedToast] = React.useState(false);
   var [copiedToast, setCopiedToast] = React.useState(false);
 
-  // إعدادات محرك الصوت Microsoft Azure Speech
+  // إعدادات محرك الصوت الذكي Google Gemini TTS
   var ttsService = window.EdgeTtsService;
-  var initialAzure = ttsService ? ttsService.getAzureConfig() : { key1: "", key2: "", region: "eastus", voice: "ar-EG-SalmaNeural" };
-  var [azureKey1, setAzureKey1] = React.useState(initialAzure.key1);
-  var [azureKey2, setAzureKey2] = React.useState(initialAzure.key2);
-  var [azureRegion, setAzureRegion] = React.useState(initialAzure.region);
-  var [azureSavedToast, setAzureSavedToast] = React.useState(false);
+  var geminiVoices = (ttsService && ttsService.GEMINI_VOICES) || [
+    { id: "Aoede", name: "Aoede (صوت نسائي دافئ وهادئ - موصى به لكتب المشورة)", gender: "female" },
+    { id: "Kore", name: "Kore (صوت نسائي ناعم ومريح)", gender: "female" },
+    { id: "Leda", name: "Leda (صوت نسائي متزن وواضح)", gender: "female" },
+    { id: "Callirrhoe", name: "Callirrhoe (صوت نسائي خفيف ومشرق)", gender: "female" },
+    { id: "Puck", name: "Puck (صوت رجالي طبيعي وحيوي)", gender: "male" },
+    { id: "Fenrir", name: "Fenrir (صوت رجالي عميق ووقور)", gender: "male" },
+    { id: "Charon", name: "Charon (صوت رجالي هادئ وناضج)", gender: "male" }
+  ];
+  var initialVoice = (ttsService && ttsService.getVoiceConfig().voice) || "Aoede";
+  var [selectedVoice, setSelectedVoice] = React.useState(initialVoice);
+  var [voiceSavedToast, setVoiceSavedToast] = React.useState(false);
 
   // حالة فحص وتجربة الصوت المباشر
   var [isTestingAudio, setIsTestingAudio] = React.useState(false);
   var [audioTestMsg, setAudioTestMsg] = React.useState("");
-
-  // إحصائيات استهلاك الكوتا
-  var usageStats = ttsService ? ttsService.getUsageStats() : { key1Chars: 0, key2Chars: 0 };
-  var quotaLimit = (ttsService && ttsService.MONTHLY_QUOTA_LIMIT) || 500000;
 
   React.useEffect(function() {
     var loadCloudKey = async function() {
@@ -20212,36 +20141,32 @@ window.SettingsPage = function(props) {
     setTimeout(function() { setSavedToast(false); }, 2500);
   };
 
-  // حفظ إعدادات محرك Azure Speech
-  var handleSaveAzureConfig = function(e) {
+  // حفظ الصوت المختار
+  var handleSaveVoiceConfig = function(e) {
     if (e) e.preventDefault();
     if (ttsService) {
-      ttsService.saveAzureConfig({
-        key1: azureKey1,
-        key2: azureKey2,
-        region: azureRegion
-      });
+      ttsService.saveVoiceConfig({ voice: selectedVoice });
     }
-    setAzureSavedToast(true);
-    setTimeout(function() { setAzureSavedToast(false); }, 2500);
+    setVoiceSavedToast(true);
+    setTimeout(function() { setVoiceSavedToast(false); }, 2500);
   };
 
-  // تجربة صوت سلمى مباشرة والتأكد من نقائه
-  var handleTestAzureAudio = async function() {
-    if (!azureKey1 && !azureKey2) {
-      alert("يرجى إدخال مفتاح واحد على الأقل أولاً لتجربة الصوت.");
+  // تجربة الصوت المختار مباشرة عبر Gemini والتأكد من نقائه
+  var handleTestGeminiAudio = async function() {
+    var activeKey = apiKey || (utils ? utils.getLocal(cfg.storageKeys.apiKey, "") : "");
+    if (!activeKey) {
+      alert("يرجى حفظ مفتاح الذكاء الاصطناعي في الخانة أعلاه أولاً لتجربة الصوت.");
       return;
     }
 
-    // حفظ المفاتيح قبل الفحص
-    handleSaveAzureConfig();
+    handleSaveVoiceConfig();
 
     setIsTestingAudio(true);
-    setAudioTestMsg("جاري الاتصال بمحرك Azure وتوليد صوت سلمى...");
+    setAudioTestMsg("جاري توليد نبرة صوت " + selectedVoice + " عبر Gemini...");
 
     try {
-      var testText = "إن معرفة النفس وقبول مشاعرنا بصدق، هي الخطوة الأولى نحو الشفاء الداخلي والنضج الروحي الحقيقي.";
-      var res = await ttsService.generateAudioForText(testText, null, function(st) {
+      var testText = "إن معرفة النفس وقبول مشاعرنا الإنسانية بصدق، هي الخطوة الأولى نحو الشفاء الداخلي والنضج الروحي الحقيقي.";
+      var res = await ttsService.generateAudioForText(testText, selectedVoice, function(st) {
         setAudioTestMsg(st);
       });
 
@@ -20249,7 +20174,7 @@ window.SettingsPage = function(props) {
       if (!audioUrl) throw new Error("لم يتم استلام رابط صوتي من الخدمة.");
 
       var audio = new Audio(audioUrl);
-      setAudioTestMsg("🔊 جاري تشغيل صوت سلمى الآن...");
+      setAudioTestMsg("🔊 جاري تشغيل صوت " + selectedVoice + " الآن...");
       audio.onended = function() {
         setAudioTestMsg("✓ تم الاستماع بنجاح! الصوت شغال ونقي 100%.");
         setTimeout(function() { setAudioTestMsg(""); }, 5000);
@@ -20320,7 +20245,7 @@ window.SettingsPage = function(props) {
       )
     ),
 
-    // بطاقة محرك الصوت الرسمي Microsoft Azure Speech (باقة مجانية 500,000 حرف لكل حساب)
+    // بطاقة استوديو أصوات الذكاء الاصطناعي (Google Gemini AI Voice Studio)
     React.createElement(
       "div",
       { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5" },
@@ -20332,96 +20257,48 @@ window.SettingsPage = function(props) {
           null,
           React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white flex items-center gap-2" },
             React.createElement("span", null, "🎙️"),
-            "محرك الصوت الرسمي (Microsoft Azure Speech)"
+            "استوديو أصوات الذكاء الاصطناعي (Google Gemini Voice Studio)"
           ),
           React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 mt-1" },
-            "توليد صوت «سلمى» الرسمي النقي (`ar-EG-SalmaNeural`) مع دعم مفتاحين للتبديل الذكي ومراقبة الكوتا."
+            "توليد الكتب الصوتية رسمياً عبر نموذج Gemini 3.8 Flash TTS باستخدام مفتاحك المحفوظ أعلاه بدون أي حسابات إضافية."
           )
         ),
         React.createElement(
           "span",
-          { className: "px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" },
-          "500,000 حرف مجاناً / حساب شهرياً"
+          { className: "px-3 py-1 rounded-full text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-800" },
+          "Gemini Multimodal Speech"
         )
       ),
 
       React.createElement(
         "form",
-        { onSubmit: handleSaveAzureConfig, className: "space-y-4" },
+        { onSubmit: handleSaveVoiceConfig, className: "space-y-4" },
 
-        // المفتاح الأول
+        // اختيار الصوت من القائمة المنسدلة
         React.createElement(
           "div",
-          { className: "space-y-1.5" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs" },
-            React.createElement("label", { className: "font-bold text-slate-700 dark:text-slate-300" }, "المفتاح الأساسي 1 (Account 1 Key):"),
-            React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" },
-              "الاستهلاك: " + (usageStats.key1Chars || 0).toLocaleString() + " / " + quotaLimit.toLocaleString() + " حرف"
-            )
+          { className: "space-y-2" },
+          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" },
+            "اختر صوت القراءة المعتمد للكتب والمراجع:"
           ),
-          React.createElement("input", {
-            type: "password",
-            value: azureKey1,
-            onChange: function(e) { setAzureKey1(e.target.value); },
-            placeholder: "أدخل مفتاح Azure Speech الأول...",
-            className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          // شريط استهلاك المفتاح 1
           React.createElement(
-            "div",
-            { className: "w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden" },
-            React.createElement("div", {
-              className: ((usageStats.key1Chars || 0) > 450000 ? "bg-amber-500" : "bg-teal-500") + " h-full transition-all",
-              style: { width: Math.min(100, Math.round(((usageStats.key1Chars || 0) / quotaLimit) * 100)) + "%" }
+            "select",
+            {
+              value: selectedVoice,
+              onChange: function(e) { setSelectedVoice(e.target.value); },
+              className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            },
+            geminiVoices.map(function(v) {
+              return React.createElement(
+                "option",
+                { key: v.id, value: v.id },
+                v.name
+              );
             })
-          )
-        ),
-
-        // المفتاح الثاني (الاحتياطي لحساب آخر)
-        React.createElement(
-          "div",
-          { className: "space-y-1.5 pt-1" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between text-xs" },
-            React.createElement("label", { className: "font-bold text-slate-700 dark:text-slate-300" }, "المفتاح الثاني 2 (Account 2 Key - اختياري لحساب ثانٍ):"),
-            React.createElement("span", { className: "text-slate-400 font-mono text-[11px]" },
-              "الاستهلاك: " + (usageStats.key2Chars || 0).toLocaleString() + " / " + quotaLimit.toLocaleString() + " حرف"
-            )
           ),
-          React.createElement("input", {
-            type: "password",
-            value: azureKey2,
-            onChange: function(e) { setAzureKey2(e.target.value); },
-            placeholder: "أدخل مفتاح حساب مايكروسوفت الثاني لمضاعفة الكوتا لمليون حرف...",
-            className: "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          // شريط استهلاك المفتاح 2
-          React.createElement(
-            "div",
-            { className: "w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden" },
-            React.createElement("div", {
-              className: ((usageStats.key2Chars || 0) > 450000 ? "bg-amber-500" : "bg-blue-500") + " h-full transition-all",
-              style: { width: Math.min(100, Math.round(((usageStats.key2Chars || 0) / quotaLimit) * 100)) + "%" }
-            })
+          React.createElement("p", { className: "text-[11px] text-slate-400 leading-relaxed" },
+            "صوت Aoede هو الخيار الموصى به لقراءة كتب المشورة لنبرته الدافئة والهادئة. يمكنك اختيار أي صوت وضغط زر التجربة للاستماع له فوراً."
           )
-        ),
-
-        // المنطقة السحابية (Region)
-        React.createElement(
-          "div",
-          { className: "space-y-1.5 pt-1" },
-          React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "منطقة الخادم السحابي (Service Region):"),
-          React.createElement("input", {
-            type: "text",
-            value: azureRegion,
-            onChange: function(e) { setAzureRegion(e.target.value); },
-            placeholder: "الافتراضي: eastus",
-            className: "w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
-          }),
-          React.createElement("p", { className: "text-[11px] text-slate-400" }, "الموقع الافتراضي هو eastus، اضبطه فقط إذا أنشأت المورد في منطقة جغرافية أخرى (مثل westeurope أو uaenorth).")
         ),
 
         // أزرار الحفظ والتجربة الفورية
@@ -20431,25 +20308,25 @@ window.SettingsPage = function(props) {
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
-            azureSavedToast ? React.createElement("span", { className: "text-xs text-emerald-600 font-bold" }, "✓ تم حفظ إعدادات الصوت!") : null,
-            audioTestMsg ? React.createElement("span", { className: "text-xs text-blue-600 dark:text-blue-400 font-bold" }, audioTestMsg) : null
+            voiceSavedToast ? React.createElement("span", { className: "text-xs text-emerald-600 font-bold" }, "✓ تم حفظ الصوت المختار!") : null,
+            audioTestMsg ? React.createElement("span", { className: "text-xs text-purple-600 dark:text-purple-400 font-bold" }, audioTestMsg) : null
           ),
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
             React.createElement("button", {
               type: "button",
-              onClick: handleTestAzureAudio,
+              onClick: handleTestGeminiAudio,
               disabled: isTestingAudio,
-              className: "bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold shadow-md shadow-teal-600/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+              className: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs md:text-sm font-bold shadow-md shadow-purple-600/20 active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
             },
               React.createElement("span", null, isTestingAudio ? "⏳" : "🔊"),
-              isTestingAudio ? "جاري التوليد..." : "تجربة واستماع لصوت سلمى"
+              isTestingAudio ? "جاري التوليد..." : ("تجربة واستماع لصوت " + selectedVoice)
             ),
             React.createElement("button", {
               type: "submit",
               className: "bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white px-5 py-2 rounded-xl text-xs md:text-sm font-bold border border-slate-700 active:scale-95 transition-all"
-            }, "حفظ المفاتيح")
+            }, "اعتماد الصوت")
           )
         )
       )

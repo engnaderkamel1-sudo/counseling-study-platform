@@ -1,109 +1,32 @@
-// خدمة تحويل النص إلى صوت (Text-to-Speech Service - Microsoft Azure Speech الرسمية مع إدارة الكوتا والمفتاح الاحتياطي)
+// خدمة تحويل النص إلى صوت (Text-to-Speech Service - تدعم Gemini AI TTS الرسمي و Azure Speech كخيار احتياطي)
 window.EdgeTtsService = {
-  DEFAULT_VOICE: "ar-EG-SalmaNeural",
-  DEFAULT_REGION: "eastus",
-  MONTHLY_QUOTA_LIMIT: 500000, // 500 ألف حرف لكل مفتاح
-  SAFETY_MARGIN: 20000,        // هامش أمان: إيقاف المفتاح والتحويل عند تبقي 20 ألف حرف
+  // قائمة الأصوات المدعومة رسمياً من Gemini AI مع أسمائها وتوصيفها
+  GEMINI_VOICES: [
+    { id: "Aoede", name: "Aoede (صوت نسائي دافئ وهادئ - موصى به لكتب المشورة)", gender: "female" },
+    { id: "Kore", name: "Kore (صوت نسائي ناعم ومريح)", gender: "female" },
+    { id: "Leda", name: "Leda (صوت نسائي متزن وواضح)", gender: "female" },
+    { id: "Callirrhoe", name: "Callirrhoe (صوت نسائي خفيف ومشرق)", gender: "female" },
+    { id: "Puck", name: "Puck (صوت رجالي طبيعي وحيوي)", gender: "male" },
+    { id: "Fenrir", name: "Fenrir (صوت رجالي عميق ووقور)", gender: "male" },
+    { id: "Charon", name: "Charon (صوت رجالي هادئ وناضج)", gender: "male" }
+  ],
 
-  // الحصول على مفاتيح Azure وإعدادات الحساب من التخزين المحلي
-  getAzureConfig: function() {
+  DEFAULT_GEMINI_VOICE: "Aoede",
+
+  // الحصول على إعدادات الصوت
+  getVoiceConfig: function() {
     var utils = window.APP_UTILS;
-    var key1 = utils ? utils.getLocal("counsel_azure_speech_key_1", "") : "";
-    var key2 = utils ? utils.getLocal("counsel_azure_speech_key_2", "") : "";
-    var region = utils ? utils.getLocal("counsel_azure_speech_region", this.DEFAULT_REGION) : this.DEFAULT_REGION;
-    var voice = utils ? utils.getLocal("counsel_azure_speech_voice", this.DEFAULT_VOICE) : this.DEFAULT_VOICE;
-
+    var voice = utils ? utils.getLocal("counsel_tts_gemini_voice", this.DEFAULT_GEMINI_VOICE) : this.DEFAULT_GEMINI_VOICE;
     return {
-      key1: (key1 || "").trim(),
-      key2: (key2 || "").trim(),
-      region: (region || this.DEFAULT_REGION).trim(),
-      voice: (voice || this.DEFAULT_VOICE).trim()
+      voice: voice || this.DEFAULT_GEMINI_VOICE
     };
   },
 
-  // حفظ مفاتيح وإعدادات Azure
-  saveAzureConfig: function(config) {
+  // حفظ الصوت المختار
+  saveVoiceConfig: function(config) {
     var utils = window.APP_UTILS;
     if (!utils) return;
-    if (config.key1 !== undefined) utils.setLocal("counsel_azure_speech_key_1", config.key1.trim());
-    if (config.key2 !== undefined) utils.setLocal("counsel_azure_speech_key_2", config.key2.trim());
-    if (config.region !== undefined) utils.setLocal("counsel_azure_speech_region", config.region.trim());
-    if (config.voice !== undefined) utils.setLocal("counsel_azure_speech_voice", config.voice.trim());
-  },
-
-  // استرجاع سجل استهلاك الحروف للشهر الحالي لكل مفتاح
-  getUsageStats: function() {
-    var utils = window.APP_UTILS;
-    var currentMonth = new Date().toISOString().slice(0, 7); // e.g. "2026-10"
-    var savedStats = utils ? utils.getLocal("counsel_azure_speech_usage", null) : null;
-
-    if (!savedStats || savedStats.month !== currentMonth) {
-      // تجديد العداد تلقائياً مع بداية كل شهر جديد
-      savedStats = {
-        month: currentMonth,
-        key1Chars: 0,
-        key2Chars: 0
-      };
-      if (utils) utils.setLocal("counsel_azure_speech_usage", savedStats);
-    }
-
-    return savedStats;
-  },
-
-  // تسجيل الأحرف المستهلكة في المفتاح النشط
-  recordUsage: function(keyIndex, charCount) {
-    var utils = window.APP_UTILS;
-    if (!utils || !charCount || charCount <= 0) return;
-    var stats = this.getUsageStats();
-    if (keyIndex === 1) {
-      stats.key1Chars = (stats.key1Chars || 0) + charCount;
-    } else if (keyIndex === 2) {
-      stats.key2Chars = (stats.key2Chars || 0) + charCount;
-    }
-    utils.setLocal("counsel_azure_speech_usage", stats);
-  },
-
-  // تحديد المفتاح النشط مع الفحص التلقائي الوقائي للكوتا
-  getActiveKeyInfo: function() {
-    var cfg = this.getAzureConfig();
-    var stats = this.getUsageStats();
-
-    var key1Remaining = Math.max(0, this.MONTHLY_QUOTA_LIMIT - (stats.key1Chars || 0));
-    var key2Remaining = Math.max(0, this.MONTHLY_QUOTA_LIMIT - (stats.key2Chars || 0));
-
-    // فحص المفتاح الأول: إذا كان موجوداً ومتبقياً به أكثر من هامش الأمان
-    if (cfg.key1 && key1Remaining > this.SAFETY_MARGIN) {
-      return {
-        key: cfg.key1,
-        keyIndex: 1,
-        remaining: key1Remaining,
-        region: cfg.region,
-        voice: cfg.voice,
-        statusText: "المفتاح الأساسي (1) نشط"
-      };
-    }
-
-    // التحويل التلقائي الآمن إلى المفتاح الثاني
-    if (cfg.key2 && key2Remaining > this.SAFETY_MARGIN) {
-      return {
-        key: cfg.key2,
-        keyIndex: 2,
-        remaining: key2Remaining,
-        region: cfg.region,
-        voice: cfg.voice,
-        statusText: (cfg.key1 ? "⚠️ كوتا المفتاح (1) شارفت على الانتهاء. تم الانتقال تلقائياً للمفتاح الاحتياطي (2)" : "المفتاح (2) نشط")
-      };
-    }
-
-    // إذا شارف كلاهما على النفاد لكن أحدهما ما زال يملك حروفاً
-    if (cfg.key1 && key1Remaining > 0) {
-      return { key: cfg.key1, keyIndex: 1, remaining: key1Remaining, region: cfg.region, voice: cfg.voice, statusText: "المفتاح (1) يستهلك آخر حروفه" };
-    }
-    if (cfg.key2 && key2Remaining > 0) {
-      return { key: cfg.key2, keyIndex: 2, remaining: key2Remaining, region: cfg.region, voice: cfg.voice, statusText: "المفتاح (2) يستهلك آخر حروفه" };
-    }
-
-    return null;
+    if (config.voice) utils.setLocal("counsel_tts_gemini_voice", config.voice.trim());
   },
 
   // بناء توقيتات مبسطة للجمل داخل النص (للمزامنة مع القارئ)
@@ -162,54 +85,99 @@ window.EdgeTtsService = {
     });
   },
 
-  // توليد الصوت مباشرة عبر Microsoft Azure Speech الرسمية
-  _synthesizeWithAzure: async function(text, voice, keyInfo, onProgress) {
+  // تحويل Base64 إلى Blob
+  _base64ToBlob: function(base64Data, contentType) {
+    contentType = contentType || "audio/wav";
+    var sliceSize = 1024;
+    var byteCharacters = atob(base64Data);
+    var bytesLength = byteCharacters.length;
+    var slicesCount = Math.ceil(bytesLength / sliceSize);
+    var byteArrays = new Array(slicesCount);
+
+    for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
+      var begin = sliceIndex * sliceSize;
+      var end = Math.min(begin + sliceSize, bytesLength);
+      var bytes = new Array(end - begin);
+      for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
+        bytes[i] = byteCharacters[offset].charCodeAt(0);
+      }
+      byteArrays[sliceIndex] = new Uint8Array(bytes);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  },
+
+  // توليد الصوت مباشرة عبر محرك Gemini 3.8 Flash TTS الرسمي
+  _synthesizeWithGemini: async function(text, voiceName, onProgress) {
     var self = this;
-    var endpoint = "https://" + encodeURIComponent(keyInfo.region) + ".tts.speech.microsoft.com/cognitiveservices/v1";
+    var utils = window.APP_UTILS;
+    var apiKey = "";
+    if (window.GeminiAIService && typeof window.GeminiAIService.getApiKey === "function") {
+      apiKey = await window.GeminiAIService.getApiKey();
+    }
+    if (!apiKey && utils) {
+      apiKey = utils.getLocal("counsel_ai_api_key", "");
+    }
 
-    var escText = text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    if (!apiKey) {
+      throw new Error("لا يوجد مفتاح ذكاء اصطناعي محفوظ في صفحة «الإعدادات». يرجى حفظ المفتاح أولاً لتفعيل توليد الصوت.");
+    }
 
-    var ssml = "<speak version='1.0' xml:lang='ar-EG'>" +
-      "<voice xml:lang='ar-EG' xml:gender='Female' name='" + (voice || self.DEFAULT_VOICE) + "'>" +
-      escText +
-      "</voice></speak>";
+    var selectedVoice = voiceName || self.getVoiceConfig().voice || self.DEFAULT_GEMINI_VOICE;
 
     if (typeof onProgress === "function") {
-      onProgress("جاري توليد الصوت الرسمي بصوت سلمى (" + keyInfo.statusText + ")...");
+      onProgress("جاري توليد الصوت الذكي بصوت " + selectedVoice + " عبر محرك Google Gemini...");
     }
+
+    var payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: text }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: selectedVoice
+            }
+          }
+        }
+      }
+    };
+
+    var endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=" + encodeURIComponent(apiKey);
 
     var resp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Ocp-Apim-Subscription-Key": keyInfo.key,
-        "Content-Type": "application/ssml+xml",
-        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
-        "User-Agent": "CounselingStudyPlatform"
+        "Content-Type": "application/json"
       },
-      body: ssml
+      body: JSON.stringify(payload)
     });
 
     if (!resp.ok) {
-      var errTxt = "";
-      try { errTxt = await resp.text(); } catch (e) {}
-      if (resp.status === 401 || resp.status === 403) {
-        throw new Error("مفتاح Azure Speech غير صالح أو المنطقة غير صحيحة (" + resp.status + "). يرجى التأكد من المفتاح والمنطقة في الإعدادات.");
-      }
-      if (resp.status === 429) {
-        throw new Error("QUOTA_EXCEEDED");
-      }
-      throw new Error("خطأ في خدمة Azure Speech (" + resp.status + "): " + errTxt);
+      var errData = null;
+      try { errData = await resp.json(); } catch (e) {}
+      var msg = (errData && errData.error && errData.error.message) ? errData.error.message : ("رمز الخطأ: " + resp.status);
+      throw new Error("فشل توليد الصوت عبر محرك Gemini: " + msg);
     }
 
-    var blob = await resp.blob();
-    var duration = await self._getAudioDuration(blob);
-    var audioUrl = URL.createObjectURL(blob);
+    var result = await resp.json();
+    var candidate = result.candidates && result.candidates[0];
+    var part = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0];
 
-    // تسجيل استهلاك الحروف بنجاح
-    self.recordUsage(keyInfo.keyIndex, text.length);
+    if (!part || !part.inlineData || !part.inlineData.data) {
+      throw new Error("لم يتم استلام محتوى صوتي من محرك Gemini.");
+    }
+
+    var mimeType = part.inlineData.mimeType || "audio/wav";
+    var blob = self._base64ToBlob(part.inlineData.data, mimeType);
+    var audioUrl = URL.createObjectURL(blob);
+    var duration = await self._getAudioDuration(blob);
 
     return {
       audioUrl: audioUrl,
@@ -218,7 +186,7 @@ window.EdgeTtsService = {
     };
   },
 
-  // الدالة العامة لتوليد الصوت (تدعم Azure Speech الرسمي كخيار أساسي فائق الاستقرار)
+  // الدالة العامة لتوليد الصوت (تدعم استدعاء Gemini AI TTS الرسمي)
   generateAudioForText: async function(text, voiceKey, onProgress) {
     var self = this;
     var cleanedText = (text || "").trim();
@@ -226,57 +194,15 @@ window.EdgeTtsService = {
       throw new Error("لا يوجد نص لتوليد الصوت منه.");
     }
 
-    var activeKeyInfo = self.getActiveKeyInfo();
+    var res = await self._synthesizeWithGemini(cleanedText, voiceKey, onProgress);
+    var subs = self._buildSubtitlesForText(cleanedText, res.duration);
 
-    // 1. إذا كان مفتاح Azure موجوداً، نعتمد عليه كلياً وبشكل رسمي
-    if (activeKeyInfo) {
-      var voice = voiceKey || activeKeyInfo.voice || self.DEFAULT_VOICE;
-      try {
-        var res = await self._synthesizeWithAzure(cleanedText, voice, activeKeyInfo, onProgress);
-        var subs = self._buildSubtitlesForText(cleanedText, res.duration);
-
-        return {
-          audioUrl: res.audioUrl,
-          blob: res.blob,
-          duration: res.duration,
-          subtitles: subs,
-          toString: function() { return this.audioUrl; }
-        };
-      } catch (err) {
-        // في حال نفاد الكوتا أثناء الطلب (429)، نحول فوراً للمفتاح الآخر
-        if (err.message === "QUOTA_EXCEEDED" && activeKeyInfo.keyIndex === 1) {
-          var cfg = self.getAzureConfig();
-          if (cfg.key2) {
-            if (typeof onProgress === "function") {
-              onProgress("⚠️ نفدت كوتا المفتاح الأول، جاري التحويل الفوري للمفتاح الثاني...");
-            }
-            var backupKeyInfo = {
-              key: cfg.key2,
-              keyIndex: 2,
-              region: cfg.region,
-              voice: cfg.voice,
-              statusText: "المفتاح الثاني البديل"
-            };
-            var backupRes = await self._synthesizeWithAzure(cleanedText, voice, backupKeyInfo, onProgress);
-            var backupSubs = self._buildSubtitlesForText(cleanedText, backupRes.duration);
-
-            return {
-              audioUrl: backupRes.audioUrl,
-              blob: backupRes.blob,
-              duration: backupRes.duration,
-              subtitles: backupSubs,
-              toString: function() { return this.audioUrl; }
-            };
-          }
-        }
-        throw err;
-      }
-    }
-
-    // 2. إذا لم يكن المفتاح مضافاً بعد في الإعدادات، نوجه المستخدم بوضوح تام
-    throw new Error(
-      "يرجى إدخال مفتاح Azure Speech في صفحة «الإعدادات» لتفعيل توليد الصوت بصوت سلمى الرسمي مجاناً.\n" +
-      "الباقة المجانية تمنحك 500,000 حرف شهرياً لكل حساب مجاناً."
-    );
+    return {
+      audioUrl: res.audioUrl,
+      blob: res.blob,
+      duration: res.duration,
+      subtitles: subs,
+      toString: function() { return this.audioUrl; }
+    };
   }
 };
