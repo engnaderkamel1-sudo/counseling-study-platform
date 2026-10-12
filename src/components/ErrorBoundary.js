@@ -121,6 +121,7 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
 
   handleRecover = (targetTab) => {
     var tab = targetTab || "lectures";
+    if (tab === "guide") tab = "student_guide";
     try {
       window.location.hash = "#" + tab;
       localStorage.setItem("counsel_active_tab", tab);

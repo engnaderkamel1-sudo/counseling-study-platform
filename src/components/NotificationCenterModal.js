@@ -1,72 +1,340 @@
-// شريط التنقل العلوي
-window.Navbar = function(props) {
-  var activeTab = props.activeTab;
-  var onTabChange = props.onTabChange;
-  var theme = props.theme;
-  var onToggleTheme = props.onToggleTheme;
+// مركز الإشعارات الداخلي والتعميمات (In-App Notification Center)
+window.NotificationCenterModal = function(props) {
+  var isOpen = props.isOpen;
+  var onClose = props.onClose;
+  var currentUser = props.currentUser;
+  var notifications = props.notifications || [];
+  var onSelectNotification = props.onSelectNotification;
+  var onSendBroadcast = props.onSendBroadcast;
+
+  var utils = window.APP_UTILS || {};
+  var isAdmin = !!(currentUser && currentUser.role === "admin");
+
+  var [activeFilter, setActiveFilter] = React.useState("all"); // 'all', 'unread'
+  var [showBroadcastForm, setShowBroadcastForm] = React.useState(false);
+  var [broadcastTitle, setBroadcastTitle] = React.useState("");
+  var [broadcastBody, setBroadcastBody] = React.useState("");
+  var [broadcastTarget, setBroadcastTarget] = React.useState("all");
+  var [isSendingBroadcast, setIsSendingBroadcast] = React.useState(false);
+
+  // معرفات الإشعارات المقروءة محلياً
+  var [readIds, setReadIds] = React.useState(function() {
+    return utils.getLocal ? utils.getLocal("counsel_read_notif_ids", []) : [];
+  });
+
+  var markAsRead = function(id) {
+    if (!id || readIds.indexOf(id) !== -1) return;
+    var updated = readIds.concat([id]);
+    setReadIds(updated);
+    if (utils.setLocal) utils.setLocal("counsel_read_notif_ids", updated);
+  };
+
+  if (!isOpen) return null;
+
+  // الإشعارات المسموحة لهذا المستخدم حسب رتبته (مشرف أو دارس عادي)
+  var allowedNotifications = notifications.filter(function(n) {
+    if (n.target === "user") {
+      var currentUserId = currentUser ? (currentUser.id || "") : "";
+      var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
+      var targetId = n.targetUserId || "";
+      var targetEmail = (n.targetUserEmail || "").toLowerCase().trim();
+      return (targetId && targetId === currentUserId) || (targetEmail && targetEmail === currentUserEmail) || isAdmin;
+    }
+    if (n.target === "admin" && !isAdmin) return false;
+    if (n.type === "user_registration" && !isAdmin) return false;
+    if (n.type === "password_reset" && !isAdmin) return false;
+    if (n.type === "error_report" && !isAdmin) return false;
+    return true;
+  });
+
+  var markAllAsRead = function() {
+    var allIds = allowedNotifications.map(function(n) { return n.id; }).filter(Boolean);
+    setReadIds(allIds);
+    if (utils.setLocal) utils.setLocal("counsel_read_notif_ids", allIds);
+  };
+
+  var filteredNotifications = allowedNotifications.filter(function(n) {
+    var isRead = readIds.indexOf(n.id) !== -1;
+    if (activeFilter === "unread") return !isRead;
+    return true;
+  });
+
+  var unreadCount = allowedNotifications.filter(function(n) {
+    return readIds.indexOf(n.id) === -1;
+  }).length;
+
+  var handleBroadcastSubmit = async function(e) {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) return;
+    setIsSendingBroadcast(true);
+    try {
+      if (window.NotificationService && typeof window.NotificationService.broadcastCustomAnnouncement === "function") {
+        await window.NotificationService.broadcastCustomAnnouncement(broadcastTitle.trim(), broadcastBody.trim(), broadcastTarget);
+      }
+      setBroadcastTitle("");
+      setBroadcastBody("");
+      setShowBroadcastForm(false);
+      alert("✅ تم إرسال التعميم بنجاح لجميع الدارسين مع التنبيه الصوتي والرنين!");
+    } catch (err) {
+      alert("حدث خطأ أثناء إرسال التعميم: " + (err.message || err));
+    } finally {
+      setIsSendingBroadcast(false);
+    }
+  };
+
+  var formatNotifTime = function(createdAt) {
+    if (!createdAt) return "الآن";
+    var date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+    var now = new Date();
+    var diffMs = now - date;
+    var diffMins = Math.floor(diffMs / 60000);
+    var diffHours = Math.floor(diffMins / 60);
+    var diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 2) return "منذ لحظات";
+    if (diffMins < 60) return "منذ " + diffMins + " دقيقة";
+    if (diffHours < 24) return "منذ " + diffHours + " ساعة";
+    if (diffDays === 1) return "أمس";
+    if (diffDays < 7) return "منذ " + diffDays + " أيام";
+    return date.toLocaleDateString("ar-EG");
+  };
 
   return React.createElement(
-    "header",
+    "div",
     {
-      className: "sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors shadow-sm"
+      className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto",
+      onClick: function(e) { if (e.target === e.currentTarget && onClose) onClose(); }
     },
     React.createElement(
       "div",
-      { className: "max-w-6xl mx-auto px-4 h-16 flex items-center justify-between" },
-      // العنوان والشعار
+      {
+        className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 my-auto max-h-[90vh] flex flex-col font-cairo"
+      },
+
+      // رأس النافذة
       React.createElement(
         "div",
-        { className: "flex items-center gap-3 cursor-pointer", onClick: function() { onTabChange("lectures"); } },
-        React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-10 h-10 rounded-xl shadow-md object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
+        { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
         React.createElement(
           "div",
-          null,
-          React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight" }, "منصة المشورة الذكية"),
-          React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "متابعة دراسية وتعلم ذكي")
-        )
-      ),
-
-      // قائمة شاشات الحاسوب
-      React.createElement(
-        "nav",
-        { className: "hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60" },
-        [
-          { id: "lectures", label: "المحاضرات", icon: "🎧" },
-          { id: "books", label: "الكتب والمراجع", icon: "📚" },
-          { id: "podcast", label: "التلخيص والبودكاست", icon: "🎙️" },
-          { id: "tasks", label: "الجدول والمهام", icon: "📅" },
-          { id: "settings", label: "الإعدادات", icon: "⚙️" }
-        ].map(function(item) {
-          var isActive = activeTab === item.id;
-          return React.createElement(
-            "button",
-            {
-              key: item.id,
-              onClick: function() { onTabChange(item.id); },
-              className: "px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 " +
-                (isActive
-                  ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")
-            },
-            React.createElement("span", null, item.icon),
-            React.createElement("span", null, item.label)
-          );
-        })
-      ),
-
-      // أزرار التحكم الجانبية (تبديل المظهر وإعدادات سريعة)
-      React.createElement(
-        "div",
-        { className: "flex items-center gap-2" },
+          { className: "flex items-center gap-2.5" },
+          React.createElement("div", { className: "w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg shrink-0 shadow-2xs" }, "🔔"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white leading-tight" }, "مركز الإشعارات والتنبيهات"),
+            React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" },
+              unreadCount > 0 ? ("لديك " + unreadCount + " إشعار جديد غير مقروء") : "جميع الإشعارات والتحديثات الدراسية"
+            )
+          )
+        ),
         React.createElement(
           "button",
           {
-            onClick: onToggleTheme,
-            title: "تبديل المظهر",
-            className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
+            onClick: onClose,
+            className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center text-sm font-bold transition-colors"
           },
-          theme === "dark" ? "☀️" : "🌙"
+          "✕"
         )
+      ),
+
+      // قسم المشرف: إرسال تعميم رسمي للدارسين واختبار إشعار الجهاز
+      isAdmin && React.createElement(
+        "div",
+        { className: "border-b border-slate-100 dark:border-slate-800 pb-3 space-y-2" },
+        !showBroadcastForm ? React.createElement(
+          "div",
+          { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowBroadcastForm(true); },
+              className: "w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-98"
+            },
+            React.createElement("span", null, "📢"),
+            React.createElement("span", null, "إرسال تعميم لجميع الدارسين")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                if (window.NotificationService && typeof window.NotificationService.triggerLocalTestNotification === "function") {
+                  window.NotificationService.triggerLocalTestNotification();
+                }
+              },
+              title: "إرسال إشعار تجريبي فوري لجهازك لاختبار الرنين وشاشة القفل دون إرسال أي شيء للدارسين",
+              className: "w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-98"
+            },
+            React.createElement("span", null, "📱"),
+            React.createElement("span", null, "تجربة إشعار على جهازي فقط")
+          )
+        ) : React.createElement(
+          "form",
+          { onSubmit: handleBroadcastSubmit, className: "p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2.5" },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("h4", { className: "text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5" },
+              React.createElement("span", null, "📢"),
+              React.createElement("span", null, "كتابة تعميم جديد")
+            ),
+            React.createElement("button", { type: "button", onClick: function() { setShowBroadcastForm(false); }, className: "text-slate-400 text-xs hover:text-slate-600" }, "إلغاء")
+          ),
+          React.createElement("input", {
+            type: "text",
+            required: true,
+            value: broadcastTitle,
+            onChange: function(e) { setBroadcastTitle(e.target.value); },
+            placeholder: "عنوان التعميم (مثال: موعد المحاضرة القادمة / امتحان المادة)",
+            className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold"
+          }),
+          React.createElement("textarea", {
+            rows: 2,
+            required: true,
+            value: broadcastBody,
+            onChange: function(e) { setBroadcastBody(e.target.value); },
+            placeholder: "نص التنبيه بالتفصيل للدارسين...",
+            className: "w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs"
+          }),
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between pt-1" },
+            React.createElement(
+              "select",
+              {
+                value: broadcastTarget,
+                onChange: function(e) { setBroadcastTarget(e.target.value); },
+                className: "px-2.5 py-1.5 rounded-lg border bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-300"
+              },
+              React.createElement("option", { value: "all" }, "جميع الدارسين"),
+              React.createElement("option", { value: "first_year" }, "السنة الأولى فقط"),
+              React.createElement("option", { value: "second_year" }, "السنة الثانية فقط")
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "submit",
+                disabled: isSendingBroadcast,
+                className: "px-4 py-1.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white font-bold text-xs shadow-xs hover:opacity-90 active:scale-95 disabled:opacity-50"
+              },
+              isSendingBroadcast ? "جاري الإرسال..." : "بث التنبيه فوراً 🚀"
+            )
+          )
+        )
+      ),
+
+      // شريط الفرز وزر تحديد الكل كمقروء
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between gap-2 pt-1 text-xs" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setActiveFilter("all"); },
+              className: "px-3 py-1 rounded-lg font-bold transition-all " +
+                (activeFilter === "all" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800")
+            },
+            "الكل (" + allowedNotifications.length + ")"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setActiveFilter("unread"); },
+              className: "px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 " +
+                (activeFilter === "unread" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs" : "text-slate-500 hover:text-slate-800")
+            },
+            React.createElement("span", null, "غير المقروءة"),
+            unreadCount > 0 && React.createElement("span", { className: "w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-mono flex items-center justify-center font-bold" }, unreadCount)
+          )
+        ),
+        unreadCount > 0 && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: markAllAsRead,
+            className: "text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold"
+          },
+          "تحديد الكل كمقروء ✓"
+        )
+      ),
+
+      // قائمة الإشعارات القابلة للتمرير
+      React.createElement(
+        "div",
+        { className: "flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[50vh]" },
+        filteredNotifications.length === 0 ? React.createElement(
+          "div",
+          { className: "py-12 text-center text-slate-400 space-y-2" },
+          React.createElement("div", { className: "text-3xl" }, "🔕"),
+          React.createElement("p", { className: "font-bold text-sm text-slate-700 dark:text-slate-300" }, "لا توجد إشعارات حالياً"),
+          React.createElement("p", { className: "text-xs text-slate-400" }, "ستصلك هنا تنبيهات فور نزول أي محاضرة أو ملف دراسي جديد.")
+        ) : filteredNotifications.map(function(item) {
+          var isRead = readIds.indexOf(item.id) !== -1;
+          var timeStr = formatNotifTime(item.createdAt);
+
+          return React.createElement(
+            "div",
+            {
+              key: item.id,
+              onClick: function() {
+                markAsRead(item.id);
+                if (onSelectNotification) onSelectNotification(item);
+                if (onClose) onClose();
+              },
+              className: "p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 " +
+                (isRead
+                  ? "bg-slate-50/60 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/60"
+                  : "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/70 text-slate-900 dark:text-white shadow-2xs hover:bg-emerald-50/70")
+            },
+            // نقطة حالة القراءة
+            React.createElement("div", { className: "pt-1 shrink-0" },
+              !isRead ? React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 block shadow-xs" })
+                      : React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 block" })
+            ),
+            // محتوى الإشعار
+            React.createElement(
+              "div",
+              { className: "flex-1 min-w-0" },
+              React.createElement(
+                "div",
+                { className: "flex items-center justify-between gap-2 mb-0.5" },
+                React.createElement("h4", { className: "text-xs font-bold truncate " + (isRead ? "text-slate-700 dark:text-slate-300" : "text-slate-900 dark:text-white") },
+                  item.title
+                ),
+                React.createElement("span", { className: "text-[10px] text-slate-400 font-mono shrink-0" }, timeStr)
+              ),
+              React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed" },
+                item.body
+              ),
+              item.zoomUrl && React.createElement(
+                "div",
+                { className: "mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800 flex items-center justify-between gap-2" },
+                React.createElement(
+                  "span",
+                  { className: "text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1" },
+                  "🎥 " + (item.meetingId ? "ID: " + item.meetingId : "رابط زوم متاح")
+                ),
+                React.createElement(
+                  "a",
+                  {
+                    href: item.zoomUrl,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    onClick: function(e) { e.stopPropagation(); },
+                    className: "px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shadow-xs flex items-center gap-1 shrink-0"
+                  },
+                  React.createElement("span", null, "دخول زوم"),
+                  React.createElement("span", null, "↗")
+                )
+              )
+            )
+          );
+        })
       )
     )
   );

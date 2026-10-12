@@ -6,8 +6,10 @@ function App() {
   var [activeTab, setActiveTab] = React.useState(function() {
     var hash = (window.location.hash || "").replace("#", "").trim();
     var saved = utils.getLocal("counsel_active_tab");
-    var validTabs = ["lectures", "books", "student_guide", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "error_reports", "settings"];
+    var validTabs = ["lectures", "books", "student_guide", "guide", "curriculum", "notes", "tasks", "summary_podcast", "users_admin", "users", "error_reports", "errors", "settings", "updates"];
+    if (hash === "guide") hash = "student_guide";
     if (hash && validTabs.indexOf(hash) !== -1) return hash;
+    if (saved === "guide") saved = "student_guide";
     if (saved && validTabs.indexOf(saved) !== -1) return saved;
     return "lectures";
   });
