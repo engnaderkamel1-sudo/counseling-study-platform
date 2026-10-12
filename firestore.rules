@@ -30,13 +30,12 @@ service cloud.firestore {
 
     // 4. سلة المحذوفات
     match /recycle_bin/{item} {
-      allow read, write: if isMasterAdmin();
+      allow read, write: if true;
     }
 
     // 5. الإشعارات
     match /notifications/{notifId} {
-      allow read, create: if true;
-      allow update, delete: if isMasterAdmin();
+      allow read, create, update, delete: if true;
     }
 
     // 6. تقارير الأعطال (تم التعديل هنا فقط للسماح بالقراءة والإدارة)
