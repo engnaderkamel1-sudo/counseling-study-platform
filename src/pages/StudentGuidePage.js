@@ -88,6 +88,9 @@ window.StudentGuidePage = function(props) {
           list.push(normalizeDocFiles(Object.assign({ id: doc.id }, doc.data())));
         });
         setDocuments(list);
+        if (utils.setLocal) {
+          utils.setLocal("counsel_guide_docs_backup", list);
+        }
       }
     } catch (e) {
       console.warn("fetch documents error:", e);
@@ -243,6 +246,12 @@ window.StudentGuidePage = function(props) {
       }
 
       await fetchDocuments();
+      if (utils.getLocal && utils.setLocal) {
+        var currentLocal = utils.getLocal("counsel_guide_docs_backup", []);
+        var updated = currentLocal.filter(function(d) { return d.id !== docId; });
+        updated.push(normalizeDocFiles(Object.assign({ id: docId }, payload)));
+        utils.setLocal("counsel_guide_docs_backup", updated);
+      }
       setIsModalOpen(false);
     } catch (err) {
       alert("خطأ أثناء حفظ البيانات: " + err.message);

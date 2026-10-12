@@ -53,5 +53,10 @@ service cloud.firestore {
     match /settings/{doc} {
       allow read, write: if isMasterAdmin();
     }
+
+    // 9. دليل الدارس واللوائح الرسمية
+    match /student_guide_docs/{docId} {
+      allow read, write: if true;
+    }
   }
 }

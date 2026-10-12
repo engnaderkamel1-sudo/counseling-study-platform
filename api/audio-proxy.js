@@ -68,7 +68,9 @@ module.exports = async function handler(req, res) {
     }
 
     res.statusCode = 200;
-    res.setHeader("Content-Type", "audio/mpeg");
+    const sourceCType = chosenResp.headers.get("content-type") || "";
+    const finalCType = (sourceCType && !sourceCType.includes("text/html")) ? sourceCType : "audio/wav";
+    res.setHeader("Content-Type", finalCType);
     res.setHeader("Accept-Ranges", "bytes");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
