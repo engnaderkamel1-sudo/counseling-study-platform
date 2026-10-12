@@ -93,7 +93,7 @@ window.APP_UTILS = {
         reject(new Error("IndexedDB غير مدعوم"));
         return;
       }
-      var req = indexedDB.open("counsel_offline_storage", 2);
+      var req = indexedDB.open("counsel_offline_storage", 3);
       req.onupgradeneeded = function(e) {
         var db = e.target.result;
         if (!db.objectStoreNames.contains("books_pdf")) {
@@ -101,6 +101,9 @@ window.APP_UTILS = {
         }
         if (!db.objectStoreNames.contains("pages_cache")) {
           db.createObjectStore("pages_cache", { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains("lectures_audio")) {
+          db.createObjectStore("lectures_audio", { keyPath: "lecId" });
         }
       };
       req.onsuccess = function(e) { resolve(e.target.result); };
@@ -152,6 +155,59 @@ window.APP_UTILS = {
         var tx = db.transaction("books_pdf", "readwrite");
         var store = tx.objectStore("books_pdf");
         var req = store.delete(bookId);
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function() { resolve(false); };
+      });
+    } catch (e) {
+      return false;
+    }
+  },
+
+  // حفظ واسترجاع الصوت في الذاكرة للتشغيل بدون إنترنت (Offline Mode)
+  saveOfflineAudio: async function(lecId, blobData) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("lectures_audio", "readwrite");
+        var store = tx.objectStore("lectures_audio");
+        var req = store.put({ lecId: lecId, data: blobData, savedAt: Date.now() });
+        req.onsuccess = function() { resolve(true); };
+        req.onerror = function(e) { reject(e.target.error); };
+      });
+    } catch (e) {
+      console.warn("saveOfflineAudio error:", e);
+      return false;
+    }
+  },
+
+  getOfflineAudio: async function(lecId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("lectures_audio", "readonly");
+        var store = tx.objectStore("lectures_audio");
+        var req = store.get(lecId);
+        req.onsuccess = function(e) {
+          if (e.target.result && e.target.result.data) {
+            resolve(e.target.result.data);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = function() { resolve(null); };
+      });
+    } catch (e) {
+      return null;
+    }
+  },
+
+  removeOfflineAudio: async function(lecId) {
+    try {
+      var db = await window.APP_UTILS.openOfflineDb();
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction("lectures_audio", "readwrite");
+        var store = tx.objectStore("lectures_audio");
+        var req = store.delete(lecId);
         req.onsuccess = function() { resolve(true); };
         req.onerror = function() { resolve(false); };
       });
