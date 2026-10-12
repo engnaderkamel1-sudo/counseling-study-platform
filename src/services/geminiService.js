@@ -1,4 +1,4 @@
-﻿// خدمة استدعاء الذكاء الاصطناعي للتلخيص والبودكاست والمساعد الدراسي
+// خدمة استدعاء الذكاء الاصطناعي للتلخيص والبودكاست والمساعد الدراسي
 window.GeminiAIService = {
   // مفتاح تخزين السحابة
   storageKey: "counsel_ai_api_key",
@@ -18,13 +18,22 @@ window.GeminiAIService = {
 
   // حفظ المفتاح في السحابة ومحلياً
   saveApiKey: async function(key) {
-    if (window.db) {
-      await window.db.collection("settings").doc("ai_config").set({
-        apiKey: key.trim(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+    var cleanedKey = (key || "").trim();
+    // 1. الحفظ المحلي الفوري والمضمون 100%
+    if (window.APP_UTILS) {
+      window.APP_UTILS.setLocal(window.GeminiAIService.storageKey, cleanedKey);
     }
-    window.APP_UTILS.setLocal(window.GeminiAIService.storageKey, key.trim());
+    // 2. محاولة الحفظ السحابي في Firestore إن أمكن بدون تعطيل الحفظ المحلي
+    try {
+      if (window.db) {
+        await window.db.collection("settings").doc("ai_config").set({
+          apiKey: cleanedKey,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
+    } catch (e) {
+      console.warn("Firestore settings save skipped/restricted, saved locally:", e);
+    }
   },
 
   _cachedModels: null,

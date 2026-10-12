@@ -15,7 +15,7 @@ window.SettingsPage = function(props) {
   }
 
   var [apiKey, setApiKey] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.apiKey, "");
+    return (utils ? utils.getLocal(cfg.storageKeys.apiKey, "") : "") || (utils ? utils.getLocal("counsel_ai_api_key", "") : "");
   });
   var [savedToast, setSavedToast] = React.useState(false);
   var [copiedToast, setCopiedToast] = React.useState(false);
@@ -38,12 +38,14 @@ window.SettingsPage = function(props) {
 
   React.useEffect(function() {
     var loadCloudKey = async function() {
-      if (window.GeminiAIService && window.GeminiAIService.getApiKey) {
-        var cloudKey = await window.GeminiAIService.getApiKey();
-        if (cloudKey && !apiKey) {
-          setApiKey(cloudKey);
+      try {
+        if (window.GeminiAIService && window.GeminiAIService.getApiKey) {
+          var cloudKey = await window.GeminiAIService.getApiKey();
+          if (cloudKey) {
+            setApiKey(function(prev) { return prev || cloudKey; });
+          }
         }
-      }
+      } catch (e) {}
     };
     loadCloudKey();
   }, []);
