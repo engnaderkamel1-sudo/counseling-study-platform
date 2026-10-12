@@ -12,23 +12,79 @@ window.UpdatesPage = function(props) {
   var [serverBuildTime, setServerBuildTime] = React.useState(null);
   var [hasNewOnServer, setHasNewOnServer] = React.useState(false);
 
-  // تنسيق التاريخ والوقت
+  // تنسيق التاريخ والوقت بصيغة 12 ساعة (ص / م) وحساب الوقت النسبي (منذ دقائق/ساعات)
+  var formatUpdateDate = function(dateStr) {
+    if (!dateStr) return { time: "", relative: "", full: "" };
+    try {
+      // التعامل مع الصيغ: 2026-10-12 18:54 أو ISO
+      var normalized = dateStr.replace(" ", "T");
+      var d = new Date(normalized);
+      if (isNaN(d.getTime())) {
+        d = new Date(dateStr);
+      }
+      if (isNaN(d.getTime())) return { time: dateStr, relative: "", full: dateStr };
+
+      var now = new Date();
+      var diffMs = now.getTime() - d.getTime();
+      var diffSec = Math.floor(diffMs / 1000);
+      var diffMin = Math.floor(diffSec / 60);
+      var diffHours = Math.floor(diffMin / 60);
+      var diffDays = Math.floor(diffHours / 24);
+
+      var relative = "";
+      if (diffSec < 60 && diffSec >= -30) {
+        relative = "الآن";
+      } else if (diffMin === 1) {
+        relative = "منذ دقيقة";
+      } else if (diffMin === 2) {
+        relative = "منذ دقيقتين";
+      } else if (diffMin >= 3 && diffMin <= 10) {
+        relative = "منذ " + diffMin + " دقائق";
+      } else if (diffMin > 10 && diffMin < 60) {
+        relative = "منذ " + diffMin + " دقيقة";
+      } else if (diffHours === 1) {
+        relative = "منذ ساعة";
+      } else if (diffHours === 2) {
+        relative = "منذ ساعتين";
+      } else if (diffHours >= 3 && diffHours <= 10) {
+        relative = "منذ " + diffHours + " ساعات";
+      } else if (diffHours > 10 && diffHours < 24) {
+        relative = "منذ " + diffHours + " ساعة";
+      } else if (diffDays === 1) {
+        relative = "منذ يوم";
+      } else if (diffDays === 2) {
+        relative = "منذ يومين";
+      } else if (diffDays >= 3 && diffDays <= 10) {
+        relative = "منذ " + diffDays + " أيام";
+      } else {
+        relative = "منذ " + diffDays + " يوم";
+      }
+
+      // تنسيق بصيغة 12 ساعة (مثلاً 06:54 م)
+      var hours = d.getHours();
+      var minutes = d.getMinutes();
+      var period = hours >= 12 ? "م" : "ص";
+      var h12 = hours % 12;
+      if (h12 === 0) h12 = 12;
+      var pad = function(n) { return (n < 10 ? "0" : "") + n; };
+      var time12 = pad(h12) + ":" + pad(minutes) + " " + period;
+      var datePart = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+
+      return {
+        time: time12,
+        date: datePart,
+        relative: relative,
+        full: time12 + " • " + datePart
+      };
+    } catch (e) {
+      return { time: dateStr, relative: "", full: dateStr };
+    }
+  };
+
   var formatTime = function(isoStr) {
     if (!isoStr) return "";
-    try {
-      var d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return d.toLocaleString("ar-EG", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-    } catch (e) {
-      return isoStr;
-    }
+    var res = formatUpdateDate(isoStr);
+    return res.full + (res.relative ? (" (" + res.relative + ")") : "");
   };
 
   // فحص السيرفر ومقارنة الإصدار النشط
@@ -255,22 +311,40 @@ window.UpdatesPage = function(props) {
                   { className: "font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100" },
                   item.message || "تحديث عام للمنصة"
                 ),
-                isLatest && React.createElement(
+                isLatest ? React.createElement(
                   "span",
                   { className: "px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white animate-pulse" },
                   "أحدث تحديث منشُور"
-                )
+                ) : null
               ),
-              React.createElement(
+              (function() {
+                var dt = formatUpdateDate(item.date);
+              return React.createElement(
                 "div",
-                { className: "flex items-center gap-2 font-mono text-[11px] text-slate-400 shrink-0" },
+                { className: "flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 shrink-0 flex-wrap" },
+                dt.relative ? React.createElement(
+                  "span",
+                  { className: "px-2 py-0.5 rounded-full font-sans font-bold text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-2xs" },
+                  "⏱️ " + dt.relative
+                ) : null,
                 React.createElement(
                   "span",
-                  { className: "bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300" },
-                  item.hash
+                  { className: "font-mono font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1" },
+                  React.createElement("span", null, "🕒"),
+                  React.createElement("span", null, dt.time || item.date)
                 ),
-                React.createElement("span", null, "🕒 " + item.date)
-              )
+                dt.date ? React.createElement(
+                  "span",
+                  { className: "text-slate-400 text-[10px] hidden sm:inline" },
+                  dt.date
+                ) : null,
+                React.createElement(
+                  "span",
+                  { className: "bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] font-mono border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300" },
+                  item.hash
+                )
+              );
+            })()
             )
           )
         );

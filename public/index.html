@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"},{"hash":"04aa6e7","date":"2026-10-12 15:49","message":"fix(settings): guarantee local apiKey storage and fix empty state on reload"},{"hash":"4520e23","date":"2026-10-12 15:16","message":"feat(audio): integrate official Azure Speech with dual-key quota monitoring and cleanup legacy tts chunking"},{"hash":"c703bf0","date":"2026-10-12 15:04","message":"feat: add smart alternate section navigation to error boundary and pre-react shield"},{"hash":"676b0a0","date":"2026-10-12 14:54","message":"feat: auto-report crashes to admins and display reassuring support card with safe navigation"},{"hash":"45e3fe7","date":"2026-10-12 14:47","message":"fix: enhance pre-react fallback with fresh-query navigation and direct firestore error reporting"},{"hash":"da135c9","date":"2026-10-12 14:41","message":"fix: remove nested script tag in bundled html"},{"hash":"af82476","date":"2026-10-12 14:40","message":"feat(admin): add platform updates log tab and live header indicator for last 50 commits"},{"hash":"59d88fe","date":"2026-10-12 14:35","message":"feat(audio): add automatic Google Cloud TTS fallback with existing Gemini key"},{"hash":"86a8930","date":"2026-10-12 14:04","message":"feat(server): add standalone FastAPI edge-tts backend service for Render"},{"hash":"4f10d7d","date":"2026-10-12 13:22","message":"feat(ui): add live percentage and animated progress bars for Text, Audio, and SRT batch tasks"},{"hash":"5366eee","date":"2026-10-12 13:14","message":"fix: define onSaveChapterSubtitles in ChapterTextViewerModal and fix firestore settings conflict"},{"hash":"f292476","date":"2026-10-12 13:12","message":"feat(ai-tools): add batch SRT generation button for all book chapters"},{"hash":"8f3e0d3","date":"2026-10-12 13:08","message":"ux: save SRT directly to player without forced file download"},{"hash":"a4ea7bc","date":"2026-10-12 13:05","message":"chore(rules): keep user exact rules with only books and lectures relaxed"},{"hash":"5b8846f","date":"2026-10-12 13:04","message":"fix(security): update firestore rules to allow books write without native firebase auth session"},{"hash":"3c4579b","date":"2026-10-12 12:52","message":"fix: place SRT button beside audio generation button, fix srtNotice reference, enable firestore longPolling"},{"hash":"1612d8d","date":"2026-10-12 12:46","message":"perf: reduce pre-react shield timeout to 3.5s for faster UX"},{"hash":"a32c7fe","date":"2026-10-12 11:35","message":"Add SRT auto-generator, download .srt, import .srt, and cloud sync"},{"hash":"c75f19e","date":"2026-10-12 11:31","message":"fix: add pre-react universal fallback shield and harden SW cache handling"},{"hash":"b6d61bb","date":"2026-10-12 10:51","message":"fix: resolve edgeTtsService conflict marker and harden service worker cache"},{"hash":"0767f25","date":"2026-10-12 10:42","message":"fix: add resilient fallback and in-memory sorting for notifications query"},{"hash":"45ea37f","date":"2026-10-12 10:34","message":"Support chunked audio generation, anchored subtitles in reader, and drive upload"},{"hash":"37490e6","date":"2026-10-12 10:31","message":"Add safe text chunking, anchored subtitles, and direct blob upload support"},{"hash":"15503f9","date":"2026-10-12 09:57","message":"fix: enable live error reporting notifications and in-app toasts"},{"hash":"d1cf129","date":"2026-10-12 09:52","message":"Restore stable audio generator and enforce golden rule in PROJECT_CONTEXT"},{"hash":"51ece7b","date":"2026-10-12 09:47","message":"chore: rebuild bundled index with merged error report updates"},{"hash":"78b3f22","date":"2026-10-12 09:47","message":"Merge remote-tracking branch \u0027origin/main\u0027"},{"hash":"79feed6","date":"2026-10-12 09:46","message":"fix: link error reports with admin notifications and update security rules"},{"hash":"274c772","date":"2026-10-12 09:46","message":"feat(lectures): add background audio mode and offline caching for students"},{"hash":"673c7f8","date":"2026-10-12 09:38","message":"Support Edge-TTS subtitles synchronization in audio reader and batch generator"},{"hash":"368e3d1","date":"2026-10-12 09:27","message":"chore: sync clean state before audio feature"},{"hash":"505408b","date":"2026-10-12 09:03","message":"feat(admin): add login activity and geo tracking tab with safe cleanup"},{"hash":"93536a7","date":"2026-10-11 22:23","message":"feat(notifications): auto-broadcast notification when a new book/reference is published"},{"hash":"09bb20d","date":"2026-10-11 22:07","message":"feat(reader): full screen reading mode, hidden sync panel behind gear, and compact player with larger font"},{"hash":"52649ff","date":"2026-10-11 21:58","message":"feat(player): add speed slider bar and clarify auto-scroll and next track toggle labels"},{"hash":"597119c","date":"2026-10-11 21:56","message":"fix(player): set expanded player with full controls as default open state on mobile and laptop"}];
+window.APP_UPDATES_HISTORY = [{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"},{"hash":"04aa6e7","date":"2026-10-12 15:49","message":"fix(settings): guarantee local apiKey storage and fix empty state on reload"},{"hash":"4520e23","date":"2026-10-12 15:16","message":"feat(audio): integrate official Azure Speech with dual-key quota monitoring and cleanup legacy tts chunking"},{"hash":"c703bf0","date":"2026-10-12 15:04","message":"feat: add smart alternate section navigation to error boundary and pre-react shield"},{"hash":"676b0a0","date":"2026-10-12 14:54","message":"feat: auto-report crashes to admins and display reassuring support card with safe navigation"},{"hash":"45e3fe7","date":"2026-10-12 14:47","message":"fix: enhance pre-react fallback with fresh-query navigation and direct firestore error reporting"},{"hash":"da135c9","date":"2026-10-12 14:41","message":"fix: remove nested script tag in bundled html"},{"hash":"af82476","date":"2026-10-12 14:40","message":"feat(admin): add platform updates log tab and live header indicator for last 50 commits"},{"hash":"59d88fe","date":"2026-10-12 14:35","message":"feat(audio): add automatic Google Cloud TTS fallback with existing Gemini key"},{"hash":"86a8930","date":"2026-10-12 14:04","message":"feat(server): add standalone FastAPI edge-tts backend service for Render"},{"hash":"4f10d7d","date":"2026-10-12 13:22","message":"feat(ui): add live percentage and animated progress bars for Text, Audio, and SRT batch tasks"},{"hash":"5366eee","date":"2026-10-12 13:14","message":"fix: define onSaveChapterSubtitles in ChapterTextViewerModal and fix firestore settings conflict"},{"hash":"f292476","date":"2026-10-12 13:12","message":"feat(ai-tools): add batch SRT generation button for all book chapters"},{"hash":"8f3e0d3","date":"2026-10-12 13:08","message":"ux: save SRT directly to player without forced file download"},{"hash":"a4ea7bc","date":"2026-10-12 13:05","message":"chore(rules): keep user exact rules with only books and lectures relaxed"},{"hash":"5b8846f","date":"2026-10-12 13:04","message":"fix(security): update firestore rules to allow books write without native firebase auth session"},{"hash":"3c4579b","date":"2026-10-12 12:52","message":"fix: place SRT button beside audio generation button, fix srtNotice reference, enable firestore longPolling"},{"hash":"1612d8d","date":"2026-10-12 12:46","message":"perf: reduce pre-react shield timeout to 3.5s for faster UX"},{"hash":"a32c7fe","date":"2026-10-12 11:35","message":"Add SRT auto-generator, download .srt, import .srt, and cloud sync"},{"hash":"c75f19e","date":"2026-10-12 11:31","message":"fix: add pre-react universal fallback shield and harden SW cache handling"},{"hash":"b6d61bb","date":"2026-10-12 10:51","message":"fix: resolve edgeTtsService conflict marker and harden service worker cache"},{"hash":"0767f25","date":"2026-10-12 10:42","message":"fix: add resilient fallback and in-memory sorting for notifications query"},{"hash":"45ea37f","date":"2026-10-12 10:34","message":"Support chunked audio generation, anchored subtitles in reader, and drive upload"},{"hash":"37490e6","date":"2026-10-12 10:31","message":"Add safe text chunking, anchored subtitles, and direct blob upload support"},{"hash":"15503f9","date":"2026-10-12 09:57","message":"fix: enable live error reporting notifications and in-app toasts"},{"hash":"d1cf129","date":"2026-10-12 09:52","message":"Restore stable audio generator and enforce golden rule in PROJECT_CONTEXT"},{"hash":"51ece7b","date":"2026-10-12 09:47","message":"chore: rebuild bundled index with merged error report updates"},{"hash":"78b3f22","date":"2026-10-12 09:47","message":"Merge remote-tracking branch \u0027origin/main\u0027"},{"hash":"79feed6","date":"2026-10-12 09:46","message":"fix: link error reports with admin notifications and update security rules"},{"hash":"274c772","date":"2026-10-12 09:46","message":"feat(lectures): add background audio mode and offline caching for students"},{"hash":"673c7f8","date":"2026-10-12 09:38","message":"Support Edge-TTS subtitles synchronization in audio reader and batch generator"},{"hash":"368e3d1","date":"2026-10-12 09:27","message":"chore: sync clean state before audio feature"},{"hash":"505408b","date":"2026-10-12 09:03","message":"feat(admin): add login activity and geo tracking tab with safe cleanup"},{"hash":"93536a7","date":"2026-10-11 22:23","message":"feat(notifications): auto-broadcast notification when a new book/reference is published"},{"hash":"09bb20d","date":"2026-10-11 22:07","message":"feat(reader): full screen reading mode, hidden sync panel behind gear, and compact player with larger font"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791820674",
-  buildTime: "2026-10-12T15:57:54",
+  version: "1.2.1791821348",
+  buildTime: "2026-10-12T16:09:08",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -20560,23 +20560,79 @@ window.UpdatesPage = function(props) {
   var [serverBuildTime, setServerBuildTime] = React.useState(null);
   var [hasNewOnServer, setHasNewOnServer] = React.useState(false);
 
-  // تنسيق التاريخ والوقت
+  // تنسيق التاريخ والوقت بصيغة 12 ساعة (ص / م) وحساب الوقت النسبي (منذ دقائق/ساعات)
+  var formatUpdateDate = function(dateStr) {
+    if (!dateStr) return { time: "", relative: "", full: "" };
+    try {
+      // التعامل مع الصيغ: 2026-10-12 18:54 أو ISO
+      var normalized = dateStr.replace(" ", "T");
+      var d = new Date(normalized);
+      if (isNaN(d.getTime())) {
+        d = new Date(dateStr);
+      }
+      if (isNaN(d.getTime())) return { time: dateStr, relative: "", full: dateStr };
+
+      var now = new Date();
+      var diffMs = now.getTime() - d.getTime();
+      var diffSec = Math.floor(diffMs / 1000);
+      var diffMin = Math.floor(diffSec / 60);
+      var diffHours = Math.floor(diffMin / 60);
+      var diffDays = Math.floor(diffHours / 24);
+
+      var relative = "";
+      if (diffSec < 60 && diffSec >= -30) {
+        relative = "الآن";
+      } else if (diffMin === 1) {
+        relative = "منذ دقيقة";
+      } else if (diffMin === 2) {
+        relative = "منذ دقيقتين";
+      } else if (diffMin >= 3 && diffMin <= 10) {
+        relative = "منذ " + diffMin + " دقائق";
+      } else if (diffMin > 10 && diffMin < 60) {
+        relative = "منذ " + diffMin + " دقيقة";
+      } else if (diffHours === 1) {
+        relative = "منذ ساعة";
+      } else if (diffHours === 2) {
+        relative = "منذ ساعتين";
+      } else if (diffHours >= 3 && diffHours <= 10) {
+        relative = "منذ " + diffHours + " ساعات";
+      } else if (diffHours > 10 && diffHours < 24) {
+        relative = "منذ " + diffHours + " ساعة";
+      } else if (diffDays === 1) {
+        relative = "منذ يوم";
+      } else if (diffDays === 2) {
+        relative = "منذ يومين";
+      } else if (diffDays >= 3 && diffDays <= 10) {
+        relative = "منذ " + diffDays + " أيام";
+      } else {
+        relative = "منذ " + diffDays + " يوم";
+      }
+
+      // تنسيق بصيغة 12 ساعة (مثلاً 06:54 م)
+      var hours = d.getHours();
+      var minutes = d.getMinutes();
+      var period = hours >= 12 ? "م" : "ص";
+      var h12 = hours % 12;
+      if (h12 === 0) h12 = 12;
+      var pad = function(n) { return (n < 10 ? "0" : "") + n; };
+      var time12 = pad(h12) + ":" + pad(minutes) + " " + period;
+      var datePart = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+
+      return {
+        time: time12,
+        date: datePart,
+        relative: relative,
+        full: time12 + " • " + datePart
+      };
+    } catch (e) {
+      return { time: dateStr, relative: "", full: dateStr };
+    }
+  };
+
   var formatTime = function(isoStr) {
     if (!isoStr) return "";
-    try {
-      var d = new Date(isoStr);
-      if (isNaN(d.getTime())) return isoStr;
-      return d.toLocaleString("ar-EG", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      });
-    } catch (e) {
-      return isoStr;
-    }
+    var res = formatUpdateDate(isoStr);
+    return res.full + (res.relative ? (" (" + res.relative + ")") : "");
   };
 
   // فحص السيرفر ومقارنة الإصدار النشط
@@ -20803,22 +20859,40 @@ window.UpdatesPage = function(props) {
                   { className: "font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100" },
                   item.message || "تحديث عام للمنصة"
                 ),
-                isLatest && React.createElement(
+                isLatest ? React.createElement(
                   "span",
                   { className: "px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white animate-pulse" },
                   "أحدث تحديث منشُور"
-                )
+                ) : null
               ),
-              React.createElement(
+              (function() {
+                var dt = formatUpdateDate(item.date);
+              return React.createElement(
                 "div",
-                { className: "flex items-center gap-2 font-mono text-[11px] text-slate-400 shrink-0" },
+                { className: "flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 shrink-0 flex-wrap" },
+                dt.relative ? React.createElement(
+                  "span",
+                  { className: "px-2 py-0.5 rounded-full font-sans font-bold text-[10px] bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 shadow-2xs" },
+                  "⏱️ " + dt.relative
+                ) : null,
                 React.createElement(
                   "span",
-                  { className: "bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300" },
-                  item.hash
+                  { className: "font-mono font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1" },
+                  React.createElement("span", null, "🕒"),
+                  React.createElement("span", null, dt.time || item.date)
                 ),
-                React.createElement("span", null, "🕒 " + item.date)
-              )
+                dt.date ? React.createElement(
+                  "span",
+                  { className: "text-slate-400 text-[10px] hidden sm:inline" },
+                  dt.date
+                ) : null,
+                React.createElement(
+                  "span",
+                  { className: "bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] font-mono border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300" },
+                  item.hash
+                )
+              );
+            })()
             )
           )
         );
