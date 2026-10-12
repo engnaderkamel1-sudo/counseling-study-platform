@@ -40,8 +40,10 @@ window.NotificationCenterModal = function(props) {
       var targetEmail = (n.targetUserEmail || "").toLowerCase().trim();
       return (targetId && targetId === currentUserId) || (targetEmail && targetEmail === currentUserEmail) || isAdmin;
     }
+    if (n.target === "admin" && !isAdmin) return false;
     if (n.type === "user_registration" && !isAdmin) return false;
     if (n.type === "password_reset" && !isAdmin) return false;
+    if (n.type === "error_report" && !isAdmin) return false;
     return true;
   });
 

@@ -94,6 +94,15 @@ function App() {
     return utils.getLocal("counsel_read_notif_ids", []);
   });
 
+  var [activeToast, setActiveToast] = React.useState(null);
+
+  React.useEffect(function() {
+    if (activeToast) {
+      var t = setTimeout(function() { setActiveToast(null); }, 7000);
+      return function() { clearTimeout(t); };
+    }
+  }, [activeToast]);
+
   var [isInstallPromptOpen, setIsInstallPromptOpen] = React.useState(false);
   var [deferredPrompt, setDeferredPrompt] = React.useState(null);
   var [hasNotificationPermission, setHasNotificationPermission] = React.useState(function() {
@@ -150,10 +159,27 @@ function App() {
     var unsubscribeNotifs = function() {};
     if (window.NotificationService && typeof window.NotificationService.subscribeNotifications === "function") {
       var initialLoad = true;
+      var lastNotifiedId = null;
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
         setNotificationsList(list || []);
-        if (!initialLoad && list.length > 0) {
+        if (list && list.length > 0) {
           var latest = list[0];
+          if (initialLoad) {
+            lastNotifiedId = latest.id;
+            initialLoad = false;
+            return;
+          }
+
+          if (latest.id === lastNotifiedId) {
+            return;
+          }
+          lastNotifiedId = latest.id;
+
+          var shouldNotify = false;
+          var isAdmin = !!(currentUser && currentUser.role === "admin");
+          var isRegistration = latest.type === "user_registration";
+          var isErrorReport = latest.type === "error_report" || latest.target === "admin";
+
           // تصنيف وفلترة مستلمي الإشعار بدقة
           if (latest.target === "user") {
             // إشعار موجه لدارس بعينه (اختبار أو تنبيه خاص)
@@ -167,9 +193,9 @@ function App() {
             } else {
               shouldNotify = false;
             }
-          } else if (isRegistration) {
-            // إشعار طلبات الدارسين الجدد يظهر فقط لمشرف المنصة
-            if (currentUser && currentUser.role === "admin") {
+          } else if (isRegistration || isErrorReport) {
+            // إشعار طلبات الدارسين الجدد وبلاغات الأعطال يظهر فقط لمشرف المنصة
+            if (isAdmin) {
               shouldNotify = true;
             }
           } else {
@@ -182,6 +208,14 @@ function App() {
             if (window.NotificationService && typeof window.NotificationService.playNotificationChime === "function") {
               window.NotificationService.playNotificationChime();
             }
+
+            // إظهار تنبيه بصري عاجل داخل التطبيق (In-App Visual Toast)
+            setActiveToast({
+              id: latest.id || Date.now(),
+              title: latest.title,
+              body: latest.body,
+              linkTab: latest.linkTab || (latest.type === "error_report" ? "errors" : (latest.type === "user_registration" ? "users" : "lectures"))
+            });
 
             if (("Notification" in window) && Notification.permission === "granted") {
               try {
@@ -662,9 +696,37 @@ function App() {
         if (notif.linkTab) setActiveTab(notif.linkTab);
         else if (notif.lectureId) setActiveTab("lectures");
         else if (notif.type === "user_registration") setActiveTab("users");
+        else if (notif.type === "error_report") setActiveTab("errors");
         setReadNotifIds(utils.getLocal("counsel_read_notif_ids", []));
       }
-    })
+    }),
+
+    // تنبيه الإشعار المنبثق التفاعلي داخل التطبيق (In-App Live Toast)
+    activeToast && React.createElement(
+      "div",
+      {
+        onClick: function() {
+          if (activeToast.linkTab) setActiveTab(activeToast.linkTab);
+          setActiveToast(null);
+        },
+        className: "fixed top-5 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-slate-900/95 dark:bg-slate-800/95 text-white p-4 rounded-2xl shadow-2xl border border-slate-700 backdrop-blur-md cursor-pointer flex items-start gap-3 transition-all",
+        dir: "rtl"
+      },
+      React.createElement("div", { className: "text-2xl shrink-0" }, "🔔"),
+      React.createElement("div", { className: "flex-1 min-w-0 text-right" },
+        React.createElement("h4", { className: "text-xs font-bold text-white truncate" }, activeToast.title),
+        React.createElement("p", { className: "text-[11px] text-slate-300 line-clamp-2 mt-0.5" }, activeToast.body),
+        React.createElement("span", { className: "text-[10px] text-emerald-400 font-bold block mt-1" }, "اضغط للمعاينة والفتح المباشر ↗")
+      ),
+      React.createElement("button", {
+        type: "button",
+        onClick: function(e) {
+          e.stopPropagation();
+          setActiveToast(null);
+        },
+        className: "text-slate-400 hover:text-white text-xs p-1"
+      }, "✕")
+    )
   );
 }
 

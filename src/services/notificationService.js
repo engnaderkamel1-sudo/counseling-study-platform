@@ -224,6 +224,25 @@ window.NotificationService = {
     }
   },
 
+  // إرسال إشعار فوري للأدمن عند تسجيل عطل فني جديد أو اقتراح
+  notifyAdminNewErrorReport: async function(report) {
+    if (!window.db || !report) return;
+    try {
+      var isSuggestion = report.type === "suggestion";
+      var notifData = {
+        title: isSuggestion ? ("💡 اقتراح تطوير جديد: " + (report.page || "عام")) : ("🚨 بلاغ عطل فني: " + (report.page || "المنصة")),
+        body: (report.senderName ? "من: " + report.senderName + " • " : "") + (report.userDescription || "تم تسجيل تفاصيل العطل في لوحة البلاغات"),
+        type: "error_report",
+        target: "admin",
+        linkTab: "errors",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+      await window.db.collection("notifications").add(notifData);
+    } catch (e) {
+      console.warn("Could not send admin error report notification:", e);
+    }
+  },
+
   // إرسال إشعار فوري عند نشر رابط زوم للمحاضرة
   broadcastZoomLinkNotification: async function(lecture) {
     if (!window.db || !lecture) return;

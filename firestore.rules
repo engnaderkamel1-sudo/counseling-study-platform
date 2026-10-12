@@ -56,8 +56,7 @@ service cloud.firestore {
 
     // 6. تقارير وبلاغات الأعطال الفنية (error_reports):
     match /error_reports/{reportId} {
-      allow create: if true;
-      allow read, update, delete: if isMasterAdmin();
+      allow read, create, update, delete: if true;
     }
 
     // 7. سجل نشاط وتتبع دخول الدارسين (login_logs):

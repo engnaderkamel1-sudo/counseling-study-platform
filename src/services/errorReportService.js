@@ -33,7 +33,18 @@ window.ErrorReportService = {
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       status: "open" // 'open' or 'resolved'
     });
-    return window.db.collection("error_reports").doc(docId).set(payload);
+    await window.db.collection("error_reports").doc(docId).set(payload);
+
+    // إرسال إشعار فوري للأدمن نادر كمال فور تسجيل البلاغ مع الرنين
+    try {
+      if (window.NotificationService && typeof window.NotificationService.notifyAdminNewErrorReport === "function") {
+        await window.NotificationService.notifyAdminNewErrorReport(reportData);
+      }
+    } catch(errNotif) {
+      console.warn("Could not dispatch error report notification:", errNotif);
+    }
+
+    return true;
   },
 
   // رفع تسجيل صوتي للعطل إلى Firebase Storage

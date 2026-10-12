@@ -5,29 +5,58 @@ window.ErrorReportsAdminPage = function(props) {
   var [filterTab, setFilterTab] = React.useState("all"); // "all", "bugs", "suggestions"
   var [isLoading, setIsLoading] = React.useState(true);
 
-  var fetchReports = async function() {
-    if (!window.db || !currentUser || currentUser.role !== "admin") return;
+  var fetchReports = function() {
+    if (!window.db || !currentUser || currentUser.role !== "admin") {
+      setIsLoading(false);
+      return function() {};
+    }
     try {
       // تنظيف تلقائي للبلاغات القديمة التي تم حلها ومضى عليها 14 يوماً
       if (window.ErrorReportService && window.ErrorReportService.cleanupOldReports) {
         window.ErrorReportService.cleanupOldReports();
       }
 
-      var snap = await window.db.collection("error_reports").orderBy("createdAt", "desc").get();
-      var list = [];
-      snap.forEach(function(doc) {
-        list.push(Object.assign({ id: doc.id }, doc.data()));
-      });
-      setReports(list);
+      return window.db.collection("error_reports")
+        .orderBy("createdAt", "desc")
+        .onSnapshot(function(snap) {
+          var list = [];
+          snap.forEach(function(doc) {
+            list.push(Object.assign({ id: doc.id }, doc.data()));
+          });
+          setReports(list);
+          setIsLoading(false);
+        }, async function(err) {
+          console.warn("Error reports onSnapshot failed, attempting fallback:", err);
+          try {
+            var rawSnap = await window.db.collection("error_reports").get();
+            var fallbackList = [];
+            rawSnap.forEach(function(doc) {
+              fallbackList.push(Object.assign({ id: doc.id }, doc.data()));
+            });
+            fallbackList.sort(function(a, b) {
+              var tA = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+              var tB = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+              return tB - tA;
+            });
+            setReports(fallbackList);
+          } catch(fallbackErr) {
+            console.error("Fallback error reports fetch failed:", fallbackErr);
+          } finally {
+            setIsLoading(false);
+          }
+        });
     } catch (e) {
       console.error(e);
-    } finally {
       setIsLoading(false);
+      return function() {};
     }
   };
 
   React.useEffect(function() {
-    fetchReports();
+    var unsubscribe = fetchReports();
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
   }, []);
 
   var handleResolve = async function(reportId) {
