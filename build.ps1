@@ -57,11 +57,33 @@ function Build-App {
         "pages/UsersManagementPage.js",
         "pages/ErrorReportsAdminPage.js",
         "pages/SettingsPage.js",
+        "pages/UpdatesPage.js",
         "App.js"
     )
 
     $bodyParts = [System.Collections.Generic.List[string]]::new()
     $bodyParts.Add($head)
+
+    # توليد سجل آخر 50 تحديث تلقائياً من Git وحقنها ككائن JavaScript
+    $gitLogLines = git log -n 50 --pretty=format:"%h|%ad|%s" --date=format:"%Y-%m-%d %H:%M" 2>$null
+    $updatesList = @()
+    if ($gitLogLines) {
+        foreach ($line in $gitLogLines) {
+            $parts = $line.Split('|')
+            if ($parts.Count -ge 3) {
+                $h = $parts[0].Trim()
+                $d = $parts[1].Trim()
+                $m = ($parts[2..($parts.Count - 1)] -join '|').Trim()
+                $updatesList += [PSCustomObject]@{
+                    hash = $h
+                    date = $d
+                    message = $m
+                }
+            }
+        }
+    }
+    $updatesJson = ($updatesList | ConvertTo-Json -Compress)
+    $bodyParts.Add("<script>window.APP_UPDATES_HISTORY = " + $updatesJson + ";</script>")
 
     $buildTimestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds().ToString()
     $buildIso = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss")

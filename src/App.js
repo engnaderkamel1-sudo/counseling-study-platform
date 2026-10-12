@@ -411,7 +411,7 @@ function App() {
   // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
   React.useEffect(function() {
     if (currentUser && currentUser.role !== "admin") {
-      if (activeTab === "users" || activeTab === "errors" || activeTab === "settings") {
+      if (activeTab === "users" || activeTab === "errors" || activeTab === "settings" || activeTab === "updates") {
         setActiveTab("lectures");
       }
     }
@@ -556,7 +556,8 @@ function App() {
             onToggleNotification: handleToggleNotification,
             onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
             onOpenNotifications: function() { setIsNotificationCenterOpen(true); },
-            unreadNotificationsCount: unreadCount
+            unreadNotificationsCount: unreadCount,
+            onTabChange: setActiveTab
           });
         })()
       ),
@@ -585,7 +586,8 @@ function App() {
         activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
         activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
         activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: currentUser }),
-        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser })
+        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser }),
+        activeTab === "updates" && React.createElement(window.UpdatesPage, { currentUser: currentUser })
       )
     ),
 

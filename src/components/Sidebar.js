@@ -29,6 +29,7 @@ window.Sidebar = function(props) {
     menuItems.push({ id: "errors", label: "بلاغات الأعطال والاقتراحات", icon: "💡" });
     menuItems.push({ id: "recycle_bin", label: "المحذوفات", icon: "🗑️", isModal: true });
     menuItems.push({ id: "settings", label: "إعدادات الربط السحابي", icon: "⚙️" });
+    menuItems.push({ id: "updates", label: "سجل التحديثات", icon: "🚀", badge: "جديد" });
   }
 
   return React.createElement(

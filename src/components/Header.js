@@ -60,6 +60,21 @@ window.Header = function(props) {
           )
         ),
 
+        // نقطة وشارة آخر تحديث المباشرة للأدمن فقط
+        isAdmin && React.createElement(
+          "button",
+          {
+            onClick: function() {
+              if (props.onTabChange) props.onTabChange("updates");
+              else window.location.hash = "updates";
+            },
+            title: "اضغط لفتح سجل التحديثات ومعرفة أحدث التغييرات",
+            className: "hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-indigo-50/80 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/70 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold text-indigo-700 dark:text-indigo-300 transition-all active:scale-95 shadow-2xs"
+          },
+          React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-pulse" }),
+          React.createElement("span", null, "سجل التحديثات 🚀")
+        ),
+
         // زر تحديث فوري للمنصة وإفراغ الذاكرة
         React.createElement(
           "button",
