@@ -2,65 +2,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // دالة التحقق من هوية المشرف الرئيسي المعتمد للمنصة
     function isMasterAdmin() {
       return request.auth != null && request.auth.token.email != null && request.auth.token.email == "eng.naderkamel@gmail.com";
     }
 
-    // 1. حسابات وبيانات الدارسين (users):
+    // 1. حسابات الدارسين
     match /users/{userId} {
-      // السماح بجلب بيانات الدارسين والقائمة لشاشة الإدارة
-      allow read: if true;
-      // السماح بإنشاء حساب دارس جديد
-      allow create: if true;
-      // التعديل والحذف محمي للمشرف
-      allow update, delete: if true;
+      allow read, create, update, delete: if true;
     }
 
-    // 2. الملاحظات والتأملات الشخصية للدارسين (personal_notes):
+    // 2. الملاحظات الشخصية
     match /personal_notes/{noteId} {
-      // عزل مذكرات كل طالب ومنع اطلاع أي دارس آخر عليها
       allow read, write: if isMasterAdmin() || (resource == null || resource.data.userId == request.auth.uid || resource.data.userId == request.auth.token.email);
     }
 
-    // 3. المحاضرات والكتب والرفوف الدراسية (lectures & books):
+    // 3. المحاضرات والكتب (تم تعديل allow write هنا فقط للسماح بحفظ الصوت والـ SRT وتحديثات الكتب)
     match /lectures/{lecId} {
-      // قراءة وتشغيل مستقر للجميع بدون أي عوائق في الصوت أو البث
       allow read, write: if true;
     }
 
     match /books/{bookId} {
       allow read, write: if true;
-      
-      // نصوص الصفحات المستخرجة للكتاب (Cloud Cache)
       match /cached_pages/{pageId} {
         allow read, write: if true;
       }
     }
 
-    // 4. سلة المحذوفات والأرشيف (recycle_bin):
+    // 4. سلة المحذوفات
     match /recycle_bin/{item} {
       allow read, write: if isMasterAdmin();
     }
 
-    // 5. الإشعارات السحابية (notifications):
+    // 5. الإشعارات
     match /notifications/{notifId} {
-      allow read: if true;
-      allow create: if true;
+      allow read, create: if true;
       allow update, delete: if isMasterAdmin();
     }
 
-    // 6. تقارير وبلاغات الأعطال الفنية (error_reports):
+    // 6. تقارير الأعطال (تم التعديل هنا فقط للسماح بالقراءة والإدارة)
     match /error_reports/{reportId} {
       allow read, create, update, delete: if true;
     }
 
-    // 7. سجل نشاط وتتبع دخول الدارسين (login_logs):
+    // 7. سجل تتبع ونشاط الدخول الجديد
     match /login_logs/{logId} {
       allow read, create, delete: if true;
     }
 
-    // 8. إعدادات المنصة ومفاتيح الذكاء الاصطناعي (settings):
+    // 8. الإعدادات
     match /settings/{doc} {
       allow read, write: if isMasterAdmin();
     }
