@@ -528,8 +528,11 @@ window.APP_UTILS = {
 
       var blob = await resp.blob();
       var rawName = customFileName || ("audio_" + Date.now());
-      var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".mp3";
-      var audioFile = new File([blob], cleanFileName, { type: "audio/mp3" });
+      var isWav = (blob.type && blob.type.indexOf("wav") !== -1) || (audioUrl && audioUrl.indexOf(".wav") !== -1);
+      var ext = isWav ? ".wav" : ".mp3";
+      var mimeType = isWav ? "audio/wav" : "audio/mpeg";
+      var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ext;
+      var audioFile = new File([blob], cleanFileName, { type: mimeType });
 
       var endpoint = window.APP_CONFIG && window.APP_CONFIG.driveUploadEndpoint;
       if (!endpoint) {

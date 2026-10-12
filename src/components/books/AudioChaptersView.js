@@ -543,6 +543,25 @@ window.AudioChaptersView = function(props) {
     }, 150);
   };
 
+  // إعادة ضبط المشغل وتشغيل الصوت عند تغيير الفصل
+  React.useEffect(function() {
+    if (!playingChapterId) return;
+    setUseIframePlayer(false);
+    setAudioHasError(false);
+    var timer = setTimeout(function() {
+      var audio = chapterAudioRef.current;
+      if (audio) {
+        var p = audio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function(err) {
+            console.warn("Audio autoplay postponed:", err);
+          });
+        }
+      }
+    }, 60);
+    return function() { clearTimeout(timer); };
+  }, [playingChapterId]);
+
   // مراقبة وتشغيل الصوت والانتقال التلقائي بين الفصول عند انتهاء التراك وحفظ موضع الاستماع
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
@@ -1500,10 +1519,12 @@ window.AudioChaptersView = function(props) {
 
         // عنصر الصوت الخفي
         React.createElement("audio", {
+          key: activeChap.id,
           ref: chapterAudioRef,
           src: utils.getAudioStreamUrl(activeChap.audioUrl),
           controls: false,
           autoPlay: true,
+          preload: "auto",
           className: "hidden",
           onLoadedMetadata: function(e) {
             setAudioHasError(false);
@@ -1512,21 +1533,15 @@ window.AudioChaptersView = function(props) {
           onCanPlay: function(e) {
             setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
+            var p = e.target.play();
+            if (p && typeof p.catch === "function") p.catch(function() {});
           },
           onError: function(e) {
-            // التحقق مما إذا كان هناك خطأ حقيقي في الرابط أم مجرد تفريغ مؤقت للـ buffer أثناء الانتقال
             var mediaError = e.target && e.target.error;
             if (!mediaError) return;
-            var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
-            if (driveId) {
-              if (e.target) {
-                try { e.target.pause(); } catch (pErr) {}
-              }
-              setUseIframePlayer(true);
-              return;
-            }
             // إذا كان الخطأ بسبب إيقاف التحميل العادي أثناء الانتقال، نتجاهله
             if (mediaError.code === 1) return; // MEDIA_ERR_ABORTED
+            console.error("Audio playback error:", mediaError);
             setAudioHasError(true);
           }
         }),

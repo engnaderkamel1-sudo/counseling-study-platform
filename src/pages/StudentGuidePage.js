@@ -20,9 +20,14 @@ window.StudentGuidePage = function(props) {
   var [docFiles, setDocFiles] = React.useState([]);
   var [isSaving, setIsSaving] = React.useState(false);
 
-  // حالة السحب والإفلات والرفع
+  // حالة السحب والإفلات والرفع المتزامن
   var [isDragging, setIsDragging] = React.useState(false);
   var [uploadingStatus, setUploadingStatus] = React.useState("");
+  var [isUploading, setIsUploading] = React.useState(false);
+  var [uploadPercent, setUploadPercent] = React.useState(0);
+  var activeUploadPromiseRef = React.useRef(null);
+  var isUploadingRef = React.useRef(false);
+  var docFilesRef = React.useRef([]);
 
   // حالة عارض الـ PDF
   var [activeViewingDoc, setActiveViewingDoc] = React.useState(null);
@@ -103,6 +108,30 @@ window.StudentGuidePage = function(props) {
 
   React.useEffect(function() {
     fetchDocuments();
+    if (!window.db) return;
+    try {
+      var unsubscribe = window.db.collection("student_guide_docs").orderBy("order", "asc")
+        .onSnapshot(function(snap) {
+          if (!snap.empty) {
+            var list = [];
+            snap.forEach(function(doc) {
+              list.push(normalizeDocFiles(Object.assign({ id: doc.id }, doc.data())));
+            });
+            setDocuments(list);
+            if (utils.setLocal) {
+              utils.setLocal("counsel_guide_docs_backup", list);
+            }
+          }
+          setIsLoading(false);
+        }, function(err) {
+          console.warn("Realtime guide docs listener err:", err);
+        });
+      return function() {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    } catch (e) {
+      console.warn("Realtime guide docs init err:", e);
+    }
   }, []);
 
   var handleOpenAddModal = function() {
@@ -112,8 +141,13 @@ window.StudentGuidePage = function(props) {
     setCategoryInput("لوائح ومنهج");
     setIconInput("📜");
     setDocFiles([]);
+    docFilesRef.current = [];
     setIsDragging(false);
     setUploadingStatus("");
+    setIsUploading(false);
+    setUploadPercent(0);
+    activeUploadPromiseRef.current = null;
+    isUploadingRef.current = false;
     setIsModalOpen(true);
   };
 
@@ -125,21 +159,27 @@ window.StudentGuidePage = function(props) {
     setDescInput(normalized.description || "");
     setCategoryInput(normalized.category || "لوائح ومنهج");
     setIconInput(normalized.icon || "📜");
-    setDocFiles(normalized.files || []);
+    var existingFiles = normalized.files || [];
+    setDocFiles(existingFiles);
+    docFilesRef.current = existingFiles.slice();
     setIsDragging(false);
     setUploadingStatus("");
+    setIsUploading(false);
+    setUploadPercent(0);
+    activeUploadPromiseRef.current = null;
+    isUploadingRef.current = false;
     setIsModalOpen(true);
   };
 
   // رفع ملف إلى Google Drive
-  var uploadSingleFileToDrive = async function(file, customName) {
+  var uploadSingleFileToDrive = async function(file, customName, onProgress) {
     var endpoint = cfg.driveUploadEndpoint;
     if (!endpoint) throw new Error("بوابة الرفع السحابية غير معرفة");
 
     var cleanName = (customName || file.name).replace(/\.[^/.]+$/, "");
     var customFileName = "دليل_الدارس_" + cleanName.replace(/\s+/g, "_") + "_" + Date.now() + ".pdf";
 
-    var resData = await utils.uploadToDriveWithProgress(endpoint, file, null, customFileName);
+    var resData = await utils.uploadToDriveWithProgress(endpoint, file, onProgress, customFileName);
     if (resData && (resData.fileUrl || resData.viewUrl)) {
       return resData.fileUrl || resData.viewUrl;
     } else if (resData && resData.fileId) {
@@ -148,8 +188,8 @@ window.StudentGuidePage = function(props) {
     throw new Error("فشل استخراج رابط الملف بعد الرفع: " + (resData && resData.message ? resData.message : "خطأ غير معروف"));
   };
 
-  // معالجة الملفات المحددة أو المسحوبة
-  var handleFilesIncoming = async function(fileList) {
+  // معالجة الملفات المحددة أو المسحوبة مع إدارة متزامنة للرفع والحفظ
+  var handleFilesIncoming = function(fileList) {
     if (!fileList || fileList.length === 0) return;
     var arr = Array.from(fileList);
 
@@ -157,25 +197,39 @@ window.StudentGuidePage = function(props) {
       setTitleInput(arr[0].name.replace(/\.[^/.]+$/, ""));
     }
 
-    setUploadingStatus("جاري رفع " + arr.length + " ملف إلى Google Drive...");
-    var newFilesList = docFiles.slice();
+    setIsUploading(true);
+    isUploadingRef.current = true;
+    setUploadingStatus("جاري تحضير ورفع " + arr.length + " ملف إلى Google Drive...");
 
-    for (var i = 0; i < arr.length; i++) {
-      var f = arr[i];
-      try {
-        setUploadingStatus("جاري رفع (" + (i + 1) + " من " + arr.length + "): " + f.name + " ⏳");
-        var url = await uploadSingleFileToDrive(f, f.name);
-        newFilesList.push({
-          name: f.name.replace(/\.[^/.]+$/, ""),
-          url: url,
-          size: (f.size ? (f.size / (1024 * 1024)).toFixed(2) + " MB" : "")
-        });
-        setDocFiles(newFilesList.slice());
-      } catch (err) {
-        alert("خطأ أثناء رفع ملف (" + f.name + "): " + err.message);
+    var uploadTask = (async function() {
+      var currentList = docFilesRef.current.slice();
+      for (var i = 0; i < arr.length; i++) {
+        var f = arr[i];
+        try {
+          setUploadingStatus("جاري رفع (" + (i + 1) + " من " + arr.length + "): " + f.name + " ⏳");
+          var url = await uploadSingleFileToDrive(f, f.name, function(p) {
+            if (p && p.percent) setUploadPercent(p.percent);
+          });
+          currentList.push({
+            name: f.name.replace(/\.[^/.]+$/, ""),
+            url: url,
+            size: (f.size ? (f.size / (1024 * 1024)).toFixed(2) + " MB" : "")
+          });
+          docFilesRef.current = currentList.slice();
+          setDocFiles(currentList.slice());
+        } catch (err) {
+          alert("خطأ أثناء رفع ملف (" + f.name + "): " + err.message);
+        }
       }
-    }
-    setUploadingStatus("");
+      setIsUploading(false);
+      isUploadingRef.current = false;
+      setUploadingStatus("");
+      setUploadPercent(0);
+      return currentList;
+    })();
+
+    activeUploadPromiseRef.current = uploadTask;
+    return uploadTask;
   };
 
   var handleFileSelect = function(e) {
@@ -198,37 +252,53 @@ window.StudentGuidePage = function(props) {
     var url = prompt("الصق رابط Google Drive للملف:");
     if (!url || !url.trim()) return;
 
-    setDocFiles(docFiles.concat([{
+    var updated = docFilesRef.current.concat([{
       name: name.trim(),
       url: url.trim(),
       size: "رابط خارجي"
-    }]));
+    }]);
+    docFilesRef.current = updated;
+    setDocFiles(updated);
   };
 
   var handleRemoveFile = function(index) {
-    setDocFiles(docFiles.filter(function(_, idx) { return idx !== index; }));
+    var updated = docFilesRef.current.filter(function(_, idx) { return idx !== index; });
+    docFilesRef.current = updated;
+    setDocFiles(updated);
   };
 
+  // حفظ القسم والملفات: يدعم الحفظ المباشر، أو الانتظار الذكي التلقائي إذا كان الرفع لا يزال جارياً
   var handleSaveDoc = async function(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSaving) return;
+
     if (!titleInput.trim()) {
       alert("يرجى إدخال عنوان القسم أو الوثيقة");
       return;
     }
 
-    if (docFiles.length === 0) {
-      alert("يرجى اختيار ملف لرفعه أولاً أو إضافة رابط مباشر.");
-      return;
-    }
-
     setIsSaving(true);
     try {
+      var filesToSave = docFilesRef.current.slice();
+
+      // إذا كان المستخدم ضغط حفظ أثناء جاري الرفع: ننتظر الرفع حتى ينتهي تلقائياً ثم نحفظ مباشرة بدون أي تعارض!
+      if (isUploadingRef.current && activeUploadPromiseRef.current) {
+        setUploadingStatus("⏳ جاري استكمال الرفع السحابي ثم الحفظ تلقائياً...");
+        filesToSave = await activeUploadPromiseRef.current;
+      }
+
+      if (!filesToSave || filesToSave.length === 0) {
+        alert("يرجى اختيار ملف لرفعه أولاً أو إضافة رابط مباشر.");
+        setIsSaving(false);
+        return;
+      }
+
       var docId = editingDoc ? editingDoc.id : ("doc_" + Date.now());
-      var mainUrl = docFiles[0] ? docFiles[0].url : "";
+      var mainUrl = filesToSave[0] ? filesToSave[0].url : "";
 
       var payload = {
         title: titleInput.trim(),
-        files: docFiles,
+        files: filesToSave,
         driveUrl: mainUrl,
         description: descInput.trim(),
         category: categoryInput.trim(),
@@ -245,18 +315,20 @@ window.StudentGuidePage = function(props) {
         await window.db.collection("student_guide_docs").doc(docId).set(payload, { merge: true });
       }
 
-      await fetchDocuments();
       if (utils.getLocal && utils.setLocal) {
         var currentLocal = utils.getLocal("counsel_guide_docs_backup", []);
         var updated = currentLocal.filter(function(d) { return d.id !== docId; });
         updated.push(normalizeDocFiles(Object.assign({ id: docId }, payload)));
         utils.setLocal("counsel_guide_docs_backup", updated);
       }
+
+      await fetchDocuments();
       setIsModalOpen(false);
     } catch (err) {
       alert("خطأ أثناء حفظ البيانات: " + err.message);
     } finally {
       setIsSaving(false);
+      setUploadingStatus("");
     }
   };
 
@@ -500,11 +572,32 @@ window.StudentGuidePage = function(props) {
           ),
 
           // حالة الرفع السحابي المتتابع
-          uploadingStatus ? React.createElement(
+          (uploadingStatus || isUploading) ? React.createElement(
             "div",
-            { className: "p-3 bg-slate-900 text-white rounded-2xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-pulse" },
-            React.createElement("span", { className: "animate-spin" }, "⏳"),
-            React.createElement("span", null, uploadingStatus)
+            { className: "p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-700 space-y-2 text-xs font-bold animate-in fade-in" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between gap-2" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 truncate" },
+                React.createElement("span", { className: "animate-spin shrink-0" }, "⏳"),
+                React.createElement("span", { className: "truncate" }, uploadingStatus || "جاري الرفع السحابي...")
+              ),
+              uploadPercent > 0 ? React.createElement(
+                "span",
+                { className: "font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded text-[11px]" },
+                uploadPercent + "%"
+              ) : null
+            ),
+            uploadPercent > 0 ? React.createElement(
+              "div",
+              { className: "w-full bg-slate-800 rounded-full h-1.5 overflow-hidden" },
+              React.createElement("div", {
+                className: "bg-emerald-500 h-full rounded-full transition-all duration-300",
+                style: { width: uploadPercent + "%" }
+              })
+            ) : null
           ) : null,
 
           // قائمة الملفات المرفوعة تحت هذا القسم
@@ -618,15 +711,19 @@ window.StudentGuidePage = function(props) {
             { className: "flex justify-end gap-2 pt-3" },
             React.createElement("button", {
               type: "button",
-              disabled: isSaving || !!uploadingStatus,
+              disabled: isSaving,
               onClick: function() { setIsModalOpen(false); },
-              className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
             }, "إلغاء"),
             React.createElement("button", {
               type: "submit",
-              disabled: isSaving || !!uploadingStatus,
-              className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-            }, isSaving ? "جاري الحفظ..." : "حفظ القسم وملفاته ✓")
+              disabled: isSaving,
+              className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all disabled:opacity-80"
+            },
+              isSaving
+                ? (isUploading ? "⏳ جاري استكمال الرفع ثم الحفظ تلقائياً..." : "جاري الحفظ...")
+                : (isUploading ? "⏳ رفع جاري (اضغط للحفظ التلقائي عند الانتهاء)" : "حفظ القسم وملفاته ✓")
+            )
           )
         )
       )

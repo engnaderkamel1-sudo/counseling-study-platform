@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"},{"hash":"04aa6e7","date":"2026-10-12 15:49","message":"fix(settings): guarantee local apiKey storage and fix empty state on reload"},{"hash":"4520e23","date":"2026-10-12 15:16","message":"feat(audio): integrate official Azure Speech with dual-key quota monitoring and cleanup legacy tts chunking"},{"hash":"c703bf0","date":"2026-10-12 15:04","message":"feat: add smart alternate section navigation to error boundary and pre-react shield"},{"hash":"676b0a0","date":"2026-10-12 14:54","message":"feat: auto-report crashes to admins and display reassuring support card with safe navigation"},{"hash":"45e3fe7","date":"2026-10-12 14:47","message":"fix: enhance pre-react fallback with fresh-query navigation and direct firestore error reporting"},{"hash":"da135c9","date":"2026-10-12 14:41","message":"fix: remove nested script tag in bundled html"},{"hash":"af82476","date":"2026-10-12 14:40","message":"feat(admin): add platform updates log tab and live header indicator for last 50 commits"},{"hash":"59d88fe","date":"2026-10-12 14:35","message":"feat(audio): add automatic Google Cloud TTS fallback with existing Gemini key"},{"hash":"86a8930","date":"2026-10-12 14:04","message":"feat(server): add standalone FastAPI edge-tts backend service for Render"},{"hash":"4f10d7d","date":"2026-10-12 13:22","message":"feat(ui): add live percentage and animated progress bars for Text, Audio, and SRT batch tasks"},{"hash":"5366eee","date":"2026-10-12 13:14","message":"fix: define onSaveChapterSubtitles in ChapterTextViewerModal and fix firestore settings conflict"},{"hash":"f292476","date":"2026-10-12 13:12","message":"feat(ai-tools): add batch SRT generation button for all book chapters"},{"hash":"8f3e0d3","date":"2026-10-12 13:08","message":"ux: save SRT directly to player without forced file download"},{"hash":"a4ea7bc","date":"2026-10-12 13:05","message":"chore(rules): keep user exact rules with only books and lectures relaxed"},{"hash":"5b8846f","date":"2026-10-12 13:04","message":"fix(security): update firestore rules to allow books write without native firebase auth session"},{"hash":"3c4579b","date":"2026-10-12 12:52","message":"fix: place SRT button beside audio generation button, fix srtNotice reference, enable firestore longPolling"},{"hash":"1612d8d","date":"2026-10-12 12:46","message":"perf: reduce pre-react shield timeout to 3.5s for faster UX"},{"hash":"a32c7fe","date":"2026-10-12 11:35","message":"Add SRT auto-generator, download .srt, import .srt, and cloud sync"},{"hash":"c75f19e","date":"2026-10-12 11:31","message":"fix: add pre-react universal fallback shield and harden SW cache handling"},{"hash":"b6d61bb","date":"2026-10-12 10:51","message":"fix: resolve edgeTtsService conflict marker and harden service worker cache"},{"hash":"0767f25","date":"2026-10-12 10:42","message":"fix: add resilient fallback and in-memory sorting for notifications query"},{"hash":"45ea37f","date":"2026-10-12 10:34","message":"Support chunked audio generation, anchored subtitles in reader, and drive upload"},{"hash":"37490e6","date":"2026-10-12 10:31","message":"Add safe text chunking, anchored subtitles, and direct blob upload support"},{"hash":"15503f9","date":"2026-10-12 09:57","message":"fix: enable live error reporting notifications and in-app toasts"},{"hash":"d1cf129","date":"2026-10-12 09:52","message":"Restore stable audio generator and enforce golden rule in PROJECT_CONTEXT"},{"hash":"51ece7b","date":"2026-10-12 09:47","message":"chore: rebuild bundled index with merged error report updates"},{"hash":"78b3f22","date":"2026-10-12 09:47","message":"Merge remote-tracking branch \u0027origin/main\u0027"},{"hash":"79feed6","date":"2026-10-12 09:46","message":"fix: link error reports with admin notifications and update security rules"},{"hash":"274c772","date":"2026-10-12 09:46","message":"feat(lectures): add background audio mode and offline caching for students"},{"hash":"673c7f8","date":"2026-10-12 09:38","message":"Support Edge-TTS subtitles synchronization in audio reader and batch generator"},{"hash":"368e3d1","date":"2026-10-12 09:27","message":"chore: sync clean state before audio feature"},{"hash":"505408b","date":"2026-10-12 09:03","message":"feat(admin): add login activity and geo tracking tab with safe cleanup"},{"hash":"93536a7","date":"2026-10-11 22:23","message":"feat(notifications): auto-broadcast notification when a new book/reference is published"},{"hash":"09bb20d","date":"2026-10-11 22:07","message":"feat(reader): full screen reading mode, hidden sync panel behind gear, and compact player with larger font"},{"hash":"52649ff","date":"2026-10-11 21:58","message":"feat(player): add speed slider bar and clarify auto-scroll and next track toggle labels"},{"hash":"597119c","date":"2026-10-11 21:56","message":"fix(player): set expanded player with full controls as default open state on mobile and laptop"},{"hash":"3289811","date":"2026-10-11 21:53","message":"feat(reader): open synchronized text viewer by default when playing tracks and label close button as hide text with background audio notice"},{"hash":"45d1421","date":"2026-10-11 21:51","message":"fix(desktop-reader): expand modal width, guarantee text area min-height, and optimize sync panel on laptop screens without altering mobile"},{"hash":"7b7fe18","date":"2026-10-11 21:44","message":"fix: define resumedNotice in AudioChaptersView and readerTheme in ChapterTextViewerModal"}];
+window.APP_UPDATES_HISTORY = [{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"},{"hash":"04aa6e7","date":"2026-10-12 15:49","message":"fix(settings): guarantee local apiKey storage and fix empty state on reload"},{"hash":"4520e23","date":"2026-10-12 15:16","message":"feat(audio): integrate official Azure Speech with dual-key quota monitoring and cleanup legacy tts chunking"},{"hash":"c703bf0","date":"2026-10-12 15:04","message":"feat: add smart alternate section navigation to error boundary and pre-react shield"},{"hash":"676b0a0","date":"2026-10-12 14:54","message":"feat: auto-report crashes to admins and display reassuring support card with safe navigation"},{"hash":"45e3fe7","date":"2026-10-12 14:47","message":"fix: enhance pre-react fallback with fresh-query navigation and direct firestore error reporting"},{"hash":"da135c9","date":"2026-10-12 14:41","message":"fix: remove nested script tag in bundled html"},{"hash":"af82476","date":"2026-10-12 14:40","message":"feat(admin): add platform updates log tab and live header indicator for last 50 commits"},{"hash":"59d88fe","date":"2026-10-12 14:35","message":"feat(audio): add automatic Google Cloud TTS fallback with existing Gemini key"},{"hash":"86a8930","date":"2026-10-12 14:04","message":"feat(server): add standalone FastAPI edge-tts backend service for Render"},{"hash":"4f10d7d","date":"2026-10-12 13:22","message":"feat(ui): add live percentage and animated progress bars for Text, Audio, and SRT batch tasks"},{"hash":"5366eee","date":"2026-10-12 13:14","message":"fix: define onSaveChapterSubtitles in ChapterTextViewerModal and fix firestore settings conflict"},{"hash":"f292476","date":"2026-10-12 13:12","message":"feat(ai-tools): add batch SRT generation button for all book chapters"},{"hash":"8f3e0d3","date":"2026-10-12 13:08","message":"ux: save SRT directly to player without forced file download"},{"hash":"a4ea7bc","date":"2026-10-12 13:05","message":"chore(rules): keep user exact rules with only books and lectures relaxed"},{"hash":"5b8846f","date":"2026-10-12 13:04","message":"fix(security): update firestore rules to allow books write without native firebase auth session"},{"hash":"3c4579b","date":"2026-10-12 12:52","message":"fix: place SRT button beside audio generation button, fix srtNotice reference, enable firestore longPolling"},{"hash":"1612d8d","date":"2026-10-12 12:46","message":"perf: reduce pre-react shield timeout to 3.5s for faster UX"},{"hash":"a32c7fe","date":"2026-10-12 11:35","message":"Add SRT auto-generator, download .srt, import .srt, and cloud sync"},{"hash":"c75f19e","date":"2026-10-12 11:31","message":"fix: add pre-react universal fallback shield and harden SW cache handling"},{"hash":"b6d61bb","date":"2026-10-12 10:51","message":"fix: resolve edgeTtsService conflict marker and harden service worker cache"},{"hash":"0767f25","date":"2026-10-12 10:42","message":"fix: add resilient fallback and in-memory sorting for notifications query"},{"hash":"45ea37f","date":"2026-10-12 10:34","message":"Support chunked audio generation, anchored subtitles in reader, and drive upload"},{"hash":"37490e6","date":"2026-10-12 10:31","message":"Add safe text chunking, anchored subtitles, and direct blob upload support"},{"hash":"15503f9","date":"2026-10-12 09:57","message":"fix: enable live error reporting notifications and in-app toasts"},{"hash":"d1cf129","date":"2026-10-12 09:52","message":"Restore stable audio generator and enforce golden rule in PROJECT_CONTEXT"},{"hash":"51ece7b","date":"2026-10-12 09:47","message":"chore: rebuild bundled index with merged error report updates"},{"hash":"78b3f22","date":"2026-10-12 09:47","message":"Merge remote-tracking branch \u0027origin/main\u0027"},{"hash":"79feed6","date":"2026-10-12 09:46","message":"fix: link error reports with admin notifications and update security rules"},{"hash":"274c772","date":"2026-10-12 09:46","message":"feat(lectures): add background audio mode and offline caching for students"},{"hash":"673c7f8","date":"2026-10-12 09:38","message":"Support Edge-TTS subtitles synchronization in audio reader and batch generator"},{"hash":"368e3d1","date":"2026-10-12 09:27","message":"chore: sync clean state before audio feature"},{"hash":"505408b","date":"2026-10-12 09:03","message":"feat(admin): add login activity and geo tracking tab with safe cleanup"},{"hash":"93536a7","date":"2026-10-11 22:23","message":"feat(notifications): auto-broadcast notification when a new book/reference is published"},{"hash":"09bb20d","date":"2026-10-11 22:07","message":"feat(reader): full screen reading mode, hidden sync panel behind gear, and compact player with larger font"},{"hash":"52649ff","date":"2026-10-11 21:58","message":"feat(player): add speed slider bar and clarify auto-scroll and next track toggle labels"},{"hash":"597119c","date":"2026-10-11 21:56","message":"fix(player): set expanded player with full controls as default open state on mobile and laptop"},{"hash":"3289811","date":"2026-10-11 21:53","message":"feat(reader): open synchronized text viewer by default when playing tracks and label close button as hide text with background audio notice"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791819948",
-  buildTime: "2026-10-12T15:45:48",
+  version: "1.2.1791820584",
+  buildTime: "2026-10-12T15:56:24",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2504,8 +2504,11 @@ window.APP_UTILS = {
 
       var blob = await resp.blob();
       var rawName = customFileName || ("audio_" + Date.now());
-      var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".mp3";
-      var audioFile = new File([blob], cleanFileName, { type: "audio/mp3" });
+      var isWav = (blob.type && blob.type.indexOf("wav") !== -1) || (audioUrl && audioUrl.indexOf(".wav") !== -1);
+      var ext = isWav ? ".wav" : ".mp3";
+      var mimeType = isWav ? "audio/wav" : "audio/mpeg";
+      var cleanFileName = rawName.replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ext;
+      var audioFile = new File([blob], cleanFileName, { type: mimeType });
 
       var endpoint = window.APP_CONFIG && window.APP_CONFIG.driveUploadEndpoint;
       if (!endpoint) {
@@ -8533,6 +8536,25 @@ window.AudioChaptersView = function(props) {
     }, 150);
   };
 
+  // إعادة ضبط المشغل وتشغيل الصوت عند تغيير الفصل
+  React.useEffect(function() {
+    if (!playingChapterId) return;
+    setUseIframePlayer(false);
+    setAudioHasError(false);
+    var timer = setTimeout(function() {
+      var audio = chapterAudioRef.current;
+      if (audio) {
+        var p = audio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function(err) {
+            console.warn("Audio autoplay postponed:", err);
+          });
+        }
+      }
+    }, 60);
+    return function() { clearTimeout(timer); };
+  }, [playingChapterId]);
+
   // مراقبة وتشغيل الصوت والانتقال التلقائي بين الفصول عند انتهاء التراك وحفظ موضع الاستماع
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
@@ -9490,10 +9512,12 @@ window.AudioChaptersView = function(props) {
 
         // عنصر الصوت الخفي
         React.createElement("audio", {
+          key: activeChap.id,
           ref: chapterAudioRef,
           src: utils.getAudioStreamUrl(activeChap.audioUrl),
           controls: false,
           autoPlay: true,
+          preload: "auto",
           className: "hidden",
           onLoadedMetadata: function(e) {
             setAudioHasError(false);
@@ -9502,21 +9526,15 @@ window.AudioChaptersView = function(props) {
           onCanPlay: function(e) {
             setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
+            var p = e.target.play();
+            if (p && typeof p.catch === "function") p.catch(function() {});
           },
           onError: function(e) {
-            // التحقق مما إذا كان هناك خطأ حقيقي في الرابط أم مجرد تفريغ مؤقت للـ buffer أثناء الانتقال
             var mediaError = e.target && e.target.error;
             if (!mediaError) return;
-            var driveId = utils.extractDriveId ? utils.extractDriveId(activeChap.audioUrl) : null;
-            if (driveId) {
-              if (e.target) {
-                try { e.target.pause(); } catch (pErr) {}
-              }
-              setUseIframePlayer(true);
-              return;
-            }
             // إذا كان الخطأ بسبب إيقاف التحميل العادي أثناء الانتقال، نتجاهله
             if (mediaError.code === 1) return; // MEDIA_ERR_ABORTED
+            console.error("Audio playback error:", mediaError);
             setAudioHasError(true);
           }
         }),
@@ -17729,9 +17747,14 @@ window.StudentGuidePage = function(props) {
   var [docFiles, setDocFiles] = React.useState([]);
   var [isSaving, setIsSaving] = React.useState(false);
 
-  // حالة السحب والإفلات والرفع
+  // حالة السحب والإفلات والرفع المتزامن
   var [isDragging, setIsDragging] = React.useState(false);
   var [uploadingStatus, setUploadingStatus] = React.useState("");
+  var [isUploading, setIsUploading] = React.useState(false);
+  var [uploadPercent, setUploadPercent] = React.useState(0);
+  var activeUploadPromiseRef = React.useRef(null);
+  var isUploadingRef = React.useRef(false);
+  var docFilesRef = React.useRef([]);
 
   // حالة عارض الـ PDF
   var [activeViewingDoc, setActiveViewingDoc] = React.useState(null);
@@ -17812,6 +17835,30 @@ window.StudentGuidePage = function(props) {
 
   React.useEffect(function() {
     fetchDocuments();
+    if (!window.db) return;
+    try {
+      var unsubscribe = window.db.collection("student_guide_docs").orderBy("order", "asc")
+        .onSnapshot(function(snap) {
+          if (!snap.empty) {
+            var list = [];
+            snap.forEach(function(doc) {
+              list.push(normalizeDocFiles(Object.assign({ id: doc.id }, doc.data())));
+            });
+            setDocuments(list);
+            if (utils.setLocal) {
+              utils.setLocal("counsel_guide_docs_backup", list);
+            }
+          }
+          setIsLoading(false);
+        }, function(err) {
+          console.warn("Realtime guide docs listener err:", err);
+        });
+      return function() {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    } catch (e) {
+      console.warn("Realtime guide docs init err:", e);
+    }
   }, []);
 
   var handleOpenAddModal = function() {
@@ -17821,8 +17868,13 @@ window.StudentGuidePage = function(props) {
     setCategoryInput("لوائح ومنهج");
     setIconInput("📜");
     setDocFiles([]);
+    docFilesRef.current = [];
     setIsDragging(false);
     setUploadingStatus("");
+    setIsUploading(false);
+    setUploadPercent(0);
+    activeUploadPromiseRef.current = null;
+    isUploadingRef.current = false;
     setIsModalOpen(true);
   };
 
@@ -17834,21 +17886,27 @@ window.StudentGuidePage = function(props) {
     setDescInput(normalized.description || "");
     setCategoryInput(normalized.category || "لوائح ومنهج");
     setIconInput(normalized.icon || "📜");
-    setDocFiles(normalized.files || []);
+    var existingFiles = normalized.files || [];
+    setDocFiles(existingFiles);
+    docFilesRef.current = existingFiles.slice();
     setIsDragging(false);
     setUploadingStatus("");
+    setIsUploading(false);
+    setUploadPercent(0);
+    activeUploadPromiseRef.current = null;
+    isUploadingRef.current = false;
     setIsModalOpen(true);
   };
 
   // رفع ملف إلى Google Drive
-  var uploadSingleFileToDrive = async function(file, customName) {
+  var uploadSingleFileToDrive = async function(file, customName, onProgress) {
     var endpoint = cfg.driveUploadEndpoint;
     if (!endpoint) throw new Error("بوابة الرفع السحابية غير معرفة");
 
     var cleanName = (customName || file.name).replace(/\.[^/.]+$/, "");
     var customFileName = "دليل_الدارس_" + cleanName.replace(/\s+/g, "_") + "_" + Date.now() + ".pdf";
 
-    var resData = await utils.uploadToDriveWithProgress(endpoint, file, null, customFileName);
+    var resData = await utils.uploadToDriveWithProgress(endpoint, file, onProgress, customFileName);
     if (resData && (resData.fileUrl || resData.viewUrl)) {
       return resData.fileUrl || resData.viewUrl;
     } else if (resData && resData.fileId) {
@@ -17857,8 +17915,8 @@ window.StudentGuidePage = function(props) {
     throw new Error("فشل استخراج رابط الملف بعد الرفع: " + (resData && resData.message ? resData.message : "خطأ غير معروف"));
   };
 
-  // معالجة الملفات المحددة أو المسحوبة
-  var handleFilesIncoming = async function(fileList) {
+  // معالجة الملفات المحددة أو المسحوبة مع إدارة متزامنة للرفع والحفظ
+  var handleFilesIncoming = function(fileList) {
     if (!fileList || fileList.length === 0) return;
     var arr = Array.from(fileList);
 
@@ -17866,25 +17924,39 @@ window.StudentGuidePage = function(props) {
       setTitleInput(arr[0].name.replace(/\.[^/.]+$/, ""));
     }
 
-    setUploadingStatus("جاري رفع " + arr.length + " ملف إلى Google Drive...");
-    var newFilesList = docFiles.slice();
+    setIsUploading(true);
+    isUploadingRef.current = true;
+    setUploadingStatus("جاري تحضير ورفع " + arr.length + " ملف إلى Google Drive...");
 
-    for (var i = 0; i < arr.length; i++) {
-      var f = arr[i];
-      try {
-        setUploadingStatus("جاري رفع (" + (i + 1) + " من " + arr.length + "): " + f.name + " ⏳");
-        var url = await uploadSingleFileToDrive(f, f.name);
-        newFilesList.push({
-          name: f.name.replace(/\.[^/.]+$/, ""),
-          url: url,
-          size: (f.size ? (f.size / (1024 * 1024)).toFixed(2) + " MB" : "")
-        });
-        setDocFiles(newFilesList.slice());
-      } catch (err) {
-        alert("خطأ أثناء رفع ملف (" + f.name + "): " + err.message);
+    var uploadTask = (async function() {
+      var currentList = docFilesRef.current.slice();
+      for (var i = 0; i < arr.length; i++) {
+        var f = arr[i];
+        try {
+          setUploadingStatus("جاري رفع (" + (i + 1) + " من " + arr.length + "): " + f.name + " ⏳");
+          var url = await uploadSingleFileToDrive(f, f.name, function(p) {
+            if (p && p.percent) setUploadPercent(p.percent);
+          });
+          currentList.push({
+            name: f.name.replace(/\.[^/.]+$/, ""),
+            url: url,
+            size: (f.size ? (f.size / (1024 * 1024)).toFixed(2) + " MB" : "")
+          });
+          docFilesRef.current = currentList.slice();
+          setDocFiles(currentList.slice());
+        } catch (err) {
+          alert("خطأ أثناء رفع ملف (" + f.name + "): " + err.message);
+        }
       }
-    }
-    setUploadingStatus("");
+      setIsUploading(false);
+      isUploadingRef.current = false;
+      setUploadingStatus("");
+      setUploadPercent(0);
+      return currentList;
+    })();
+
+    activeUploadPromiseRef.current = uploadTask;
+    return uploadTask;
   };
 
   var handleFileSelect = function(e) {
@@ -17907,37 +17979,53 @@ window.StudentGuidePage = function(props) {
     var url = prompt("الصق رابط Google Drive للملف:");
     if (!url || !url.trim()) return;
 
-    setDocFiles(docFiles.concat([{
+    var updated = docFilesRef.current.concat([{
       name: name.trim(),
       url: url.trim(),
       size: "رابط خارجي"
-    }]));
+    }]);
+    docFilesRef.current = updated;
+    setDocFiles(updated);
   };
 
   var handleRemoveFile = function(index) {
-    setDocFiles(docFiles.filter(function(_, idx) { return idx !== index; }));
+    var updated = docFilesRef.current.filter(function(_, idx) { return idx !== index; });
+    docFilesRef.current = updated;
+    setDocFiles(updated);
   };
 
+  // حفظ القسم والملفات: يدعم الحفظ المباشر، أو الانتظار الذكي التلقائي إذا كان الرفع لا يزال جارياً
   var handleSaveDoc = async function(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSaving) return;
+
     if (!titleInput.trim()) {
       alert("يرجى إدخال عنوان القسم أو الوثيقة");
       return;
     }
 
-    if (docFiles.length === 0) {
-      alert("يرجى اختيار ملف لرفعه أولاً أو إضافة رابط مباشر.");
-      return;
-    }
-
     setIsSaving(true);
     try {
+      var filesToSave = docFilesRef.current.slice();
+
+      // إذا كان المستخدم ضغط حفظ أثناء جاري الرفع: ننتظر الرفع حتى ينتهي تلقائياً ثم نحفظ مباشرة بدون أي تعارض!
+      if (isUploadingRef.current && activeUploadPromiseRef.current) {
+        setUploadingStatus("⏳ جاري استكمال الرفع السحابي ثم الحفظ تلقائياً...");
+        filesToSave = await activeUploadPromiseRef.current;
+      }
+
+      if (!filesToSave || filesToSave.length === 0) {
+        alert("يرجى اختيار ملف لرفعه أولاً أو إضافة رابط مباشر.");
+        setIsSaving(false);
+        return;
+      }
+
       var docId = editingDoc ? editingDoc.id : ("doc_" + Date.now());
-      var mainUrl = docFiles[0] ? docFiles[0].url : "";
+      var mainUrl = filesToSave[0] ? filesToSave[0].url : "";
 
       var payload = {
         title: titleInput.trim(),
-        files: docFiles,
+        files: filesToSave,
         driveUrl: mainUrl,
         description: descInput.trim(),
         category: categoryInput.trim(),
@@ -17954,18 +18042,20 @@ window.StudentGuidePage = function(props) {
         await window.db.collection("student_guide_docs").doc(docId).set(payload, { merge: true });
       }
 
-      await fetchDocuments();
       if (utils.getLocal && utils.setLocal) {
         var currentLocal = utils.getLocal("counsel_guide_docs_backup", []);
         var updated = currentLocal.filter(function(d) { return d.id !== docId; });
         updated.push(normalizeDocFiles(Object.assign({ id: docId }, payload)));
         utils.setLocal("counsel_guide_docs_backup", updated);
       }
+
+      await fetchDocuments();
       setIsModalOpen(false);
     } catch (err) {
       alert("خطأ أثناء حفظ البيانات: " + err.message);
     } finally {
       setIsSaving(false);
+      setUploadingStatus("");
     }
   };
 
@@ -18209,11 +18299,32 @@ window.StudentGuidePage = function(props) {
           ),
 
           // حالة الرفع السحابي المتتابع
-          uploadingStatus ? React.createElement(
+          (uploadingStatus || isUploading) ? React.createElement(
             "div",
-            { className: "p-3 bg-slate-900 text-white rounded-2xl border border-slate-700 text-xs font-bold flex items-center gap-2 animate-pulse" },
-            React.createElement("span", { className: "animate-spin" }, "⏳"),
-            React.createElement("span", null, uploadingStatus)
+            { className: "p-3.5 bg-slate-900 text-white rounded-2xl border border-slate-700 space-y-2 text-xs font-bold animate-in fade-in" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between gap-2" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 truncate" },
+                React.createElement("span", { className: "animate-spin shrink-0" }, "⏳"),
+                React.createElement("span", { className: "truncate" }, uploadingStatus || "جاري الرفع السحابي...")
+              ),
+              uploadPercent > 0 ? React.createElement(
+                "span",
+                { className: "font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded text-[11px]" },
+                uploadPercent + "%"
+              ) : null
+            ),
+            uploadPercent > 0 ? React.createElement(
+              "div",
+              { className: "w-full bg-slate-800 rounded-full h-1.5 overflow-hidden" },
+              React.createElement("div", {
+                className: "bg-emerald-500 h-full rounded-full transition-all duration-300",
+                style: { width: uploadPercent + "%" }
+              })
+            ) : null
           ) : null,
 
           // قائمة الملفات المرفوعة تحت هذا القسم
@@ -18327,15 +18438,19 @@ window.StudentGuidePage = function(props) {
             { className: "flex justify-end gap-2 pt-3" },
             React.createElement("button", {
               type: "button",
-              disabled: isSaving || !!uploadingStatus,
+              disabled: isSaving,
               onClick: function() { setIsModalOpen(false); },
-              className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className: "px-4 py-2 text-xs rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
             }, "إلغاء"),
             React.createElement("button", {
               type: "submit",
-              disabled: isSaving || !!uploadingStatus,
-              className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-            }, isSaving ? "جاري الحفظ..." : "حفظ القسم وملفاته ✓")
+              disabled: isSaving,
+              className: "px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all disabled:opacity-80"
+            },
+              isSaving
+                ? (isUploading ? "⏳ جاري استكمال الرفع ثم الحفظ تلقائياً..." : "جاري الحفظ...")
+                : (isUploading ? "⏳ رفع جاري (اضغط للحفظ التلقائي عند الانتهاء)" : "حفظ القسم وملفاته ✓")
+            )
           )
         )
       )
