@@ -752,7 +752,13 @@ window.UsersManagementPage = function(props) {
                     "span",
                     { className: "font-semibold flex items-center gap-1 " + (isEgypt ? "text-slate-700 dark:text-slate-300" : "text-amber-600 dark:text-amber-400 font-bold") },
                     React.createElement("span", null, isEgypt ? "🇪🇬" : "🌍"),
-                    (item.country || "دولة غير محددة") + (item.city && item.city !== "غير محدد" ? " - " + item.city : "")
+                    (function() {
+                      var locParts = [];
+                      if (item.country && item.country !== "غير محدد") locParts.push(item.country);
+                      if (item.region && item.region !== "غير محدد" && locParts.indexOf(item.region) === -1) locParts.push(item.region);
+                      if (item.city && item.city !== "غير محدد" && locParts.indexOf(item.city) === -1) locParts.push(item.city);
+                      return locParts.length > 0 ? locParts.join(" - ") : "مكان غير محدد";
+                    })()
                   ),
                   React.createElement("span", { className: "text-slate-300 dark:text-slate-700" }, "•"),
                   React.createElement("span", { className: "font-mono text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300" }, "IP: " + (item.ip || "—")),

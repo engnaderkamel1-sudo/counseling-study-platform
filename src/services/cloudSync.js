@@ -465,31 +465,53 @@ window.CloudSyncService = {
         return; // مسجل بالفعل مؤخراً في نفس الجلسة
       }
 
-      // جلب بيانات الموقع الجغرافي والـ IP بخفة وأمان عبر خدمة سريعة ومجانية
-      var geoData = { ip: "غير متوفر", country: "غير محدد", city: "غير محدد", countryCode: "" };
+      // جلب بيانات الموقع الجغرافي (الدولة، المحافظة، المدينة) والـ IP بدقة وموثوقية عالية
+      var geoData = { ip: "غير متوفر", country: "غير محدد", region: "", city: "غير محدد", countryCode: "" };
       try {
-        var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 4000);
-        var resp = await fetch("https://freeipapi.com/api/json", { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (resp.ok) {
-          var j = await resp.json();
-          geoData = {
-            ip: j.ipAddress || "غير متوفر",
-            country: j.countryName || "غير محدد",
-            city: j.cityName || "غير محدد",
-            countryCode: (j.countryCode || "").toUpperCase()
-          };
+        // المحاولة 1: خدمة ipwho.is (سريعة جداً وترجع المحافظة والمدينة والدولة بدقة)
+        var controller1 = new AbortController();
+        var timeout1 = setTimeout(function() { controller1.abort(); }, 3500);
+        var resp1 = await fetch("https://ipwho.is/", { signal: controller1.signal });
+        clearTimeout(timeout1);
+        if (resp1.ok) {
+          var j1 = await resp1.json();
+          if (j1.success) {
+            geoData = {
+              ip: j1.ip || "غير متوفر",
+              country: j1.country || "غير محدد",
+              region: j1.region || "",
+              city: j1.city || "غير محدد",
+              countryCode: (j1.country_code || "").toUpperCase()
+            };
+          }
         }
-      } catch (geoErr) {
-        // بديل احتياطي سريع وخفيف في حال تعذر المصدر الأول
+      } catch (e1) {
+        // المحاولة 2 (احتياطية): خدمة freeipapi.com
         try {
-          var resp2 = await fetch("https://api.ipify.org?format=json");
+          var controller2 = new AbortController();
+          var timeout2 = setTimeout(function() { controller2.abort(); }, 3500);
+          var resp2 = await fetch("https://freeipapi.com/api/json", { signal: controller2.signal });
+          clearTimeout(timeout2);
           if (resp2.ok) {
             var j2 = await resp2.json();
-            geoData.ip = j2.ip || geoData.ip;
+            geoData = {
+              ip: j2.ipAddress || "غير متوفر",
+              country: j2.countryName || "غير محدد",
+              region: j2.regionName || "",
+              city: j2.cityName || "غير محدد",
+              countryCode: (j2.countryCode || "").toUpperCase()
+            };
           }
-        } catch (e2) {}
+        } catch (e2) {
+          // المحاولة 3 (احتياطية ثالثة): جلب الـ IP فقط عبر ipify
+          try {
+            var resp3 = await fetch("https://api.ipify.org?format=json");
+            if (resp3.ok) {
+              var j3 = await resp3.json();
+              geoData.ip = j3.ip || geoData.ip;
+            }
+          } catch (e3) {}
+        }
       }
 
       // تحديد نوع جهاز الدارس
@@ -511,6 +533,7 @@ window.CloudSyncService = {
         governorate: userData.governorate || "غير محدد",
         ip: geoData.ip,
         country: geoData.country,
+        region: geoData.region || "",
         city: geoData.city,
         countryCode: geoData.countryCode,
         device: deviceType,
@@ -525,9 +548,13 @@ window.CloudSyncService = {
         // تحديث آخر دخول في وثيقة الدارس نفسه أيضاً كمرجع إضافي
         if (userData.id) {
           try {
+            var locSummary = geoData.country;
+            if (geoData.region) locSummary += " (" + geoData.region + (geoData.city && geoData.city !== geoData.region ? " - " + geoData.city : "") + ")";
+            else if (geoData.city && geoData.city !== "غير محدد") locSummary += " (" + geoData.city + ")";
+
             await window.db.collection("users").doc(userData.id).set({
               lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
-              lastLoginCountry: geoData.country + (geoData.city ? " (" + geoData.city + ")" : ""),
+              lastLoginCountry: locSummary,
               lastLoginIp: geoData.ip,
               lastDevice: deviceType
             }, { merge: true });
