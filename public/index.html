@@ -327,8 +327,8 @@
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "رفيق المشورة | منصة دارسي المشورة",
-  version: "1.2.1791799722",
-  buildTime: "2026-10-12T10:08:42",
+  version: "1.2.1791799931",
+  buildTime: "2026-10-12T10:12:11",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -8316,6 +8316,76 @@ window.AudioChaptersView = function(props) {
     }
   };
 
+  // توليد تزامن الـ SRT لكافة فصول الكتاب دفعة واحدة
+  var [srtBatchProgress, setSrtBatchProgress] = React.useState(null);
+
+  var handleBatchGenerateAllSrt = async function() {
+    var readyChaps = chaps.filter(function(c) {
+      return c.text && c.text.trim() && c.audioUrl && c.audioUrl.trim();
+    });
+
+    if (readyChaps.length === 0) {
+      alert("⚠️ لا توجد فصول جاهزة (تحتوي على نص مفرغ وملف صوتي) لتوليد الـ SRT لها.");
+      return;
+    }
+
+    var pendingChaps = readyChaps.filter(function(c) {
+      return !c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0;
+    });
+
+    var targets = pendingChaps.length > 0 ? pendingChaps : readyChaps;
+    var confirmMsg = pendingChaps.length > 0
+      ? ("هل تريد توليد تزامن الـ SRT للفصول المتبقية (" + pendingChaps.length + " فصول)؟")
+      : ("جميع الفصول لديها تزامن بالفعل. هل تريد إعادة توليد وتحديث الـ SRT لكافة الفصول (" + readyChaps.length + " فصول)؟");
+
+    if (!window.confirm(confirmMsg)) return;
+
+    setSrtBatchProgress({ current: 0, total: targets.length });
+    var successCount = 0;
+
+    for (var i = 0; i < targets.length; i++) {
+      var curChap = targets[i];
+      setSrtBatchProgress({ current: i + 1, total: targets.length, title: curChap.title });
+
+      try {
+        var dur = (durationsMap && durationsMap[curChap.id]) || curChap.audioDuration || 0;
+        if (!dur && chapterAudioRef.current && playingChapterId === curChap.id && chapterAudioRef.current.duration > 0) {
+          dur = chapterAudioRef.current.duration;
+        }
+
+        if (!dur || dur <= 0) {
+          dur = await new Promise(function(resolve) {
+            var probe = new Audio();
+            probe.preload = "metadata";
+            probe.src = utils.getAudioStreamUrl(curChap.audioUrl);
+            var timer = setTimeout(function() { resolve(0); }, 6000);
+            probe.onloadedmetadata = function() {
+              clearTimeout(timer);
+              resolve(probe.duration || 0);
+            };
+            probe.onerror = function() {
+              clearTimeout(timer);
+              resolve(0);
+            };
+          });
+        }
+
+        if (dur && dur > 0) {
+          var subs = generateSubtitlesFromDuration(curChap.text, dur);
+          if (subs && subs.length > 0 && handleSaveChapterSubtitles) {
+            await handleSaveChapterSubtitles(curChap.id, subs);
+            successCount++;
+          }
+        }
+      } catch (loopErr) {
+        console.warn("Error generating SRT for chapter " + curChap.title, loopErr);
+      }
+    }
+
+    setSrtBatchProgress(null);
+    alert("🎉 اكتمل توليد وحفظ تزامن الـ SRT بنجاح لـ (" + successCount + " من " + targets.length + ") فصول!");
+  };
+
   // تفعيل التشغيل الفوري بسلاسة واستعادة نقطة التوقف عند تغيير التراك
   React.useEffect(function() {
     var audio = chapterAudioRef.current;
@@ -8842,10 +8912,35 @@ window.AudioChaptersView = function(props) {
             {
               type: "button",
               onClick: handleBatchGenerateAllAudio,
-              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress,
+              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress || !!srtBatchProgress,
               className: "inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/25 active:scale-95 transition-all"
             },
             audioBtnLabel
+          );
+        })() : null,
+        // زر توليد الـ SRT لكافة الفصول دفعة واحدة
+        chaps.length > 0 && typeof handleSaveChapterSubtitles === "function" ? (function() {
+          var audioAndTextChaps = chaps.filter(function(c) { return c.text && c.text.trim() && c.audioUrl && c.audioUrl.trim(); });
+          if (audioAndTextChaps.length === 0) return null;
+          var missingSrtCount = audioAndTextChaps.filter(function(c) { return !c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0; }).length;
+          var srtBtnLabel = srtBatchProgress
+            ? ("⏳ جاري توليد الـ SRT (" + srtBatchProgress.current + "/" + srtBatchProgress.total + ")...")
+            : (missingSrtCount > 0)
+              ? ("⚡ توليد الـ SRT للفصول (" + missingSrtCount + " متبقية)")
+              : "✓ الـ SRT مكتمل لجميع الفصول";
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleBatchGenerateAllSrt,
+              disabled: isAiAnalyzingBook || !!batchProgress || !!audioBatchProgress || !!srtBatchProgress,
+              className: "inline-flex items-center gap-1.5 px-3.5 py-2 " +
+                (missingSrtCount > 0
+                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white shadow-md shadow-violet-600/25"
+                  : "bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:hover:bg-violet-900/60 dark:text-violet-300 border border-violet-200 dark:border-violet-800") +
+                " rounded-xl text-xs font-bold active:scale-95 transition-all"
+            },
+            srtBtnLabel
           );
         })() : null,
         chaps.length > 0 && typeof handleClearAllChapters === "function" && !batchProgress && !audioBatchProgress ? React.createElement(
