@@ -1898,29 +1898,34 @@ window.BooksPage = function(props) {
     setAudioStatusText("جاري الاتصال بمحرك الصوت...");
 
     try {
-      var audioUrl = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
+      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
         setAudioStatusText(msg);
       });
 
-      if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
+      var rawAudioUrl = (typeof genRes === "string") ? genRes : (genRes && genRes.audioUrl);
+      var subtitlesData = (genRes && genRes.subtitles) || null;
+
+      if (!rawAudioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
 
       // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
       setAudioStatusText("☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive...");
       var safeAudioName = (activeBook.title || "كتاب") + " - " + chap.title;
-      var driveAudioUrl = await utils.uploadAudioUrlToDrive(audioUrl, safeAudioName, function(s) {
+      var driveAudioUrl = await utils.uploadAudioUrlToDrive(rawAudioUrl, safeAudioName, function(s) {
         setAudioStatusText(s);
       });
       if (!driveAudioUrl || (driveAudioUrl.indexOf("drive.google.com") === -1 && driveAudioUrl.indexOf("docs.google.com") === -1)) {
         throw new Error("تعذر حفظ الصوت على Google Drive، تم إلغاء حفظ الرابط المؤقت لمنع المشاكل لاحقاً.");
       }
-      audioUrl = driveAudioUrl;
+      var finalAudioUrl = driveAudioUrl;
 
-      // حفظ رابط الصوت الجديد في الفصل محلياً وسحابياً
+      // حفظ رابط الصوت الجديد وملف التوقيتات في الفصل محلياً وسحابياً
       var latestBook = Object.assign({}, activeBook);
       var chaps = (latestBook.audioChapters || []).slice();
       var cIdx = chaps.findIndex(function(c) { return c.id === chap.id; });
       if (cIdx >= 0) {
-        chaps[cIdx] = Object.assign({}, chaps[cIdx], { audioUrl: audioUrl });
+        var chapUpdate = { audioUrl: finalAudioUrl };
+        if (subtitlesData) chapUpdate.subtitles = subtitlesData;
+        chaps[cIdx] = Object.assign({}, chaps[cIdx], chapUpdate);
         latestBook.audioChapters = chaps;
         setActiveBook(latestBook);
         utils.setLocal("counsel_book_data_" + latestBook.id, latestBook);
@@ -1981,15 +1986,18 @@ window.BooksPage = function(props) {
       setGeneratingAudioChapterId(curTarget.id);
 
       try {
-        var generatedUrl = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
+        var genBatchRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
           setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + status);
         });
 
-        if (generatedUrl) {
+        var rawBatchAudio = (typeof genBatchRes === "string") ? genBatchRes : (genBatchRes && genBatchRes.audioUrl);
+        var batchSubtitles = (genBatchRes && genBatchRes.subtitles) || null;
+
+        if (rawBatchAudio) {
           // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
           setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): ☁️ جاري الحفظ في Google Drive...");
           var safeName = (workingBook.title || "كتاب") + " - " + curTarget.title;
-          var driveAudioUrl = await utils.uploadAudioUrlToDrive(generatedUrl, safeName);
+          var driveAudioUrl = await utils.uploadAudioUrlToDrive(rawBatchAudio, safeName);
           if (!driveAudioUrl || (driveAudioUrl.indexOf("drive.google.com") === -1 && driveAudioUrl.indexOf("docs.google.com") === -1)) {
             throw new Error("تعذر حفظ الصوت على Google Drive، تم إلغاء حفظ الرابط المؤقت.");
           }
@@ -1997,7 +2005,9 @@ window.BooksPage = function(props) {
 
           var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
           if (chapIdx >= 0) {
-            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], { audioUrl: finalUrl });
+            var bUpdate = { audioUrl: finalUrl };
+            if (batchSubtitles) bUpdate.subtitles = batchSubtitles;
+            workingChapters[chapIdx] = Object.assign({}, workingChapters[chapIdx], bUpdate);
             workingBook = Object.assign({}, workingBook, { audioChapters: workingChapters.slice() });
             setActiveBook(workingBook);
             utils.setLocal("counsel_book_data_" + workingBook.id, workingBook);
