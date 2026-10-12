@@ -36,28 +36,40 @@ window.UsersManagementPage = function(props) {
     "شمال سيناء", "جنوب سيناء", "خارج مصر / مقيم بالخارج"
   ];
 
-  var fetchUsers = async function() {
+  var fetchUsers = function() {
     if (!window.db || !currentUser || currentUser.role !== "admin") {
       setIsLoading(false);
-      return;
+      return function() {};
     }
     setIsLoading(true);
     try {
-      var snap = await window.db.collection("users").get();
-      var list = [];
-      snap.forEach(function(doc) {
-        list.push(Object.assign({ id: doc.id }, doc.data()));
+      return window.db.collection("users").onSnapshot(function(snap) {
+        var list = [];
+        snap.forEach(function(doc) {
+          list.push(Object.assign({ id: doc.id }, doc.data()));
+        });
+        list.sort(function(a, b) {
+          var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+          var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+          return tB - tA;
+        });
+        setUsers(list);
+        setIsLoading(false);
+      }, function(err) {
+        console.warn("Realtime users listener failed, fetching directly:", err);
+        window.db.collection("users").get().then(function(snap) {
+          var list = [];
+          snap.forEach(function(doc) {
+            list.push(Object.assign({ id: doc.id }, doc.data()));
+          });
+          setUsers(list);
+          setIsLoading(false);
+        }).catch(function() { setIsLoading(false); });
       });
-      list.sort(function(a, b) {
-        var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
-        var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
-        return tB - tA;
-      });
-      setUsers(list);
     } catch (e) {
-      console.error("Error fetching users:", e);
-    } finally {
+      console.error("Error setting up users listener:", e);
       setIsLoading(false);
+      return function() {};
     }
   };
 
@@ -99,7 +111,10 @@ window.UsersManagementPage = function(props) {
   };
 
   React.useEffect(function() {
-    fetchUsers();
+    var unsubscribe = fetchUsers();
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
   }, []);
 
   React.useEffect(function() {
@@ -392,6 +407,20 @@ window.UsersManagementPage = function(props) {
         React.createElement("span", null, "🌍"),
         React.createElement("span", null, "سجل نشاط وتتبع الدخول"),
         loginLogs.length > 0 && React.createElement("span", { className: "bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" }, loginLogs.length)
+      ),
+      // زر التواجد الحي المباشر
+      React.createElement(
+        "button",
+        {
+          onClick: function() { setMainTab("approval"); setActiveFilter("online"); },
+          className: "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
+            (mainTab === "approval" && activeFilter === "online"
+              ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400/40"
+              : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100")
+        },
+        React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-500 animate-ping inline-block" }),
+        React.createElement("span", null, "النشطون الآن"),
+        React.createElement("span", { className: "bg-emerald-700 text-white dark:bg-emerald-500 text-[10px] px-2 py-0.5 rounded-full font-black" }, onlineUsers.length)
       )
     ),
 
@@ -402,10 +431,26 @@ window.UsersManagementPage = function(props) {
       React.Fragment,
       null,
 
-      // إحصائيات سريعة للطلبات
+      // إحصائيات سريعة للطلبات والتواجد الحي
       React.createElement(
         "div",
-        { className: "grid grid-cols-3 gap-3" },
+        { className: "grid grid-cols-2 sm:grid-cols-4 gap-3" },
+        // بطاقة النشطين الآن
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter("online"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "online"
+                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/30"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-emerald-300")
+          },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "text-xs text-emerald-700 dark:text-emerald-400 block font-bold" }, "النشطون الآن 🟢"),
+            onlineUsers.length > 0 && React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" })
+          ),
+          React.createElement("span", { className: "text-2xl font-black text-emerald-600 dark:text-emerald-400 block mt-1" }, onlineUsers.length)
+        ),
         React.createElement(
           "button",
           {
