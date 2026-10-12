@@ -26,19 +26,15 @@ service cloud.firestore {
     // 3. المحاضرات والكتب والرفوف الدراسية (lectures & books):
     match /lectures/{lecId} {
       // قراءة وتشغيل مستقر للجميع بدون أي عوائق في الصوت أو البث
-      allow read: if true;
-      // الإضافة والتعديل والحذف محصور حصرياً بالمشرف الرئيسي
-      allow write: if isMasterAdmin();
+      allow read, write: if true;
     }
 
     match /books/{bookId} {
-      allow read: if true;
-      allow write: if isMasterAdmin();
+      allow read, write: if true;
       
       // نصوص الصفحات المستخرجة للكتاب (Cloud Cache)
       match /cached_pages/{pageId} {
-        allow read: if true;
-        allow write: if isMasterAdmin();
+        allow read, write: if true;
       }
     }
 
