@@ -107,7 +107,7 @@ window.EdgeTtsService = {
       var sText = (rawParts[i] || "").trim();
       var sPunct = (rawParts[i + 1] || "").trim();
       if (!sText && !sPunct) continue;
-      var combined = (sText + (sPunct ? " " + punct : "")).trim();
+      var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
       if (!combined) continue;
 
       if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {

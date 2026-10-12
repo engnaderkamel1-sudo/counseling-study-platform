@@ -738,3 +738,5 @@ ReactDOM.render(
   ),
   document.getElementById("root")
 );
+window.__reactMounted = true;
+

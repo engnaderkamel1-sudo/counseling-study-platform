@@ -160,8 +160,165 @@
         line-height: 1.6;
       }
     }
+
+    /* Pre-React Universal Fallback Shield */
+    #pre-react-shield {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      text-align: center;
+      padding: 1.5rem;
+      z-index: 99999;
+      direction: rtl;
+    }
+    .pre-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid rgba(56, 189, 248, 0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: pre-spin 0.85s linear infinite;
+    }
+    @keyframes pre-spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
+
+  <script>
+    window.__reactMounted = false;
+    window.__preReactError = null;
+
+    window.__showPreReactError = function(msg) {
+      if (window.__reactMounted) return;
+      var loadingState = document.getElementById('pre-react-loading-state');
+      var fallbackCard = document.getElementById('pre-react-fallback-card');
+      var errBox = document.getElementById('pre-react-error-details');
+      var title = document.getElementById('pre-react-fallback-title');
+      if (loadingState) loadingState.style.display = 'none';
+      if (fallbackCard) fallbackCard.style.display = 'block';
+      if (title) title.textContent = 'تعذر تحميل واجهة التطبيق';
+      if (errBox) {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+      }
+    };
+
+    window.__preReactClearCacheAndReload = function() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+          }).catch(function(){}).then(function() {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+                window.location.reload(true);
+              }).catch(function() { window.location.reload(true); });
+            } else {
+              window.location.reload(true);
+            }
+          });
+        } else {
+          window.location.reload(true);
+        }
+      } catch(e) {
+        window.location.reload(true);
+      }
+    };
+
+    window.__preReactCopyError = function() {
+      var err = window.__preReactError || 'لم يتم التقاط رسالة خطأ محددة، قد يكون تعليقاً في الاتصال بالإنترنت.';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(err).then(function() {
+          var btn = document.getElementById('pre-react-copy-btn');
+          if (btn) btn.innerText = '✅ تم نسخ تفاصيل الخطأ';
+        });
+      } else {
+        alert(err);
+      }
+    };
+
+    // التقاط أي أخطاء بنية أو تحميل قبل بدء React
+    window.addEventListener('error', function(e) {
+      if (!window.__reactMounted) {
+        var msg = (e && e.message) ? e.message : 'Error in script execution';
+        if (e && e.filename) msg += ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')';
+        window.__preReactError = msg;
+        window.__showPreReactError(msg);
+      }
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      if (!window.__reactMounted) {
+        var msg = e && e.reason ? (e.reason.message || String(e.reason)) : 'Unhandled rejection';
+        window.__preReactError = msg;
+        window.__showPreReactError(msg);
+      }
+    });
+
+    // مؤقت أمان في حال علق التحميل لأكثر من 7 ثوانٍ
+    setTimeout(function() {
+      if (!window.__reactMounted) {
+        var fallbackCard = document.getElementById('pre-react-fallback-card');
+        var desc = document.getElementById('pre-react-fallback-desc');
+        if (fallbackCard && fallbackCard.style.display !== 'block') {
+          if (desc) desc.textContent = 'استغرق تحميل التطبيق وقتاً أطول من المعتاد. يمكنك النقر لتحديث ومسح الكاش فوراً:';
+          fallbackCard.style.display = 'block';
+        }
+      }
+    }, 7000);
+  </script>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen selection:bg-slate-800 selection:text-white">
-  <div id="root"></div>
+  <div id="root">
+    <!-- درع الأمان التلقائي قبل إقلاع React (يمنع الشاشة البيضاء تماماً) -->
+    <div id="pre-react-shield">
+      <div style="max-width: 420px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <div style="width: 60px; height: 60px; border-radius: 16px; background: linear-gradient(135deg, #2563eb, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);">
+          🎓
+        </div>
+        <div>
+          <h1 style="font-size: 1.3rem; font-weight: 700; margin: 0; color: #f8fafc;">رفيق المشورة</h1>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin: 0.25rem 0 0 0;">المنصة الذكية لدارسي المشورة</p>
+        </div>
+
+        <div id="pre-react-loading-state" style="margin-top: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+          <div class="pre-spinner"></div>
+          <p style="font-size: 0.85rem; color: #cbd5e1; margin: 0;">جاري تجهيز المنصة وتحميل الملفات...</p>
+        </div>
+
+        <div id="pre-react-fallback-card" style="display: none; width: 100%; margin-top: 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 1.25rem; text-align: right; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.2rem;">⚠️</span>
+            <h3 id="pre-react-fallback-title" style="font-size: 0.95rem; font-weight: 700; color: #f87171; margin: 0;">
+              تنبيه في تحميل الصفحة
+            </h3>
+          </div>
+          <p id="pre-react-fallback-desc" style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin: 0 0 0.75rem 0;">
+            إذا استمرت الشاشة دون فتح التطبيق، يمكنك مسح الكاش وتحديث الصفحة فوراً:
+          </p>
+          <div id="pre-react-error-details" style="display: none; background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 0.6rem; font-family: monospace; font-size: 0.75rem; color: #fca5a5; word-break: break-all; margin-bottom: 0.85rem; direction: ltr; text-align: left;">
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <button type="button" onclick="window.__preReactClearCacheAndReload()" style="width: 100%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; border: none; border-radius: 10px; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
+              <span>🔄</span>
+              <span>تحديث ومسح الكاش (Reload & Fix)</span>
+            </button>
+
+            <button type="button" onclick="window.__preReactCopyError()" id="pre-react-copy-btn" style="width: 100%; background: #334155; color: #e2e8f0; border: none; border-radius: 10px; padding: 0.6rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; font-family: inherit;">
+              <span>📋</span>
+              <span>نسخ تفاصيل الخطأ</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>

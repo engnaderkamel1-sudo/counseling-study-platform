@@ -1217,6 +1217,31 @@ window.BooksPage = function(props) {
     setBooks(allBooks.slice());
   };
 
+  // حفظ توقيتات التزامن الدقيقة (SRT / Subtitles) للفصل سحابياً ومحلياً
+  var handleSaveChapterSubtitles = async function(chapterId, subtitles) {
+    if (!activeBook || !chapterId) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapterId; });
+    if (idx === -1) return;
+
+    var chap = Object.assign({}, chaps[idx]);
+    chap.subtitles = subtitles;
+    chaps[idx] = chap;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
+
+    await safeCloudSaveBook(updatedBook, { silent: false });
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooks = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bIdx = allBooks.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bIdx >= 0) allBooks[bIdx] = updatedBook;
+    utils.setLocal(cfg.storageKeys.books, allBooks);
+    setBooks(allBooks.slice());
+    if (viewingChapterText && viewingChapterText.id === chapterId) {
+      setViewingChapterText(chap);
+    }
+  };
+
   // نشر جميع الفصول الجاهزة والمعتمدة دفعة واحدة وترك الباقي مسودة
   var handlePublishReadyChapters = async function() {
     if (!activeBook) return;
