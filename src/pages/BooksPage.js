@@ -3119,7 +3119,8 @@ window.BooksPage = function(props) {
           handlePublishToggle: handlePublishToggle,
           handleToggleChapterPublish: handleToggleChapterPublish,
           handleToggleChapterOverride: handleToggleChapterOverride,
-          handlePublishReadyChapters: handlePublishReadyChapters
+          handlePublishReadyChapters: handlePublishReadyChapters,
+          handleSaveChapterSubtitles: handleSaveChapterSubtitles
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
@@ -3945,7 +3946,8 @@ window.BooksPage = function(props) {
       setViewingChapterText: setViewingChapterText,
       isPlaylistMode: isPlaylistMode,
       setIsPlaylistMode: setIsPlaylistMode,
-      onUpdateTimeOffset: handleUpdateChapterTimeOffset
+      onUpdateTimeOffset: handleUpdateChapterTimeOffset,
+      onSaveChapterSubtitles: handleSaveChapterSubtitles
     }),
     // نافذة فحص الجودة الشامل واعتماد النشر للدارسين (Quality Gate)
     React.createElement(window.BookQualityAuditModal, {

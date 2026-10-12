@@ -35,6 +35,7 @@ window.AudioChaptersView = function(props) {
   var handleToggleChapterPublish = props.handleToggleChapterPublish;
   var handleToggleChapterOverride = props.handleToggleChapterOverride;
   var handlePublishReadyChapters = props.handlePublishReadyChapters;
+  var handleSaveChapterSubtitles = props.handleSaveChapterSubtitles;
 
   var utils = window.APP_UTILS || {};
   var chaps = (activeBook && activeBook.audioChapters) || [];
@@ -129,6 +130,169 @@ window.AudioChaptersView = function(props) {
     setAudioSpeed(nextSpeed);
     if (chapterAudioRef.current) {
       chapterAudioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  // توليد توقيتات الجمل بدقة بناءً على طول الصوت الفعلي
+  var generateSubtitlesFromDuration = function(rawText, totalDuration) {
+    if (!rawText || !totalDuration || totalDuration <= 0) return [];
+    var rawParts = rawText.split(/([.!?؟\n]+)/);
+    var sentences = [];
+
+    for (var i = 0; i < rawParts.length; i += 2) {
+      var sText = (rawParts[i] || "").trim();
+      var sPunct = (rawParts[i + 1] || "").trim();
+      if (!sText && !sPunct) continue;
+      var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
+      if (!combined) continue;
+
+      if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {
+        var subParts = combined.split(/([،؛]+)/);
+        var curSub = "";
+        for (var j = 0; j < subParts.length; j += 2) {
+          var pText = (subParts[j] || "").trim();
+          var pPunct = (subParts[j + 1] || "").trim();
+          var piece = (pText + (pPunct ? " " + pPunct : "")).trim();
+          if (!piece) continue;
+          if ((curSub.length + piece.length) > 85 && curSub.length >= 30) {
+            sentences.push(curSub.trim());
+            curSub = piece;
+          } else {
+            curSub = (curSub ? curSub + " " : "") + piece;
+          }
+        }
+        if (curSub.trim()) sentences.push(curSub.trim());
+      } else {
+        sentences.push(combined);
+      }
+    }
+
+    if (sentences.length === 0) sentences = [rawText.trim()];
+
+    var totalChars = 0;
+    var pauseSeconds = 0;
+    var itemStats = sentences.map(function(s) {
+      var chars = s.length;
+      totalChars += chars;
+      var p = 0;
+      if (/[.!?؟]/.test(s)) p += 0.70;
+      if (/\n/.test(s)) p += 0.35;
+      if (/[،؛]/.test(s)) p += 0.40;
+      pauseSeconds += p;
+      return { chars: chars, pause: p, text: s };
+    });
+
+    var speechDuration = Math.max(totalDuration * 0.4, totalDuration - pauseSeconds);
+    var charsPerSec = totalChars > 0 ? (totalChars / speechDuration) : 15;
+
+    var cumTime = 0;
+    var subs = [];
+    for (var k = 0; k < itemStats.length; k++) {
+      var item = itemStats[k];
+      var dur = (item.chars / charsPerSec) + item.pause;
+      var sStart = Math.round(cumTime * 100) / 100;
+      var sEnd = (k === itemStats.length - 1) ? totalDuration : (Math.round((cumTime + dur) * 100) / 100);
+      subs.push({
+        start: sStart,
+        end: sEnd,
+        text: item.text
+      });
+      cumTime += dur;
+    }
+    return subs;
+  };
+
+  var [srtGeneratingChapId, setSrtGeneratingChapId] = React.useState(null);
+
+  // دالة توليد وتنزيل أو حفظ الـ SRT للفصل
+  var handleGenerateOrDownloadSrt = async function(targetChap) {
+    if (!targetChap || !targetChap.text) {
+      alert("⚠️ هذا الفصل لا يحتوي على نص مفرغ لتوليد الـ SRT.");
+      return;
+    }
+    if (!targetChap.audioUrl) {
+      alert("⚠️ يرجى توليد أو إضافة ملف الصوت للفصل أولاً ليتمكن النظام من ضبط التوقيتات.");
+      return;
+    }
+
+    // فحص إذا كانت التوقيتات مسجلة بالفعل
+    var existingSubs = targetChap.subtitles;
+    var formatSrtTime = function(sec) {
+      var s = Math.max(0, sec || 0);
+      var hours = Math.floor(s / 3600);
+      var minutes = Math.floor((s % 3600) / 60);
+      var secs = Math.floor(s % 60);
+      var millis = Math.floor((s % 1) * 1000);
+      var pad = function(n, len) { return (new Array(len + 1).join("0") + n).slice(-len); };
+      return pad(hours, 2) + ":" + pad(minutes, 2) + ":" + pad(secs, 2) + "," + pad(millis, 3);
+    };
+
+    var downloadSubtitlesAsFile = function(subsList) {
+      var content = subsList.map(function(item, idx) {
+        return (idx + 1) + "\n" +
+          formatSrtTime(item.start) + " --> " + formatSrtTime(item.end) + "\n" +
+          item.text.trim() + "\n";
+      }).join("\n");
+      var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = ((targetChap.title || "chapter") + " - subtitles").replace(new RegExp("[\\\\/:*?\"<>|]", "g"), "_") + ".srt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    if (existingSubs && Array.isArray(existingSubs) && existingSubs.length > 0) {
+      downloadSubtitlesAsFile(existingSubs);
+      return;
+    }
+
+    // إذا لم تكن مسجلة، نحدد مدة الصوت ونولدها ونحفظها وننزل الملف
+    var dur = (durationsMap && durationsMap[targetChap.id]) || targetChap.audioDuration || 0;
+    if (!dur && chapterAudioRef.current && playingChapterId === targetChap.id && chapterAudioRef.current.duration > 0) {
+      dur = chapterAudioRef.current.duration;
+    }
+
+    setSrtGeneratingChapId(targetChap.id);
+    try {
+      if (!dur || dur <= 0) {
+        // فحص مدة الصوت من رابط التراك
+        dur = await new Promise(function(resolve) {
+          var probe = new Audio();
+          probe.preload = "metadata";
+          probe.src = utils.getAudioStreamUrl(targetChap.audioUrl);
+          var timer = setTimeout(function() { resolve(0); }, 6000);
+          probe.onloadedmetadata = function() {
+            clearTimeout(timer);
+            resolve(probe.duration || 0);
+          };
+          probe.onerror = function() {
+            clearTimeout(timer);
+            resolve(0);
+          };
+        });
+      }
+
+      if (!dur || dur <= 0) {
+        throw new Error("تعذر تحديد مدة التسجيل الصوتي للفصل بدقة. يرجى تشغيل المقطع لثانية ثم المحاولة مجدداً.");
+      }
+
+      var generatedSubs = generateSubtitlesFromDuration(targetChap.text, dur);
+      if (!generatedSubs || generatedSubs.length === 0) {
+        throw new Error("تعذر إنشاء توقيتات التزامن.");
+      }
+
+      if (handleSaveChapterSubtitles) {
+        await handleSaveChapterSubtitles(targetChap.id, generatedSubs);
+      }
+      downloadSubtitlesAsFile(generatedSubs);
+      alert("✅ تم توليد وحفظ تزامن SRT (" + generatedSubs.length + " جملة) وتنزيل الملف على جهازك بنجاح!");
+    } catch (err) {
+      alert("⚠️ خطأ في معالجة الـ SRT: " + (err.message || err));
+    } finally {
+      setSrtGeneratingChapId(null);
     }
   };
 
@@ -1670,6 +1834,27 @@ window.AudioChaptersView = function(props) {
               React.createElement("span", null, isThisGenerating ? (audioStatusText || "جاري التوليد...") : (chap.audioUrl ? "إعادة توليد الصوت" : "توليد الصوت"))
               );
             })() : null,
+
+            // 2.6 زر ملف الـ SRT (بجوار زر توليد الصوت مباشرة)
+            currentUser && currentUser.role === "admin" && chap.text && (function() {
+              var isSrtGen = (srtGeneratingChapId === chap.id);
+              var hasSubs = chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0;
+              return React.createElement("button", {
+                type: "button",
+                onClick: function() { handleGenerateOrDownloadSrt(chap); },
+                disabled: isSrtGen || !!audioBatchProgress || (generatingAudioChapterId === chap.id),
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border " +
+                  (isSrtGen
+                    ? "bg-violet-600 text-white border-violet-600 shadow-md animate-pulse"
+                    : hasSubs
+                      ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
+                      : "bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-800 active:scale-95"),
+                title: hasSubs ? "ملف الـ SRT محفوظ بالفعل (اضغط لتنزيل ملف " + chap.subtitles.length + " جملة)" : "توليد توقيتات الـ SRT وحفظها وتنزيلها"
+              },
+              React.createElement("span", null, isSrtGen ? "⏳" : (hasSubs ? "📥" : "⚡")),
+              React.createElement("span", null, isSrtGen ? "جاري معالجة SRT..." : (hasSubs ? "تنزيل SRT (" + chap.subtitles.length + ")" : "توليد SRT"))
+              );
+            })(),
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
             chap.audioUrl ? (function() {

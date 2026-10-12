@@ -60,6 +60,8 @@ window.ChapterTextViewerModal = function(props) {
   var [showOffsetPanel, setShowOffsetPanel] = React.useState(false);
   var [isSavingOffset, setIsSavingOffset] = React.useState(false);
   var [offsetSavedNotice, setOffsetSavedNotice] = React.useState("");
+  var [srtNotice, setSrtNotice] = React.useState("");
+  var [isGeneratingSrt, setIsGeneratingSrt] = React.useState(false);
 
   // تحديث الإزاحة عند تغيير الفصل
   React.useEffect(function() {
