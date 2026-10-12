@@ -68,16 +68,36 @@ window.SplashScreen = function(props) {
       onMouseLeave: handleResume
     },
 
-    // المنطقة العلوية: شارة إرشادية خفيفة تظهر عند إيقاف التحميل باللمس
+    // المنطقة العلوية: شارة التوقف المؤقت + زر تخطي سريع للمستعجل
     React.createElement(
       "div",
-      { className: "w-full flex justify-center items-center h-6" },
+      { className: "w-full flex justify-between items-center h-8" },
+      
+      // زر التخطي السريع
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: function(e) {
+            e.stopPropagation();
+            if (onFinish) onFinish();
+          },
+          onTouchStart: function(e) { e.stopPropagation(); },
+          onMouseDown: function(e) { e.stopPropagation(); },
+          className: "px-3 py-1 rounded-xl bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95",
+          title: "دخول مباشر للمنصة فوراً"
+        },
+        React.createElement("span", null, "تخطي"),
+        React.createElement("span", { className: "text-amber-400 font-bold" }, "←")
+      ),
+
+      // شارة التوقف المؤقت
       isPaused ? React.createElement(
         "div",
         { className: "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold animate-pulse" },
         React.createElement("span", null, "⏸"),
-        React.createElement("span", null, "تم إيقاف التحميل مؤقتاً للقراءة")
-      ) : null
+        React.createElement("span", null, "متوقف مؤقتاً")
+      ) : React.createElement("div", null)
     ),
 
     // المنطقة الوسطى (الشعار، الاسم، والآية)
