@@ -279,7 +279,25 @@ window.UsersManagementPage = function(props) {
   var approvedUsers = users.filter(function(u) { return u.status === "approved" && u.role !== "admin"; });
   var rejectedUsers = users.filter(function(u) { return u.status === "rejected"; });
 
+  // حساب الدارسين النشطين والمتواجدين الآن (خلال آخر 5 دقائق)
+  var onlineUsers = approvedUsers.filter(function(u) {
+    var lastActiveDate = null;
+    if (u.lastActiveAt && typeof u.lastActiveAt.toDate === "function") {
+      lastActiveDate = u.lastActiveAt.toDate();
+    } else if (u.lastActiveClient) {
+      lastActiveDate = new Date(u.lastActiveClient);
+    } else if (u.lastLoginAt && typeof u.lastLoginAt.toDate === "function") {
+      lastActiveDate = u.lastLoginAt.toDate();
+    }
+    if (!lastActiveDate || isNaN(lastActiveDate.getTime())) return false;
+    var diffMs = Date.now() - lastActiveDate.getTime();
+    return diffMs <= 5 * 60 * 1000; // نشط خلال الـ 5 دقائق الماضية
+  });
+
   var filteredUsers = users.filter(function(u) {
+    if (activeFilter === "online") {
+      return onlineUsers.some(function(ou) { return ou.id === u.id; });
+    }
     if (activeFilter === "pending" && u.status !== "pending") return false;
     if (activeFilter === "approved" && (u.status !== "approved" || u.role === "admin")) return false;
     if (activeFilter === "rejected" && u.status !== "rejected") return false;

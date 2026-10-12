@@ -99,13 +99,13 @@ window.ErrorReportsAdminPage = function(props) {
     return true;
   });
 
-  var openReports = filteredList.filter(function(r) { return r.status !== "resolved" && r.status !== "implemented"; });
-  var resolvedReports = filteredList.filter(function(r) { return r.status === "resolved" || r.status === "implemented"; });
+  var openReports = filteredList.filter(function(r) { return r.status !== "resolved" && r.status !== "implemented" && r.status !== "not_applicable"; });
+  var resolvedReports = filteredList.filter(function(r) { return r.status === "resolved" || r.status === "implemented" || r.status === "not_applicable"; });
 
   var handleUpdateStatus = async function(reportId, newStatus) {
     if (!window.db) return;
     try {
-      var isDone = (newStatus === "implemented" || newStatus === "resolved");
+      var isDone = (newStatus === "implemented" || newStatus === "resolved" || newStatus === "not_applicable");
       var updatePayload = {
         status: newStatus,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -258,7 +258,13 @@ window.ErrorReportsAdminPage = function(props) {
           onClick: function() { handleUpdateStatus(r.id, "implemented"); },
           className: "px-2.5 py-1 rounded-xl text-xs font-bold transition-all " +
             (r.status === "implemented" ? "bg-emerald-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
-        }, "🎉 تم التنفيذ والإطلاق!")
+        }, "🎉 تم التنفيذ والإطلاق!"),
+        React.createElement("button", {
+          type: "button",
+          onClick: function() { handleUpdateStatus(r.id, "not_applicable"); },
+          className: "px-2.5 py-1 rounded-xl text-xs font-bold transition-all " +
+            (r.status === "not_applicable" ? "bg-slate-700 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+        }, "🛑 غير متاح حالياً")
       ),
 
       // صندوق الرد السابق إذا كان موجوداً
@@ -306,7 +312,12 @@ window.ErrorReportsAdminPage = function(props) {
             type: "button",
             onClick: function() { setReplyInputText("شكراً لمشاركتك واهتمامك! سيتم دراسة إمكانية تنفيذ الفكرة في التحديثات اللاحقة."); },
             className: "px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-all"
-          }, "⏳ شكراً وسيتم دراستها")
+          }, "⏳ شكراً وسيتم دراستها"),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setReplyInputText("شكراً جزيلاً لاهتمامك واقتراحك! تمت دراسة الفكرة ولكنها غير قابلة للتطبيق في الوقت الحالي بسبب طبيعة المنهج ونظام الدراسة. نقدّر جداً حرصك ومشاركتك 🌹"); },
+            className: "px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-all"
+          }, "🛑 اعتذار وتوضيح مهذب")
         ),
 
         React.createElement("textarea", {

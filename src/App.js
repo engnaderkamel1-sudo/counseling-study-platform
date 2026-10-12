@@ -3,6 +3,8 @@ function App() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
 
+  var [showSplash, setShowSplash] = React.useState(true);
+
   var [activeTab, setActiveTab] = React.useState(function() {
     var hash = (window.location.hash || "").replace("#", "").trim();
     var saved = utils.getLocal("counsel_active_tab");
@@ -443,12 +445,37 @@ function App() {
     setIsAuthOpen(false);
   };
 
-  // تسجيل جلسة الدخول للدارس عند فتح التطبيق بحساب محفوظ
+  // تسجيل جلسة الدخول ونبض التواجد الحي (Heartbeat) للدارس النشط
   React.useEffect(function() {
     if (currentUser && currentUser.status === "approved") {
       if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
         window.CloudSyncService.recordLoginLog(currentUser);
       }
+      if (window.CloudSyncService && typeof window.CloudSyncService.sendPresenceHeartbeat === "function") {
+        window.CloudSyncService.sendPresenceHeartbeat(currentUser);
+      }
+
+      // نبض دوري كل دقيقتين لتحديث حالة التواجد الحية
+      var heartbeatInterval = setInterval(function() {
+        if (window.CloudSyncService && typeof window.CloudSyncService.sendPresenceHeartbeat === "function") {
+          window.CloudSyncService.sendPresenceHeartbeat(currentUser);
+        }
+      }, 2 * 60 * 1000);
+
+      // تحديث النبض عند عودة المستخدم للتطبيق أو تفاعله معه
+      var onUserAction = function() {
+        if (window.CloudSyncService && typeof window.CloudSyncService.sendPresenceHeartbeat === "function") {
+          window.CloudSyncService.sendPresenceHeartbeat(currentUser);
+        }
+      };
+      window.addEventListener("focus", onUserAction);
+      window.addEventListener("click", onUserAction);
+
+      return function() {
+        clearInterval(heartbeatInterval);
+        window.removeEventListener("focus", onUserAction);
+        window.removeEventListener("click", onUserAction);
+      };
     }
   }, [currentUser && currentUser.id]);
 
@@ -462,6 +489,15 @@ function App() {
       }
     }
   };
+
+  // شاشة البداية والترحيب بآية اليوم ومؤشر التحميل لمدة 5 ثوانٍ
+  if (showSplash) {
+    return React.createElement(window.SplashScreen, {
+      onFinish: function() {
+        setShowSplash(false);
+      }
+    });
+  }
 
   // حائط الصد الأمني: إذا لم يسجل المستخدم دخوله، تظهر شاشة الدخول الإلزامية
   if (!currentUser) {

@@ -56,8 +56,8 @@ window.Sidebar = function(props) {
           React.createElement(
             "div",
             null,
-            React.createElement("h2", { className: "text-base font-bold text-slate-900 dark:text-white" }, "رفيق المشورة"),
-            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "الرفيق الدراسي لدارسي المعهد")
+            React.createElement("h2", { className: "text-base font-bold text-slate-900 dark:text-white" }, "الرفيق الذكي"),
+            React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" }, "لدارسي معهد المشورة")
           )
         ),
         React.createElement("button", {

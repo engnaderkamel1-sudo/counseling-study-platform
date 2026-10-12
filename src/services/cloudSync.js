@@ -637,5 +637,27 @@ window.CloudSyncService = {
       console.warn("clearLoginLogs error:", e);
       throw e;
     }
+  },
+
+  // إرسال نبض التواجد السحابي (Heartbeat) للدارس النشط
+  sendPresenceHeartbeat: async function(currentUser) {
+    if (!currentUser || !currentUser.id || !window.db) return;
+    try {
+      // حماية من الإرسال المفرط المتتالي (بحد أقصى مرة كل دقيقتين)
+      var key = "last_presence_beat_" + currentUser.id;
+      var lastBeat = parseInt(sessionStorage.getItem(key) || "0", 10);
+      var now = Date.now();
+      if (now - lastBeat < 2 * 60 * 1000) {
+        return;
+      }
+      sessionStorage.setItem(key, String(now));
+
+      await window.db.collection("users").doc(currentUser.id).set({
+        lastActiveAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastActiveClient: new Date().toISOString()
+      }, { merge: true });
+    } catch(err) {
+      // تجاهل هادئ لأخطاء الشبكة أثناء النبض
+    }
   }
 };

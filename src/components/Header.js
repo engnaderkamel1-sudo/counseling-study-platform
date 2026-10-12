@@ -36,8 +36,12 @@ window.Header = function(props) {
           "div",
           { className: "flex items-center gap-2.5" },
           React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-8 h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
-          React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white" }, "رفيق المشورة"),
-          React.createElement("span", { className: "hidden sm:inline-block text-xs bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full font-medium" }, "لدارسي معهد المشورة")
+          React.createElement(
+            "div",
+            { className: "flex flex-col" },
+            React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight" }, "الرفيق الذكي"),
+            React.createElement("span", { className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-none hidden xs:inline" }, "لدارسي معهد المشورة")
+          )
         )
       ),
 
@@ -45,20 +49,29 @@ window.Header = function(props) {
         "div",
         { className: "flex items-center gap-2" },
 
-        // شارة المستخدم الحالي
-        currentUser && React.createElement(
-          "div",
-          {
-            onClick: onOpenAuth,
-            title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
-            className: "hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-          },
-          React.createElement("span", { className: "w-2 h-2 rounded-full " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
-          React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" }, currentUser.fullName || (isAdmin ? "المشرف" : "دارس")),
-          React.createElement("span", { className: "text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
-            isAdmin ? "مشرف" : "دارس"
-          )
-        ),
+        // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
+        currentUser && (function() {
+          var currentHour = new Date().getHours();
+          var timeGreeting = currentHour >= 4 && currentHour < 12 ? "صباح الخير" : "مساء الخير";
+          var displayName = currentUser.fullName ? currentUser.fullName.split(" ")[0] : (isAdmin ? "المشرف" : "دارس");
+          return React.createElement(
+            "div",
+            {
+              onClick: onOpenAuth,
+              title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
+              className: "flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs"
+            },
+            React.createElement("span", { className: "w-2 h-2 rounded-full " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+            React.createElement(
+              "span",
+              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px]" },
+              timeGreeting + "، " + displayName
+            ),
+            React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
+              isAdmin ? "مشرف" : "دارس"
+            )
+          );
+        })(),
 
         // نقطة وشارة آخر تحديث المباشرة للأدمن فقط
         isAdmin && React.createElement(

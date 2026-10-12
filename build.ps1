@@ -18,6 +18,7 @@ function Build-App {
 
     $modules = @(
         "config/appConfig.js",
+        "config/versesBank.js",
         "config/firebase.js",
         "services/cloudSync.js",
         "services/geminiService.js",
@@ -26,6 +27,7 @@ function Build-App {
         "services/edgeTtsService.js",
         "utils/helpers.js",
         "utils/embedHelpers.js",
+        "components/SplashScreen.js",
         "components/Sidebar.js",
         "components/Header.js",
         "components/BottomNav.js",
