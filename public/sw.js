@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v2';
+const CACHE_NAME = 'counseling-pwa-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -38,23 +38,26 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(req, responseClone);
-            });
+            try {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(req, responseClone).catch(() => {});
+              }).catch(() => {});
+            } catch (cloneErr) {}
           }
           return networkResponse;
         })
-        .catch(() => {
+        .catch(async () => {
           // في حال انقطاع الإنترنت التام: نفتح النسخة المحفوظة أوفلاين
-          return caches.match(req).then((cachedResponse) => {
+          try {
+            const cachedResponse = await caches.match(req);
             if (cachedResponse) return cachedResponse;
             if (req.mode === 'navigate') {
-              return caches.match('./index.html').then((fallback) => {
-                return fallback || caches.match('/index.html');
-              });
+              const fallback = await caches.match('./index.html') || await caches.match('/index.html');
+              if (fallback) return fallback;
             }
-          });
+          } catch (matchErr) {}
+          return new Response('Network offline', { status: 503, statusText: 'Offline' });
         })
     );
   }
