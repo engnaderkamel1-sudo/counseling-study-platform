@@ -501,21 +501,25 @@ window.APP_UTILS = {
         onStatus("جاري نقل وحفظ الصوت تلقائياً إلى Google Drive الخاص بك...");
       }
 
-      // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل وفحص الحزم
-      var b64Param = "";
-      try {
-        b64Param = (typeof btoa === "function") ? btoa(audioUrl) : "";
-      } catch (eB) {}
-      var proxyUrl = b64Param ? ("/api/download-audio?b64=" + encodeURIComponent(b64Param)) : ("/api/download-audio?url=" + encodeURIComponent(audioUrl));
       var resp = null;
-      try {
-        resp = await fetch(proxyUrl);
-      } catch (eProxy) {
-        console.warn("Proxy download attempt error, falling back to direct fetch:", eProxy);
-      }
-
-      if (!resp || !resp.ok) {
+      if (audioUrl.indexOf("blob:") === 0 || audioUrl.indexOf("data:") === 0) {
         resp = await fetch(audioUrl);
+      } else {
+        // جلب الملف الصوتي عبر بروكسي السيرفر لتخطي قيود CORS للمتصفحات والموبايل وفحص الحزم
+        var b64Param = "";
+        try {
+          b64Param = (typeof btoa === "function") ? btoa(audioUrl) : "";
+        } catch (eB) {}
+        var proxyUrl = b64Param ? ("/api/download-audio?b64=" + encodeURIComponent(b64Param)) : ("/api/download-audio?url=" + encodeURIComponent(audioUrl));
+        try {
+          resp = await fetch(proxyUrl);
+        } catch (eProxy) {
+          console.warn("Proxy download attempt error, falling back to direct fetch:", eProxy);
+        }
+
+        if (!resp || !resp.ok) {
+          resp = await fetch(audioUrl);
+        }
       }
 
       if (!resp.ok) {

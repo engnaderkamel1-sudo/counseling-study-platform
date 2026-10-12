@@ -130,10 +130,26 @@ window.ChapterTextViewerModal = function(props) {
 
   // تقسيم نص الفصل إلى جُمل وعبارات دقيقة وقصيرة (سطر بسطر) للحفاظ على تركيز القارئ ودقة المتابعة
   var segments = React.useMemo(function() {
+    // 1. إذا وُجدت توقيتات زمنية حقيقية للفصل (Subtitles / SRT)
+    if (viewingChapterText && Array.isArray(viewingChapterText.subtitles) && viewingChapterText.subtitles.length > 0) {
+      return viewingChapterText.subtitles.map(function(sub, idx) {
+        var sStart = typeof sub.start === "number" ? sub.start : (parseFloat(sub.start) || 0);
+        var sEnd = typeof sub.end === "number" ? sub.end : (parseFloat(sub.end) || 0);
+        return {
+          id: idx,
+          text: sub.text,
+          startTime: sStart,
+          endTime: sEnd,
+          startRatio: (localDuration > 0) ? (sStart / localDuration) : 0,
+          endRatio: (localDuration > 0) ? (sEnd / localDuration) : 0
+        };
+      });
+    }
+
     var raw = (viewingChapterText && viewingChapterText.text) || "";
     if (!raw.trim()) return [];
 
-    // 1. تقسيم مبدئي عند نهايات الجمل والأسطر (. أو ! أو ؟ أو \n)
+    // 2. تقسيم مبدئي عند نهايات الجمل والأسطر (. أو ! أو ؟ أو \n)
     var rawParts = raw.split(/([.!?؟\n]+)/);
     var sentences = [];
 
@@ -144,7 +160,7 @@ window.ChapterTextViewerModal = function(props) {
       var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
       if (!combined) continue;
 
-      // 2. إذا كانت الجملة طويلة (أكثر من 85 حرف) وبها فواصل (، أو ؛)، نقسمها لعبارات ألطف سطر بسطر
+      // إذا كانت الجملة طويلة (أكثر من 85 حرف) وبها فواصل (، أو ؛)، نقسمها لعبارات ألطف سطر بسطر
       if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {
         var subParts = combined.split(/([،؛]+)/);
         var currentChunk = "";
@@ -173,18 +189,25 @@ window.ChapterTextViewerModal = function(props) {
       sentences = [raw.trim()];
     }
 
-    // حساب الوزن النسبي لعدد الحروف في كل عبارة/سطر
-    var totalChars = 0;
-    for (var k = 0; k < sentences.length; k++) {
-      totalChars += sentences[k].length;
-    }
-    if (totalChars === 0) totalChars = 1;
+    // حساب الوزن النسبي لعدد الحروف مع وقفات الترقيم (الوقف عند النقط وعلامات الاستفهام والأسطر)
+    var sentenceWeights = sentences.map(function(s) {
+      var w = s.length;
+      if (/[.!?؟\n]/.test(s)) w += 12;
+      if (/[،؛]/.test(s)) w += 5;
+      return w;
+    });
 
-    var cumulative = 0;
+    var totalWeight = 0;
+    for (var k = 0; k < sentenceWeights.length; k++) {
+      totalWeight += sentenceWeights[k];
+    }
+    if (totalWeight === 0) totalWeight = 1;
+
+    var cumulativeWeight = 0;
     return sentences.map(function(itemText, idx) {
-      var startRatio = cumulative / totalChars;
-      cumulative += itemText.length;
-      var endRatio = cumulative / totalChars;
+      var startRatio = cumulativeWeight / totalWeight;
+      cumulativeWeight += sentenceWeights[idx];
+      var endRatio = cumulativeWeight / totalWeight;
       return {
         id: idx,
         text: itemText,
@@ -192,13 +215,29 @@ window.ChapterTextViewerModal = function(props) {
         endRatio: endRatio
       };
     });
-  }, [viewingChapterText && viewingChapterText.text]);
+  }, [viewingChapterText && viewingChapterText.text, viewingChapterText && viewingChapterText.subtitles, localDuration]);
 
   // تحديد الفقرة النشطة حالياً بناءً على موضع الصوت مع تطبيق الإزاحة الزمنية (Time Offset / Shift)
   var activeSegmentIdx = React.useMemo(function() {
     if (!isPlayingThis || !localDuration || segments.length === 0) return -1;
-    // تطبيق الإزاحة: إذا كان النص سابق الصوت، نطرح الإزاحة لتأخير تحديد الفقرة، وإذا كان النص متأخراً نضيفها
     var effectiveTime = Math.max(0, Math.min(localDuration, localProgress - timeOffset));
+
+    // إذا كانت هناك توقيتات حقيقية دقيقة للجمل (Subtitles / SRT)
+    if (segments[0] && segments[0].startTime !== undefined) {
+      for (var s = 0; s < segments.length; s++) {
+        if (effectiveTime >= segments[s].startTime && effectiveTime < segments[s].endTime) {
+          return s;
+        }
+      }
+      for (var k = segments.length - 1; k >= 0; k--) {
+        if (effectiveTime >= segments[k].startTime) {
+          return k;
+        }
+      }
+      return 0;
+    }
+
+    // الطريقة الاحتياطية المبنية على النسب المئوية للحروف والوقفات
     var ratio = effectiveTime / localDuration;
     for (var i = 0; i < segments.length; i++) {
       if (ratio >= segments[i].startRatio && ratio < segments[i].endRatio) {
@@ -221,7 +260,7 @@ window.ChapterTextViewerModal = function(props) {
   // القفز في الصوت مباشرة للفقرة التي ينقر عليها المستخدم مع مراعاة الإزاحة
   var handleSegmentClick = function(seg) {
     if (chapterAudioRef && chapterAudioRef.current && localDuration > 0) {
-      var targetTime = (seg.startRatio * localDuration) + timeOffset;
+      var targetTime = (seg.startTime !== undefined) ? (seg.startTime + timeOffset) : ((seg.startRatio * localDuration) + timeOffset);
       targetTime = Math.max(0, Math.min(localDuration, targetTime));
       chapterAudioRef.current.currentTime = targetTime;
       setLocalProgress(targetTime);
