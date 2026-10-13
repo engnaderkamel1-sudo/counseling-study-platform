@@ -404,19 +404,34 @@ function App() {
   React.useEffect(function() {
     if (!currentUser || currentUser.role === "admin" || !currentUser.id || !window.db) return;
     try {
-      var unsubscribeUser = window.db.collection("users").doc(currentUser.id).onSnapshot(function(doc) {
+      var unsubscribeUser = window.db.collection("users").doc(currentUser.id).onSnapshot({ includeMetadataChanges: true }, function(doc) {
         if (doc.exists) {
           var uData = doc.data();
-          if (uData.status !== "approved") {
+          // حماية من الكاش القديم: لا نوقف الحساب إذا كانت البيانات مسترجعة من الذاكرة المؤقتة (fromCache)
+          // ننتظر دائماً تأكيد الخادم الحي المباشر لتجنب تعليق الحساب خطأً
+          if (doc.metadata && doc.metadata.fromCache && uData.status !== "approved") {
+            return;
+          }
+
+          if (uData.status === "approved") {
+            // مزامنة أي تحديثات فورية أجراها المشرف (مثل تغيير كلمة المرور)
+            if (currentUser.status !== "approved" || currentUser.password !== uData.password) {
+              var merged = Object.assign({}, currentUser, uData);
+              utils.setLocal("counsel_current_user", merged);
+              setCurrentUser(merged);
+            }
+          } else if (uData.status === "rejected" || uData.status === "pending") {
             alert("تنبيه: تم تعليق حسابك أو تعديل حالته من قِبل مشرف المنصة.");
             utils.removeLocal("counsel_current_user");
             setCurrentUser(null);
           }
         }
+      }, function(err) {
+        console.warn("User status listener warning:", err);
       });
       return function() { unsubscribeUser(); };
     } catch (e) {}
-  }, [currentUser]);
+  }, [currentUser && currentUser.id]);
 
   // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
   React.useEffect(function() {

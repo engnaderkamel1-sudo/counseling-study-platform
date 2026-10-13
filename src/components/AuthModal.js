@@ -184,13 +184,24 @@ window.AuthModal = function(props) {
       };
 
       var userDoc = null;
-      var directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 8000);
-      if (directSnap.exists) {
-        userDoc = directSnap.data();
+      var directSnap = null;
+      try {
+        directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get({ source: "server" }), 5000);
+      } catch (srvErr) {
+        directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 8000);
+      }
+
+      if (directSnap && directSnap.exists) {
+        userDoc = Object.assign({ id: directSnap.id }, directSnap.data());
       } else {
-        var emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 8000);
-        if (!emailSnap.empty) {
-          userDoc = emailSnap.docs[0].data();
+        var emailSnap = null;
+        try {
+          emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get({ source: "server" }), 5000);
+        } catch (srvErr2) {
+          emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 8000);
+        }
+        if (emailSnap && !emailSnap.empty) {
+          userDoc = Object.assign({ id: emailSnap.docs[0].id }, emailSnap.docs[0].data());
         }
       }
 
