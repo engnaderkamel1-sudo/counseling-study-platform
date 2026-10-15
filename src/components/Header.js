@@ -10,6 +10,14 @@ window.Header = function(props) {
   var onOpenNotifications = props.onOpenNotifications;
   var unreadNotificationsCount = props.unreadNotificationsCount || 0;
   var isAdmin = !!(currentUser && currentUser.role === "admin");
+  var [isTopResumeDismissed, setIsTopResumeDismissed] = React.useState(false);
+  var utils = window.APP_UTILS || {};
+  var formatAudioTime = function(sec) {
+    if (!sec || isNaN(sec) || sec <= 0) return "00:00";
+    var m = Math.floor(sec / 60);
+    var s = Math.floor(sec % 60);
+    return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+  };
 
   return React.createElement(
     "header",
@@ -48,22 +56,6 @@ window.Header = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-2" },
-
-        // زر استئناف الاستماع السريع والبارز في الترويسة العلوية
-        props.lastAudioRecord && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: function() {
-              if (props.onResumeAudio) props.onResumeAudio();
-            },
-            title: "استئناف الاستماع: " + (props.lastAudioRecord.chapterTitle || props.lastAudioRecord.bookTitle || ""),
-            className: "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 animate-fade-in shrink-0 border border-amber-400/60"
-          },
-          React.createElement("span", { className: "text-sm animate-pulse" }, "🎧"),
-          React.createElement("span", { className: "hidden sm:inline truncate max-w-[150px]" }, props.lastAudioRecord.chapterTitle || "استئناف الصوت"),
-          React.createElement("span", { className: "sm:hidden font-black" }, "استئناف")
-        ),
 
         // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
         currentUser && (function() {
@@ -148,6 +140,66 @@ window.Header = function(props) {
             className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
           },
           theme === "dark" ? "☀️" : "🌙"
+        )
+      )
+    ),
+
+    // السطر الثاني: شريط متابعة الاستماع المخصص والأنيق (لا يزاحم أي زر إطلاقاً)
+    (props.lastAudioRecord && !isTopResumeDismissed && (props.activeTab !== "books" || (utils.getLocal && utils.getLocal("counsel_active_book_id") !== props.lastAudioRecord.bookId))) && React.createElement(
+      "div",
+      {
+        className: "border-t border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-950/30 px-3 sm:px-6 md:px-8 py-1.5 flex items-center justify-between gap-2 text-xs shadow-2xs animate-fade-in"
+      },
+      React.createElement(
+        "div",
+        {
+          className: "flex items-center gap-2 min-w-0 flex-1 cursor-pointer",
+          onClick: function() {
+            if (props.onResumeAudio) props.onResumeAudio();
+          }
+        },
+        React.createElement("span", { className: "text-base shrink-0 animate-pulse" }, "🎧"),
+        React.createElement("span", { className: "font-black text-amber-800 dark:text-amber-400 shrink-0 text-xs" }, "استئناف:"),
+        React.createElement(
+          "span",
+          {
+            className: "font-bold text-slate-900 dark:text-slate-100 truncate text-xs",
+            title: (props.lastAudioRecord.bookTitle || "") + " — " + (props.lastAudioRecord.chapterTitle || props.lastAudioRecord.title || "")
+          },
+          (props.lastAudioRecord.bookTitle ? (props.lastAudioRecord.bookTitle + " — ") : "") + (props.lastAudioRecord.chapterTitle || props.lastAudioRecord.title || "فصل صوتي")
+        ),
+        (props.lastAudioRecord.position > 0) && React.createElement(
+          "span",
+          { className: "text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0 hidden xs:inline" },
+          "(" + formatAudioTime(props.lastAudioRecord.position) + ")"
+        )
+      ),
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-1.5 shrink-0" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              if (props.onResumeAudio) props.onResumeAudio();
+            },
+            className: "inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-xs active:scale-95 transition-all"
+          },
+          React.createElement("span", null, "▶"),
+          React.createElement("span", null, "استئناف")
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              setIsTopResumeDismissed(true);
+            },
+            title: "إخفاء شريط الاستئناف",
+            className: "w-6 h-6 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center font-bold text-xs transition-colors"
+          },
+          "✕"
         )
       )
     )

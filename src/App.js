@@ -651,6 +651,7 @@ function App() {
             onOpenNotifications: function() { setIsNotificationCenterOpen(true); },
             unreadNotificationsCount: unreadCount,
             onTabChange: setActiveTab,
+            activeTab: activeTab,
             lastAudioRecord: lastAudioRecord,
             onResumeAudio: handleGlobalResumeAudio
           });
@@ -659,7 +660,15 @@ function App() {
 
       React.createElement(
         "main",
-        { className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (hasUpdateAvailable ? "pt-28 sm:pt-32" : "pt-20 sm:pt-22") },
+        {
+          className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (function() {
+            var hasTopResume = lastAudioRecord && (activeTab !== "books" || (utils && utils.getLocal("counsel_active_book_id") !== lastAudioRecord.bookId));
+            if (hasUpdateAvailable && hasTopResume) return "pt-36 sm:pt-40";
+            if (hasUpdateAvailable) return "pt-28 sm:pt-32";
+            if (hasTopResume) return "pt-28 sm:pt-30";
+            return "pt-20 sm:pt-22";
+          })()
+        },
         hasVisitedLectures && React.createElement(
           "div",
           { className: activeTab === "lectures" ? "block" : "hidden" },

@@ -108,10 +108,22 @@ function Build-App {
     $bodyParts.Add($tail)
 
     $finalHtml = [string]::Join("`n", $bodyParts)
-    [System.IO.File]::WriteAllText($outIndex, $finalHtml, $utf8NoBom)
+    try {
+        [System.IO.File]::WriteAllText($outIndex, $finalHtml, $utf8NoBom)
+    } catch {
+        $tempIndex = Join-Path $appDir "index.html.tmp"
+        [System.IO.File]::WriteAllText($tempIndex, $finalHtml, $utf8NoBom)
+        Move-Item -Path $tempIndex -Destination $outIndex -Force
+    }
     $publicDir = Join-Path $appDir "public"
     if (Test-Path $publicDir) {
-        [System.IO.File]::WriteAllText((Join-Path $publicDir "index.html"), $finalHtml, $utf8NoBom)
+        try {
+            [System.IO.File]::WriteAllText((Join-Path $publicDir "index.html"), $finalHtml, $utf8NoBom)
+        } catch {
+            $tempPub = Join-Path $publicDir "index.html.tmp"
+            [System.IO.File]::WriteAllText($tempPub, $finalHtml, $utf8NoBom)
+            Move-Item -Path $tempPub -Destination (Join-Path $publicDir "index.html") -Force
+        }
     }
 
     # تحديث رقم كاش الـ Service Worker فوراً مع كل بناء لتحديث المتصفح تلقائياً
