@@ -153,10 +153,21 @@ function App() {
           var htmlText = await response.text();
           var match = htmlText.match(/version:\s*"([^"]+)"/);
           var bTimeMatch = htmlText.match(/buildTime:\s*"([^"]+)"/);
-          if (match && match[1] && match[1] !== cfg.version) {
+          var isDifferentVersion = (match && match[1] && match[1] !== cfg.version);
+          var isDifferentTime = (bTimeMatch && bTimeMatch[1] && bTimeMatch[1] !== cfg.buildTime);
+          if (isDifferentVersion || isDifferentTime) {
             setHasUpdateAvailable(true);
-          } else if (bTimeMatch && bTimeMatch[1] && bTimeMatch[1] !== cfg.buildTime) {
-            setHasUpdateAvailable(true);
+            var isUserTyping = !!document.querySelector("input:focus, textarea:focus");
+            if (!isUserTyping) {
+              if ("caches" in window) {
+                try {
+                  var names = await caches.keys();
+                  for (var ci = 0; ci < names.length; ci++) await caches.delete(names[ci]);
+                } catch (cErr) {}
+              }
+              var cleanUrl = window.location.href.split("?")[0].split("#")[0] + "?v=" + Date.now() + (window.location.hash || "");
+              window.location.replace(cleanUrl);
+            }
           }
         }
       } catch (e) {}

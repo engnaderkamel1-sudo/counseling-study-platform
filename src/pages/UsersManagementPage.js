@@ -770,7 +770,393 @@ window.UsersManagementPage = function(props) {
     ),
 
     // ==========================================
-    // القسم الثاني: سجل نشاط وتتبع الدخول والـ IP
+    // القسم الثاني: تحليلات نشاط وإحصائيات المذاكرة
+    // ==========================================
+    mainTab === "analytics" && (function() {
+      // 1. حساب الإحصائيات التراكمية
+      var totalMinutesSum = approvedUsers.reduce(function(acc, u) { return acc + (u.totalMinutes || 0); }, 0);
+      var totalVisitsSum = approvedUsers.reduce(function(acc, u) { return acc + (u.loginCount || (u.lastLoginAt ? 1 : 0)); }, 0);
+      var activeWithTime = approvedUsers.filter(function(u) { return (u.totalMinutes || 0) > 0 || (u.loginCount || 0) > 0; });
+      var avgMinutes = activeWithTime.length > 0 ? Math.round(totalMinutesSum / activeWithTime.length) : 0;
+
+      // 2. فرز وترتيب الدارسين حسب الاختيار
+      var sortedUsers = approvedUsers.slice().sort(function(a, b) {
+        if (analyticsSortBy === "minutes") {
+          var minA = a.totalMinutes || 0;
+          var minB = b.totalMinutes || 0;
+          if (minB !== minA) return minB - minA;
+          return (b.loginCount || 0) - (a.loginCount || 0);
+        } else if (analyticsSortBy === "visits") {
+          var vA = a.loginCount || (a.lastLoginAt ? 1 : 0);
+          var vB = b.loginCount || (b.lastLoginAt ? 1 : 0);
+          if (vB !== vA) return vB - vA;
+          return (b.totalMinutes || 0) - (a.totalMinutes || 0);
+        } else if (analyticsSortBy === "recent") {
+          var tA = a.lastActiveAt && a.lastActiveAt.seconds ? a.lastActiveAt.seconds : (a.lastLoginAt && a.lastLoginAt.seconds ? a.lastLoginAt.seconds : 0);
+          var tB = b.lastActiveAt && b.lastActiveAt.seconds ? b.lastActiveAt.seconds : (b.lastLoginAt && b.lastLoginAt.seconds ? b.lastLoginAt.seconds : 0);
+          return tB - tA;
+        } else if (analyticsSortBy === "name") {
+          return (a.fullName || "").localeCompare(b.fullName || "", "ar");
+        }
+        return 0;
+      });
+
+      // 3. تطبيق الفلترة (بحث)
+      var displayUsers = sortedUsers.filter(function(u) {
+        if (analyticsSearchQuery.trim()) {
+          var q = analyticsSearchQuery.trim().toLowerCase();
+          var mName = (u.fullName || "").toLowerCase().indexOf(q) !== -1;
+          var mChurch = (u.church || "").toLowerCase().indexOf(q) !== -1;
+          var mDiocese = (u.diocese || "").toLowerCase().indexOf(q) !== -1;
+          var mGov = (u.governorate || "").toLowerCase().indexOf(q) !== -1;
+          var mEmail = (u.email || "").toLowerCase().indexOf(q) !== -1;
+          return mName || mChurch || mDiocese || mGov || mEmail;
+        }
+        return true;
+      });
+
+      var maxMinutes = Math.max.apply(Math, approvedUsers.map(function(u) { return u.totalMinutes || 0; }).concat([1]));
+
+      // أفضل 3 دارسين للوحة الشرف
+      var topThree = sortedUsers.filter(function(u) { return (u.totalMinutes || 0) > 0 || (u.loginCount || 0) > 0; }).slice(0, 3);
+
+      return React.createElement(
+        "div",
+        { className: "space-y-6 animate-in fade-in duration-200" },
+
+        // بطاقات المؤشرات العامة (KPIs)
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" },
+          React.createElement(
+            "div",
+            { className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-indigo-100 dark:border-indigo-950/60 shadow-xs space-y-1 relative overflow-hidden" },
+            React.createElement("div", { className: "flex items-center justify-between text-indigo-600 dark:text-indigo-400" },
+              React.createElement("span", { className: "text-xs font-bold" }, "إجمالي ساعات المذاكرة"),
+              React.createElement("span", { className: "text-xl" }, "⏱️")
+            ),
+            React.createElement("span", { className: "text-xl sm:text-2xl font-black text-slate-900 dark:text-white block mt-1" },
+              totalMinutesSum >= 60 ? (Math.floor(totalMinutesSum / 60) + " س و " + (totalMinutesSum % 60) + " د") : (totalMinutesSum + " دقيقة")
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-400" }, "الوقت التراكمي لكافة الدارسين")
+          ),
+          React.createElement(
+            "div",
+            { className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-emerald-100 dark:border-emerald-950/60 shadow-xs space-y-1 relative overflow-hidden" },
+            React.createElement("div", { className: "flex items-center justify-between text-emerald-600 dark:text-emerald-400" },
+              React.createElement("span", { className: "text-xs font-bold" }, "إجمالي الزيارات والجلسات"),
+              React.createElement("span", { className: "text-xl" }, "🔄")
+            ),
+            React.createElement("span", { className: "text-xl sm:text-2xl font-black text-slate-900 dark:text-white block mt-1" },
+              totalVisitsSum + " جلسة"
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-400" }, "جلسات دراسية مسجلة")
+          ),
+          React.createElement(
+            "div",
+            { className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-emerald-200 dark:border-emerald-900/60 shadow-xs space-y-1 relative overflow-hidden" },
+            React.createElement("div", { className: "flex items-center justify-between text-emerald-600 dark:text-emerald-400" },
+              React.createElement("span", { className: "text-xs font-bold" }, "المتواجدون الآن 🟢"),
+              onlineUsers.length > 0 && React.createElement("span", { className: "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" })
+            ),
+            React.createElement("span", { className: "text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 block mt-1" },
+              onlineUsers.length + " دارس"
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-400" }, "نشطون في هذه اللحظة")
+          ),
+          React.createElement(
+            "div",
+            { className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-amber-100 dark:border-amber-950/60 shadow-xs space-y-1 relative overflow-hidden" },
+            React.createElement("div", { className: "flex items-center justify-between text-amber-600 dark:text-amber-400" },
+              React.createElement("span", { className: "text-xs font-bold" }, "متوسط وقت الدارس"),
+              React.createElement("span", { className: "text-xl" }, "📈")
+            ),
+            React.createElement("span", { className: "text-xl sm:text-2xl font-black text-slate-900 dark:text-white block mt-1" },
+              formatDuration(avgMinutes)
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-400" }, "لكل دارس نشط بالمنصة")
+          )
+        ),
+
+        // لوحة الشرف (Top 3 Podium)
+        topThree.length > 0 && React.createElement(
+          "div",
+          { className: "bg-gradient-to-br from-amber-500/10 via-slate-50 to-indigo-500/10 dark:from-amber-950/20 dark:via-slate-900 dark:to-indigo-950/20 p-5 rounded-3xl border border-amber-200/60 dark:border-amber-900/40 space-y-4" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between flex-wrap gap-2" },
+            React.createElement("div", { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-2xl" }, "🏆"),
+              React.createElement("h3", { className: "text-sm font-black text-slate-900 dark:text-white" }, "لوحة الشرف: الدارسون الأكثر نشاطاً والتزاماً"),
+              React.createElement("span", { className: "text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full" }, "الأوائل")
+            ),
+            React.createElement("p", { className: "text-[11px] text-slate-500 dark:text-slate-400" }, "تكريم وتشجيع الدارسين الأكثر مكوثاً في المحاضرات والكتب")
+          ),
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-1 md:grid-cols-3 gap-3" },
+            topThree.map(function(u, idx) {
+              var medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : "🥉";
+              var medalTitle = idx === 0 ? "المركز الأول" : idx === 1 ? "المركز الثاني" : "المركز الثالث";
+              var borderCls = idx === 0 ? "border-amber-400 dark:border-amber-500/60 bg-amber-50/50 dark:bg-amber-950/20" : idx === 1 ? "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" : "border-amber-700/40 dark:border-amber-800/40 bg-white dark:bg-slate-900";
+
+              return React.createElement(
+                "div",
+                { key: u.id, className: "p-4 rounded-2xl border transition-all shadow-xs space-y-2 " + borderCls },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between" },
+                  React.createElement("span", { className: "text-xl font-black" }, medal),
+                  React.createElement("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider" }, medalTitle)
+                ),
+                React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white truncate" }, u.fullName),
+                React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400 truncate" }, (u.church || "كنيسة غير محددة") + " • " + (u.diocese || "الإيبارشية")),
+                React.createElement(
+                  "div",
+                  { className: "pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs" },
+                  React.createElement("span", { className: "font-black text-indigo-600 dark:text-indigo-400" }, "⏱️ " + formatDuration(u.totalMinutes)),
+                  React.createElement("span", { className: "text-slate-500 font-semibold" }, "🔄 " + (u.loginCount || 1) + " زيارة")
+                )
+              );
+            })
+          )
+        ),
+
+        // شريط أدوات الفرز والبحث
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5 flex-1 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 rounded-2xl border border-slate-100 dark:border-slate-800" },
+            React.createElement("span", { className: "text-slate-400 text-xs" }, "🔍"),
+            React.createElement("input", {
+              type: "text",
+              value: analyticsSearchQuery,
+              onChange: function(e) { setAnalyticsSearchQuery(e.target.value); },
+              placeholder: "بحث باسم الدارس، الكنيسة، أو الإيبارشية...",
+              className: "flex-1 bg-transparent border-none text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+            }),
+            analyticsSearchQuery && React.createElement(
+              "button",
+              { onClick: function() { setAnalyticsSearchQuery(""); }, className: "text-xs text-slate-400 hover:text-slate-600" },
+              "مسح"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-1.5 flex-wrap self-end md:self-center" },
+            React.createElement("span", { className: "text-[11px] text-slate-400 font-bold ml-1" }, "ترتيب حسب:"),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setAnalyticsSortBy("minutes"); },
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                  (analyticsSortBy === "minutes" ? "bg-indigo-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200")
+              },
+              "⏱️ الأكثر وقتاً"
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setAnalyticsSortBy("visits"); },
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                  (analyticsSortBy === "visits" ? "bg-emerald-600 text-white shadow-2xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200")
+              },
+              "🔄 الأكثر زيارة"
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setAnalyticsSortBy("recent"); },
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                  (analyticsSortBy === "recent" ? "bg-slate-900 text-white dark:bg-slate-700 shadow-2xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200")
+              },
+              "🟢 الأحدث نشاطاً"
+            )
+          )
+        ),
+
+        // قائمة بطاقات الدارسين التحليلية الكاملة
+        displayUsers.length === 0 ? React.createElement(
+          "div",
+          { className: "p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-2 text-slate-400 text-xs" },
+          React.createElement("div", { className: "text-3xl" }, "📊"),
+          React.createElement("p", null, "لا توجد نتائج تطابق خيارات البحث الحالية.")
+        ) : React.createElement(
+          "div",
+          { className: "space-y-3" },
+          displayUsers.map(function(u, idx) {
+            var rank = idx + 1;
+            var rankBadge = rank === 1 ? "🥇 #1" : rank === 2 ? "🥈 #2" : rank === 3 ? "🥉 #3" : ("#" + rank);
+            var rankColor = rank === 1 ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800" : rank === 2 ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700" : rank === 3 ? "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-400 border-amber-700/30" : "bg-slate-50 dark:bg-slate-800/40 text-slate-500 border-slate-200 dark:border-slate-800";
+
+            var progressPct = maxMinutes > 0 ? Math.min(100, Math.round(((u.totalMinutes || 0) / maxMinutes) * 100)) : 0;
+
+            var lastActiveDate = null;
+            if (u.lastActiveAt && typeof u.lastActiveAt.toDate === "function") lastActiveDate = u.lastActiveAt.toDate();
+            else if (u.lastActiveClient) lastActiveDate = new Date(u.lastActiveClient);
+            else if (u.lastLoginAt && typeof u.lastLoginAt.toDate === "function") lastActiveDate = u.lastLoginAt.toDate();
+
+            var statusText = "لم يسجل دخول بعد";
+            var isOnlineNow = false;
+            if (lastActiveDate && !isNaN(lastActiveDate.getTime())) {
+              var diffMs = Date.now() - lastActiveDate.getTime();
+              var diffMins = Math.floor(diffMs / 60000);
+              var diffHours = Math.floor(diffMins / 60);
+              var diffDays = Math.floor(diffHours / 24);
+
+              if (diffMins < 5) {
+                isOnlineNow = true;
+                statusText = "متواجد الآن 🟢";
+              } else if (diffMins < 60) {
+                statusText = "منذ " + diffMins + " دقيقة";
+              } else if (diffHours < 24) {
+                statusText = "منذ " + diffHours + " ساعة";
+              } else if (diffDays === 1) {
+                statusText = "أمس";
+              } else if (diffDays < 7) {
+                statusText = "منذ " + diffDays + " أيام";
+              } else {
+                statusText = "منقطع (" + diffDays + " يوم)";
+              }
+            }
+
+            return React.createElement(
+              "div",
+              {
+                key: u.id,
+                className: "bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-xs space-y-3"
+              },
+              React.createElement(
+                "div",
+                { className: "flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-start sm:items-center gap-3" },
+                  React.createElement(
+                    "span",
+                    { className: "px-2.5 py-1 rounded-xl text-xs font-black border shrink-0 font-mono " + rankColor },
+                    rankBadge
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "space-y-1" },
+                    React.createElement(
+                      "div",
+                      { className: "flex items-center gap-2 flex-wrap" },
+                      React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, u.fullName),
+                      u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
+                        u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
+                      ),
+                      u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
+                        u.studyYear
+                      ),
+                      React.createElement(
+                        "span",
+                        {
+                          className: "text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 " +
+                            (isOnlineNow
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-500")
+                        },
+                        isOnlineNow && React.createElement("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" }),
+                        statusText
+                      )
+                    ),
+                    React.createElement("p", { className: "text-xs text-slate-500 dark:text-slate-400" },
+                      (u.church || "كنيسة غير محددة") + " • " + (u.diocese || "الإيبارشية") + " • " + (u.governorate || "المحافظة")
+                    )
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2 shrink-0 self-end sm:self-center" },
+                  (u.whatsapp || u.phone) && React.createElement(
+                    "a",
+                    {
+                      href: "https://wa.me/" + String(u.whatsapp || u.phone).replace(/[^0-9]/g, "").replace(/^0/, "20") + "?text=" + encodeURIComponent("سلام ونعمة يا د/ " + (u.fullName || "") + "، حابين نشجعك في دراسة المشورة ونتطمن على خطواتك في المنهج."),
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      title: "إرسال رسالة تشجيع ومتابعة على الواتساب",
+                      className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800/60 transition-all shadow-2xs"
+                    },
+                    React.createElement("span", null, "💬"),
+                    React.createElement("span", null, "تشجيع واتساب")
+                  ),
+                  React.createElement(
+                    "button",
+                    {
+                      onClick: function() { handleSendTestNotifToUser(u); },
+                      disabled: sendingNotifUserId === u.id,
+                      title: "إرسال إشعار مباشر لهذا الدارس",
+                      className: "p-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40 text-xs transition-colors"
+                    },
+                    "🔔"
+                  )
+                )
+              ),
+
+              React.createElement(
+                "div",
+                { className: "grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs" },
+                React.createElement(
+                  "div",
+                  { className: "bg-indigo-50/60 dark:bg-indigo-950/20 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-950/40 space-y-0.5" },
+                  React.createElement("span", { className: "text-[10px] text-indigo-700 dark:text-indigo-400 font-bold block" }, "إجمالي المذاكرة"),
+                  React.createElement("span", { className: "text-sm font-black text-slate-900 dark:text-white" }, "⏱️ " + formatDuration(u.totalMinutes))
+                ),
+                React.createElement(
+                  "div",
+                  { className: "bg-emerald-50/60 dark:bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-100 dark:border-emerald-950/40 space-y-0.5" },
+                  React.createElement("span", { className: "text-[10px] text-emerald-700 dark:text-emerald-400 font-bold block" }, "مرات الدخول"),
+                  React.createElement("span", { className: "text-sm font-black text-slate-900 dark:text-white" }, "🔄 " + (u.loginCount || (u.lastLoginAt ? 1 : 0)) + " زيارة")
+                ),
+                React.createElement(
+                  "div",
+                  { className: "bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-0.5" },
+                  React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 font-bold block" }, "مدة آخر جلسة"),
+                  React.createElement("span", { className: "text-sm font-bold text-slate-700 dark:text-slate-300" }, (u.lastSessionMinutes ? (u.lastSessionMinutes + " دقيقة") : "—"))
+                ),
+                React.createElement(
+                  "div",
+                  { className: "bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-0.5" },
+                  React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 font-bold block" }, "الجهاز وموقع الدخول"),
+                  React.createElement("span", { className: "text-xs font-semibold text-slate-600 dark:text-slate-300 truncate block", title: u.lastLoginCountry || "" },
+                    (u.lastDevice ? (u.lastDevice + " • ") : "") + (u.lastLoginCountry || "—")
+                  )
+                )
+              ),
+
+              React.createElement(
+                "div",
+                { className: "space-y-1 pt-1" },
+                React.createElement(
+                  "div",
+                  { className: "flex justify-between text-[10px] text-slate-400 font-mono" },
+                  React.createElement("span", null, "نسبة النشاط مقارنة بالمتصدر"),
+                  React.createElement("span", null, progressPct + "%")
+                ),
+                React.createElement(
+                  "div",
+                  { className: "w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" },
+                  React.createElement("div", {
+                    className: "h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500",
+                    style: { width: Math.max(progressPct, 3) + "%" }
+                  })
+                )
+              )
+            );
+          })
+        )
+      );
+    })(),
+
+    // ==========================================
+    // القسم الثالث: سجل الدخول الجغرافي والـ IP
     // ==========================================
     mainTab === "tracking" && React.createElement(
       "div",

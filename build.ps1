@@ -114,7 +114,19 @@ function Build-App {
         [System.IO.File]::WriteAllText((Join-Path $publicDir "index.html"), $finalHtml, $utf8NoBom)
     }
 
-    Write-Host "[Build] App bundled successfully to index.html and public/index.html" -ForegroundColor Green
+    # تحديث رقم كاش الـ Service Worker فوراً مع كل بناء لتحديث المتصفح تلقائياً
+    $swPath = Join-Path $appDir "sw.js"
+    if (Test-Path $swPath) {
+        $swCode = [System.IO.File]::ReadAllText($swPath, $utf8)
+        $swCode = $swCode -replace "const CACHE_NAME = '[^']*';", ("const CACHE_NAME = 'counseling-pwa-v" + $buildTimestamp + "';")
+        [System.IO.File]::WriteAllText($swPath, $swCode, $utf8NoBom)
+        if (Test-Path $publicDir) {
+            $publicSw = Join-Path $publicDir "sw.js"
+            [System.IO.File]::WriteAllText($publicSw, $swCode, $utf8NoBom)
+        }
+    }
+
+    Write-Host "[Build] App bundled successfully (HTML + Service Worker cache v$buildTimestamp)" -ForegroundColor Green
 }
 
 Build-App
