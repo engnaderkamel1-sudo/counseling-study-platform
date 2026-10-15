@@ -73,7 +73,21 @@ window.UsersManagementPage = function(props) {
     }
   };
 
-  var [mainTab, setMainTab] = React.useState("approval"); // "approval" أو "tracking"
+  var [mainTab, setMainTab] = React.useState("approval"); // "approval", "analytics", "tracking"
+  var [analyticsSortBy, setAnalyticsSortBy] = React.useState("minutes"); // "minutes", "visits", "recent", "name"
+  var [analyticsSearchQuery, setAnalyticsSearchQuery] = React.useState("");
+  var [analyticsYearFilter, setAnalyticsYearFilter] = React.useState("all");
+  var [analyticsTypeFilter, setAnalyticsTypeFilter] = React.useState("all");
+
+  var formatDuration = function(minutes) {
+    if (!minutes || minutes <= 0) return "أقل من دقيقة";
+    var hrs = Math.floor(minutes / 60);
+    var mins = minutes % 60;
+    if (hrs === 0) return mins + " دقيقة";
+    if (mins === 0) return hrs + " ساعة";
+    return hrs + " س و " + mins + " د";
+  };
+
   var [loginLogs, setLoginLogs] = React.useState([]);
   var [isLoadingLogs, setIsLoadingLogs] = React.useState(false);
   var [logSearchQuery, setLogSearchQuery] = React.useState("");
@@ -398,6 +412,19 @@ window.UsersManagementPage = function(props) {
       React.createElement(
         "button",
         {
+          onClick: function() { setMainTab("analytics"); },
+          className: "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 " +
+            (mainTab === "analytics"
+              ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-sm"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800")
+        },
+        React.createElement("span", null, "📊"),
+        React.createElement("span", null, "تحليلات وإحصائيات المذاكرة"),
+        approvedUsers.length > 0 && React.createElement("span", { className: "bg-indigo-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" }, approvedUsers.length)
+      ),
+      React.createElement(
+        "button",
+        {
           onClick: function() { setMainTab("tracking"); },
           className: "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 " +
             (mainTab === "tracking"
@@ -405,7 +432,7 @@ window.UsersManagementPage = function(props) {
               : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800")
         },
         React.createElement("span", null, "🌍"),
-        React.createElement("span", null, "سجل نشاط وتتبع الدخول"),
+        React.createElement("span", null, "سجل الدخول الجغرافي"),
         loginLogs.length > 0 && React.createElement("span", { className: "bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold" }, loginLogs.length)
       ),
       // زر التواجد الحي المباشر
@@ -716,6 +743,12 @@ window.UsersManagementPage = function(props) {
                     },
                     React.createElement("span", { className: "w-2 h-2 rounded-full " + (isOnlineNow ? "bg-emerald-500 animate-ping" : lastLoginDate ? "bg-slate-400" : "bg-slate-300") }),
                     "آخر نشاط: " + lastSeenStr
+                  ),
+                  (u.totalMinutes > 0 || u.loginCount > 0) && React.createElement(
+                    "span",
+                    { className: "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 px-2 py-0.5 rounded-md font-bold flex items-center gap-1" },
+                    "⏱️ " + (u.totalMinutes ? formatDuration(u.totalMinutes) : "أقل من دقيقة") +
+                    " (" + (u.loginCount || 1) + " دخول)"
                   ),
                   u.lastLoginCountry && React.createElement(
                     "span",

@@ -575,7 +575,9 @@ window.CloudSyncService = {
               lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
               lastLoginCountry: locSummary,
               lastLoginIp: geoData.ip,
-              lastDevice: deviceType
+              lastDevice: deviceType,
+              loginCount: firebase.firestore.FieldValue.increment(1),
+              lastSessionMinutes: 0
             }, { merge: true });
           } catch (uErr) {}
         }
@@ -639,23 +641,49 @@ window.CloudSyncService = {
     }
   },
 
-  // إرسال نبض التواجد السحابي (Heartbeat) للدارس النشط
+  // إرسال نبض التواجد السحابي (Heartbeat) وتحديث مدة المذاكرة بدقة وخفة تامة
   sendPresenceHeartbeat: async function(currentUser) {
     if (!currentUser || !currentUser.id || !window.db) return;
     try {
-      // حماية من الإرسال المفرط المتتالي (بحد أقصى مرة كل دقيقتين)
+      // حماية من الإرسال المفرط المتتالي (بحد أقصى مرة كل دقيقتين ونصف)
       var key = "last_presence_beat_" + currentUser.id;
       var lastBeat = parseInt(sessionStorage.getItem(key) || "0", 10);
       var now = Date.now();
-      if (now - lastBeat < 2 * 60 * 1000) {
+      var minIntervalMs = 140 * 1000; // 2.3 دقيقة
+      if (lastBeat > 0 && (now - lastBeat < minIntervalMs)) {
         return;
       }
       sessionStorage.setItem(key, String(now));
 
-      await window.db.collection("users").doc(currentUser.id).set({
+      var updatePayload = {
         lastActiveAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastActiveClient: new Date().toISOString()
-      }, { merge: true });
+      };
+
+      // حساب وقت المكوث والمذاكرة الفعلي وتراكم الدقائق
+      if (lastBeat > 0) {
+        var elapsedMs = now - lastBeat;
+        // إذا كان الفارق بين دقيقتين و 10 دقائق (لتفادي حساب أوقات السكون الطويل)
+        if (elapsedMs >= 90 * 1000 && elapsedMs <= 10 * 60 * 1000) {
+          var isAudioPlaying = false;
+          try {
+            if (window.__ACTIVE_PLAYING_AUDIO) isAudioPlaying = true;
+            else if (document.querySelector("audio:not([paused])")) isAudioPlaying = true;
+          } catch (eAud) {}
+
+          var isTabVisible = (typeof document.visibilityState === "undefined" || document.visibilityState !== "hidden");
+          // احتساب الوقت إذا كان المستخدم نشطاً على الصفحة أو كان يستمع للمحاضرة/الكتاب في الخلفية
+          if (isTabVisible || isAudioPlaying) {
+            var elapsedMins = Math.round(elapsedMs / 60000);
+            if (elapsedMins > 0 && elapsedMins <= 10) {
+              updatePayload.totalMinutes = firebase.firestore.FieldValue.increment(elapsedMins);
+              updatePayload.lastSessionMinutes = firebase.firestore.FieldValue.increment(elapsedMins);
+            }
+          }
+        }
+      }
+
+      await window.db.collection("users").doc(currentUser.id).set(updatePayload, { merge: true });
     } catch(err) {
       // تجاهل هادئ لأخطاء الشبكة أثناء النبض
     }

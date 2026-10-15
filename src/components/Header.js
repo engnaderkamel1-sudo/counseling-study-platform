@@ -49,6 +49,22 @@ window.Header = function(props) {
         "div",
         { className: "flex items-center gap-2" },
 
+        // زر استئناف الاستماع السريع والبارز في الترويسة العلوية
+        props.lastAudioRecord && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() {
+              if (props.onResumeAudio) props.onResumeAudio();
+            },
+            title: "استئناف الاستماع: " + (props.lastAudioRecord.chapterTitle || props.lastAudioRecord.bookTitle || ""),
+            className: "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 animate-fade-in shrink-0 border border-amber-400/60"
+          },
+          React.createElement("span", { className: "text-sm animate-pulse" }, "🎧"),
+          React.createElement("span", { className: "hidden sm:inline truncate max-w-[150px]" }, props.lastAudioRecord.chapterTitle || "استئناف الصوت"),
+          React.createElement("span", { className: "sm:hidden font-black" }, "استئناف")
+        ),
+
         // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
         currentUser && (function() {
           var currentHour = new Date().getHours();

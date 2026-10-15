@@ -86,6 +86,74 @@ window.APP_UTILS = {
     } catch (e) {}
   },
 
+  // استرجاع آخر تراك صوتي مسجل أو اكتشافه بذكاء من سجل الاستماع السابق
+  resolveLastAudioRecord: function() {
+    try {
+      var raw = localStorage.getItem("counsel_last_audio_track");
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.bookId) return parsed;
+      }
+    } catch (e) {}
+
+    // فحص ذكي للذاكرة السابقة إذا كان المستخدم قد استمع لكتاب قبل التحديث
+    try {
+      var booksRaw = localStorage.getItem("counsel_books_data") || localStorage.getItem("counsel_books");
+      var booksList = booksRaw ? JSON.parse(booksRaw) : [];
+      if (!Array.isArray(booksList) || booksList.length === 0) return null;
+
+      var activeBookId = localStorage.getItem("counsel_active_book_id");
+      var candidateBook = null;
+
+      if (activeBookId) {
+        candidateBook = booksList.find(function(b) { return b && b.id === activeBookId; });
+      }
+
+      // إذا لم يكن الكتاب النشط يحتوي على فصول صوتية، نبحث عن أول كتاب به فصول واستماع
+      if (!candidateBook || !candidateBook.audioChapters || candidateBook.audioChapters.length === 0) {
+        for (var i = 0; i < booksList.length; i++) {
+          var b = booksList[i];
+          if (!b || !b.id) continue;
+          var lastChap = localStorage.getItem("counsel_audio_last_chap_" + b.id);
+          if (lastChap) {
+            candidateBook = b;
+            break;
+          }
+        }
+      }
+
+      // إذا ما زال غير موجود، نأخذ أول كتاب به فصول صوتية جاهزة
+      if (!candidateBook) {
+        candidateBook = booksList.find(function(b) {
+          return b && b.audioChapters && b.audioChapters.some(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+        });
+      }
+
+      if (candidateBook) {
+        var chaps = candidateBook.audioChapters || [];
+        var audioChaps = chaps.filter(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+        if (audioChaps.length > 0) {
+          var lastChId = localStorage.getItem("counsel_audio_last_chap_" + candidateBook.id);
+          var targetChap = audioChaps.find(function(c) { return c.id === lastChId; }) || audioChaps[0];
+          var posStr = localStorage.getItem("counsel_audio_pos_" + candidateBook.id + "_" + targetChap.id);
+          var pos = (posStr && !isNaN(parseFloat(posStr))) ? parseFloat(posStr) : 0;
+          return {
+            type: "chapter",
+            bookId: candidateBook.id,
+            bookTitle: candidateBook.title || "مرجع دراسي",
+            bookCoverUrl: candidateBook.coverUrl || "",
+            chapterId: targetChap.id,
+            chapterTitle: targetChap.title || "فصل صوتي",
+            position: pos,
+            duration: targetChap.audioDuration || 0,
+            updatedAt: Date.now()
+          };
+        }
+      }
+    } catch (err) {}
+    return null;
+  },
+
   // تخزين الملفات الكبيرة (PDFs) بدون إنترنت عبر IndexedDB
   openOfflineDb: function() {
     return new Promise(function(resolve, reject) {

@@ -41,14 +41,22 @@ function App() {
 
   var [floatingAudio, setFloatingAudio] = React.useState(null);
   var [lastAudioRecord, setLastAudioRecord] = React.useState(function() {
-    try {
-      var raw = localStorage.getItem("counsel_last_audio_track");
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      return null;
-    }
+    return (utils && utils.resolveLastAudioRecord) ? utils.resolveLastAudioRecord() : null;
   });
   var [isLastAudioDismissed, setIsLastAudioDismissed] = React.useState(false);
+
+  var handleGlobalResumeAudio = function() {
+    var record = lastAudioRecord || (utils && utils.resolveLastAudioRecord ? utils.resolveLastAudioRecord() : null);
+    if (!record || !record.bookId) return;
+    try {
+      localStorage.setItem("counsel_auto_resume_audio", JSON.stringify(record));
+      localStorage.setItem("counsel_active_book_id", record.bookId);
+    } catch (e) {}
+    setActiveTab("books");
+    setTimeout(function() {
+      try { window.dispatchEvent(new Event("counsel_trigger_resume_audio")); } catch (e) {}
+    }, 60);
+  };
 
   React.useEffect(function() {
     var updateAudioState = function() {
@@ -58,9 +66,8 @@ function App() {
         setFloatingAudio(null);
       }
       try {
-        var raw = localStorage.getItem("counsel_last_audio_track");
-        var parsed = raw ? JSON.parse(raw) : null;
-        setLastAudioRecord(parsed);
+        var rec = (utils && utils.resolveLastAudioRecord) ? utils.resolveLastAudioRecord() : null;
+        setLastAudioRecord(rec);
       } catch (e) {}
     };
     window.addEventListener("counsel_audio_state_change", updateAudioState);
@@ -504,11 +511,13 @@ function App() {
       };
       window.addEventListener("focus", onUserAction);
       window.addEventListener("click", onUserAction);
+      document.addEventListener("visibilitychange", onUserAction);
 
       return function() {
         clearInterval(heartbeatInterval);
         window.removeEventListener("focus", onUserAction);
         window.removeEventListener("click", onUserAction);
+        document.removeEventListener("visibilitychange", onUserAction);
       };
     }
   }, [currentUser && currentUser.id]);
@@ -630,7 +639,9 @@ function App() {
             onOpenInstallPrompt: function() { setIsInstallPromptOpen(true); },
             onOpenNotifications: function() { setIsNotificationCenterOpen(true); },
             unreadNotificationsCount: unreadCount,
-            onTabChange: setActiveTab
+            onTabChange: setActiveTab,
+            lastAudioRecord: lastAudioRecord,
+            onResumeAudio: handleGlobalResumeAudio
           });
         })()
       ),
@@ -747,7 +758,7 @@ function App() {
       // إذا كان التطبيق قد أُعيد فتحه وهناك آخر تراك صوتي مسجل للاستئناف
       var canShowResume = !floatingAudio && lastAudioRecord && lastAudioRecord.bookId && !isLastAudioDismissed;
       var activeBookId = utils.getLocal ? utils.getLocal("counsel_active_book_id") : null;
-      var isAlreadyViewingBook = activeTab === "books" && activeBookId === lastAudioRecord?.bookId;
+      var isAlreadyViewingBook = activeTab === "books" && activeBookId === (lastAudioRecord ? lastAudioRecord.bookId : null);
 
       if (canShowResume && !isAlreadyViewingBook) {
         var posStr = formatAudioTime(lastAudioRecord.position);
@@ -756,16 +767,7 @@ function App() {
           ? Math.min(100, Math.round((lastAudioRecord.position / lastAudioRecord.duration) * 100))
           : 0;
 
-        var handleTriggerResume = function() {
-          try {
-            localStorage.setItem("counsel_auto_resume_audio", JSON.stringify(lastAudioRecord));
-            localStorage.setItem("counsel_active_book_id", lastAudioRecord.bookId);
-          } catch (e) {}
-          setActiveTab("books");
-          setTimeout(function() {
-            try { window.dispatchEvent(new Event("counsel_trigger_resume_audio")); } catch (e) {}
-          }, 60);
-        };
+        var handleTriggerResume = handleGlobalResumeAudio;
 
         return React.createElement(
           "div",
