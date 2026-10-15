@@ -567,6 +567,29 @@ window.AudioChaptersView = function(props) {
     var audio = chapterAudioRef.current;
     if (!audio) return;
 
+    var saveLastAudioRecord = function(currentSec) {
+      if (!activeBook || !activeBook.id || !playingChapterId) return;
+      var curChap = chaps.find(function(c) { return c.id === playingChapterId; });
+      if (!curChap) return;
+      var pos = currentSec !== undefined ? currentSec : (audio ? audio.currentTime : 0);
+      var dur = (audio && audio.duration) || (durationsMap && durationsMap[playingChapterId]) || curChap.audioDuration || 0;
+      var record = {
+        type: "chapter",
+        bookId: activeBook.id,
+        bookTitle: activeBook.title || "مرجع دراسي",
+        bookCoverUrl: activeBook.coverUrl || "",
+        chapterId: playingChapterId,
+        chapterTitle: curChap.title || "فصل صوتي",
+        position: pos,
+        duration: dur,
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem("counsel_last_audio_track", JSON.stringify(record));
+        window.dispatchEvent(new Event("counsel_audio_state_change"));
+      } catch (e) {}
+    };
+
     var updateProgress = function() {
       var ct = audio.currentTime;
       setAudioProgress(ct);
@@ -575,6 +598,7 @@ window.AudioChaptersView = function(props) {
           try {
             localStorage.setItem("counsel_audio_pos_" + activeBook.id + "_" + playingChapterId, ct.toString());
             localStorage.setItem("counsel_audio_last_chap_" + activeBook.id, playingChapterId);
+            saveLastAudioRecord(ct);
           } catch (posErr) {}
         }
       }
@@ -628,6 +652,7 @@ window.AudioChaptersView = function(props) {
         try {
           localStorage.setItem("counsel_audio_pos_" + activeBook.id + "_" + playingChapterId, audio.currentTime.toString());
           localStorage.setItem("counsel_audio_last_chap_" + activeBook.id, playingChapterId);
+          saveLastAudioRecord(audio.currentTime);
         } catch (posErr) {}
       }
       if ("mediaSession" in navigator) {
@@ -665,10 +690,18 @@ window.AudioChaptersView = function(props) {
         } else {
           setIsAudioPlaying(false);
           if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
+          try {
+            localStorage.removeItem("counsel_last_audio_track");
+            window.dispatchEvent(new Event("counsel_audio_state_change"));
+          } catch (e) {}
         }
       } else {
         setIsAudioPlaying(false);
         if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
+        try {
+          localStorage.removeItem("counsel_last_audio_track");
+          window.dispatchEvent(new Event("counsel_audio_state_change"));
+        } catch (e) {}
       }
     };
 
@@ -712,6 +745,7 @@ window.AudioChaptersView = function(props) {
       if (audio && activeBook && activeBook.id && playingChapterId && audio.currentTime > 0) {
         try {
           localStorage.setItem("counsel_audio_pos_" + activeBook.id + "_" + playingChapterId, audio.currentTime.toString());
+          saveLastAudioRecord(audio.currentTime);
         } catch (posErr) {}
       }
       audio.removeEventListener("timeupdate", updateProgress);

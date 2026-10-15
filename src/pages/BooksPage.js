@@ -315,7 +315,6 @@ window.BooksPage = function(props) {
       }
     });
 
-    // مؤقت حماية لمنع بقاء مؤشر التحميل معلقاً في حالة ضعف الشبكة
     var safetyTimer = setTimeout(function() {
       setIsLoadingBooks(false);
     }, 4000);
@@ -325,6 +324,71 @@ window.BooksPage = function(props) {
       if (typeof unsubscribe === "function") unsubscribe();
     };
   }, []);
+
+  // معالجة طلب الاستئناف الفوري للصوت عند الضغط على المشغل المصغر العائم
+  React.useEffect(function() {
+    var handleAutoResumeAudio = function() {
+      try {
+        var raw = localStorage.getItem("counsel_auto_resume_audio");
+        if (!raw) return;
+        var resumeData = JSON.parse(raw);
+        if (!resumeData || !resumeData.bookId) return;
+
+        var bookList = (books && books.length > 0) ? books : (utils.getLocal(cfg.storageKeys.books, []) || []);
+        var targetBook = bookList.find(function(b) { return b.id === resumeData.bookId; });
+        if (!targetBook) return;
+
+        // تفعيل الكتاب المرجعي
+        utils.setLocal("counsel_active_book_id", targetBook.id);
+        setActiveBook(targetBook);
+
+        // التبديل لواجهة الدراسة والاستماع مباشرة
+        setMobileSectionTab("study");
+
+        if (resumeData.type === "track1") {
+          setBookStudyTab("track1");
+          setTimeout(function() {
+            var audio = track1AudioRef.current;
+            if (audio) {
+              if (resumeData.position && resumeData.position > 0) {
+                audio.currentTime = resumeData.position;
+                setTrack1CurrentTime(resumeData.position);
+              }
+              var p = audio.play();
+              if (p && typeof p.catch === "function") p.catch(function() {});
+              setIsTrack1Playing(true);
+            }
+          }, 250);
+        } else {
+          setBookStudyTab("chapters");
+          var chapId = resumeData.chapterId;
+          if (chapId) {
+            setPlayingChapterId(chapId);
+            var targetChap = targetBook.audioChapters && targetBook.audioChapters.find(function(c) { return c.id === chapId; });
+            if (targetChap && setViewingChapterText) {
+              setViewingChapterText(targetChap);
+            }
+            setTimeout(function() {
+              try {
+                var el = document.getElementById("chapter-card-" + chapId);
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              } catch (e) {}
+            }, 250);
+          }
+        }
+
+        localStorage.removeItem("counsel_auto_resume_audio");
+      } catch (e) {
+        console.warn("Auto resume audio error:", e);
+      }
+    };
+
+    handleAutoResumeAudio();
+    window.addEventListener("counsel_trigger_resume_audio", handleAutoResumeAudio);
+    return function() {
+      window.removeEventListener("counsel_trigger_resume_audio", handleAutoResumeAudio);
+    };
+  }, [books]);
 
   // فحص ما إذا كان الكتاب الحالي مخزناً بالفعل للقراءة بدون إنترنت واسترجاع الصفحة المحفوظة
   React.useEffect(function() {
@@ -798,18 +862,69 @@ window.BooksPage = function(props) {
     return parseFloat(timeStr) || 0;
   };
 
+  var saveLastTrack1Record = function(currentSec) {
+    if (!activeBook || !activeBook.id) return;
+    var ct = currentSec !== undefined ? currentSec : (track1AudioRef.current ? track1AudioRef.current.currentTime : 0);
+    var dur = (track1AudioRef.current && track1AudioRef.current.duration) || track1Duration || 0;
+    var record = {
+      type: "track1",
+      bookId: activeBook.id,
+      bookTitle: activeBook.title || "مرجع دراسي",
+      bookCoverUrl: activeBook.coverUrl || "",
+      chapterId: null,
+      chapterTitle: "تراك 1 الشامل (ملخص صوتي)",
+      position: ct,
+      duration: dur,
+      updatedAt: Date.now()
+    };
+    try {
+      localStorage.setItem("counsel_last_audio_track", JSON.stringify(record));
+      window.dispatchEvent(new Event("counsel_audio_state_change"));
+    } catch (e) {}
+  };
+
   var toggleTrack1Play = function() {
     if (!track1AudioRef.current) return;
     if (isTrack1Playing) {
       track1AudioRef.current.pause();
       setIsTrack1Playing(false);
+      saveLastTrack1Record();
     } else {
       track1AudioRef.current.playbackRate = track1PlaybackRate;
       track1AudioRef.current.play().then(function() {
         setIsTrack1Playing(true);
+        saveLastTrack1Record();
       }).catch(function() {});
     }
   };
+
+  // مزامنة تراك 1 الشامل مع المشغل العائم العام
+  React.useEffect(function() {
+    if (isTrack1Playing && activeBook) {
+      window.__ACTIVE_PLAYING_AUDIO = {
+        title: "تراك 1 الشامل (ملخص صوتي)",
+        book: activeBook.title || "الكتاب الصوتي",
+        isPlaying: true,
+        togglePlay: function() {
+          toggleTrack1Play();
+        },
+        stop: function() {
+          if (track1AudioRef.current) track1AudioRef.current.pause();
+          setIsTrack1Playing(false);
+        }
+      };
+      try {
+        window.dispatchEvent(new Event("counsel_audio_state_change"));
+      } catch (e) {}
+    } else if (!playingChapterId) {
+      if (window.__ACTIVE_PLAYING_AUDIO && window.__ACTIVE_PLAYING_AUDIO.title && window.__ACTIVE_PLAYING_AUDIO.title.indexOf("تراك 1") !== -1) {
+        window.__ACTIVE_PLAYING_AUDIO = null;
+        try {
+          window.dispatchEvent(new Event("counsel_audio_state_change"));
+        } catch (e) {}
+      }
+    }
+  }, [isTrack1Playing, activeBook]);
 
   var handleTrack1Seek = function(deltaSeconds) {
     if (!track1AudioRef.current) return;
@@ -3146,6 +3261,7 @@ window.BooksPage = function(props) {
                   if (activeBook && activeBook.id && Math.floor(ct) % 2 === 0) {
                     try {
                       localStorage.setItem("counsel_audio_pos_" + activeBook.id, ct.toString());
+                      saveLastTrack1Record(ct);
                     } catch (err) {}
                   }
                 },
@@ -3177,7 +3293,11 @@ window.BooksPage = function(props) {
                 },
                 onEnded: function() {
                   setIsTrack1Playing(false);
-                  try { localStorage.removeItem("counsel_audio_pos_" + activeBook.id); } catch (err) {}
+                  try {
+                    localStorage.removeItem("counsel_audio_pos_" + activeBook.id);
+                    localStorage.removeItem("counsel_last_audio_track");
+                    window.dispatchEvent(new Event("counsel_audio_state_change"));
+                  } catch (err) {}
                 }
               }),
 
