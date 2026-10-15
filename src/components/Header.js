@@ -55,7 +55,7 @@ window.Header = function(props) {
 
       React.createElement(
         "div",
-        { className: "flex items-center gap-2" },
+        { className: "flex items-center gap-1 sm:gap-2" },
 
         // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
         currentUser && (function() {
@@ -67,13 +67,14 @@ window.Header = function(props) {
             {
               onClick: onOpenAuth,
               title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
-              className: "flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs"
+              className: "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs shrink-0"
             },
-            React.createElement("span", { className: "w-2 h-2 rounded-full " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+            React.createElement("span", { className: "w-2 h-2 rounded-full shrink-0 " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
             React.createElement(
               "span",
-              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px]" },
-              timeGreeting + "، " + displayName
+              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px] sm:max-w-[140px]" },
+              React.createElement("span", { className: "hidden sm:inline" }, timeGreeting + "، "),
+              displayName
             ),
             React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
               isAdmin ? "مشرف" : "دارس"
@@ -145,7 +146,7 @@ window.Header = function(props) {
     ),
 
     // السطر الثاني: شريط متابعة الاستماع المخصص والأنيق (لا يزاحم أي زر إطلاقاً)
-    (props.lastAudioRecord && !isTopResumeDismissed && (props.activeTab !== "books" || (utils.getLocal && utils.getLocal("counsel_active_book_id") !== props.lastAudioRecord.bookId))) && React.createElement(
+    (props.lastAudioRecord && !isTopResumeDismissed) && React.createElement(
       "div",
       {
         className: "border-t border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-950/30 px-3 sm:px-6 md:px-8 py-1.5 flex items-center justify-between gap-2 text-xs shadow-2xs animate-fade-in"

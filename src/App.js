@@ -157,17 +157,6 @@ function App() {
           var isDifferentTime = (bTimeMatch && bTimeMatch[1] && bTimeMatch[1] !== cfg.buildTime);
           if (isDifferentVersion || isDifferentTime) {
             setHasUpdateAvailable(true);
-            var isUserTyping = !!document.querySelector("input:focus, textarea:focus");
-            if (!isUserTyping) {
-              if ("caches" in window) {
-                try {
-                  var names = await caches.keys();
-                  for (var ci = 0; ci < names.length; ci++) await caches.delete(names[ci]);
-                } catch (cErr) {}
-              }
-              var cleanUrl = window.location.href.split("?")[0].split("#")[0] + "?v=" + Date.now() + (window.location.hash || "");
-              window.location.replace(cleanUrl);
-            }
           }
         }
       } catch (e) {}
@@ -662,7 +651,7 @@ function App() {
         "main",
         {
           className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (function() {
-            var hasTopResume = lastAudioRecord && (activeTab !== "books" || (utils && utils.getLocal("counsel_active_book_id") !== lastAudioRecord.bookId));
+            var hasTopResume = !!lastAudioRecord;
             if (hasUpdateAvailable && hasTopResume) return "pt-36 sm:pt-40";
             if (hasUpdateAvailable) return "pt-28 sm:pt-32";
             if (hasTopResume) return "pt-28 sm:pt-30";
@@ -777,10 +766,8 @@ function App() {
 
       // إذا كان التطبيق قد أُعيد فتحه وهناك آخر تراك صوتي مسجل للاستئناف
       var canShowResume = !floatingAudio && lastAudioRecord && lastAudioRecord.bookId && !isLastAudioDismissed;
-      var activeBookId = utils.getLocal ? utils.getLocal("counsel_active_book_id") : null;
-      var isAlreadyViewingBook = activeTab === "books" && activeBookId === (lastAudioRecord ? lastAudioRecord.bookId : null);
 
-      if (canShowResume && !isAlreadyViewingBook) {
+      if (canShowResume) {
         var posStr = formatAudioTime(lastAudioRecord.position);
         var durStr = lastAudioRecord.duration > 0 ? formatAudioTime(lastAudioRecord.duration) : "";
         var progressPercent = (lastAudioRecord.duration > 0 && lastAudioRecord.position > 0)
