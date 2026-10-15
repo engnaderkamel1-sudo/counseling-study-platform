@@ -2180,7 +2180,7 @@ window.AudioChaptersView = function(props) {
               type: "button",
               onClick: function() { handleDeleteChapter(chap.id); },
               className: "px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 text-xs font-bold transition-all flex items-center gap-1 border border-rose-200 dark:border-rose-800/60 shadow-xs",
-              title: "حذف هذا الفصل من القائمة نهائياً"
+              title: "نقل هذا الفصل إلى سلة المحذوفات (مع إمكانية استرجاعه خلال 7 أيام)"
             },
             React.createElement("span", null, "🗑️"),
             React.createElement("span", null, "حذف")

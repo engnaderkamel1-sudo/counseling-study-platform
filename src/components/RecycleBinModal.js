@@ -31,6 +31,8 @@ window.RecycleBinModal = function(props) {
 
   var booksCount = items.filter(function(i) { return i.originalType === "book"; }).length;
   var lecturesCount = items.filter(function(i) { return i.originalType === "lecture"; }).length;
+  var chaptersCount = items.filter(function(i) { return i.originalType === "chapter"; }).length;
+  var notesCount = items.filter(function(i) { return i.originalType === "note"; }).length;
 
   var getRemainingDays = function(deletedAt) {
     if (!deletedAt) return 7;
@@ -152,7 +154,31 @@ window.RecycleBinModal = function(props) {
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
             },
             "🎙️ المحاضرات (" + lecturesCount + ")"
-          )
+          ),
+          (chaptersCount > 0 || filterTab === "chapter") ? React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setFilterTab("chapter"); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                (filterTab === "chapter"
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+            },
+            "🎵 الفصول (" + chaptersCount + ")"
+          ) : null,
+          (notesCount > 0 || filterTab === "note") ? React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setFilterTab("note"); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all " +
+                (filterTab === "note"
+                  ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200")
+            },
+            "📝 الملاحظات (" + notesCount + ")"
+          ) : null
         ),
         items.length > 0 && React.createElement(
           "button",
@@ -176,9 +202,13 @@ window.RecycleBinModal = function(props) {
           { className: "py-12 text-center text-slate-400 space-y-2" },
           React.createElement("div", { className: "text-4xl" }, "🗑️"),
           React.createElement("p", { className: "font-bold text-sm text-slate-700 dark:text-slate-300" }, "سلة المحذوفات فارغة تماماً"),
-          React.createElement("p", { className: "text-xs text-slate-400" }, "أي كتاب أو محاضرة تقوم بحذفها مستقبلاً ستظهر هنا لمدة أسبوع قبل حذفها نهائياً.")
+          React.createElement("p", { className: "text-xs text-slate-400" }, "أي كتاب، محاضرة، فصل صوتي، أو ملاحظة تقوم بحذفها مستقبلاً ستظهر هنا لمدة أسبوع قبل حذفها نهائياً.")
         ) : filteredItems.map(function(item) {
-          var isBook = item.originalType === "book";
+          var icon = "📕";
+          if (item.originalType === "lecture") icon = "🎙️";
+          else if (item.originalType === "chapter") icon = "🎵";
+          else if (item.originalType === "note") icon = "📝";
+
           var daysLeft = getRemainingDays(item.deletedAt);
           var dateStr = "";
           if (item.deletedAt) {
@@ -187,6 +217,20 @@ window.RecycleBinModal = function(props) {
                 year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
               });
             } catch (e) {}
+          }
+
+          var detailsLabel = item.author || "";
+          if (item.originalType === "chapter") {
+            detailsLabel = item.author || (item.bookTitle ? ("كتاب: " + item.bookTitle) : "");
+            if (item.itemData && item.itemData.startPage) {
+              detailsLabel += " • صفحة " + item.itemData.startPage;
+            }
+          } else if (item.originalType === "note") {
+            detailsLabel = (item.itemData && item.itemData.lectureTitle) ? ("محاضرة: " + item.itemData.lectureTitle) : "ملاحظة دراسية";
+          } else if (item.originalType === "book") {
+            detailsLabel = item.author ? ("المؤلف: " + item.author) : "";
+          } else if (item.originalType === "lecture") {
+            detailsLabel = item.author ? ("المحاضر: " + item.author) : "";
           }
 
           return React.createElement(
@@ -201,7 +245,7 @@ window.RecycleBinModal = function(props) {
               React.createElement(
                 "span",
                 { className: "text-2xl shrink-0 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs" },
-                isBook ? "📕" : "🎙️"
+                icon
               ),
               React.createElement(
                 "div",
@@ -224,7 +268,7 @@ window.RecycleBinModal = function(props) {
                 React.createElement(
                   "div",
                   { className: "text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap" },
-                  item.author ? React.createElement("span", null, (isBook ? "المؤلف: " : "المحاضر: ") + item.author) : null,
+                  detailsLabel ? React.createElement("span", null, detailsLabel) : null,
                   dateStr ? React.createElement("span", null, "• حُذف في: " + dateStr) : null,
                   item.deletedBy ? React.createElement("span", null, "• بواسطة: " + item.deletedBy) : null
                 )

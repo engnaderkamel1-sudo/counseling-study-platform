@@ -321,28 +321,37 @@ window.CloudSyncService = {
     }
   },
 
-  // نقل كتاب أو محاضرة إلى سلة المحذوفات (Soft Delete)
-  moveToRecycleBin: async function(item, type, user) {
+  // نقل كتاب أو محاضرة أو فصل صوتي أو ملاحظة إلى سلة المحذوفات (Soft Delete)
+  moveToRecycleBin: async function(item, type, user, meta) {
     if (!item) return false;
     var self = this;
     var docId = type + "_" + (item.id || Date.now());
+    var itemTitle = item.title || "عنصر بدون عنوان";
+    var itemAuthor = item.author || item.speaker || "";
+    if (type === "chapter" && ((meta && meta.bookTitle) || item.bookTitle)) {
+      itemAuthor = "كتاب: " + ((meta && meta.bookTitle) || item.bookTitle);
+    }
     var recycleRecord = {
       id: docId,
       originalId: item.id,
-      originalType: type, // "book" أو "lecture"
+      originalType: type, // "book" أو "lecture" أو "chapter" أو "note"
       itemData: self.sanitizeForFirestore(item),
-      title: item.title || "عنصر بدون عنوان",
-      author: item.author || item.speaker || "",
+      title: itemTitle,
+      author: itemAuthor,
+      bookId: (meta && meta.bookId) || item.bookId || null,
+      bookTitle: (meta && meta.bookTitle) || item.bookTitle || null,
       deletedAt: Date.now(),
-      deletedBy: (user && user.fullName) || "الأدمن"
+      deletedBy: (user && (user.fullName || user.name)) || "الأدمن"
     };
 
     if (window.db) {
       try {
         await window.db.collection("recycle_bin").doc(docId).set(recycleRecord);
-        // حذفه من المجموعة الأصلية النشطة
-        var targetCollection = type === "book" ? "books" : "lectures";
-        await window.db.collection(targetCollection).doc(item.id).delete();
+        // حذفه من المجموعة الأصلية النشطة إذا كان كياناً مستقلاً
+        var targetCollection = type === "book" ? "books" : (type === "lecture" ? "lectures" : (type === "note" ? "personal_notes" : null));
+        if (targetCollection && item.id) {
+          await window.db.collection(targetCollection).doc(item.id).delete();
+        }
       } catch (err) {
         console.error("moveToRecycleBin cloud error:", err);
       }
@@ -377,11 +386,52 @@ window.CloudSyncService = {
     var self = this;
     var type = recycleRecord.originalType || "book";
     var item = recycleRecord.itemData;
+    var utils = window.APP_UTILS;
 
     if (type === "book") {
       await self.saveBook(item);
-    } else {
+    } else if (type === "lecture") {
       await self.saveLecture(item);
+    } else if (type === "note") {
+      await self.savePersonalNote(item.userId || (item.user && item.user.id), item);
+    } else if (type === "chapter") {
+      var targetBookId = recycleRecord.bookId || item.bookId;
+      if (targetBookId) {
+        var book = null;
+        if (window.db) {
+          try {
+            var snap = await window.db.collection("books").doc(targetBookId).get();
+            if (snap.exists) book = snap.data();
+          } catch(e) {}
+        }
+        if (!book && utils) {
+          var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+          book = allB.find(function(b) { return b.id === targetBookId; });
+        }
+        if (book) {
+          var chaps = (book.audioChapters || []).slice();
+          // تلافي التكرار وإعادة الفصل
+          chaps = chaps.filter(function(c) { return c.id !== item.id; });
+          chaps.push(item);
+          chaps.sort(function(a, b) { return (a.startPage || 0) - (b.startPage || 0); });
+          book.audioChapters = chaps;
+          await self.saveBook(book);
+
+          if (utils) {
+            var allBooks = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];
+            var bIdx = allBooks.findIndex(function(b) { return b.id === book.id; });
+            if (bIdx >= 0) allBooks[bIdx] = book;
+            else allBooks.push(book);
+            utils.setLocal(window.APP_CONFIG.storageKeys.books, allBooks);
+            utils.setLocal("counsel_book_data_" + book.id, book);
+          }
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("counsel_book_chapter_restored", {
+              detail: { bookId: targetBookId, chapter: item, book: book }
+            }));
+          }
+        }
+      }
     }
 
     // حذفه من سلة المحذوفات
@@ -389,7 +439,6 @@ window.CloudSyncService = {
 
     // تحديث التخزين المحلي
     try {
-      var utils = window.APP_UTILS;
       if (utils) {
         if (type === "book") {
           var allB = utils.getLocal(window.APP_CONFIG.storageKeys.books, []) || [];

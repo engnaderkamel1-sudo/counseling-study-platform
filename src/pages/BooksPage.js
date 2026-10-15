@@ -46,15 +46,29 @@ window.BooksPage = function(props) {
   var [selectedChapter, setSelectedChapter] = React.useState(null);
   var [activeChapterAudioIdx, setActiveChapterAudioIdx] = React.useState(null); // idx of playing track
 
-  // مراقبة تقدم إنجاز فصول وقراءة المراجع لتحديث البطاقات في المعرض فوراً
+  // مراقبة تقدم إنجاز فصول وقراءة المراجع واسترجاع الفصول من السلة لتحديث العرض فوراً
   var [progressTick, setProgressTick] = React.useState(0);
   React.useEffect(function() {
     var onProgChange = function() {
       setProgressTick(function(t) { return t + 1; });
     };
+    var onChapRestored = function(e) {
+      if (e && e.detail && e.detail.book) {
+        var restoredBook = e.detail.book;
+        setBooks(function(prev) {
+          return (prev || []).map(function(b) { return b.id === restoredBook.id ? restoredBook : b; });
+        });
+        setActiveBook(function(curr) {
+          if (curr && curr.id === restoredBook.id) return restoredBook;
+          return curr;
+        });
+      }
+    };
     window.addEventListener("counsel_book_progress_change", onProgChange);
+    window.addEventListener("counsel_book_chapter_restored", onChapRestored);
     return function() {
       window.removeEventListener("counsel_book_progress_change", onProgChange);
+      window.removeEventListener("counsel_book_chapter_restored", onChapRestored);
     };
   }, []);
   // حالات عارض الـ PDF بدون إنترنت وحفظ الصفحة
@@ -1045,11 +1059,24 @@ window.BooksPage = function(props) {
   };
 
   var handleDeleteChapter = async function(chapId) {
-    if (!activeBook || !window.confirm("هل أنت متأكد من رغبتك في حذف هذا الفصل الصوتي؟")) return;
+    if (!activeBook) return;
+    var chapToDelete = (activeBook.audioChapters || []).find(function(c) { return c.id === chapId; });
+    var chapName = (chapToDelete && chapToDelete.title) || "هذا الفصل الصوتي";
+    if (!window.confirm("هل ترغب في نقل «" + chapName + "» إلى سلة المحذوفات؟\n\nيمكنك استرجاعه في أي وقت خلال 7 أيام من سلة المحذوفات.")) return;
     var currentChaps = (activeBook.audioChapters || []).filter(function(c) { return c.id !== chapId; });
     var updatedBook = Object.assign({}, activeBook, { audioChapters: currentChaps });
     await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
+
+    if (chapToDelete && cloud && cloud.moveToRecycleBin) {
+      try {
+        var chapWithBook = Object.assign({}, chapToDelete, { bookId: activeBook.id, bookTitle: activeBook.title || "" });
+        await cloud.moveToRecycleBin(chapWithBook, "chapter", effectiveUser, { bookId: activeBook.id, bookTitle: activeBook.title || "" });
+      } catch (err) {
+        console.error("Error moving chapter to recycle bin:", err);
+      }
+    }
+
     if (playingChapterId === chapId) {
       if (chapterAudioRef.current) chapterAudioRef.current.pause();
       setPlayingChapterId(null);
@@ -1398,15 +1425,30 @@ window.BooksPage = function(props) {
     alert("🎉 تم اعتماد ونشر (" + publishedCount + " فصول جاهزة) للدارسين بنجاح!\nالفصول المتبقية غير المكتملة بقيت مخفية كمسودة.");
   };
 
-  // وظيفة مسح قائمة الفصول الحالية للبدء من جديد
+  // وظيفة مسح قائمة الفصول الحالية للبدء من جديد مع حفظها في سلة المحذوفات للأمان
   var handleClearAllChapters = async function() {
     if (!activeBook) return;
-    if (!window.confirm("هل أنت متأكد من مسح جميع فصول هذا الكتاب وإعادة الفحص من البداية؟")) return;
+    var chapsToDelete = (activeBook.audioChapters || []).slice();
+    if (chapsToDelete.length === 0) return alert("لا توجد فصول صوتية لحذفها");
+    if (!window.confirm("هل أنت متأكد من مسح جميع فصول هذا الكتاب (" + chapsToDelete.length + " فصل)؟\n\nسيتم حفظها بأمان في سلة المحذوفات لمدة 7 أيام مع إمكانية استرجاعها.")) return;
+
     var updatedBook = Object.assign({}, activeBook, { audioChapters: [] });
     await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     if (chapterAudioRef.current) chapterAudioRef.current.pause();
     setPlayingChapterId(null);
+
+    if (cloud && cloud.moveToRecycleBin) {
+      try {
+        for (var i = 0; i < chapsToDelete.length; i++) {
+          var c = chapsToDelete[i];
+          var chapWithBook = Object.assign({}, c, { bookId: activeBook.id, bookTitle: activeBook.title || "" });
+          await cloud.moveToRecycleBin(chapWithBook, "chapter", effectiveUser, { bookId: activeBook.id, bookTitle: activeBook.title || "" });
+        }
+      } catch (err) {
+        console.error("Error moving chapters to recycle bin:", err);
+      }
+    }
   };
 
   // وظيفة استخراج النص الكامل للفصل بالذكاء الاصطناعي (OCR) من صفحات الـ PDF

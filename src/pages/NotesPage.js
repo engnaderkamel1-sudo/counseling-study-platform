@@ -74,11 +74,17 @@ window.NotesPage = function(props) {
   };
 
   var handleDeleteNote = function(noteId) {
-    if (!confirm("هل أنت متأكد من حذف هذه الملاحظة؟")) return;
+    var noteToDelete = notes.find(function(n) { return n.id === noteId; });
+    var noteTitle = (noteToDelete && (noteToDelete.title || noteToDelete.lectureTitle)) || "هذه الملاحظة";
+    if (!confirm("هل ترغب في نقل «" + noteTitle + "» إلى سلة المحذوفات؟\n\n(يمكنك استرجاعها خلال 7 أيام من سلة المحذوفات)")) return;
     var updated = notes.filter(function(n) { return n.id !== noteId; });
     setNotes(updated);
     utils.setLocal(userKey, updated);
-    cloud.deleteDocument("personal_notes", noteId);
+    if (noteToDelete && cloud && cloud.moveToRecycleBin) {
+      cloud.moveToRecycleBin(noteToDelete, "note", currentUser);
+    } else {
+      cloud.deleteDocument("personal_notes", noteId);
+    }
   };
 
   return React.createElement(
