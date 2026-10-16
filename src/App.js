@@ -125,6 +125,66 @@ function App() {
 
   var [activeToast, setActiveToast] = React.useState(null);
 
+  var [appLectures, setAppLectures] = React.useState(function() {
+    return utils.getLocal(cfg.storageKeys.lectures, []);
+  });
+  var [isTopZoomDismissed, setIsTopZoomDismissed] = React.useState(false);
+
+  // المزامنة الحية لقائمة المحاضرات من السحابة لضمان دقة منبهات الزوم
+  React.useEffect(function() {
+    var unsubscribe = cloud.subscribeLectures(function(cloudList) {
+      if (cloudList && Array.isArray(cloudList)) {
+        setAppLectures(cloudList);
+        utils.setLocal(cfg.storageKeys.lectures, cloudList);
+      }
+    });
+    return function() {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
+
+  // حساب المحاضرة القادمة أو الجارية عبر زوم (اليوم أو غداً) لعرض شريط التنبيه العاجل
+  var upcomingZoomInfo = React.useMemo(function() {
+    if (!Array.isArray(appLectures) || appLectures.length === 0) return null;
+    var now = new Date();
+    var candidates = [];
+    appLectures.forEach(function(lec) {
+      if (!lec || !lec.zoomUrl || !lec.date) return;
+      var parsed = (utils && utils.parseLectureDateTime)
+        ? utils.parseLectureDateTime(lec.date, lec.zoomTimeStr || lec.startTime, lec.notes)
+        : null;
+      if (!parsed || !parsed.isValid || !parsed.targetDate) return;
+      var diffMs = parsed.targetDate.getTime() - now.getTime();
+      var diffMinutes = Math.round(diffMs / 60000);
+
+      // تشمل المحاضرة الجارية (حتى 3 ساعات بعد البداية) أو القادمة خلال 36 ساعة
+      if (diffMinutes >= -180 && diffMinutes <= 36 * 60) {
+        var cd = (utils && utils.getCountdownInfo)
+          ? utils.getCountdownInfo(lec.date, lec.zoomTimeStr || lec.startTime, lec.notes)
+          : null;
+        var isLive = cd && cd.status === "live";
+        var isToday = (diffMinutes >= -180 && diffMinutes <= 16 * 60);
+
+        candidates.push({
+          lecture: lec,
+          parsed: parsed,
+          diffMinutes: diffMinutes,
+          countdown: cd,
+          isToday: isToday,
+          isLive: isLive
+        });
+      }
+    });
+
+    if (candidates.length === 0) return null;
+    candidates.sort(function(a, b) {
+      if (a.isLive && !b.isLive) return -1;
+      if (!a.isLive && b.isLive) return 1;
+      return a.diffMinutes - b.diffMinutes;
+    });
+    return candidates[0];
+  }, [appLectures]);
+
   React.useEffect(function() {
     if (activeToast) {
       var t = setTimeout(function() { setActiveToast(null); }, 7000);
@@ -198,10 +258,23 @@ function App() {
           if (initialLoad) {
             lastNotifiedId = latest.id;
             initialLoad = false;
-            return;
+            // فحص إذا كان الإشعار الأخير جديداً (خلال آخر 3 ساعات) وهو تنبيه زوم ولم يره المستخدم
+            var notifTime = 0;
+            if (latest.createdAt && latest.createdAt.toMillis) notifTime = latest.createdAt.toMillis();
+            else if (latest.createdAt && latest.createdAt.seconds) notifTime = latest.createdAt.seconds * 1000;
+            else if (latest.createdAt) notifTime = new Date(latest.createdAt).getTime() || 0;
+
+            var isRecent = (Date.now() - notifTime) < (3 * 60 * 60 * 1000);
+            var isZoomAlert = (latest.type === "zoom_reminder" || latest.type === "zoom_link");
+            var readNotifs = utils.getLocal("counsel_read_notif_ids", []);
+            var isUnseen = curDismissed.indexOf(latest.id) === -1 && readNotifs.indexOf(latest.id) === -1;
+
+            if (!isRecent || !isZoomAlert || !isUnseen) {
+              return;
+            }
           }
 
-          if (latest.id === lastNotifiedId) {
+          if (latest.id === lastNotifiedId && !initialLoad) {
             return;
           }
           lastNotifiedId = latest.id;
@@ -308,11 +381,13 @@ function App() {
     };
   }, [currentUser]);
 
-  // فحص دوري مجدول كل دقيقة لتذكيرات الزوم (قبل المحاضرة بساعة وقبل الفتح / الصلاة)
+  // فحص دوري ذكي لتذكيرات الزوم (قبل المحاضرة بيوم، وقبلها بوقت قليل، وعند بدء البث)
   React.useEffect(function() {
     var checkZoomReminders = function() {
       try {
-        var lectures = utils.getLocal(cfg.storageKeys.lectures, []);
+        var lectures = (Array.isArray(appLectures) && appLectures.length > 0)
+          ? appLectures
+          : utils.getLocal(cfg.storageKeys.lectures, []);
         if (!Array.isArray(lectures) || lectures.length === 0) return;
 
         var now = new Date();
@@ -321,70 +396,109 @@ function App() {
         lectures.forEach(function(lec) {
           if (!lec || !lec.zoomUrl || !lec.date) return;
 
-          // استخراج وتحديد التوقيت الدقيق للمحاضرة
-          var targetDate = null;
-          var timeStr = lec.startTime || "";
-          if (!timeStr && lec.zoomTimeStr) {
-            // محاولة التقاط الوقت من نص زوم مثل "05:45 PM"
-            var tMatch = lec.zoomTimeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-            if (tMatch) {
-              var hours = parseInt(tMatch[1]);
-              var mins = parseInt(tMatch[2]);
-              var ampm = (tMatch[3] || "").toUpperCase();
-              if (ampm === "PM" && hours < 12) hours += 12;
-              if (ampm === "AM" && hours === 12) hours = 0;
-              timeStr = (hours < 10 ? "0" + hours : hours) + ":" + (mins < 10 ? "0" + mins : mins);
-            }
-          }
+          // استخراج وتحديد التوقيت الدقيق للمحاضرة عبر المحلل الذكي الشامل
+          var parsed = (utils && utils.parseLectureDateTime)
+            ? utils.parseLectureDateTime(lec.date, lec.zoomTimeStr || lec.startTime, lec.notes)
+            : null;
+          if (!parsed || !parsed.isValid || !parsed.targetDate) return;
 
-          // التوقيت الافتراضي المعتاد لبدء فتح الزوم (05:45 مساءً) إذا لم يُحدد وقت
-          if (!timeStr) {
-            timeStr = "17:45";
-          }
-
-          try {
-            var parts = lec.date.split("-");
-            var timeParts = timeStr.split(":");
-            if (parts.length === 3 && timeParts.length >= 2) {
-              targetDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(timeParts[0]), parseInt(timeParts[1]), 0);
-            }
-          } catch(eDate) {}
-
-          if (!targetDate || isNaN(targetDate.getTime())) return;
-
+          var targetDate = parsed.targetDate;
           var diffMs = targetDate.getTime() - now.getTime();
           var diffMinutes = Math.round(diffMs / 60000);
+          var formattedTime = parsed.formattedTime || parsed.timeStr;
 
+          var reminder1DayKey = lec.id + "_1day";
           var reminder1HourKey = lec.id + "_1h";
           var reminderOpenKey = lec.id + "_opening";
 
-          // 1. تذكير قبل المحاضرة بساعة (بين 50 إلى 65 دقيقة)
-          if (diffMinutes >= 50 && diffMinutes <= 65 && !sentReminders[reminder1HourKey]) {
+          // 1. تذكير قبل المحاضرة بيوم كامل (بين 14 ساعة و 32 ساعة قبل الموعد)
+          if (diffMinutes >= (14 * 60) && diffMinutes <= (32 * 60) && !sentReminders[reminder1DayKey]) {
+            sentReminders[reminder1DayKey] = Date.now();
+            utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
+            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
+              window.NotificationService.broadcastZoomReminder(lec, "1day", formattedTime);
+            }
+            if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
+              window.NotificationService.showSystemNotification("📅 تذكير: غداً موعد محاضرة " + (lec.title || ""), {
+                body: "الموعد: غداً (" + (lec.date || "") + ") الساعة " + (formattedTime || "") + " عبر زووم • استعد وجهّز نفسك!",
+                tag: reminder1DayKey,
+                data: { url: lec.zoomUrl, zoomUrl: lec.zoomUrl, linkTab: "lectures", lectureId: lec.id }
+              });
+            }
+            setActiveToast({
+              id: "toast_" + reminder1DayKey,
+              title: "📅 تذكير: غداً موعد محاضرة " + (lec.title || ""),
+              body: "غداً بإذن ربنا الساعة " + (formattedTime || "") + " عبر زووم • جهّز مكانك واستعد!",
+              linkTab: "lectures",
+              zoomUrl: lec.zoomUrl
+            });
+          }
+
+          // 2. تذكير قبل المحاضرة بوقت قليل (بين 15 دقيقة إلى 90 دقيقة قبل الموعد)
+          if (diffMinutes > 15 && diffMinutes <= 90 && !sentReminders[reminder1HourKey]) {
             sentReminders[reminder1HourKey] = Date.now();
             utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
             if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
-              window.NotificationService.broadcastZoomReminder(lec, "1hour");
+              window.NotificationService.broadcastZoomReminder(lec, "1hour", formattedTime);
             }
+            if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
+              window.NotificationService.showSystemNotification("⏰ تذكير: محاضرة " + (lec.title || "") + " تبدأ بعد قليل", {
+                body: "الموعد: " + (formattedTime || "") + " عبر زووم • القاعة جاهزة، اضغط هنا للدخول المباشر!",
+                tag: reminder1HourKey,
+                data: { url: lec.zoomUrl, zoomUrl: lec.zoomUrl, linkTab: "lectures", lectureId: lec.id }
+              });
+            }
+            setActiveToast({
+              id: "toast_" + reminder1HourKey,
+              title: "⏰ تذكير: محاضرة " + (lec.title || "") + " تبدأ بعد قليل",
+              body: "الموعد: " + (formattedTime || "") + " عبر زووم • جهّز مكان هادئ واستعد للدخول!",
+              linkTab: "lectures",
+              zoomUrl: lec.zoomUrl
+            });
           }
 
-          // 2. تذكير فتح القاعة وبدء الصلاة (بين 0 إلى 15 دقيقة قبل الموعد، أو عند حلول الموعد)
-          if (diffMinutes >= -5 && diffMinutes <= 15 && !sentReminders[reminderOpenKey]) {
+          // 3. تذكير فتح القاعة وبدء المحاضرة (من قبل الموعد بـ 15 دقيقة وحتى 90 دقيقة بعد البدء)
+          if (diffMinutes >= -90 && diffMinutes <= 15 && !sentReminders[reminderOpenKey]) {
             sentReminders[reminderOpenKey] = Date.now();
             utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
             if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
-              window.NotificationService.broadcastZoomReminder(lec, "opening");
+              window.NotificationService.broadcastZoomReminder(lec, "opening", formattedTime);
             }
+            if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
+              window.NotificationService.showSystemNotification("🚀 قاعة زووم مفتوحة الآن: " + (lec.title || ""), {
+                body: "بدأت المحاضرة الآن! اضغط للدخول المباشر فوراً عبر زووم.",
+                tag: reminderOpenKey,
+                data: { url: lec.zoomUrl, zoomUrl: lec.zoomUrl, linkTab: "lectures", lectureId: lec.id }
+              });
+            }
+            setActiveToast({
+              id: "toast_" + reminderOpenKey,
+              title: "🚀 قاعة زووم مفتوحة الآن: " + (lec.title || ""),
+              body: "بدأت المحاضرة الآن! اضغط هنا للدخول المباشر إلى زووم.",
+              linkTab: "lectures",
+              zoomUrl: lec.zoomUrl
+            });
           }
         });
       } catch (eLoop) {}
     };
 
-    var zoomTimer = setInterval(checkZoomReminders, 60000);
+    var zoomTimer = setInterval(checkZoomReminders, 30000);
     // تشغيل فحص فوري عند التحميل
     checkZoomReminders();
 
-    return function() { clearInterval(zoomTimer); };
-  }, []);
+    // تشغيل فحص فوري عند عودة المستخدم للتطبيق أو فتح الشاشة
+    var onWakeup = function() { checkZoomReminders(); };
+    window.addEventListener("focus", onWakeup);
+    document.addEventListener("visibilitychange", function() {
+      if (!document.hidden) checkZoomReminders();
+    });
+
+    return function() {
+      clearInterval(zoomTimer);
+      window.removeEventListener("focus", onWakeup);
+    };
+  }, [appLectures]);
 
 
   var handleToggleNotification = async function() {
@@ -644,6 +758,113 @@ function App() {
             lastAudioRecord: lastAudioRecord,
             onResumeAudio: handleGlobalResumeAudio
           });
+        })(),
+
+        // شريط تنبيه بث زوم المباشر أو التذكير بمحاضرة اليوم / غداً
+        (function() {
+          if (!upcomingZoomInfo || isTopZoomDismissed) return null;
+          var uz = upcomingZoomInfo;
+          var lec = uz.lecture;
+          var isLive = uz.isLive;
+          var isToday = uz.isToday;
+
+          if (isToday || isLive) {
+            return React.createElement(
+              "div",
+              {
+                className: "bg-gradient-to-r from-red-600 via-rose-600 to-indigo-800 text-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-bold flex items-center justify-between shadow-lg border-b border-rose-700/80 animate-in fade-in duration-300"
+              },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 min-w-0 flex-1" },
+                React.createElement("span", { className: "text-base sm:text-lg shrink-0 " + (isLive ? "animate-pulse" : "") }, isLive ? "🔴" : "⏰"),
+                React.createElement(
+                  "div",
+                  { className: "truncate" },
+                  React.createElement("span", { className: "font-black" }, isLive ? "بث زوم مباشر الآن: " : "محاضرة زووم اليوم: "),
+                  React.createElement("span", { className: "underline ml-1 font-bold" }, lec.title),
+                  React.createElement("span", { className: "text-xs opacity-90 mr-1.5" }, "• " + (uz.parsed.formattedTime || "") + (uz.countdown ? " (" + uz.countdown.label + ")" : ""))
+                )
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-1.5 shrink-0 mr-2" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { if (utils.addToCalendarPrompt) utils.addToCalendarPrompt(lec); },
+                    title: "إضافة لمنبه تقويم الهاتف",
+                    className: "bg-white/20 hover:bg-white/30 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-white/30 hidden md:inline-flex items-center gap-1"
+                  },
+                  "📅 منبه التقويم"
+                ),
+                React.createElement(
+                  "a",
+                  {
+                    href: lec.zoomUrl,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    className: "bg-white text-rose-700 hover:text-rose-800 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-1 hover:scale-102"
+                  },
+                  "دخول زوم الآن 🚀"
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { setIsTopZoomDismissed(true); },
+                    className: "text-white/70 hover:text-white px-1.5 py-1 text-sm font-bold",
+                    title: "إخفاء الشريط"
+                  },
+                  "✕"
+                )
+              )
+            );
+          } else {
+            // غداً
+            return React.createElement(
+              "div",
+              {
+                className: "bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white px-3 sm:px-6 py-2 text-xs sm:text-sm font-bold flex items-center justify-between shadow-md border-b border-indigo-700/80"
+              },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 min-w-0 flex-1" },
+                React.createElement("span", { className: "text-base shrink-0" }, "📅"),
+                React.createElement(
+                  "div",
+                  { className: "truncate" },
+                  React.createElement("span", { className: "font-black" }, "تذكير: غداً موعد محاضرة زووم «" + lec.title + "»"),
+                  React.createElement("span", { className: "text-xs opacity-90 mr-2" }, "الساعة " + (uz.parsed.formattedTime || ""))
+                )
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-1.5 shrink-0 mr-2" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { if (utils.addToCalendarPrompt) utils.addToCalendarPrompt(lec); },
+                    title: "ضبط منبه تقويم الموبايل قبلها بيوم وقبلها بربع ساعة",
+                    className: "bg-white text-indigo-900 hover:bg-indigo-50 px-3 py-1.5 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 flex items-center gap-1"
+                  },
+                  "📅 ضبط منبه التقويم ⏰"
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { setIsTopZoomDismissed(true); },
+                    className: "text-white/70 hover:text-white px-1.5 py-1 text-sm font-bold",
+                    title: "إخفاء الشريط"
+                  },
+                  "✕"
+                )
+              )
+            );
+          }
         })()
       ),
 
@@ -652,9 +873,14 @@ function App() {
         {
           className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (function() {
             var hasTopResume = !!lastAudioRecord;
-            if (hasUpdateAvailable && hasTopResume) return "pt-36 sm:pt-40";
-            if (hasUpdateAvailable) return "pt-28 sm:pt-32";
-            if (hasTopResume) return "pt-28 sm:pt-30";
+            var hasTopZoom = !!(upcomingZoomInfo && !isTopZoomDismissed);
+            var count = 0;
+            if (hasUpdateAvailable) count++;
+            if (hasTopZoom) count++;
+            if (hasTopResume) count++;
+            if (count >= 3) return "pt-44 sm:pt-48";
+            if (count === 2) return "pt-36 sm:pt-40";
+            if (count === 1) return "pt-28 sm:pt-32";
             return "pt-20 sm:pt-22";
           })()
         },

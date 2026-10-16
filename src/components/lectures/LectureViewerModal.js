@@ -364,15 +364,34 @@ window.LectureViewerModal = function(props) {
             )
           ),
           React.createElement(
-            "a",
-            {
-              href: activeLecture.zoomUrl,
-              target: "_blank",
-              rel: "noopener noreferrer",
-              className: "w-full md:w-auto px-6 py-3 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md hover:scale-102 transition-all active:scale-95 shrink-0"
-            },
-            React.createElement("span", { className: "text-base" }, "🚀"),
-            React.createElement("span", null, isLive ? "دخول زوم الآن" : "دخول زوم المباشر")
+            "div",
+            { className: "flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto shrink-0" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  if (utils && utils.addToCalendarPrompt) {
+                    utils.addToCalendarPrompt(activeLecture);
+                  }
+                },
+                title: "إضافة للتقويم وتفعيل منبه الموبايل قبل المحاضرة بيوم وقبلها بربع ساعة",
+                className: "w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-white/20 transition-all active:scale-95"
+              },
+              React.createElement("span", null, "📅"),
+              React.createElement("span", null, "منبه التقويم")
+            ),
+            React.createElement(
+              "a",
+              {
+                href: activeLecture.zoomUrl,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md hover:scale-102 transition-all active:scale-95 shrink-0"
+              },
+              React.createElement("span", { className: "text-base" }, "🚀"),
+              React.createElement("span", null, isLive ? "دخول زوم الآن" : "دخول زوم المباشر")
+            )
           )
         );
       })(),

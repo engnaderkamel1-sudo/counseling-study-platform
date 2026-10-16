@@ -721,8 +721,7 @@ window.APP_UTILS = {
 
     // 5. استخراج التوقيت المكتوب إن وُجد
     var timeStr = "";
-    var timeMatch = text.match(/Time[:\s]*([^\r\n]+)/i) ||
-                    text.match(/الموعد[:\s]*([^\r\n]+)/i);
+    var timeMatch = text.match(/(?:Time|الموعد|التوقيت|الساعة|الوقت|تاريخ|موعد)[:\s]*([^\r\n]+)/i);
     if (timeMatch && timeMatch[1]) {
       timeStr = timeMatch[1].trim();
     }
@@ -736,89 +735,255 @@ window.APP_UTILS = {
     };
   },
 
-  // حساب العد التنازلي التفاعلي المتبقي للمحاضرة أو لقاء الزوم
-  getCountdownInfo: function(dateStr, timeStr) {
-    if (!dateStr) return null;
-    var now = new Date();
+  // تحويل الأرقام العربية والمشرقية (٠-٩) إلى أرقام قياسية (0-9)
+  normalizeArabicDigits: function(str) {
+    if (!str) return "";
+    return String(str).replace(/[٠-٩]/g, function(d) {
+      return "٠١٢٣٤٥٦٧٨٩".indexOf(d);
+    });
+  },
 
-    // استخراج الساعة فقط من نص الوقت (مثلاً "05:45 PM" أو "17:45")
-    var cleanHours = 17;
-    var cleanMins = 45; // افتراضي 05:45 PM
-    if (timeStr) {
-      var tMatch = String(timeStr).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-      if (tMatch) {
-        var h = parseInt(tMatch[1]);
-        var m = parseInt(tMatch[2]);
-        var ampm = (tMatch[3] || "").toUpperCase();
-        if (ampm === "PM" && h < 12) h += 12;
-        if (ampm === "AM" && h === 12) h = 0;
-        cleanHours = h;
-        cleanMins = m;
+  // استخراج وتحديد التوقيت الدقيق للمحاضرة وتاريخها بدقة تدعم العربية والتوقيت المسائي
+  parseLectureDateTime: function(dateStr, timeStr, notesStr) {
+    if (!dateStr) return null;
+    var normDate = this.normalizeArabicDigits(String(dateStr).trim());
+    var p = normDate.split(/[-/]/);
+    var year = 0, month = 0, day = 0;
+    if (p.length === 3) {
+      if (p[0].length === 4) {
+        year = parseInt(p[0], 10);
+        month = parseInt(p[1], 10) - 1;
+        day = parseInt(p[2], 10);
+      } else if (p[2].length === 4) {
+        day = parseInt(p[0], 10);
+        month = parseInt(p[1], 10) - 1;
+        year = parseInt(p[2], 10);
+      }
+    }
+    if (!year || isNaN(year)) return null;
+
+    var textToScan = this.normalizeArabicDigits((timeStr || "") + " " + (notesStr || ""));
+    // التوقيت الافتراضي لمحاضرات المعهد (السادسة مساءً 18:00)
+    var hours = 18;
+    var mins = 0;
+    var isPm = false;
+    var isAm = false;
+
+    if (/مساء|مساءً|م\b|م\.|pm/i.test(textToScan)) isPm = true;
+    if (/صباح|صباحا|صباحاً|ص\b|ص\.|am/i.test(textToScan)) isAm = true;
+
+    // محاولة التقاط الوقت بصيغة رقمية
+    var tMatch = textToScan.match(/(?:من|الساعة|توقيت|موعد)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|ص|م|صباحا|صباحاً|مساء|مساءً)?/i);
+    if (tMatch && tMatch[1]) {
+      var rawH = parseInt(tMatch[1], 10);
+      var rawM = tMatch[2] ? parseInt(tMatch[2], 10) : 0;
+      var suffix = (tMatch[3] || "").toLowerCase();
+      if (/مساء|مساءً|م|pm/.test(suffix)) isPm = true;
+      if (/صباح|صباحا|صباحاً|ص|am/.test(suffix)) isAm = true;
+
+      if (rawH >= 0 && rawH <= 23) {
+        hours = rawH;
+        mins = rawM;
+        if (hours < 12 && isPm) hours += 12;
+        else if (hours === 12 && isAm) hours = 0;
+        else if (hours < 12 && !isAm && hours >= 4 && hours <= 11) hours += 12; // محاضرات معهد المشورة تعقد دائماً مساءً
       }
     }
 
-    try {
-      // نعتمد تاريخ اليوم الدراسي المحدد للمحاضرة (YYYY-MM-DD)
-      var p = String(dateStr).trim().split("-");
-      if (p.length === 3) {
-        var targetYear = parseInt(p[0]);
-        var targetMonth = parseInt(p[1]) - 1;
-        var targetDay = parseInt(p[2]);
-        var targetDate = new Date(targetYear, targetMonth, targetDay, cleanHours, cleanMins, 0);
+    var targetDate = new Date(year, month, day, hours, mins, 0);
+    var timeStr24 = (hours < 10 ? "0" + hours : hours) + ":" + (mins < 10 ? "0" + mins : mins);
+    var displayH = hours % 12 || 12;
+    var displayAmPm = hours >= 12 ? "مساءً" : "صباحاً";
+    var formattedTime = (displayH < 10 ? "0" + displayH : displayH) + ":" + (mins < 10 ? "0" + mins : mins) + " " + displayAmPm;
 
-        var diffMs = targetDate.getTime() - now.getTime();
+    return {
+      targetDate: targetDate,
+      year: year,
+      month: month,
+      day: day,
+      hours: hours,
+      mins: mins,
+      timeStr: timeStr24,
+      formattedTime: formattedTime,
+      isValid: !isNaN(targetDate.getTime())
+    };
+  },
 
-        // اللقاء جاري الآن (من قبل الموعد بـ 15 دقيقة حتى بعد الموعد بـ 150 دقيقة)
-        if (diffMs <= (15 * 60 * 1000) && diffMs >= (-150 * 60 * 1000)) {
-          return {
-            status: "live",
-            label: "🔴 جارية الآن عبر زوم",
-            shortBadge: "🔴 جارية الآن",
-            diffMs: diffMs
-          };
-        }
+  // حساب العد التنازلي التفاعلي المتبقي للمحاضرة أو لقاء الزوم
+  getCountdownInfo: function(dateStr, timeStr, notesStr) {
+    if (!dateStr) return null;
+    var now = new Date();
+    var parsed = this.parseLectureDateTime(dateStr, timeStr, notesStr);
+    if (!parsed || !parsed.isValid) return null;
 
-        // اللقاء انتهى
-        if (diffMs < (-150 * 60 * 1000)) {
-          return {
-            status: "past",
-            label: "انتهت المحاضرة",
-            shortBadge: "انتهت",
-            diffMs: diffMs
-          };
-        }
+    var targetDate = parsed.targetDate;
+    var diffMs = targetDate.getTime() - now.getTime();
 
-        // اللقاء قادم: حساب الأيام والساعات والدقائق
-        var totalSecs = Math.floor(diffMs / 1000);
-        var days = Math.floor(totalSecs / 86400);
-        var hours = Math.floor((totalSecs % 86400) / 3600);
-        var mins = Math.floor((totalSecs % 3600) / 60);
+    // اللقاء جاري الآن (من قبل الموعد بـ 15 دقيقة حتى بعد الموعد بـ 180 دقيقة)
+    if (diffMs <= (15 * 60 * 1000) && diffMs >= (-180 * 60 * 1000)) {
+      return {
+        status: "live",
+        label: "🔴 جارية الآن عبر زوم",
+        shortBadge: "🔴 جارية الآن",
+        diffMs: diffMs,
+        formattedTime: parsed.formattedTime
+      };
+    }
 
-        var fullLabel = "متبقي ";
-        var shortBadge = "⏳ بعد ";
+    // اللقاء انتهى
+    if (diffMs < (-180 * 60 * 1000)) {
+      return {
+        status: "past",
+        label: "انتهت المحاضرة",
+        shortBadge: "انتهت",
+        diffMs: diffMs,
+        formattedTime: parsed.formattedTime
+      };
+    }
 
-        if (days > 0) {
-          fullLabel += days + (days === 1 ? " يوم و " : " أيام و ") + hours + " ساعة";
-          shortBadge += days + (days === 1 ? " يوم" : " أيام");
-        } else if (hours > 0) {
-          fullLabel += hours + " ساعة و " + mins + " دقيقة";
-          shortBadge += hours + " س و " + mins + " د";
-        } else {
-          fullLabel += mins + " دقيقة";
-          shortBadge += mins + " دقيقة";
-        }
+    // اللقاء قادم: حساب الأيام والساعات والدقائق
+    var totalSecs = Math.floor(diffMs / 1000);
+    var days = Math.floor(totalSecs / 86400);
+    var hours = Math.floor((totalSecs % 86400) / 3600);
+    var mins = Math.floor((totalSecs % 3600) / 60);
 
-        return {
-          status: "upcoming",
-          label: fullLabel,
-          shortBadge: shortBadge,
-          days: days,
-          hours: hours,
-          mins: mins,
-          diffMs: diffMs
-        };
-      }
-    } catch(err) {}
-    return null;
+    var fullLabel = "متبقي ";
+    var shortBadge = "⏳ بعد ";
+
+    if (days > 0) {
+      fullLabel += days + (days === 1 ? " يوم و " : " أيام و ") + hours + " ساعة";
+      shortBadge += days + (days === 1 ? " يوم" : " أيام");
+    } else if (hours > 0) {
+      fullLabel += hours + " ساعة و " + mins + " دقيقة";
+      shortBadge += hours + " س و " + mins + " د";
+    } else {
+      fullLabel += mins + " دقيقة";
+      shortBadge += mins + " دقيقة";
+    }
+
+    return {
+      status: "upcoming",
+      label: fullLabel,
+      shortBadge: shortBadge,
+      days: days,
+      hours: hours,
+      mins: mins,
+      diffMs: diffMs,
+      formattedTime: parsed.formattedTime
+    };
+  },
+
+  // إنشاء رابط تقويم Google Calendar مع تنبيهات تلقائية
+  getGoogleCalendarUrl: function(lecture) {
+    if (!lecture) return "";
+    var parsed = this.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+    if (!parsed || !parsed.isValid) return "";
+
+    var start = parsed.targetDate;
+    var end = new Date(start.getTime() + (2.5 * 60 * 60 * 1000)); // مدة المحاضرة ساعتان ونصف
+
+    function toIsoUtc(d) {
+      return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    }
+
+    var title = encodeURIComponent("محاضرة: " + (lecture.title || "معهد المشورة") + (lecture.speaker ? " - " + lecture.speaker : ""));
+    var details = encodeURIComponent(
+      "محاضرة معهد المشورة عبر تطبيق زوم.\n" +
+      (lecture.zoomUrl ? "رابط زوم المباشر: " + lecture.zoomUrl + "\n" : "") +
+      (lecture.meetingId ? "Meeting ID: " + lecture.meetingId + "\n" : "") +
+      (lecture.passcode ? "Passcode: " + lecture.passcode + "\n" : "") +
+      (lecture.notes ? "\nملاحظات: " + lecture.notes + "\n" : "") +
+      "\nتمت الإضافة عبر تطبيق الرفيق الذكي لدارسي معهد المشورة"
+    );
+    var location = encodeURIComponent(lecture.zoomUrl || "Zoom Meeting");
+    var dates = toIsoUtc(start) + "/" + toIsoUtc(end);
+
+    return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + title + "&dates=" + dates + "&details=" + details + "&location=" + location;
+  },
+
+  // تنزيل ملف التقويم iCalendar (.ics) لضبط منبهات الموبايل القياسية (تنبيه قبلها بيوم وقبلها بـ 15 دقيقة)
+  downloadCalendarIcs: function(lecture) {
+    if (!lecture) return;
+    var parsed = this.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+    if (!parsed || !parsed.isValid) {
+      alert("تعذر تحديد موعد المحاضرة بدقة لإضافتها للتقويم.");
+      return;
+    }
+
+    var start = parsed.targetDate;
+    var end = new Date(start.getTime() + (2.5 * 60 * 60 * 1000));
+
+    function toIsoUtc(d) {
+      return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    }
+
+    var startUtc = toIsoUtc(start);
+    var endUtc = toIsoUtc(end);
+    var stampUtc = toIsoUtc(new Date());
+
+    var summary = (lecture.title || "محاضرة المشورة") + (lecture.speaker ? " - " + lecture.speaker : "");
+    var desc = "محاضرة معهد المشورة عبر زووم\\n" +
+      (lecture.zoomUrl ? "الرابط: " + lecture.zoomUrl + "\\n" : "") +
+      (lecture.meetingId ? "Meeting ID: " + lecture.meetingId + "\\n" : "") +
+      (lecture.passcode ? "Passcode: " + lecture.passcode + "\\n" : "");
+
+    var icsLines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Counseling Platform//AR",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      "UID:counsel-" + (lecture.id || Date.now()) + "@counseling-platform.org",
+      "DTSTAMP:" + stampUtc,
+      "DTSTART:" + startUtc,
+      "DTEND:" + endUtc,
+      "SUMMARY:" + summary,
+      "DESCRIPTION:" + desc,
+      "LOCATION:" + (lecture.zoomUrl || "Zoom Meeting"),
+      // منبه الموبايل الأول: قبل المحاضرة بيوم كامل (24 ساعة)
+      "BEGIN:VALARM",
+      "ACTION:DISPLAY",
+      "DESCRIPTION:تذكير: غداً موعد محاضرة " + summary + " عبر زووم",
+      "TRIGGER:-P1D",
+      "END:VALARM",
+      // منبه الموبايل الثاني: قبل المحاضرة بـ 15 دقيقة للدخول السريع
+      "BEGIN:VALARM",
+      "ACTION:DISPLAY",
+      "DESCRIPTION:تذكير عاجل: تبدأ قاعة زوم الآن لمحاضرة " + summary,
+      "TRIGGER:-PT15M",
+      "END:VALARM",
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ];
+
+    var icsContent = icsLines.join("\r\n");
+    var blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "zoom_lecture_" + (lecture.date || "session") + ".ics";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 2000);
+  },
+
+  // إظهار خيارات إضافة المحاضرة للتقويم (Google Calendar أو تقويم الموبايل الافتراضي)
+  addToCalendarPrompt: function(lecture) {
+    if (!lecture) return;
+    var gUrl = this.getGoogleCalendarUrl(lecture);
+    var choice = window.confirm(
+      "📅 هل ترغب في فتح تقويم Google Calendar لضبط المنبه؟\n\n" +
+      "• اضغط (موافق / OK) لفتح Google Calendar مباشرة على هاتفك أو حاسوبك.\n" +
+      "• اضغط (إلغاء / Cancel) لتنزيل ملف التقويم (.ics) ليفتح مباشرة في تطبيق التقويم الافتراضي في الموبايل (Apple Calendar / Samsung) مع منبه قبلها بيوم وقبلها بـ 15 دقيقة."
+    );
+    if (choice && gUrl) {
+      window.open(gUrl, "_blank");
+    } else {
+      this.downloadCalendarIcs(lecture);
+    }
   }
 };

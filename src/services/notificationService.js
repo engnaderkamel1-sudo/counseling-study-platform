@@ -318,18 +318,23 @@ window.NotificationService = {
     }
   },
 
-  // إرسال تذكير زوم مخصص (تذكير الساعة أو تذكير بدء الصلاة والدخول)
-  broadcastZoomReminder: async function(lecture, reminderType) {
+  // إرسال تذكير زوم مخصص (تذكير قبلها بيوم، تذكير قبلها بوقت قليل، أو تذكير بدء المحاضرة والدخول)
+  broadcastZoomReminder: async function(lecture, reminderType, customTimeStr) {
     if (!window.db || !lecture) return;
     try {
+      var timeLabel = customTimeStr || lecture.zoomTimeStr || (lecture.date + (lecture.startTime ? " - " + lecture.startTime : ""));
       var title = "";
       var body = "";
-      if (reminderType === "1hour") {
-        title = "⏰ تذكير: محاضرة " + (lecture.title || "") + " بعد ساعة";
-        body = "الموعد: " + (lecture.zoomTimeStr || (lecture.date + " " + (lecture.startTime || ""))) + " • جهّز مكان هادئ واستعد للدخول!";
+
+      if (reminderType === "1day") {
+        title = "📅 تذكير: غداً موعد محاضرة " + (lecture.title || "المشورة");
+        body = "غداً بإذن ربنا موعدنا مع محاضرة «" + (lecture.title || "") + "»" + (timeLabel ? " الساعة " + timeLabel : "") + " عبر زووم • جهّز نفسك واستعد!";
+      } else if (reminderType === "1hour") {
+        title = "⏰ تذكير: محاضرة " + (lecture.title || "") + " تبدأ بعد قليل";
+        body = "الموعد: " + (timeLabel || "") + " عبر زووم • القاعة جاهزة، اضغط هنا للدخول المباشر!";
       } else if (reminderType === "opening") {
-        title = "🚀 قاعة زوم مفتوحة الآن: " + (lecture.title || "");
-        body = "بدء الصلاة والاستعداد للمحاضرة • يلا بينا! اضغط للدخول المباشر";
+        title = "🚀 قاعة زووم مفتوحة الآن: " + (lecture.title || "");
+        body = "بدأت المحاضرة الآن! اضغط للدخول المباشر فوراً عبر زووم.";
       } else {
         title = "🔔 تذكير بمحاضرة: " + (lecture.title || "");
         body = "المحاضرة ستبدأ قريباً عبر تطبيق زوم.";
@@ -352,6 +357,38 @@ window.NotificationService = {
     } catch (e) {
       console.warn("Could not broadcast zoom reminder:", e);
     }
+  },
+
+  // إظهار إشعار نظام حقيقي على الجهاز محلياً مع الرنين والاهتزاز
+  showSystemNotification: function(title, options) {
+    try {
+      if (window.NotificationService && typeof window.NotificationService.playNotificationChime === "function") {
+        window.NotificationService.playNotificationChime();
+      }
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      var defaultOpts = {
+        icon: "icon-192.png",
+        badge: "icon-192.png",
+        vibrate: [250, 100, 250],
+        renotify: true,
+        tag: (options && options.tag) ? options.tag : ("counsel_" + Date.now())
+      };
+      var mergedOpts = Object.assign({}, defaultOpts, options);
+
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function(reg) {
+          if (reg && reg.showNotification) {
+            reg.showNotification(title, mergedOpts);
+          } else {
+            new Notification(title, mergedOpts);
+          }
+        }).catch(function() {
+          new Notification(title, mergedOpts);
+        });
+      } else {
+        new Notification(title, mergedOpts);
+      }
+    } catch(e) {}
   },
 
   // الاستماع للإشعارات الجديدة وعرضها للمستخدمين

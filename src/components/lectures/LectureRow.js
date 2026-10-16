@@ -84,17 +84,34 @@ window.LectureRow = function(props) {
         "div",
         { className: "flex items-center gap-1.5 text-[11px]" },
         lec.zoomUrl && React.createElement(
-          "a",
-          {
-            href: lec.zoomUrl,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            onClick: function(e) { e.stopPropagation(); },
-            title: "انضم إلى زوم مباشرة: " + (lec.meetingId ? "ID: " + lec.meetingId : ""),
-            className: "px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1 shadow-xs hover:shadow-sm active:scale-95 transition-all animate-pulse"
-          },
-          React.createElement("span", null, "🎥"),
-          React.createElement("span", { className: "hidden xs:inline" }, "دخول زوم")
+          "div",
+          { className: "flex items-center gap-1" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function(e) {
+                e.stopPropagation();
+                if (utils && utils.addToCalendarPrompt) utils.addToCalendarPrompt(lec);
+              },
+              title: "إضافة لمنبه تقويم الهاتف (تنبيه قبلها بيوم وقبلها بربع ساعة)",
+              className: "px-2 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800 transition-all active:scale-95 text-[11px] shadow-2xs"
+            },
+            "📅"
+          ),
+          React.createElement(
+            "a",
+            {
+              href: lec.zoomUrl,
+              target: "_blank",
+              rel: "noopener noreferrer",
+              onClick: function(e) { e.stopPropagation(); },
+              title: "انضم إلى زوم مباشرة: " + (lec.meetingId ? "ID: " + lec.meetingId : ""),
+              className: "px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1 shadow-xs hover:shadow-sm active:scale-95 transition-all animate-pulse"
+            },
+            React.createElement("span", null, "🎥"),
+            React.createElement("span", { className: "hidden xs:inline" }, "دخول زوم")
+          )
         ),
         lec.mediaUrl && React.createElement("span", { title: "فيديو متاح", className: "px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800/50" }, "فيديو"),
         ((Array.isArray(lec.handouts) && lec.handouts.length > 0) || lec.handoutUrl) && (function() {
