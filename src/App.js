@@ -2,6 +2,7 @@
 function App() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
+  var cloud = window.CloudSyncService;
 
   var [showSplash, setShowSplash] = React.useState(true);
 
@@ -132,15 +133,18 @@ function App() {
 
   // المزامنة الحية لقائمة المحاضرات من السحابة لضمان دقة منبهات الزوم
   React.useEffect(function() {
-    var unsubscribe = cloud.subscribeLectures(function(cloudList) {
-      if (cloudList && Array.isArray(cloudList)) {
-        setAppLectures(cloudList);
-        utils.setLocal(cfg.storageKeys.lectures, cloudList);
-      }
-    });
-    return function() {
-      if (typeof unsubscribe === "function") unsubscribe();
-    };
+    var cloudService = cloud || window.CloudSyncService;
+    if (cloudService && typeof cloudService.subscribeLectures === "function") {
+      var unsubscribe = cloudService.subscribeLectures(function(cloudList) {
+        if (cloudList && Array.isArray(cloudList)) {
+          setAppLectures(cloudList);
+          utils.setLocal(cfg.storageKeys.lectures, cloudList);
+        }
+      });
+      return function() {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    }
   }, []);
 
   // حساب المحاضرة القادمة أو الجارية عبر زوم (اليوم أو غداً) لعرض شريط التنبيه العاجل
