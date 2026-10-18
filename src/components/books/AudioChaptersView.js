@@ -4,7 +4,7 @@ window.AudioChaptersView = function(props) {
   var currentUser = props.currentUser;
   var playingChapterId = props.playingChapterId;
   var setPlayingChapterId = props.setPlayingChapterId;
-  var chapterAudioRef = props.chapterAudioRef;
+  var chapterAudioRef = props.chapterAudioRef || { current: (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement ? window.APP_UTILS.getPersistentAudioElement() : null) };
   var handlePageChange = props.handlePageChange;
   var handleAutoScanActiveBookChapters = props.handleAutoScanActiveBookChapters;
   var handleOpenAddChapter = props.handleOpenAddChapter;
@@ -567,24 +567,31 @@ window.AudioChaptersView = function(props) {
     if (!playingChapterId) return;
     setUseIframePlayer(false);
     setAudioHasError(false);
-    var timer = setTimeout(function() {
-      var audio = chapterAudioRef.current;
-      if (audio) {
-        var p = audio.play();
-        if (p && typeof p.catch === "function") {
-          p.catch(function(err) {
-            console.warn("Audio autoplay postponed:", err);
-          });
+    var audio = chapterAudioRef.current || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
+    if (audio) {
+      chapterAudioRef.current = audio;
+      var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
+      if (activeChap && activeChap.audioUrl) {
+        var targetSrc = utils.getAudioStreamUrl(activeChap.audioUrl);
+        var isSame = audio.src && (audio.src === targetSrc || audio.src.endsWith(targetSrc));
+        if (!isSame) {
+          audio.src = targetSrc;
+          restoreSavedPosition(audio, playingChapterId);
+          var p = audio.play();
+          if (p && typeof p.catch === "function") p.catch(function() {});
+        } else if (audio.paused) {
+          var p2 = audio.play();
+          if (p2 && typeof p2.catch === "function") p2.catch(function() {});
         }
       }
-    }, 60);
-    return function() { clearTimeout(timer); };
+    }
   }, [playingChapterId]);
 
   // مراقبة وتشغيل الصوت والانتقال التلقائي بين الفصول عند انتهاء التراك وحفظ موضع الاستماع
   React.useEffect(function() {
-    var audio = chapterAudioRef.current;
+    var audio = chapterAudioRef.current || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!audio) return;
+    chapterAudioRef.current = audio;
 
     var saveLastAudioRecord = function(currentSec) {
       if (!activeBook || !activeBook.id || !playingChapterId) return;
@@ -599,6 +606,7 @@ window.AudioChaptersView = function(props) {
         bookCoverUrl: activeBook.coverUrl || "",
         chapterId: playingChapterId,
         chapterTitle: curChap.title || "فصل صوتي",
+        chapterAudioUrl: curChap.audioUrl || "",
         position: pos,
         duration: dur,
         updatedAt: Date.now()
@@ -1570,9 +1578,9 @@ window.AudioChaptersView = function(props) {
           )
         ),
 
-        // عنصر الصوت الخفي
+        // عنصر الصوت الخفي (بدون مفتاح متغير للحفاظ على استمرارية ترخيص المتصفح للصوت)
         React.createElement("audio", {
-          key: activeChap.id,
+          id: "counsel-chapter-audio-element",
           ref: chapterAudioRef,
           src: utils.getAudioStreamUrl(activeChap.audioUrl),
           controls: false,
@@ -1585,20 +1593,23 @@ window.AudioChaptersView = function(props) {
           },
           onCanPlay: function(e) {
             setAudioHasError(false);
-            restoreSavedPosition(e.target, activeChap.id);
             if (window.__PENDING_AUTO_RESUME_AUDIO && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === activeChap.id) {
-              if (window.__PENDING_AUTO_RESUME_AUDIO.position > 0) {
+              if (window.__PENDING_AUTO_RESUME_AUDIO.position > 0 && Math.abs(e.target.currentTime - window.__PENDING_AUTO_RESUME_AUDIO.position) > 1) {
                 try { e.target.currentTime = window.__PENDING_AUTO_RESUME_AUDIO.position; } catch (err) {}
               }
+            } else {
+              restoreSavedPosition(e.target, activeChap.id);
             }
-            var p = e.target.play();
-            if (p && typeof p.then === "function") {
-              p.then(function() {
-                window.__PENDING_AUTO_RESUME_AUDIO = null;
-                try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
-              }).catch(function() {});
-            } else if (p && typeof p.catch === "function") {
-              p.catch(function() {});
+            if (e.target.paused) {
+              var p = e.target.play();
+              if (p && typeof p.then === "function") {
+                p.then(function() {
+                  window.__PENDING_AUTO_RESUME_AUDIO = null;
+                  try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+                }).catch(function() {});
+              } else if (p && typeof p.catch === "function") {
+                p.catch(function() {});
+              }
             }
           },
           onError: function(e) {

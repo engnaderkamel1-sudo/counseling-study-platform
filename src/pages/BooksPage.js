@@ -131,7 +131,10 @@ window.BooksPage = function(props) {
     } catch (e) {}
   };
   var [isQualityAuditOpen, setIsQualityAuditOpen] = React.useState(false);
-  var chapterAudioRef = React.useRef(null);
+  var chapterAudioRef = React.useRef((utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null);
+  if (!chapterAudioRef.current && typeof window !== "undefined" && window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement) {
+    chapterAudioRef.current = window.APP_UTILS.getPersistentAudioElement();
+  }
 
   // مشغل تراك 1 الشامل (Master NotebookLM Podcast Track) واستئناف التشغيل التلقائي
   var [isTrack1Playing, setIsTrack1Playing] = React.useState(false);
@@ -395,13 +398,18 @@ window.BooksPage = function(props) {
           if (chapId) {
             setPlayingChapterId(chapId);
             var targetChap = targetBook.audioChapters && targetBook.audioChapters.find(function(c) { return c.id === chapId; });
-            if (targetChap && setViewingChapterText) {
+            if (targetChap && setViewingChapterText && targetChap.text) {
               setViewingChapterText(targetChap);
             }
 
-            var seekAndPlayChapter = function(attempt) {
-              var audio = chapterAudioRef.current;
-              if (audio) {
+            var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
+            if (audio) {
+              chapterAudioRef.current = audio;
+              var targetSrc = targetChap && targetChap.audioUrl ? utils.getAudioStreamUrl(targetChap.audioUrl) : "";
+              if (targetSrc && (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc))) {
+                audio.src = targetSrc;
+              }
+              var applyPositionAndPlay = function() {
                 if (resumeData.position && resumeData.position > 0 && Math.abs(audio.currentTime - resumeData.position) > 1) {
                   try { audio.currentTime = resumeData.position; } catch (e) {}
                 }
@@ -410,15 +418,25 @@ window.BooksPage = function(props) {
                   p.then(function() {
                     window.__PENDING_AUTO_RESUME_AUDIO = null;
                     try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+                    try { window.dispatchEvent(new Event("counsel_audio_state_change")); } catch (e) {}
                   }).catch(function(err) {
-                    console.warn("Chapter play blocked or waiting gesture:", err);
+                    console.warn("Chapter play attempt error:", err);
                   });
                 }
-              } else if (attempt < 15) {
-                setTimeout(function() { seekAndPlayChapter(attempt + 1); }, 90);
+              };
+
+              if (audio.readyState >= 1) {
+                applyPositionAndPlay();
+              } else {
+                var onMeta = function() {
+                  audio.removeEventListener("loadedmetadata", onMeta);
+                  applyPositionAndPlay();
+                };
+                audio.addEventListener("loadedmetadata", onMeta);
+                var p0 = audio.play();
+                if (p0 && typeof p0.catch === "function") p0.catch(function() {});
               }
-            };
-            seekAndPlayChapter(1);
+            }
 
             setTimeout(function() {
               try {

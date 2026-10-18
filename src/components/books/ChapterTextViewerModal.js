@@ -463,7 +463,7 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   React.useEffect(function() {
-    var audio = chapterAudioRef && chapterAudioRef.current;
+    var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!audio) return;
     var onTime = function() { setLocalProgress(audio.currentTime); };
     var onMeta = function() { setLocalDuration(audio.duration || 0); };
@@ -482,6 +482,14 @@ window.ChapterTextViewerModal = function(props) {
     setLocalDuration(audio.duration || 0);
     setLocalSpeed(audio.playbackRate || 1);
 
+    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً
+    if (window.__PENDING_AUTO_RESUME_AUDIO && viewingChapterText && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === viewingChapterText.id) {
+      if (audio.paused) {
+        var p = audio.play();
+        if (p && typeof p.catch === "function") p.catch(function() {});
+      }
+    }
+
     return function() {
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
@@ -489,7 +497,7 @@ window.ChapterTextViewerModal = function(props) {
       audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ratechange", onRate);
     };
-  }, [playingChapterId, chapterAudioRef]);
+  }, [playingChapterId, viewingChapterText && viewingChapterText.id]);
 
   var canGoPrev = curAudioIdx > 0;
   var canGoNext = curAudioIdx >= 0 && curAudioIdx < allAudioChaps.length - 1;
@@ -511,11 +519,16 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   var handleTogglePlay = function() {
+    var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!isPlayingThis) {
       if (setPlayingChapterId) setPlayingChapterId(viewingChapterText.id);
-    } else if (chapterAudioRef && chapterAudioRef.current) {
-      if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
-      else chapterAudioRef.current.pause();
+    } else if (audio) {
+      if (audio.paused) {
+        var p = audio.play();
+        if (p && typeof p.catch === "function") p.catch(function() {});
+      } else {
+        audio.pause();
+      }
     }
   };
 

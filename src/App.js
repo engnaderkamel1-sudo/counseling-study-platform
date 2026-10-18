@@ -50,6 +50,61 @@ function App() {
   var handleGlobalResumeAudio = function() {
     var record = lastAudioRecord || (utils && utils.resolveLastAudioRecord ? utils.resolveLastAudioRecord() : null);
     if (!record || !record.bookId) return;
+
+    // استخراج رابط البث الصوتي الفوري لتشغيله في نفس اللحظة عبر إيماءة نقرة المستخدم (User Gesture)
+    var streamUrl = "";
+    if (record.chapterAudioUrl) {
+      streamUrl = (utils && utils.getAudioStreamUrl) ? utils.getAudioStreamUrl(record.chapterAudioUrl) : record.chapterAudioUrl;
+    }
+    if (!streamUrl) {
+      var booksList = (utils && utils.getLocal) ? utils.getLocal(cfg.storageKeys.books, []) : [];
+      var targetBook = Array.isArray(booksList) ? booksList.find(function(b) { return b && b.id === record.bookId; }) : null;
+      var cachedBook = (utils && utils.getLocal) ? utils.getLocal("counsel_book_data_" + record.bookId) : null;
+      if (cachedBook) targetBook = Object.assign({}, targetBook || {}, cachedBook);
+      if (targetBook) {
+        if (record.type === "track1") {
+          streamUrl = (utils && utils.getAudioStreamUrl) ? utils.getAudioStreamUrl(targetBook.audioTrack1Url) : targetBook.audioTrack1Url;
+        } else if (targetBook.audioChapters) {
+          var ch = targetBook.audioChapters.find(function(c) { return c && c.id === record.chapterId; });
+          if (ch && ch.audioUrl) {
+            streamUrl = (utils && utils.getAudioStreamUrl) ? utils.getAudioStreamUrl(ch.audioUrl) : ch.audioUrl;
+          }
+        }
+      }
+    }
+
+    // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
+    var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
+    if (audio) {
+      try {
+        if (streamUrl) {
+          var isSameSrc = audio.src && (audio.src === streamUrl || audio.src.endsWith(streamUrl));
+          if (!isSameSrc) {
+            audio.src = streamUrl;
+          }
+          if (record.position && record.position > 0) {
+            if (audio.readyState >= 1) {
+              try { audio.currentTime = record.position; } catch (e) {}
+            } else {
+              var onMeta = function() {
+                audio.removeEventListener("loadedmetadata", onMeta);
+                try { audio.currentTime = record.position; } catch (e) {}
+              };
+              audio.addEventListener("loadedmetadata", onMeta);
+            }
+          }
+        }
+        var p = audio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function(err) {
+            console.warn("Immediate gesture play warning:", err);
+          });
+        }
+      } catch (errSync) {
+        console.warn("Immediate audio setup warning:", errSync);
+      }
+    }
+
     try {
       localStorage.setItem("counsel_auto_resume_audio", JSON.stringify(record));
       localStorage.setItem("counsel_active_book_id", record.bookId);

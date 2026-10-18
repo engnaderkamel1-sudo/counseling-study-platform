@@ -39,3 +39,33 @@ window.APP_UTILS.getAudioStreamCandidates = function(url) {
   }
   return [url];
 };
+
+// عنصر صوتي دائم وغير قابل للتلف لضمان التشغيل الفوري والاحتفاظ بتصريح المتصفح للصوت
+window.APP_UTILS.getPersistentAudioElement = function() {
+  if (typeof window === "undefined") return null;
+  if (window.__COUNSEL_PERSISTENT_AUDIO && document.getElementById("counsel-global-audio-element")) {
+    return window.__COUNSEL_PERSISTENT_AUDIO;
+  }
+  var existing = document.getElementById("counsel-global-audio-element");
+  if (existing) {
+    window.__COUNSEL_PERSISTENT_AUDIO = existing;
+    return existing;
+  }
+  try {
+    var audio = document.createElement("audio");
+    audio.id = "counsel-global-audio-element";
+    audio.preload = "auto";
+    audio.style.display = "none";
+    if (document.body) {
+      document.body.appendChild(audio);
+    }
+    window.__COUNSEL_PERSISTENT_AUDIO = audio;
+    return audio;
+  } catch (e) {
+    var a = new Audio();
+    a.preload = "auto";
+    window.__COUNSEL_PERSISTENT_AUDIO = a;
+    return a;
+  }
+};
+

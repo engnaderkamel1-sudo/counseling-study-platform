@@ -144,6 +144,7 @@ window.APP_UTILS = {
             bookCoverUrl: candidateBook.coverUrl || "",
             chapterId: targetChap.id,
             chapterTitle: targetChap.title || "فصل صوتي",
+            chapterAudioUrl: targetChap.audioUrl || "",
             position: pos,
             duration: targetChap.audioDuration || 0,
             updatedAt: Date.now()
