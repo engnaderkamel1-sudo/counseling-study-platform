@@ -10,7 +10,7 @@ window.Header = function(props) {
   var onOpenNotifications = props.onOpenNotifications;
   var unreadNotificationsCount = props.unreadNotificationsCount || 0;
   var isAdmin = !!(currentUser && currentUser.role === "admin");
-  var [isTopResumeDismissed, setIsTopResumeDismissed] = React.useState(false);
+  var isDismissed = props.isTopResumeDismissed !== undefined ? props.isTopResumeDismissed : isTopResumeDismissed;
   var utils = window.APP_UTILS || {};
   var formatAudioTime = function(sec) {
     if (!sec || isNaN(sec) || sec <= 0) return "00:00";
@@ -146,7 +146,7 @@ window.Header = function(props) {
     ),
 
     // السطر الثاني: شريط متابعة الاستماع المخصص والأنيق (لا يزاحم أي زر إطلاقاً)
-    (props.lastAudioRecord && !isTopResumeDismissed) && React.createElement(
+    (props.lastAudioRecord && !isDismissed) && React.createElement(
       "div",
       {
         className: "border-t border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 dark:from-amber-950/40 dark:via-slate-900 dark:to-amber-950/30 px-3 sm:px-6 md:px-8 py-1.5 flex items-center justify-between gap-2 text-xs shadow-2xs animate-fade-in"
@@ -195,7 +195,7 @@ window.Header = function(props) {
           {
             type: "button",
             onClick: function() {
-              setIsTopResumeDismissed(true);
+              if (props.onDismissTopResume) props.onDismissTopResume();
             },
             title: "إخفاء شريط الاستئناف",
             className: "w-6 h-6 rounded-lg text-slate-400 hover:text-red-500 hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center font-bold text-xs transition-colors"

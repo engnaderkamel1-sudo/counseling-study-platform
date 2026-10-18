@@ -947,11 +947,23 @@ window.APP_UTILS = {
       "DESCRIPTION:تذكير: غداً موعد محاضرة " + summary + " عبر زووم",
       "TRIGGER:-P1D",
       "END:VALARM",
-      // منبه الموبايل الثاني: قبل المحاضرة بـ 15 دقيقة للدخول السريع
+      // منبه الموبايل الثاني: قبل المحاضرة بساعة (60 دقيقة)
+      "BEGIN:VALARM",
+      "ACTION:DISPLAY",
+      "DESCRIPTION:تذكير: بعد ساعة تبدأ محاضرة " + summary + " عبر زووم",
+      "TRIGGER:-PT1H",
+      "END:VALARM",
+      // منبه الموبايل الثالث: قبل المحاضرة بـ 15 دقيقة للدخول السريع
       "BEGIN:VALARM",
       "ACTION:DISPLAY",
       "DESCRIPTION:تذكير عاجل: تبدأ قاعة زوم الآن لمحاضرة " + summary,
       "TRIGGER:-PT15M",
+      "END:VALARM",
+      // منبه الموبايل الرابع: عند موعد بدء المحاضرة بالدقيقة
+      "BEGIN:VALARM",
+      "ACTION:DISPLAY",
+      "DESCRIPTION:بدأت محاضرة " + summary + " الآن عبر زووم - اضغط للدخول",
+      "TRIGGER:PT0S",
       "END:VALARM",
       "END:VEVENT",
       "END:VCALENDAR"

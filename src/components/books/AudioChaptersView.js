@@ -387,6 +387,25 @@ window.AudioChaptersView = function(props) {
     }
   }, [playingChapterId]);
 
+  // استماع لحدث الاستئناف العام في حال كان نفس التراك محدداً بالفعل
+  React.useEffect(function() {
+    var onResumeTrigger = function() {
+      var audio = chapterAudioRef.current;
+      if (audio && playingChapterId) {
+        var pending = window.__PENDING_AUTO_RESUME_AUDIO;
+        if (pending && pending.position > 0) {
+          try { audio.currentTime = pending.position; } catch (e) {}
+        }
+        var p = audio.play();
+        if (p && typeof p.catch === "function") p.catch(function() {});
+      }
+    };
+    window.addEventListener("counsel_trigger_resume_audio", onResumeTrigger);
+    return function() {
+      window.removeEventListener("counsel_trigger_resume_audio", onResumeTrigger);
+    };
+  }, [playingChapterId]);
+
   // فحص جودة الكتاب لحارس النشر
   var audit = React.useMemo(function() {
     return (utils.auditBookQuality && activeBook) ? utils.auditBookQuality(activeBook) : null;
@@ -1567,8 +1586,20 @@ window.AudioChaptersView = function(props) {
           onCanPlay: function(e) {
             setAudioHasError(false);
             restoreSavedPosition(e.target, activeChap.id);
+            if (window.__PENDING_AUTO_RESUME_AUDIO && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === activeChap.id) {
+              if (window.__PENDING_AUTO_RESUME_AUDIO.position > 0) {
+                try { e.target.currentTime = window.__PENDING_AUTO_RESUME_AUDIO.position; } catch (err) {}
+              }
+            }
             var p = e.target.play();
-            if (p && typeof p.catch === "function") p.catch(function() {});
+            if (p && typeof p.then === "function") {
+              p.then(function() {
+                window.__PENDING_AUTO_RESUME_AUDIO = null;
+                try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+              }).catch(function() {});
+            } else if (p && typeof p.catch === "function") {
+              p.catch(function() {});
+            }
           },
           onError: function(e) {
             var mediaError = e.target && e.target.error;

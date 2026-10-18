@@ -339,17 +339,22 @@ window.BooksPage = function(props) {
     };
   }, []);
 
-  // معالجة طلب الاستئناف الفوري للصوت عند الضغط على المشغل المصغر العائم
+  // معالجة طلب الاستئناف الفوري للصوت عند الضغط على زر الاستئناف العلوي
   React.useEffect(function() {
     var handleAutoResumeAudio = function() {
       try {
         var raw = localStorage.getItem("counsel_auto_resume_audio");
-        if (!raw) return;
-        var resumeData = JSON.parse(raw);
+        var pendingGlobal = window.__PENDING_AUTO_RESUME_AUDIO;
+        if (!raw && !pendingGlobal) return;
+        var resumeData = pendingGlobal || JSON.parse(raw);
         if (!resumeData || !resumeData.bookId) return;
 
         var bookList = (books && books.length > 0) ? books : (utils.getLocal(cfg.storageKeys.books, []) || []);
         var targetBook = bookList.find(function(b) { return b.id === resumeData.bookId; });
+        var cachedBook = utils.getLocal("counsel_book_data_" + resumeData.bookId);
+        if (cachedBook) {
+          targetBook = Object.assign({}, targetBook || {}, cachedBook);
+        }
         if (!targetBook) return;
 
         // تفعيل الكتاب المرجعي
@@ -361,19 +366,30 @@ window.BooksPage = function(props) {
 
         if (resumeData.type === "track1") {
           setBookStudyTab("track1");
-          setTimeout(function() {
+          var seekAndPlayTrack1 = function(attempt) {
             var audio = track1AudioRef.current;
             if (audio) {
               if (resumeData.position && resumeData.position > 0) {
-                audio.currentTime = resumeData.position;
+                try { audio.currentTime = resumeData.position; } catch (e) {}
                 setTrack1CurrentTime(resumeData.position);
               }
               var p = audio.play();
-              if (p && typeof p.catch === "function") p.catch(function() {});
-              setIsTrack1Playing(true);
+              if (p && typeof p.then === "function") {
+                p.then(function() {
+                  setIsTrack1Playing(true);
+                  window.__PENDING_AUTO_RESUME_AUDIO = null;
+                  try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+                }).catch(function(err) {
+                  console.warn("Track1 play blocked or waiting gesture:", err);
+                });
+              }
+            } else if (attempt < 12) {
+              setTimeout(function() { seekAndPlayTrack1(attempt + 1); }, 100);
             }
-          }, 250);
+          };
+          seekAndPlayTrack1(1);
         } else {
+          // فصول وتراكات الكتاب الصوتي المستقلة
           setBookStudyTab("chapters");
           var chapId = resumeData.chapterId;
           if (chapId) {
@@ -382,6 +398,28 @@ window.BooksPage = function(props) {
             if (targetChap && setViewingChapterText) {
               setViewingChapterText(targetChap);
             }
+
+            var seekAndPlayChapter = function(attempt) {
+              var audio = chapterAudioRef.current;
+              if (audio) {
+                if (resumeData.position && resumeData.position > 0 && Math.abs(audio.currentTime - resumeData.position) > 1) {
+                  try { audio.currentTime = resumeData.position; } catch (e) {}
+                }
+                var p = audio.play();
+                if (p && typeof p.then === "function") {
+                  p.then(function() {
+                    window.__PENDING_AUTO_RESUME_AUDIO = null;
+                    try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+                  }).catch(function(err) {
+                    console.warn("Chapter play blocked or waiting gesture:", err);
+                  });
+                }
+              } else if (attempt < 15) {
+                setTimeout(function() { seekAndPlayChapter(attempt + 1); }, 90);
+              }
+            };
+            seekAndPlayChapter(1);
+
             setTimeout(function() {
               try {
                 var el = document.getElementById("chapter-card-" + chapId);
@@ -390,8 +428,6 @@ window.BooksPage = function(props) {
             }, 250);
           }
         }
-
-        localStorage.removeItem("counsel_auto_resume_audio");
       } catch (e) {
         console.warn("Auto resume audio error:", e);
       }

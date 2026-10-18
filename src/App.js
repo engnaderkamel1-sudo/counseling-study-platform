@@ -44,6 +44,7 @@ function App() {
   var [lastAudioRecord, setLastAudioRecord] = React.useState(function() {
     return (utils && utils.resolveLastAudioRecord) ? utils.resolveLastAudioRecord() : null;
   });
+  var [isTopResumeDismissed, setIsTopResumeDismissed] = React.useState(false);
   var [isLastAudioDismissed, setIsLastAudioDismissed] = React.useState(false);
 
   var handleGlobalResumeAudio = function() {
@@ -53,10 +54,16 @@ function App() {
       localStorage.setItem("counsel_auto_resume_audio", JSON.stringify(record));
       localStorage.setItem("counsel_active_book_id", record.bookId);
     } catch (e) {}
+    window.__PENDING_AUTO_RESUME_AUDIO = Object.assign({}, record);
+    setHasVisitedBooks(true);
     setActiveTab("books");
-    setTimeout(function() {
+    var dispatchTrigger = function() {
       try { window.dispatchEvent(new Event("counsel_trigger_resume_audio")); } catch (e) {}
-    }, 60);
+    };
+    dispatchTrigger();
+    setTimeout(dispatchTrigger, 60);
+    setTimeout(dispatchTrigger, 180);
+    setTimeout(dispatchTrigger, 450);
   };
 
   React.useEffect(function() {
@@ -385,7 +392,7 @@ function App() {
     };
   }, [currentUser]);
 
-  // فحص دوري ذكي لتذكيرات الزوم (قبل المحاضرة بيوم، وقبلها بوقت قليل، وعند بدء البث)
+  // فحص دوري دقيق لتذكيرات الزوم (قبل المحاضرة بيوم، وقبلها بساعة، وعند موعد البدء فقط)
   React.useEffect(function() {
     var checkZoomReminders = function() {
       try {
@@ -393,6 +400,16 @@ function App() {
           ? appLectures
           : utils.getLocal(cfg.storageKeys.lectures, []);
         if (!Array.isArray(lectures) || lectures.length === 0) return;
+
+        // مزامنة محاضرات الزوم مع الـ Service Worker للعمل في الخلفية
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          try {
+            navigator.serviceWorker.controller.postMessage({
+              type: "SYNC_ZOOM_LECTURES",
+              lectures: lectures
+            });
+          } catch (swMsgErr) {}
+        }
 
         var now = new Date();
         var sentReminders = utils.getLocal("counsel_sent_zoom_reminders", {});
@@ -415,13 +432,10 @@ function App() {
           var reminder1HourKey = lec.id + "_1h";
           var reminderOpenKey = lec.id + "_opening";
 
-          // 1. تذكير قبل المحاضرة بيوم كامل (بين 14 ساعة و 32 ساعة قبل الموعد)
-          if (diffMinutes >= (14 * 60) && diffMinutes <= (32 * 60) && !sentReminders[reminder1DayKey]) {
+          // 1. تذكير قبل المحاضرة بيوم كامل (بين 22 و 26 ساعة قبل الموعد حصراً)
+          if (diffMinutes >= (22 * 60) && diffMinutes <= (26 * 60) && !sentReminders[reminder1DayKey]) {
             sentReminders[reminder1DayKey] = Date.now();
             utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
-            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
-              window.NotificationService.broadcastZoomReminder(lec, "1day", formattedTime);
-            }
             if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
               window.NotificationService.showSystemNotification("📅 تذكير: غداً موعد محاضرة " + (lec.title || ""), {
                 body: "الموعد: غداً (" + (lec.date || "") + ") الساعة " + (formattedTime || "") + " عبر زووم • استعد وجهّز نفسك!",
@@ -438,13 +452,10 @@ function App() {
             });
           }
 
-          // 2. تذكير قبل المحاضرة بوقت قليل (بين 15 دقيقة إلى 90 دقيقة قبل الموعد)
-          if (diffMinutes > 15 && diffMinutes <= 90 && !sentReminders[reminder1HourKey]) {
+          // 2. تذكير قبل المحاضرة بساعة (بين 45 إلى 75 دقيقة قبل الموعد بدقة)
+          if (diffMinutes >= 45 && diffMinutes <= 75 && !sentReminders[reminder1HourKey]) {
             sentReminders[reminder1HourKey] = Date.now();
             utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
-            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
-              window.NotificationService.broadcastZoomReminder(lec, "1hour", formattedTime);
-            }
             if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
               window.NotificationService.showSystemNotification("⏰ تذكير: محاضرة " + (lec.title || "") + " تبدأ بعد قليل", {
                 body: "الموعد: " + (formattedTime || "") + " عبر زووم • القاعة جاهزة، اضغط هنا للدخول المباشر!",
@@ -461,13 +472,10 @@ function App() {
             });
           }
 
-          // 3. تذكير فتح القاعة وبدء المحاضرة (من قبل الموعد بـ 15 دقيقة وحتى 90 دقيقة بعد البدء)
-          if (diffMinutes >= -90 && diffMinutes <= 15 && !sentReminders[reminderOpenKey]) {
+          // 3. تذكير موعد بدء المحاضرة الفعلي (من قبل الموعد بـ 10 دقائق وحتى 15 دقيقة بعد البدء كحد أقصى لمنع التنبيه المتأخر)
+          if (diffMinutes >= -15 && diffMinutes <= 10 && !sentReminders[reminderOpenKey]) {
             sentReminders[reminderOpenKey] = Date.now();
             utils.setLocal("counsel_sent_zoom_reminders", sentReminders);
-            if (window.NotificationService && typeof window.NotificationService.broadcastZoomReminder === "function") {
-              window.NotificationService.broadcastZoomReminder(lec, "opening", formattedTime);
-            }
             if (window.NotificationService && typeof window.NotificationService.showSystemNotification === "function") {
               window.NotificationService.showSystemNotification("🚀 قاعة زووم مفتوحة الآن: " + (lec.title || ""), {
                 body: "بدأت المحاضرة الآن! اضغط للدخول المباشر فوراً عبر زووم.",
@@ -490,6 +498,19 @@ function App() {
     var zoomTimer = setInterval(checkZoomReminders, 30000);
     // تشغيل فحص فوري عند التحميل
     checkZoomReminders();
+
+    // محاولة تفعيل المزامنة الدورية بالخلفية لـ PWA Android إن توفرت
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then(function(reg) {
+        if ("periodicSync" in reg) {
+          try {
+            reg.periodicSync.register("check-zoom-reminders", {
+              minInterval: 15 * 60 * 1000
+            }).catch(function() {});
+          } catch (eSync) {}
+        }
+      }).catch(function() {});
+    }
 
     // تشغيل فحص فوري عند عودة المستخدم للتطبيق أو فتح الشاشة
     var onWakeup = function() { checkZoomReminders(); };
@@ -760,6 +781,8 @@ function App() {
             onTabChange: setActiveTab,
             activeTab: activeTab,
             lastAudioRecord: lastAudioRecord,
+            isTopResumeDismissed: isTopResumeDismissed,
+            onDismissTopResume: function() { setIsTopResumeDismissed(true); },
             onResumeAudio: handleGlobalResumeAudio
           });
         })(),
@@ -876,7 +899,7 @@ function App() {
         "main",
         {
           className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (function() {
-            var hasTopResume = !!lastAudioRecord;
+            var hasTopResume = !!(lastAudioRecord && !isTopResumeDismissed);
             var hasTopZoom = !!(upcomingZoomInfo && !isTopZoomDismissed);
             var count = 0;
             if (hasUpdateAvailable) count++;
@@ -991,100 +1014,6 @@ function App() {
               "✕"
             )
           )
-        );
-      }
-
-      // إذا كان التطبيق قد أُعيد فتحه وهناك آخر تراك صوتي مسجل للاستئناف
-      var canShowResume = !floatingAudio && lastAudioRecord && lastAudioRecord.bookId && !isLastAudioDismissed;
-
-      if (canShowResume) {
-        var posStr = formatAudioTime(lastAudioRecord.position);
-        var durStr = lastAudioRecord.duration > 0 ? formatAudioTime(lastAudioRecord.duration) : "";
-        var progressPercent = (lastAudioRecord.duration > 0 && lastAudioRecord.position > 0)
-          ? Math.min(100, Math.round((lastAudioRecord.position / lastAudioRecord.duration) * 100))
-          : 0;
-
-        var handleTriggerResume = handleGlobalResumeAudio;
-
-        return React.createElement(
-          "div",
-          {
-            className: "fixed bottom-16 md:bottom-6 right-3 sm:right-6 left-3 sm:left-auto sm:w-[25rem] z-40 bg-slate-900/95 text-white backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-2xl border border-amber-500/40 flex flex-col gap-2 animate-fade-in select-none ring-1 ring-white/10"
-          },
-          // الشريط العلوي في البطاقة
-          React.createElement(
-            "div",
-            {
-              className: "flex items-center justify-between gap-3 cursor-pointer",
-              onClick: handleTriggerResume
-            },
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2.5 min-w-0 flex-1" },
-              lastAudioRecord.bookCoverUrl ? React.createElement("img", {
-                src: utils.getDriveImageUrl ? utils.getDriveImageUrl(lastAudioRecord.bookCoverUrl) : lastAudioRecord.bookCoverUrl,
-                alt: "غلاف الكتاب",
-                className: "w-9 h-11 rounded-lg object-cover border border-amber-500/30 shrink-0 shadow-xs"
-              }) : React.createElement(
-                "div",
-                {
-                  className: "w-9 h-11 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 text-base"
-                },
-                "🎧"
-              ),
-              React.createElement(
-                "div",
-                { className: "min-w-0 flex-1" },
-                React.createElement(
-                  "div",
-                  { className: "flex items-center gap-1.5" },
-                  React.createElement("span", { className: "text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20" }, "استئناف الاستماع"),
-                  posStr && posStr !== "00:00" ? React.createElement("span", { className: "text-[10px] font-mono text-slate-400" }, "عند " + posStr) : null
-                ),
-                React.createElement("p", { className: "text-xs font-black text-white truncate mt-0.5", title: lastAudioRecord.chapterTitle || lastAudioRecord.title }, lastAudioRecord.chapterTitle || lastAudioRecord.title || "فصل صوتي"),
-                React.createElement("p", { className: "text-[10px] text-slate-400 truncate" }, lastAudioRecord.bookTitle || "الكتاب المرجعي")
-              )
-            ),
-            React.createElement(
-              "div",
-              {
-                className: "flex items-center gap-1.5 shrink-0",
-                onClick: function(e) { e.stopPropagation(); }
-              },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleTriggerResume,
-                  className: "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black shadow-md transition-transform active:scale-90 text-xs",
-                  title: "فتح المرجع واستئناف الاستماع فوراً"
-                },
-                React.createElement("span", null, "▶"),
-                React.createElement("span", { className: "hidden xs:inline" }, "استئناف")
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() {
-                    setIsLastAudioDismissed(true);
-                  },
-                  className: "w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-red-400 font-bold flex items-center justify-center transition-colors text-xs",
-                  title: "إخفاء شريط الاستئناف"
-                },
-                "✕"
-              )
-            )
-          ),
-          // شريط نسبة التقدم الزمني النحيف
-          progressPercent > 0 ? React.createElement(
-            "div",
-            { className: "w-full bg-slate-800 h-1 rounded-full overflow-hidden" },
-            React.createElement("div", {
-              className: "bg-amber-400 h-full rounded-full transition-all duration-300",
-              style: { width: progressPercent + "%" }
-            })
-          ) : null
         );
       }
 
