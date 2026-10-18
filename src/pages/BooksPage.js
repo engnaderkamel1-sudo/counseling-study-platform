@@ -403,10 +403,20 @@ window.BooksPage = function(props) {
             }
 
             var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
-            if (audio) {
+            var targetSrc = targetChap && targetChap.audioUrl ? utils.getAudioStreamUrl(targetChap.audioUrl) : "";
+            var isExpired = !targetSrc || (utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(targetChap.audioUrl));
+
+            // إذا كانت القراءة الصوتية الذكية تعمل بالفعل لهذا الفصل، لا نقاطعها ولا نعيد تشغيلها
+            if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === chapId) {
+              return;
+            }
+
+            var textToUse = (targetChap && targetChap.text) || resumeData.chapterText || "";
+            if (isExpired && textToUse && window.SpeechService) {
+              window.SpeechService.speakChapter(targetBook, targetChap || { id: chapId, title: resumeData.chapterTitle, text: textToUse }, typeof resumeData.position === "number" ? Math.floor(resumeData.position) : 0);
+            } else if (audio && targetSrc) {
               chapterAudioRef.current = audio;
-              var targetSrc = targetChap && targetChap.audioUrl ? utils.getAudioStreamUrl(targetChap.audioUrl) : "";
-              if (targetSrc && (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc))) {
+              if (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc)) {
                 audio.src = targetSrc;
               }
               var applyPositionAndPlay = function() {
@@ -421,9 +431,20 @@ window.BooksPage = function(props) {
                     try { window.dispatchEvent(new Event("counsel_audio_state_change")); } catch (e) {}
                   }).catch(function(err) {
                     console.warn("Chapter play attempt error:", err);
+                    if (targetChap && targetChap.text && window.SpeechService) {
+                      window.SpeechService.speakChapter(targetBook, targetChap, 0);
+                    }
                   });
                 }
               };
+
+              var onAudioErr = function() {
+                audio.removeEventListener("error", onAudioErr);
+                if (targetChap && targetChap.text && window.SpeechService) {
+                  window.SpeechService.speakChapter(targetBook, targetChap, 0);
+                }
+              };
+              audio.addEventListener("error", onAudioErr, { once: true });
 
               if (audio.readyState >= 1) {
                 applyPositionAndPlay();

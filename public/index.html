@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"},{"hash":"04aa6e7","date":"2026-10-12 15:49","message":"fix(settings): guarantee local apiKey storage and fix empty state on reload"}];
+window.APP_UPDATES_HISTORY = [{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"},{"hash":"95c389a","date":"2026-10-12 17:37","message":"feat(tts): integrate Gemini 3.8 Flash TTS with voice selector studio and Aoede default"},{"hash":"69fe424","date":"2026-10-12 17:27","message":"chore: update live updates log with latest audio and settings commits"},{"hash":"fb8f387","date":"2026-10-12 17:22","message":"chore: bump service worker cache to v5 to bust browser caching"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1792302948",
-  buildTime: "2026-10-18T05:55:48",
+  version: "1.2.1792305032",
+  buildTime: "2026-10-18T06:30:32",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2358,6 +2358,276 @@ window.EdgeTtsService = {
   }
 };
 
+// Module: services/speechService.js
+// محرك القراءة الصوتية الذكية المباشرة عبر المتصفح (Web Speech Synthesis Engine)
+// يعمل فورياً بدون أي إنترنت أو خوادم خارجية، ولا تنتهي صلاحيته، ويضمن سماع الصوت 100%
+window.SpeechService = {
+  isSpeaking: false,
+  isPaused: false,
+  currentBook: null,
+  currentChapter: null,
+  currentSentences: [],
+  currentSentenceIdx: 0,
+  playbackRate: 1.0,
+  _keepAliveTimer: null,
+  _lastSpokenChapterId: null,
+
+  // تقسيم النص إلى جمل وفقرات قابلة للقراءة المتزامنة
+  splitTextToSentences: function(text) {
+    var raw = (text || "").trim();
+    if (!raw) return [];
+    var parts = raw.split(/([.!?؟\n\r]+)/);
+    var sentences = [];
+    for (var i = 0; i < parts.length; i += 2) {
+      var s = (parts[i] || "").trim();
+      var p = (parts[i + 1] || "").trim();
+      var combined = (s + (p ? " " + p : "")).trim();
+      if (combined && combined.length > 1) {
+        sentences.push(combined);
+      }
+    }
+    if (sentences.length === 0 && raw) sentences = [raw];
+    return sentences;
+  },
+
+  // جلب أفضل صوت عربي مدعوم في متصفح وجهاز المستخدم
+  getBestArabicVoice: function() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+    var voices = window.speechSynthesis.getVoices() || [];
+    if (!voices || voices.length === 0) return null;
+
+    // 1. تفضيل الأصوات العربية القياسية والطبيعية
+    var arVoice = voices.find(function(v) {
+      return v.lang && (v.lang === "ar-SA" || v.lang === "ar-EG" || v.lang === "ar" || v.lang.startsWith("ar-") || v.lang.startsWith("ar_"));
+    });
+    if (arVoice) return arVoice;
+
+    // 2. البحث عن كلمة Arabic في اسم الصوت
+    var arByName = voices.find(function(v) {
+      return v.name && v.name.toLowerCase().indexOf("arabic") !== -1;
+    });
+    if (arByName) return arByName;
+
+    return null;
+  },
+
+  // فك حظر سياق الصوت للمتصفحات (Audio Context Unlock)
+  _unlockAudioContext: function() {
+    try {
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        var ctx = new AudioContextClass();
+        if (ctx.state === "suspended") {
+          ctx.resume();
+        }
+      }
+    } catch (e) {}
+  },
+
+  // بدء القراءة الصوتية الذكية للفصل
+  speakChapter: function(book, chapter, startSentenceIdx) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      console.warn("SpeechSynthesis not supported on this device/browser.");
+      return false;
+    }
+
+    if (!chapter || !chapter.text || !chapter.text.trim()) {
+      console.warn("SpeechService: No text available in chapter to speak.");
+      return false;
+    }
+
+    // حماية قاطعة من تكرار التشغيل وإعادة الفصل لنفسه إذا كان يعمل بالفعل
+    if (this.isSpeaking && !this.isPaused && this.currentChapter && this.currentChapter.id === chapter.id) {
+      console.log("SpeechService: Chapter is already actively playing, ignoring duplicate trigger.");
+      return true;
+    }
+
+    this._unlockAudioContext();
+
+    // إيقاف أي قراءة سابقة بشكل نظيف
+    try {
+      window.speechSynthesis.cancel();
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+    } catch (eCancel) {}
+
+    this.currentBook = book || { id: "book", title: "مرجع دراسي" };
+    this.currentChapter = chapter;
+    this._lastSpokenChapterId = chapter.id;
+    this.currentSentences = this.splitTextToSentences(chapter.text);
+    this.currentSentenceIdx = typeof startSentenceIdx === "number" ? startSentenceIdx : 0;
+    if (this.currentSentenceIdx < 0 || this.currentSentenceIdx >= this.currentSentences.length) {
+      this.currentSentenceIdx = 0;
+    }
+    this.isSpeaking = true;
+    this.isPaused = false;
+
+    var self = this;
+
+    // حماية دورية من ثغرة توقف القراءة بعد 15 ثانية في متصفحات كروم وموبايل
+    if (this._keepAliveTimer) clearInterval(this._keepAliveTimer);
+    this._keepAliveTimer = setInterval(function() {
+      if (self.isSpeaking && !self.isPaused && window.speechSynthesis.speaking) {
+        try {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } catch (eKa) {}
+      }
+    }, 10000);
+
+    var speakNext = function(idx) {
+      if (!self.isSpeaking) return;
+      if (idx >= self.currentSentences.length) {
+        self.stop();
+        return;
+      }
+
+      self.currentSentenceIdx = idx;
+      var textChunk = self.currentSentences[idx];
+      var utter = new SpeechSynthesisUtterance(textChunk);
+
+      utter.lang = "ar-SA";
+      var arVoice = self.getBestArabicVoice();
+      if (arVoice) utter.voice = arVoice;
+      utter.rate = self.playbackRate || 1.0;
+      utter.pitch = 1.0;
+
+      utter.onend = function() {
+        if (self.isSpeaking && !self.isPaused) {
+          speakNext(idx + 1);
+        }
+      };
+
+      utter.onerror = function(err) {
+        console.warn("Speech chunk note:", err);
+        if (self.isSpeaking && !self.isPaused) {
+          if (err && (err.error === "canceled" || err.error === "interrupted")) {
+            return;
+          }
+          // الانتقال للجملة التالية عند أي تعثر في مقطع فردي
+          setTimeout(function() {
+            if (self.isSpeaking && !self.isPaused) {
+              speakNext(idx + 1);
+            }
+          }, 60);
+        }
+      };
+
+      try {
+        window.speechSynthesis.speak(utter);
+      } catch (eSpeak) {
+        console.error("Speech speak error:", eSpeak);
+      }
+
+      // حفظ موضع الاستماع بالذاكرة وتحديث الواجهة
+      if (self.currentBook && self.currentChapter) {
+        try {
+          localStorage.setItem("counsel_audio_pos_" + self.currentBook.id + "_" + self.currentChapter.id, String(idx));
+          var rec = {
+            type: "chapter",
+            bookId: self.currentBook.id,
+            bookTitle: self.currentBook.title || "مرجع دراسي",
+            chapterId: self.currentChapter.id,
+            chapterTitle: self.currentChapter.title || "فصل صوتي",
+            chapterAudioUrl: self.currentChapter.audioUrl || "",
+            chapterText: self.currentChapter.text || "",
+            position: idx,
+            duration: self.currentSentences.length,
+            updatedAt: Date.now()
+          };
+          localStorage.setItem("counsel_last_audio_track", JSON.stringify(rec));
+        } catch (ePos) {}
+      }
+
+      self._syncGlobal();
+    };
+
+    speakNext(this.currentSentenceIdx);
+    this._syncGlobal();
+    return true;
+  },
+
+  pause: function() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      this.isPaused = true;
+      try { window.speechSynthesis.pause(); } catch (e) {}
+      this._syncGlobal();
+    }
+  },
+
+  resume: function() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      this.isPaused = false;
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        } else if (!window.speechSynthesis.speaking && this.currentChapter) {
+          this.speakChapter(this.currentBook, this.currentChapter, this.currentSentenceIdx);
+        }
+      } catch (e) {}
+      this._syncGlobal();
+    }
+  },
+
+  stop: function() {
+    this.isSpeaking = false;
+    this.isPaused = false;
+    if (this._keepAliveTimer) {
+      clearInterval(this._keepAliveTimer);
+      this._keepAliveTimer = null;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    this._syncGlobal();
+  },
+
+  setRate: function(rate) {
+    this.playbackRate = rate;
+    if (this.isSpeaking && !this.isPaused) {
+      var curIdx = this.currentSentenceIdx;
+      this.stop();
+      this.speakChapter(this.currentBook, this.currentChapter, curIdx);
+    }
+  },
+
+  _syncGlobal: function() {
+    var self = this;
+    if (self.isSpeaking) {
+      window.__ACTIVE_PLAYING_AUDIO = {
+        title: (self.currentChapter && self.currentChapter.title) || "قراءة صوتية ذكية",
+        book: (self.currentBook && self.currentBook.title) || "مرجع دراسي",
+        isPlaying: !self.isPaused,
+        isSpeech: true,
+        chapterId: self.currentChapter ? self.currentChapter.id : null,
+        togglePlay: function() {
+          if (self.isPaused) self.resume();
+          else self.pause();
+        },
+        stop: function() {
+          self.stop();
+        }
+      };
+    } else if (window.__ACTIVE_PLAYING_AUDIO && window.__ACTIVE_PLAYING_AUDIO.isSpeech) {
+      window.__ACTIVE_PLAYING_AUDIO = null;
+    }
+    try { window.dispatchEvent(new Event("counsel_audio_state_change")); } catch (e) {}
+    try { window.dispatchEvent(new Event("counsel_speech_state_change")); } catch (e) {}
+  }
+};
+
+// تحميل الأصوات في المتصفحات التي تدعم التحميل غير المتزامن (Chrome/Edge)
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  try {
+    window.speechSynthesis.onvoiceschanged = function() {
+      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter) {
+        // أصوات المتصفح جاهزة
+      }
+    };
+  } catch (eInit) {}
+}
+
 // Module: utils/helpers.js
 // دوال مساعدة عامة للتعامل مع التخزين المحلي، روابط جوجل درايف، وتنسيق الوقت
 window.APP_UTILS = {
@@ -2483,16 +2753,16 @@ window.APP_UTILS = {
         }
       }
 
-      // إذا ما زال غير موجود، نأخذ أول كتاب به فصول صوتية جاهزة
+      // إذا ما زال غير موجود، نأخذ أول كتاب به فصول صوتية أو نصوص جاهزة
       if (!candidateBook) {
         candidateBook = booksList.find(function(b) {
-          return b && b.audioChapters && b.audioChapters.some(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+          return b && b.audioChapters && b.audioChapters.some(function(c) { return c && ((c.audioUrl && c.audioUrl.trim()) || (c.text && c.text.trim())); });
         });
       }
 
       if (candidateBook) {
         var chaps = candidateBook.audioChapters || [];
-        var audioChaps = chaps.filter(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+        var audioChaps = chaps.filter(function(c) { return c && ((c.audioUrl && c.audioUrl.trim()) || (c.text && c.text.trim())); });
         if (audioChaps.length > 0) {
           var lastChId = localStorage.getItem("counsel_audio_last_chap_" + candidateBook.id);
           var targetChap = audioChaps.find(function(c) { return c.id === lastChId; }) || audioChaps[0];
@@ -2506,6 +2776,7 @@ window.APP_UTILS = {
             chapterId: targetChap.id,
             chapterTitle: targetChap.title || "فصل صوتي",
             chapterAudioUrl: targetChap.audioUrl || "",
+            chapterText: targetChap.text || "",
             position: pos,
             duration: targetChap.audioDuration || 0,
             updatedAt: Date.now()
@@ -3379,13 +3650,22 @@ window.APP_UTILS.getMediaEmbedUrl = function(url) {
   return url;
 };
 
+// فحص ما إذا كان الرابط مؤقتاً ومنتهياً من خوادم خارجية مثل HuggingFace Gradio
+window.APP_UTILS.isExpiredAudioUrl = function(url) {
+  if (!url || typeof url !== "string") return true;
+  var trimmed = url.trim();
+  if (!trimmed) return true;
+  if (trimmed.indexOf("/tmp/gradio/") !== -1 || trimmed.indexOf("gradio_api/file") !== -1) return true;
+  return false;
+};
+
 // تحويل رابط جوجل درايف أو الملفات لرابط تشغيل صوتي مباشر بمشغل HTML5 Audio
 window.APP_UTILS.getAudioStreamUrl = function(url) {
-  if (!url) return "";
+  if (!url || window.APP_UTILS.isExpiredAudioUrl(url)) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    // استخدام بروكسي البث الصوتي المباشر النقي لتجاوز قيود CORP و CORS الصارمة في المتصفحات
-    return "/api/audio-proxy?id=" + driveId;
+    // البث المباشر عبر Google Drive CDN السريع المدعوم بـ Range 206 في كافة المتصفحات
+    return "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
   }
   return url;
 };
@@ -8020,11 +8300,24 @@ window.ChapterTextViewerModal = function(props) {
     setLocalDuration(audio.duration || 0);
     setLocalSpeed(audio.playbackRate || 1);
 
-    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً
+    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً أو استخدام القراءة الذكية
     if (window.__PENDING_AUTO_RESUME_AUDIO && viewingChapterText && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === viewingChapterText.id) {
-      if (audio.paused) {
-        var p = audio.play();
-        if (p && typeof p.catch === "function") p.catch(function() {});
+      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === viewingChapterText.id) {
+        // تعمل بالفعل
+      } else {
+        var isExpired = !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
+        if (isExpired && viewingChapterText.text && window.SpeechService) {
+          window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+        } else if (audio.paused) {
+          var p = audio.play();
+          if (p && typeof p.catch === "function") {
+            p.catch(function() {
+              if (viewingChapterText.text && window.SpeechService) {
+                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+              }
+            });
+          }
+        }
       }
     }
 
@@ -8036,6 +8329,19 @@ window.ChapterTextViewerModal = function(props) {
       audio.removeEventListener("ratechange", onRate);
     };
   }, [playingChapterId, viewingChapterText && viewingChapterText.id]);
+
+  // مزامنة حالة القراءة الصوتية الذكية المباشرة (Speech Synthesis)
+  React.useEffect(function() {
+    var onSpeechState = function() {
+      if (window.SpeechService && window.SpeechService.isSpeaking) {
+        setLocalIsPlaying(!window.SpeechService.isPaused);
+      }
+    };
+    window.addEventListener("counsel_speech_state_change", onSpeechState);
+    return function() {
+      window.removeEventListener("counsel_speech_state_change", onSpeechState);
+    };
+  }, []);
 
   var canGoPrev = curAudioIdx > 0;
   var canGoNext = curAudioIdx >= 0 && curAudioIdx < allAudioChaps.length - 1;
@@ -8057,13 +8363,46 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   var handleTogglePlay = function() {
+    var isSpeechActive = window.SpeechService && window.SpeechService.isSpeaking;
+    if (isSpeechActive) {
+      if (window.SpeechService.isPaused) window.SpeechService.resume();
+      else window.SpeechService.pause();
+      return;
+    }
+
+    var isExpired = !viewingChapterText || !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
+    if (isExpired && viewingChapterText && viewingChapterText.text && window.SpeechService) {
+      window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+      return;
+    }
+
     var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!isPlayingThis) {
       if (setPlayingChapterId) setPlayingChapterId(viewingChapterText.id);
+      if (audio && viewingChapterText.audioUrl) {
+        var sUrl = window.APP_UTILS.getAudioStreamUrl(viewingChapterText.audioUrl);
+        if (sUrl) {
+          audio.src = sUrl;
+          var p0 = audio.play();
+          if (p0 && typeof p0.catch === "function") {
+            p0.catch(function() {
+              if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
+                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+              }
+            });
+          }
+        }
+      }
     } else if (audio) {
       if (audio.paused) {
         var p = audio.play();
-        if (p && typeof p.catch === "function") p.catch(function() {});
+        if (p && typeof p.catch === "function") {
+          p.catch(function() {
+            if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
+              window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+            }
+          });
+        }
       } else {
         audio.pause();
       }
@@ -8075,6 +8414,9 @@ window.ChapterTextViewerModal = function(props) {
     var curIdx = speeds.findIndex(function(s) { return Math.abs(s - localSpeed) < 0.05; });
     var nextSpeed = speeds[(curIdx + 1) % speeds.length] || 1;
     setLocalSpeed(nextSpeed);
+    if (window.SpeechService && window.SpeechService.isSpeaking) {
+      window.SpeechService.setRate(nextSpeed);
+    }
     if (chapterAudioRef && chapterAudioRef.current) {
       chapterAudioRef.current.playbackRate = nextSpeed;
     }
@@ -10544,6 +10886,24 @@ window.AudioChaptersView = function(props) {
     } catch (eEv) {}
   }, [playingChapterId, activeBook, isAudioPlaying]);
 
+  // مزامنة حالة القراءة الصوتية الذكية المباشرة في المشغل العائم وقائمة الفصول
+  React.useEffect(function() {
+    var onSpeechState = function() {
+      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter) {
+        if (playingChapterId !== window.SpeechService.currentChapter.id) {
+          setPlayingChapterId(window.SpeechService.currentChapter.id);
+        }
+        setIsAudioPlaying(!window.SpeechService.isPaused);
+      } else if (window.SpeechService && !window.SpeechService.isSpeaking && isAudioPlaying && (!chapterAudioRef.current || chapterAudioRef.current.paused)) {
+        setIsAudioPlaying(false);
+      }
+    };
+    window.addEventListener("counsel_speech_state_change", onSpeechState);
+    return function() {
+      window.removeEventListener("counsel_speech_state_change", onSpeechState);
+    };
+  }, [playingChapterId, isAudioPlaying]);
+
   return React.createElement(
     "div",
     { className: "space-y-4 " + (playingChapterId ? "pb-44 sm:pb-8" : "pb-12 sm:pb-4") },
@@ -11489,9 +11849,29 @@ window.AudioChaptersView = function(props) {
             React.createElement("button", {
               type: "button",
               onClick: function() {
+                if (window.SpeechService && window.SpeechService.isSpeaking) {
+                  if (window.SpeechService.isPaused) window.SpeechService.resume();
+                  else window.SpeechService.pause();
+                  return;
+                }
+                var isExpired = !activeChap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(activeChap.audioUrl));
+                if (isExpired && activeChap.text && window.SpeechService) {
+                  window.SpeechService.speakChapter(activeBook, activeChap, 0);
+                  return;
+                }
                 if (chapterAudioRef.current) {
-                  if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
-                  else chapterAudioRef.current.pause();
+                  if (chapterAudioRef.current.paused) {
+                    var p = chapterAudioRef.current.play();
+                    if (p && typeof p.catch === "function") {
+                      p.catch(function() {
+                        if (activeChap.text && window.SpeechService) {
+                          window.SpeechService.speakChapter(activeBook, activeChap, 0);
+                        }
+                      });
+                    }
+                  } else {
+                    chapterAudioRef.current.pause();
+                  }
                 }
               },
               className: "w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-lg sm:text-xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
@@ -11907,7 +12287,7 @@ window.AudioChaptersView = function(props) {
             })(),
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
-            chap.audioUrl ? (function() {
+            (chap.audioUrl || chap.text) ? (function() {
               var savedPos = 0;
               if (activeBook && activeBook.id) {
                 try {
@@ -11915,25 +12295,51 @@ window.AudioChaptersView = function(props) {
                   if (s) savedPos = parseFloat(s) || 0;
                 } catch (e) {}
               }
-              var btnLabel = isThisPlaying
+              var isThisSpeechSpeaking = window.SpeechService && window.SpeechService.isSpeaking && !window.SpeechService.isPaused && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === chap.id;
+              var isThisChapterPlaying = (isThisPlaying && isAudioPlaying) || isThisSpeechSpeaking;
+
+              var btnLabel = isThisChapterPlaying
                 ? "⏸️ إيقاف"
                 : (savedPos > 3 ? ("▶️ استئناف (" + formatTime(savedPos) + ")") : "▶️ استماع");
 
               return React.createElement("button", {
                 type: "button",
                 onClick: function() {
-                  if (isThisPlaying) {
+                  if (isThisChapterPlaying) {
+                    if (window.SpeechService && window.SpeechService.isSpeaking) {
+                      window.SpeechService.stop();
+                    }
                     if (chapterAudioRef.current) chapterAudioRef.current.pause();
                     setPlayingChapterId(null);
+                    setIsAudioPlaying(false);
                   } else {
                     setPlayingChapterId(chap.id);
                     if (chap.text && setViewingChapterText) {
                       setViewingChapterText(chap);
                     }
+                    var isExpired = !chap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(chap.audioUrl));
+                    if (isExpired && chap.text && window.SpeechService) {
+                      window.SpeechService.speakChapter(activeBook, chap, 0);
+                    } else if (chap.audioUrl) {
+                      var stream = utils.getAudioStreamUrl(chap.audioUrl);
+                      var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
+                      if (audio && stream) {
+                        chapterAudioRef.current = audio;
+                        audio.src = stream;
+                        var p = audio.play();
+                        if (p && typeof p.catch === "function") {
+                          p.catch(function() {
+                            if (chap.text && window.SpeechService) {
+                              window.SpeechService.speakChapter(activeBook, chap, 0);
+                            }
+                          });
+                        }
+                      }
+                    }
                   }
                 },
                 className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
-                  (isThisPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95"),
+                  (isThisChapterPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95"),
                 title: savedPos > 3 ? ("استئناف الاستماع بدءاً من " + formatTime(savedPos)) : "تشغيل ملف الصوت للفصل"
               }, btnLabel);
             })() : null,
@@ -16009,10 +16415,20 @@ window.BooksPage = function(props) {
             }
 
             var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
-            if (audio) {
+            var targetSrc = targetChap && targetChap.audioUrl ? utils.getAudioStreamUrl(targetChap.audioUrl) : "";
+            var isExpired = !targetSrc || (utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(targetChap.audioUrl));
+
+            // إذا كانت القراءة الصوتية الذكية تعمل بالفعل لهذا الفصل، لا نقاطعها ولا نعيد تشغيلها
+            if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === chapId) {
+              return;
+            }
+
+            var textToUse = (targetChap && targetChap.text) || resumeData.chapterText || "";
+            if (isExpired && textToUse && window.SpeechService) {
+              window.SpeechService.speakChapter(targetBook, targetChap || { id: chapId, title: resumeData.chapterTitle, text: textToUse }, typeof resumeData.position === "number" ? Math.floor(resumeData.position) : 0);
+            } else if (audio && targetSrc) {
               chapterAudioRef.current = audio;
-              var targetSrc = targetChap && targetChap.audioUrl ? utils.getAudioStreamUrl(targetChap.audioUrl) : "";
-              if (targetSrc && (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc))) {
+              if (!audio.src || (!audio.src.endsWith(targetSrc) && audio.src !== targetSrc)) {
                 audio.src = targetSrc;
               }
               var applyPositionAndPlay = function() {
@@ -16027,9 +16443,20 @@ window.BooksPage = function(props) {
                     try { window.dispatchEvent(new Event("counsel_audio_state_change")); } catch (e) {}
                   }).catch(function(err) {
                     console.warn("Chapter play attempt error:", err);
+                    if (targetChap && targetChap.text && window.SpeechService) {
+                      window.SpeechService.speakChapter(targetBook, targetChap, 0);
+                    }
                   });
                 }
               };
+
+              var onAudioErr = function() {
+                audio.removeEventListener("error", onAudioErr);
+                if (targetChap && targetChap.text && window.SpeechService) {
+                  window.SpeechService.speakChapter(targetBook, targetChap, 0);
+                }
+              };
+              audio.addEventListener("error", onAudioErr, { once: true });
 
               if (audio.readyState >= 1) {
                 applyPositionAndPlay();
@@ -23827,11 +24254,26 @@ function App() {
       }
     }
 
-    // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
-    var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
-    if (audio) {
-      try {
-        if (streamUrl) {
+    var targetChap = null;
+    var targetBook = null;
+    var booksList = (utils && utils.getLocal) ? utils.getLocal(cfg.storageKeys.books, []) : [];
+    targetBook = Array.isArray(booksList) ? booksList.find(function(b) { return b && b.id === record.bookId; }) : null;
+    var cachedBook = (utils && utils.getLocal) ? utils.getLocal("counsel_book_data_" + record.bookId) : null;
+    if (cachedBook) targetBook = Object.assign({}, targetBook || {}, cachedBook);
+    if (targetBook && targetBook.audioChapters) {
+      targetChap = targetBook.audioChapters.find(function(c) { return c && c.id === record.chapterId; });
+    }
+
+    var textToSpeak = (targetChap && targetChap.text) || record.chapterText || "";
+    var hasValidStream = streamUrl && (typeof streamUrl === "string") && streamUrl.trim().length > 0 && !(utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(streamUrl));
+
+    if (!hasValidStream && textToSpeak && window.SpeechService) {
+      window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, typeof record.position === "number" ? Math.floor(record.position) : 0);
+    } else if (hasValidStream) {
+      // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
+      var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
+      if (audio) {
+        try {
           var isSameSrc = audio.src && (audio.src === streamUrl || audio.src.endsWith(streamUrl));
           if (!isSameSrc) {
             audio.src = streamUrl;
@@ -23847,15 +24289,28 @@ function App() {
               audio.addEventListener("loadedmetadata", onMeta);
             }
           }
+          var onAudioErr = function() {
+            audio.removeEventListener("error", onAudioErr);
+            if (textToSpeak && window.SpeechService) {
+              window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+            }
+          };
+          audio.addEventListener("error", onAudioErr, { once: true });
+          var p = audio.play();
+          if (p && typeof p.catch === "function") {
+            p.catch(function(err) {
+              console.warn("Immediate gesture play warning:", err);
+              if (textToSpeak && window.SpeechService) {
+                window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+              }
+            });
+          }
+        } catch (errSync) {
+          console.warn("Immediate audio setup warning:", errSync);
+          if (textToSpeak && window.SpeechService) {
+            window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+          }
         }
-        var p = audio.play();
-        if (p && typeof p.catch === "function") {
-          p.catch(function(err) {
-            console.warn("Immediate gesture play warning:", err);
-          });
-        }
-      } catch (errSync) {
-        console.warn("Immediate audio setup warning:", errSync);
       }
     }
 
@@ -23870,9 +24325,7 @@ function App() {
       try { window.dispatchEvent(new Event("counsel_trigger_resume_audio")); } catch (e) {}
     };
     dispatchTrigger();
-    setTimeout(dispatchTrigger, 60);
-    setTimeout(dispatchTrigger, 180);
-    setTimeout(dispatchTrigger, 450);
+    setTimeout(dispatchTrigger, 120);
   };
 
   React.useEffect(function() {
@@ -23955,6 +24408,21 @@ function App() {
         if (cloudList && Array.isArray(cloudList)) {
           setAppLectures(cloudList);
           utils.setLocal(cfg.storageKeys.lectures, cloudList);
+        }
+      });
+      return function() {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    }
+  }, []);
+
+  // المزامنة الحية لقائمة الكتب وفصولها لضمان الاستئناف الفوري والقراءة الصوتية الذكية من أي مكان
+  React.useEffect(function() {
+    var cloudService = cloud || window.CloudSyncService;
+    if (cloudService && typeof cloudService.subscribeBooks === "function") {
+      var unsubscribe = cloudService.subscribeBooks(function(cloudBooks) {
+        if (cloudBooks && Array.isArray(cloudBooks) && cloudBooks.length > 0) {
+          utils.setLocal(cfg.storageKeys.books, cloudBooks);
         }
       });
       return function() {

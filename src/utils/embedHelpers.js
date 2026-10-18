@@ -14,13 +14,22 @@ window.APP_UTILS.getMediaEmbedUrl = function(url) {
   return url;
 };
 
+// فحص ما إذا كان الرابط مؤقتاً ومنتهياً من خوادم خارجية مثل HuggingFace Gradio
+window.APP_UTILS.isExpiredAudioUrl = function(url) {
+  if (!url || typeof url !== "string") return true;
+  var trimmed = url.trim();
+  if (!trimmed) return true;
+  if (trimmed.indexOf("/tmp/gradio/") !== -1 || trimmed.indexOf("gradio_api/file") !== -1) return true;
+  return false;
+};
+
 // تحويل رابط جوجل درايف أو الملفات لرابط تشغيل صوتي مباشر بمشغل HTML5 Audio
 window.APP_UTILS.getAudioStreamUrl = function(url) {
-  if (!url) return "";
+  if (!url || window.APP_UTILS.isExpiredAudioUrl(url)) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    // استخدام بروكسي البث الصوتي المباشر النقي لتجاوز قيود CORP و CORS الصارمة في المتصفحات
-    return "/api/audio-proxy?id=" + driveId;
+    // البث المباشر عبر Google Drive CDN السريع المدعوم بـ Range 206 في كافة المتصفحات
+    return "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
   }
   return url;
 };

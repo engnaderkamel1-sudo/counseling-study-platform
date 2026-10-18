@@ -73,11 +73,26 @@ function App() {
       }
     }
 
-    // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
-    var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
-    if (audio) {
-      try {
-        if (streamUrl) {
+    var targetChap = null;
+    var targetBook = null;
+    var booksList = (utils && utils.getLocal) ? utils.getLocal(cfg.storageKeys.books, []) : [];
+    targetBook = Array.isArray(booksList) ? booksList.find(function(b) { return b && b.id === record.bookId; }) : null;
+    var cachedBook = (utils && utils.getLocal) ? utils.getLocal("counsel_book_data_" + record.bookId) : null;
+    if (cachedBook) targetBook = Object.assign({}, targetBook || {}, cachedBook);
+    if (targetBook && targetBook.audioChapters) {
+      targetChap = targetBook.audioChapters.find(function(c) { return c && c.id === record.chapterId; });
+    }
+
+    var textToSpeak = (targetChap && targetChap.text) || record.chapterText || "";
+    var hasValidStream = streamUrl && (typeof streamUrl === "string") && streamUrl.trim().length > 0 && !(utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(streamUrl));
+
+    if (!hasValidStream && textToSpeak && window.SpeechService) {
+      window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, typeof record.position === "number" ? Math.floor(record.position) : 0);
+    } else if (hasValidStream) {
+      // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
+      var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
+      if (audio) {
+        try {
           var isSameSrc = audio.src && (audio.src === streamUrl || audio.src.endsWith(streamUrl));
           if (!isSameSrc) {
             audio.src = streamUrl;
@@ -93,15 +108,28 @@ function App() {
               audio.addEventListener("loadedmetadata", onMeta);
             }
           }
+          var onAudioErr = function() {
+            audio.removeEventListener("error", onAudioErr);
+            if (textToSpeak && window.SpeechService) {
+              window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+            }
+          };
+          audio.addEventListener("error", onAudioErr, { once: true });
+          var p = audio.play();
+          if (p && typeof p.catch === "function") {
+            p.catch(function(err) {
+              console.warn("Immediate gesture play warning:", err);
+              if (textToSpeak && window.SpeechService) {
+                window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+              }
+            });
+          }
+        } catch (errSync) {
+          console.warn("Immediate audio setup warning:", errSync);
+          if (textToSpeak && window.SpeechService) {
+            window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
+          }
         }
-        var p = audio.play();
-        if (p && typeof p.catch === "function") {
-          p.catch(function(err) {
-            console.warn("Immediate gesture play warning:", err);
-          });
-        }
-      } catch (errSync) {
-        console.warn("Immediate audio setup warning:", errSync);
       }
     }
 
@@ -116,9 +144,7 @@ function App() {
       try { window.dispatchEvent(new Event("counsel_trigger_resume_audio")); } catch (e) {}
     };
     dispatchTrigger();
-    setTimeout(dispatchTrigger, 60);
-    setTimeout(dispatchTrigger, 180);
-    setTimeout(dispatchTrigger, 450);
+    setTimeout(dispatchTrigger, 120);
   };
 
   React.useEffect(function() {
@@ -201,6 +227,21 @@ function App() {
         if (cloudList && Array.isArray(cloudList)) {
           setAppLectures(cloudList);
           utils.setLocal(cfg.storageKeys.lectures, cloudList);
+        }
+      });
+      return function() {
+        if (typeof unsubscribe === "function") unsubscribe();
+      };
+    }
+  }, []);
+
+  // المزامنة الحية لقائمة الكتب وفصولها لضمان الاستئناف الفوري والقراءة الصوتية الذكية من أي مكان
+  React.useEffect(function() {
+    var cloudService = cloud || window.CloudSyncService;
+    if (cloudService && typeof cloudService.subscribeBooks === "function") {
+      var unsubscribe = cloudService.subscribeBooks(function(cloudBooks) {
+        if (cloudBooks && Array.isArray(cloudBooks) && cloudBooks.length > 0) {
+          utils.setLocal(cfg.storageKeys.books, cloudBooks);
         }
       });
       return function() {

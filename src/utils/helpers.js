@@ -122,16 +122,16 @@ window.APP_UTILS = {
         }
       }
 
-      // إذا ما زال غير موجود، نأخذ أول كتاب به فصول صوتية جاهزة
+      // إذا ما زال غير موجود، نأخذ أول كتاب به فصول صوتية أو نصوص جاهزة
       if (!candidateBook) {
         candidateBook = booksList.find(function(b) {
-          return b && b.audioChapters && b.audioChapters.some(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+          return b && b.audioChapters && b.audioChapters.some(function(c) { return c && ((c.audioUrl && c.audioUrl.trim()) || (c.text && c.text.trim())); });
         });
       }
 
       if (candidateBook) {
         var chaps = candidateBook.audioChapters || [];
-        var audioChaps = chaps.filter(function(c) { return c && c.audioUrl && c.audioUrl.trim(); });
+        var audioChaps = chaps.filter(function(c) { return c && ((c.audioUrl && c.audioUrl.trim()) || (c.text && c.text.trim())); });
         if (audioChaps.length > 0) {
           var lastChId = localStorage.getItem("counsel_audio_last_chap_" + candidateBook.id);
           var targetChap = audioChaps.find(function(c) { return c.id === lastChId; }) || audioChaps[0];
@@ -145,6 +145,7 @@ window.APP_UTILS = {
             chapterId: targetChap.id,
             chapterTitle: targetChap.title || "فصل صوتي",
             chapterAudioUrl: targetChap.audioUrl || "",
+            chapterText: targetChap.text || "",
             position: pos,
             duration: targetChap.audioDuration || 0,
             updatedAt: Date.now()

@@ -482,11 +482,24 @@ window.ChapterTextViewerModal = function(props) {
     setLocalDuration(audio.duration || 0);
     setLocalSpeed(audio.playbackRate || 1);
 
-    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً
+    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً أو استخدام القراءة الذكية
     if (window.__PENDING_AUTO_RESUME_AUDIO && viewingChapterText && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === viewingChapterText.id) {
-      if (audio.paused) {
-        var p = audio.play();
-        if (p && typeof p.catch === "function") p.catch(function() {});
+      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === viewingChapterText.id) {
+        // تعمل بالفعل
+      } else {
+        var isExpired = !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
+        if (isExpired && viewingChapterText.text && window.SpeechService) {
+          window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+        } else if (audio.paused) {
+          var p = audio.play();
+          if (p && typeof p.catch === "function") {
+            p.catch(function() {
+              if (viewingChapterText.text && window.SpeechService) {
+                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+              }
+            });
+          }
+        }
       }
     }
 
@@ -498,6 +511,19 @@ window.ChapterTextViewerModal = function(props) {
       audio.removeEventListener("ratechange", onRate);
     };
   }, [playingChapterId, viewingChapterText && viewingChapterText.id]);
+
+  // مزامنة حالة القراءة الصوتية الذكية المباشرة (Speech Synthesis)
+  React.useEffect(function() {
+    var onSpeechState = function() {
+      if (window.SpeechService && window.SpeechService.isSpeaking) {
+        setLocalIsPlaying(!window.SpeechService.isPaused);
+      }
+    };
+    window.addEventListener("counsel_speech_state_change", onSpeechState);
+    return function() {
+      window.removeEventListener("counsel_speech_state_change", onSpeechState);
+    };
+  }, []);
 
   var canGoPrev = curAudioIdx > 0;
   var canGoNext = curAudioIdx >= 0 && curAudioIdx < allAudioChaps.length - 1;
@@ -519,13 +545,46 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   var handleTogglePlay = function() {
+    var isSpeechActive = window.SpeechService && window.SpeechService.isSpeaking;
+    if (isSpeechActive) {
+      if (window.SpeechService.isPaused) window.SpeechService.resume();
+      else window.SpeechService.pause();
+      return;
+    }
+
+    var isExpired = !viewingChapterText || !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
+    if (isExpired && viewingChapterText && viewingChapterText.text && window.SpeechService) {
+      window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+      return;
+    }
+
     var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!isPlayingThis) {
       if (setPlayingChapterId) setPlayingChapterId(viewingChapterText.id);
+      if (audio && viewingChapterText.audioUrl) {
+        var sUrl = window.APP_UTILS.getAudioStreamUrl(viewingChapterText.audioUrl);
+        if (sUrl) {
+          audio.src = sUrl;
+          var p0 = audio.play();
+          if (p0 && typeof p0.catch === "function") {
+            p0.catch(function() {
+              if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
+                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+              }
+            });
+          }
+        }
+      }
     } else if (audio) {
       if (audio.paused) {
         var p = audio.play();
-        if (p && typeof p.catch === "function") p.catch(function() {});
+        if (p && typeof p.catch === "function") {
+          p.catch(function() {
+            if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
+              window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
+            }
+          });
+        }
       } else {
         audio.pause();
       }
@@ -537,6 +596,9 @@ window.ChapterTextViewerModal = function(props) {
     var curIdx = speeds.findIndex(function(s) { return Math.abs(s - localSpeed) < 0.05; });
     var nextSpeed = speeds[(curIdx + 1) % speeds.length] || 1;
     setLocalSpeed(nextSpeed);
+    if (window.SpeechService && window.SpeechService.isSpeaking) {
+      window.SpeechService.setRate(nextSpeed);
+    }
     if (chapterAudioRef && chapterAudioRef.current) {
       chapterAudioRef.current.playbackRate = nextSpeed;
     }

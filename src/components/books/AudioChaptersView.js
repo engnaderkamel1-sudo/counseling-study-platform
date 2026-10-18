@@ -812,6 +812,24 @@ window.AudioChaptersView = function(props) {
     } catch (eEv) {}
   }, [playingChapterId, activeBook, isAudioPlaying]);
 
+  // مزامنة حالة القراءة الصوتية الذكية المباشرة في المشغل العائم وقائمة الفصول
+  React.useEffect(function() {
+    var onSpeechState = function() {
+      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter) {
+        if (playingChapterId !== window.SpeechService.currentChapter.id) {
+          setPlayingChapterId(window.SpeechService.currentChapter.id);
+        }
+        setIsAudioPlaying(!window.SpeechService.isPaused);
+      } else if (window.SpeechService && !window.SpeechService.isSpeaking && isAudioPlaying && (!chapterAudioRef.current || chapterAudioRef.current.paused)) {
+        setIsAudioPlaying(false);
+      }
+    };
+    window.addEventListener("counsel_speech_state_change", onSpeechState);
+    return function() {
+      window.removeEventListener("counsel_speech_state_change", onSpeechState);
+    };
+  }, [playingChapterId, isAudioPlaying]);
+
   return React.createElement(
     "div",
     { className: "space-y-4 " + (playingChapterId ? "pb-44 sm:pb-8" : "pb-12 sm:pb-4") },
@@ -1757,9 +1775,29 @@ window.AudioChaptersView = function(props) {
             React.createElement("button", {
               type: "button",
               onClick: function() {
+                if (window.SpeechService && window.SpeechService.isSpeaking) {
+                  if (window.SpeechService.isPaused) window.SpeechService.resume();
+                  else window.SpeechService.pause();
+                  return;
+                }
+                var isExpired = !activeChap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(activeChap.audioUrl));
+                if (isExpired && activeChap.text && window.SpeechService) {
+                  window.SpeechService.speakChapter(activeBook, activeChap, 0);
+                  return;
+                }
                 if (chapterAudioRef.current) {
-                  if (chapterAudioRef.current.paused) chapterAudioRef.current.play();
-                  else chapterAudioRef.current.pause();
+                  if (chapterAudioRef.current.paused) {
+                    var p = chapterAudioRef.current.play();
+                    if (p && typeof p.catch === "function") {
+                      p.catch(function() {
+                        if (activeChap.text && window.SpeechService) {
+                          window.SpeechService.speakChapter(activeBook, activeChap, 0);
+                        }
+                      });
+                    }
+                  } else {
+                    chapterAudioRef.current.pause();
+                  }
                 }
               },
               className: "w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex items-center justify-center text-lg sm:text-xl shadow-lg shadow-blue-600/30 active:scale-95 transition-all",
@@ -2175,7 +2213,7 @@ window.AudioChaptersView = function(props) {
             })(),
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
-            chap.audioUrl ? (function() {
+            (chap.audioUrl || chap.text) ? (function() {
               var savedPos = 0;
               if (activeBook && activeBook.id) {
                 try {
@@ -2183,25 +2221,51 @@ window.AudioChaptersView = function(props) {
                   if (s) savedPos = parseFloat(s) || 0;
                 } catch (e) {}
               }
-              var btnLabel = isThisPlaying
+              var isThisSpeechSpeaking = window.SpeechService && window.SpeechService.isSpeaking && !window.SpeechService.isPaused && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === chap.id;
+              var isThisChapterPlaying = (isThisPlaying && isAudioPlaying) || isThisSpeechSpeaking;
+
+              var btnLabel = isThisChapterPlaying
                 ? "⏸️ إيقاف"
                 : (savedPos > 3 ? ("▶️ استئناف (" + formatTime(savedPos) + ")") : "▶️ استماع");
 
               return React.createElement("button", {
                 type: "button",
                 onClick: function() {
-                  if (isThisPlaying) {
+                  if (isThisChapterPlaying) {
+                    if (window.SpeechService && window.SpeechService.isSpeaking) {
+                      window.SpeechService.stop();
+                    }
                     if (chapterAudioRef.current) chapterAudioRef.current.pause();
                     setPlayingChapterId(null);
+                    setIsAudioPlaying(false);
                   } else {
                     setPlayingChapterId(chap.id);
                     if (chap.text && setViewingChapterText) {
                       setViewingChapterText(chap);
                     }
+                    var isExpired = !chap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(chap.audioUrl));
+                    if (isExpired && chap.text && window.SpeechService) {
+                      window.SpeechService.speakChapter(activeBook, chap, 0);
+                    } else if (chap.audioUrl) {
+                      var stream = utils.getAudioStreamUrl(chap.audioUrl);
+                      var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
+                      if (audio && stream) {
+                        chapterAudioRef.current = audio;
+                        audio.src = stream;
+                        var p = audio.play();
+                        if (p && typeof p.catch === "function") {
+                          p.catch(function() {
+                            if (chap.text && window.SpeechService) {
+                              window.SpeechService.speakChapter(activeBook, chap, 0);
+                            }
+                          });
+                        }
+                      }
+                    }
                   }
                 },
                 className: "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
-                  (isThisPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95"),
+                  (isThisChapterPlaying ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 active:scale-95"),
                 title: savedPos > 3 ? ("استئناف الاستماع بدءاً من " + formatTime(savedPos)) : "تشغيل ملف الصوت للفصل"
               }, btnLabel);
             })() : null,
