@@ -25,12 +25,13 @@ window.APP_UTILS.isExpiredAudioUrl = function(url) {
 
 // تحويل رابط جوجل درايف أو الملفات لرابط تشغيل صوتي مباشر بمشغل HTML5 Audio
 window.APP_UTILS.getAudioStreamUrl = function(url) {
-  if (!url || window.APP_UTILS.isExpiredAudioUrl(url)) return "";
+  if (!url) return "";
   var driveId = window.APP_UTILS.extractDriveId(url);
   if (driveId) {
-    // البث المباشر عبر Google Drive CDN السريع المدعوم بـ Range 206 في كافة المتصفحات
-    return "https://drive.usercontent.google.com/download?id=" + driveId + "&export=download&confirm=t";
+    // استخدام بروكسي البث الصوتي المباشر النقي لتجاوز قيود CORP و CORS الصارمة في المتصفحات
+    return "/api/audio-proxy?id=" + driveId;
   }
+  if (window.APP_UTILS.isExpiredAudioUrl(url)) return "";
   return url;
 };
 

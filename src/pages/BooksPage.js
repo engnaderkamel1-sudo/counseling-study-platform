@@ -255,7 +255,9 @@ window.BooksPage = function(props) {
               if (cachedTextLen > cloudTextLen) {
                 needCloudSync = true;
               }
-              var bestAudio = (ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
+              var isCloudExpired = utils.isExpiredAudioUrl ? utils.isExpiredAudioUrl(ch.audioUrl) : (ch.audioUrl && (ch.audioUrl.indexOf("/tmp/gradio/") !== -1 || ch.audioUrl.indexOf("gradio_api/file") !== -1));
+              var isCachedDrive = cachedCh && cachedCh.audioUrl && (cachedCh.audioUrl.indexOf("drive.google.com") !== -1 || cachedCh.audioUrl.indexOf("docs.google.com") !== -1);
+              var bestAudio = (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
               var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
