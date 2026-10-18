@@ -73,68 +73,29 @@ function App() {
       }
     }
 
-    var targetChap = null;
-    var targetBook = null;
-    var booksList = (utils && utils.getLocal) ? utils.getLocal(cfg.storageKeys.books, []) : [];
-    targetBook = Array.isArray(booksList) ? booksList.find(function(b) { return b && b.id === record.bookId; }) : null;
-    var cachedBook = (utils && utils.getLocal) ? utils.getLocal("counsel_book_data_" + record.bookId) : null;
-    if (cachedBook) targetBook = Object.assign({}, targetBook || {}, cachedBook);
-    if (targetBook && targetBook.audioChapters) {
-      targetChap = targetBook.audioChapters.find(function(c) { return c && c.id === record.chapterId; });
-    }
-
-    var textToSpeak = (targetChap && targetChap.text) || record.chapterText || "";
-    var hasValidStream = streamUrl && (typeof streamUrl === "string") && streamUrl.trim().length > 0 && !(utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(streamUrl));
-
-    if (!hasValidStream && textToSpeak && window.SpeechService) {
-      window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, typeof record.position === "number" ? Math.floor(record.position) : 0);
-    } else if (hasValidStream) {
-      // التشغيل الفوري المباشر على العنصر الصوتي الدائم للاحتفاظ بتصريح المتصفح
-      var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
-      if (audio) {
-        try {
-          var isSameSrc = audio.src && (audio.src === streamUrl || audio.src.endsWith(streamUrl));
-          if (!isSameSrc) {
-            audio.src = streamUrl;
-          }
-          if (record.position && record.position > 0) {
-            if (audio.readyState >= 1) {
-              try { audio.currentTime = record.position; } catch (e) {}
-            } else {
-              var onMeta = function() {
-                audio.removeEventListener("loadedmetadata", onMeta);
-                try { audio.currentTime = record.position; } catch (e) {}
-              };
-              audio.addEventListener("loadedmetadata", onMeta);
-            }
-          }
-          var onAudioErr = function() {
-            audio.removeEventListener("error", onAudioErr);
-            if (textToSpeak && window.SpeechService) {
-              window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
-            }
-          };
-          audio.addEventListener("error", onAudioErr, { once: true });
-          var p = audio.play();
-          if (p && typeof p.catch === "function") {
-            p.catch(function(err) {
-              console.warn("Immediate gesture play warning:", err);
-              if (textToSpeak && window.SpeechService) {
-                window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
-              }
-            });
-          }
-        } catch (errSync) {
-          console.warn("Immediate audio setup warning:", errSync);
-          if (textToSpeak && window.SpeechService) {
-            window.SpeechService.speakChapter(targetBook || { id: record.bookId, title: record.bookTitle }, targetChap || { id: record.chapterId, title: record.chapterTitle, text: textToSpeak }, 0);
-          }
+    // تشغيل مباشر عبر إيماءة نقرة المستخدم على العنصر الصوتي الدائم
+    var audio = (utils && utils.getPersistentAudioElement) ? utils.getPersistentAudioElement() : null;
+    if (audio && streamUrl) {
+      try {
+        var isSameSrc = audio.src && (audio.src === streamUrl || audio.src.endsWith(streamUrl));
+        if (!isSameSrc) {
+          audio.src = streamUrl;
         }
+        if (record.position && record.position > 0) {
+          try { audio.currentTime = record.position; } catch (e) {}
+        }
+        var p = audio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function(err) {
+            console.warn("Immediate resume play warning:", err);
+          });
+        }
+      } catch (errSync) {
+        console.warn("Immediate audio setup warning:", errSync);
       }
     }
 
     try {
-      localStorage.setItem("counsel_auto_resume_audio", JSON.stringify(record));
       localStorage.setItem("counsel_active_book_id", record.bookId);
     } catch (e) {}
     window.__PENDING_AUTO_RESUME_AUDIO = Object.assign({}, record);
@@ -146,6 +107,14 @@ function App() {
     dispatchTrigger();
     setTimeout(dispatchTrigger, 120);
   };
+
+  // حماية صارمة لمنع التشغيل التلقائي عند فتح التطبيق
+  React.useEffect(function() {
+    try {
+      localStorage.removeItem("counsel_auto_resume_audio");
+      window.__PENDING_AUTO_RESUME_AUDIO = null;
+    } catch (e) {}
+  }, []);
 
   React.useEffect(function() {
     var updateAudioState = function() {

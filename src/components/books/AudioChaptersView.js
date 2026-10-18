@@ -63,6 +63,8 @@ window.AudioChaptersView = function(props) {
   var [audioHasError, setAudioHasError] = React.useState(false);
   var [useIframePlayer, setUseIframePlayer] = React.useState(false);
   var [resumedNotice, setResumedNotice] = React.useState("");
+  var [isDraggingSlider, setIsDraggingSlider] = React.useState(false);
+  var [sliderDragValue, setSliderDragValue] = React.useState(0);
   var restoredPosRef = React.useRef({});
 
   // سجل الفصول المكتملة والمدروسة للكتاب النشط
@@ -94,18 +96,25 @@ window.AudioChaptersView = function(props) {
     if (!audioEl || !activeBook || !activeBook.id || !chapterId) return;
     if (restoredPosRef.current[chapterId]) return;
     try {
-      var key = "counsel_audio_pos_" + activeBook.id + "_" + chapterId;
-      var saved = localStorage.getItem(key);
-      if (saved && !isNaN(parseFloat(saved))) {
-        var pos = parseFloat(saved);
-        var dur = audioEl.duration;
-        if (pos > 2 && (!dur || isNaN(dur) || pos < (dur - 3))) {
-          audioEl.currentTime = pos;
-          setAudioProgress(pos);
-          restoredPosRef.current[chapterId] = true;
-          setResumedNotice("تم استئناف الاستماع تلقائياً عند " + formatTime(pos));
-          setTimeout(function() { setResumedNotice(""); }, 4500);
+      var pos = 0;
+      if (window.__PENDING_AUTO_RESUME_AUDIO && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === chapterId && window.__PENDING_AUTO_RESUME_AUDIO.position > 2) {
+        pos = parseFloat(window.__PENDING_AUTO_RESUME_AUDIO.position);
+        window.__PENDING_AUTO_RESUME_AUDIO = null;
+        try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
+      } else {
+        var key = "counsel_audio_pos_" + activeBook.id + "_" + chapterId;
+        var saved = localStorage.getItem(key);
+        if (saved && !isNaN(parseFloat(saved))) {
+          pos = parseFloat(saved);
         }
+      }
+      var dur = audioEl.duration;
+      if (pos > 2 && (!dur || isNaN(dur) || pos < (dur - 3))) {
+        audioEl.currentTime = pos;
+        setAudioProgress(pos);
+        restoredPosRef.current[chapterId] = true;
+        setResumedNotice("تم استئناف الاستماع تلقائياً عند " + formatTime(pos));
+        setTimeout(function() { setResumedNotice(""); }, 4500);
       }
     } catch (err) {}
   };
@@ -732,6 +741,13 @@ window.AudioChaptersView = function(props) {
       }
     };
 
+    var onError = function() {
+      var mediaError = audio.error;
+      if (!mediaError || mediaError.code === 1) return;
+      console.error("Audio playback error:", mediaError);
+      setAudioHasError(true);
+    };
+
     audio.addEventListener("timeupdate", updateProgress);
     audio.addEventListener("loadedmetadata", updateDuration);
     audio.addEventListener("canplay", onCanPlay);
@@ -739,6 +755,7 @@ window.AudioChaptersView = function(props) {
     audio.addEventListener("pause", updatePlayState);
     audio.addEventListener("ratechange", updateSpeed);
     audio.addEventListener("ended", onTrackEnded);
+    audio.addEventListener("error", onError);
 
     // ربط شاشة القفل وسماعات البلوتوث (MediaSession API للموبايل والخلفية)
     var activeChap = chaps.find(function(c) { return c.id === playingChapterId; });
@@ -782,6 +799,7 @@ window.AudioChaptersView = function(props) {
       audio.removeEventListener("pause", updatePlayState);
       audio.removeEventListener("ratechange", updateSpeed);
       audio.removeEventListener("ended", onTrackEnded);
+      audio.removeEventListener("error", onError);
     };
   }, [playingChapterId, chapterAudioRef, isPlaylistMode, chaps, viewingChapterText, activeBook]);
 
@@ -811,24 +829,6 @@ window.AudioChaptersView = function(props) {
       window.dispatchEvent(new Event("counsel_audio_state_change"));
     } catch (eEv) {}
   }, [playingChapterId, activeBook, isAudioPlaying]);
-
-  // مزامنة حالة القراءة الصوتية الذكية المباشرة في المشغل العائم وقائمة الفصول
-  React.useEffect(function() {
-    var onSpeechState = function() {
-      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter) {
-        if (playingChapterId !== window.SpeechService.currentChapter.id) {
-          setPlayingChapterId(window.SpeechService.currentChapter.id);
-        }
-        setIsAudioPlaying(!window.SpeechService.isPaused);
-      } else if (window.SpeechService && !window.SpeechService.isSpeaking && isAudioPlaying && (!chapterAudioRef.current || chapterAudioRef.current.paused)) {
-        setIsAudioPlaying(false);
-      }
-    };
-    window.addEventListener("counsel_speech_state_change", onSpeechState);
-    return function() {
-      window.removeEventListener("counsel_speech_state_change", onSpeechState);
-    };
-  }, [playingChapterId, isAudioPlaying]);
 
   return React.createElement(
     "div",
@@ -1517,11 +1517,28 @@ window.AudioChaptersView = function(props) {
           React.createElement("input", {
             type: "range",
             min: 0,
-            max: audioDuration || 100,
-            value: audioProgress || 0,
+            max: (audioDuration && !isNaN(audioDuration) && audioDuration > 0) ? Math.floor(audioDuration) : 100,
+            step: 1,
+            value: isDraggingSlider ? sliderDragValue : (audioProgress || 0),
+            onInput: function(e) {
+              setIsDraggingSlider(true);
+              setSliderDragValue(parseFloat(e.target.value));
+            },
             onChange: function(e) {
-              if (chapterAudioRef.current) {
-                chapterAudioRef.current.currentTime = parseFloat(e.target.value);
+              var targetTime = parseFloat(e.target.value);
+              setIsDraggingSlider(false);
+              setAudioProgress(targetTime);
+              var audio = chapterAudioRef.current || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
+              if (audio) {
+                var wasPlaying = !audio.paused;
+                try {
+                  audio.currentTime = targetTime;
+                  if (wasPlaying && audio.paused) {
+                    audio.play().catch(function() {});
+                  }
+                } catch (err) {
+                  console.warn("Seek error:", err);
+                }
               }
             },
             className: "w-full h-1.5 sm:h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-400 active:accent-emerald-400 transition-all"
@@ -1529,7 +1546,7 @@ window.AudioChaptersView = function(props) {
           React.createElement(
             "div",
             { className: "flex justify-between items-center text-[11px] font-mono tabular-nums text-slate-400 px-0.5" },
-            React.createElement("span", { className: "text-indigo-300 font-bold" }, formatTime(audioProgress)),
+            React.createElement("span", { className: "text-indigo-300 font-bold" }, formatTime(isDraggingSlider ? sliderDragValue : audioProgress)),
             nextChapInfo && isPlaylistMode ? React.createElement(
               "span",
               { className: "text-[10px] text-teal-300 font-sans truncate max-w-[180px] sm:max-w-xs" },
@@ -1595,50 +1612,6 @@ window.AudioChaptersView = function(props) {
             "✕"
           )
         ),
-
-        // عنصر الصوت الخفي (بدون مفتاح متغير للحفاظ على استمرارية ترخيص المتصفح للصوت)
-        React.createElement("audio", {
-          id: "counsel-chapter-audio-element",
-          ref: chapterAudioRef,
-          src: utils.getAudioStreamUrl(activeChap.audioUrl),
-          controls: false,
-          autoPlay: true,
-          preload: "auto",
-          className: "hidden",
-          onLoadedMetadata: function(e) {
-            setAudioHasError(false);
-            restoreSavedPosition(e.target, activeChap.id);
-          },
-          onCanPlay: function(e) {
-            setAudioHasError(false);
-            if (window.__PENDING_AUTO_RESUME_AUDIO && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === activeChap.id) {
-              if (window.__PENDING_AUTO_RESUME_AUDIO.position > 0 && Math.abs(e.target.currentTime - window.__PENDING_AUTO_RESUME_AUDIO.position) > 1) {
-                try { e.target.currentTime = window.__PENDING_AUTO_RESUME_AUDIO.position; } catch (err) {}
-              }
-            } else {
-              restoreSavedPosition(e.target, activeChap.id);
-            }
-            if (e.target.paused) {
-              var p = e.target.play();
-              if (p && typeof p.then === "function") {
-                p.then(function() {
-                  window.__PENDING_AUTO_RESUME_AUDIO = null;
-                  try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
-                }).catch(function() {});
-              } else if (p && typeof p.catch === "function") {
-                p.catch(function() {});
-              }
-            }
-          },
-          onError: function(e) {
-            var mediaError = e.target && e.target.error;
-            if (!mediaError) return;
-            // إذا كان الخطأ بسبب إيقاف التحميل العادي أثناء الانتقال، نتجاهله
-            if (mediaError.code === 1) return; // MEDIA_ERR_ABORTED
-            console.error("Audio playback error:", mediaError);
-            setAudioHasError(true);
-          }
-        }),
 
         // تنبيه المشغل عند وجود خطأ في الرابط
         audioHasError ? (function() {
@@ -1775,28 +1748,17 @@ window.AudioChaptersView = function(props) {
             React.createElement("button", {
               type: "button",
               onClick: function() {
-                if (window.SpeechService && window.SpeechService.isSpeaking) {
-                  if (window.SpeechService.isPaused) window.SpeechService.resume();
-                  else window.SpeechService.pause();
-                  return;
-                }
-                var isExpired = !activeChap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(activeChap.audioUrl));
-                if (isExpired && activeChap.text && window.SpeechService) {
-                  window.SpeechService.speakChapter(activeBook, activeChap, 0);
-                  return;
-                }
-                if (chapterAudioRef.current) {
-                  if (chapterAudioRef.current.paused) {
-                    var p = chapterAudioRef.current.play();
+                var audio = chapterAudioRef.current || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
+                if (audio) {
+                  if (audio.paused) {
+                    var p = audio.play();
                     if (p && typeof p.catch === "function") {
-                      p.catch(function() {
-                        if (activeChap.text && window.SpeechService) {
-                          window.SpeechService.speakChapter(activeBook, activeChap, 0);
-                        }
+                      p.catch(function(err) {
+                        console.warn("Audio play error:", err);
                       });
                     }
                   } else {
-                    chapterAudioRef.current.pause();
+                    audio.pause();
                   }
                 }
               },
@@ -2213,7 +2175,7 @@ window.AudioChaptersView = function(props) {
             })(),
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
-            (chap.audioUrl || chap.text) ? (function() {
+            chap.audioUrl ? (function() {
               var savedPos = 0;
               if (activeBook && activeBook.id) {
                 try {
@@ -2221,8 +2183,7 @@ window.AudioChaptersView = function(props) {
                   if (s) savedPos = parseFloat(s) || 0;
                 } catch (e) {}
               }
-              var isThisSpeechSpeaking = window.SpeechService && window.SpeechService.isSpeaking && !window.SpeechService.isPaused && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === chap.id;
-              var isThisChapterPlaying = (isThisPlaying && isAudioPlaying) || isThisSpeechSpeaking;
+              var isThisChapterPlaying = isThisPlaying && isAudioPlaying;
 
               var btnLabel = isThisChapterPlaying
                 ? "⏸️ إيقاف"
@@ -2231,11 +2192,9 @@ window.AudioChaptersView = function(props) {
               return React.createElement("button", {
                 type: "button",
                 onClick: function() {
+                  var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
                   if (isThisChapterPlaying) {
-                    if (window.SpeechService && window.SpeechService.isSpeaking) {
-                      window.SpeechService.stop();
-                    }
-                    if (chapterAudioRef.current) chapterAudioRef.current.pause();
+                    if (audio) audio.pause();
                     setPlayingChapterId(null);
                     setIsAudioPlaying(false);
                   } else {
@@ -2243,21 +2202,18 @@ window.AudioChaptersView = function(props) {
                     if (chap.text && setViewingChapterText) {
                       setViewingChapterText(chap);
                     }
-                    var isExpired = !chap.audioUrl || (utils && utils.isExpiredAudioUrl && utils.isExpiredAudioUrl(chap.audioUrl));
-                    if (isExpired && chap.text && window.SpeechService) {
-                      window.SpeechService.speakChapter(activeBook, chap, 0);
-                    } else if (chap.audioUrl) {
+                    if (chap.audioUrl && audio) {
                       var stream = utils.getAudioStreamUrl(chap.audioUrl);
-                      var audio = chapterAudioRef.current || (utils.getPersistentAudioElement && utils.getPersistentAudioElement());
-                      if (audio && stream) {
-                        chapterAudioRef.current = audio;
-                        audio.src = stream;
+                      if (stream) {
+                        var isSame = audio.src && (audio.src === stream || audio.src.endsWith(stream));
+                        if (!isSame) {
+                          audio.src = stream;
+                          restoreSavedPosition(audio, chap.id);
+                        }
                         var p = audio.play();
                         if (p && typeof p.catch === "function") {
-                          p.catch(function() {
-                            if (chap.text && window.SpeechService) {
-                              window.SpeechService.speakChapter(activeBook, chap, 0);
-                            }
+                          p.catch(function(err) {
+                            console.warn("Audio play error:", err);
                           });
                         }
                       }

@@ -30,6 +30,8 @@ window.ChapterTextViewerModal = function(props) {
   var [localDuration, setLocalDuration] = React.useState(0);
   var [localIsPlaying, setLocalIsPlaying] = React.useState(false);
   var [localSpeed, setLocalSpeed] = React.useState(1);
+  var [isDraggingSlider, setIsDraggingSlider] = React.useState(false);
+  var [sliderDragValue, setSliderDragValue] = React.useState(0);
   var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
   var [readerTheme, setReaderTheme] = React.useState(function() {
     try {
@@ -482,25 +484,14 @@ window.ChapterTextViewerModal = function(props) {
     setLocalDuration(audio.duration || 0);
     setLocalSpeed(audio.playbackRate || 1);
 
-    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً، تشغيله فوراً أو استخدام القراءة الذكية
+    // إذا تم فتح النافذة عبر الاستئناف التلقائي للفصل وكان الصوت متوقفاً
     if (window.__PENDING_AUTO_RESUME_AUDIO && viewingChapterText && window.__PENDING_AUTO_RESUME_AUDIO.chapterId === viewingChapterText.id) {
-      if (window.SpeechService && window.SpeechService.isSpeaking && window.SpeechService.currentChapter && window.SpeechService.currentChapter.id === viewingChapterText.id) {
-        // تعمل بالفعل
-      } else {
-        var isExpired = !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
-        if (isExpired && viewingChapterText.text && window.SpeechService) {
-          window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
-        } else if (audio.paused) {
-          var p = audio.play();
-          if (p && typeof p.catch === "function") {
-            p.catch(function() {
-              if (viewingChapterText.text && window.SpeechService) {
-                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
-              }
-            });
-          }
-        }
+      if (audio.paused) {
+        var p = audio.play();
+        if (p && typeof p.catch === "function") p.catch(function() {});
       }
+      window.__PENDING_AUTO_RESUME_AUDIO = null;
+      try { localStorage.removeItem("counsel_auto_resume_audio"); } catch (e) {}
     }
 
     return function() {
@@ -511,19 +502,6 @@ window.ChapterTextViewerModal = function(props) {
       audio.removeEventListener("ratechange", onRate);
     };
   }, [playingChapterId, viewingChapterText && viewingChapterText.id]);
-
-  // مزامنة حالة القراءة الصوتية الذكية المباشرة (Speech Synthesis)
-  React.useEffect(function() {
-    var onSpeechState = function() {
-      if (window.SpeechService && window.SpeechService.isSpeaking) {
-        setLocalIsPlaying(!window.SpeechService.isPaused);
-      }
-    };
-    window.addEventListener("counsel_speech_state_change", onSpeechState);
-    return function() {
-      window.removeEventListener("counsel_speech_state_change", onSpeechState);
-    };
-  }, []);
 
   var canGoPrev = curAudioIdx > 0;
   var canGoNext = curAudioIdx >= 0 && curAudioIdx < allAudioChaps.length - 1;
@@ -545,33 +523,19 @@ window.ChapterTextViewerModal = function(props) {
   };
 
   var handleTogglePlay = function() {
-    var isSpeechActive = window.SpeechService && window.SpeechService.isSpeaking;
-    if (isSpeechActive) {
-      if (window.SpeechService.isPaused) window.SpeechService.resume();
-      else window.SpeechService.pause();
-      return;
-    }
-
-    var isExpired = !viewingChapterText || !viewingChapterText.audioUrl || (window.APP_UTILS && window.APP_UTILS.isExpiredAudioUrl && window.APP_UTILS.isExpiredAudioUrl(viewingChapterText.audioUrl));
-    if (isExpired && viewingChapterText && viewingChapterText.text && window.SpeechService) {
-      window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
-      return;
-    }
-
     var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
     if (!isPlayingThis) {
       if (setPlayingChapterId) setPlayingChapterId(viewingChapterText.id);
       if (audio && viewingChapterText.audioUrl) {
         var sUrl = window.APP_UTILS.getAudioStreamUrl(viewingChapterText.audioUrl);
         if (sUrl) {
-          audio.src = sUrl;
+          var isSame = audio.src && (audio.src === sUrl || audio.src.endsWith(sUrl));
+          if (!isSame) {
+            audio.src = sUrl;
+          }
           var p0 = audio.play();
           if (p0 && typeof p0.catch === "function") {
-            p0.catch(function() {
-              if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
-                window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
-              }
-            });
+            p0.catch(function(err) { console.warn("Audio play error:", err); });
           }
         }
       }
@@ -579,11 +543,7 @@ window.ChapterTextViewerModal = function(props) {
       if (audio.paused) {
         var p = audio.play();
         if (p && typeof p.catch === "function") {
-          p.catch(function() {
-            if (viewingChapterText && viewingChapterText.text && window.SpeechService) {
-              window.SpeechService.speakChapter(activeBook, viewingChapterText, 0);
-            }
-          });
+          p.catch(function(err) { console.warn("Audio play error:", err); });
         }
       } else {
         audio.pause();
@@ -596,11 +556,9 @@ window.ChapterTextViewerModal = function(props) {
     var curIdx = speeds.findIndex(function(s) { return Math.abs(s - localSpeed) < 0.05; });
     var nextSpeed = speeds[(curIdx + 1) % speeds.length] || 1;
     setLocalSpeed(nextSpeed);
-    if (window.SpeechService && window.SpeechService.isSpeaking) {
-      window.SpeechService.setRate(nextSpeed);
-    }
-    if (chapterAudioRef && chapterAudioRef.current) {
-      chapterAudioRef.current.playbackRate = nextSpeed;
+    var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
+    if (audio) {
+      audio.playbackRate = nextSpeed;
     }
   };
 
@@ -847,17 +805,30 @@ window.ChapterTextViewerModal = function(props) {
               React.createElement(
                 "div",
                 { className: "flex items-center gap-2 text-xs" },
-                React.createElement("span", { className: "text-indigo-200 tabular-nums text-[11px]" }, formatTime(localProgress)),
+                React.createElement("span", { className: "text-indigo-200 tabular-nums text-[11px]" }, formatTime(isDraggingSlider ? sliderDragValue : localProgress)),
                 React.createElement("input", {
                   type: "range",
                   min: 0,
-                  max: localDuration || 100,
-                  value: localProgress || 0,
+                  max: (localDuration && !isNaN(localDuration) && localDuration > 0) ? Math.floor(localDuration) : 100,
+                  step: 1,
+                  value: isDraggingSlider ? sliderDragValue : (localProgress || 0),
+                  onInput: function(e) {
+                    setIsDraggingSlider(true);
+                    setSliderDragValue(parseFloat(e.target.value));
+                  },
                   onChange: function(e) {
                     var pos = parseFloat(e.target.value);
-                    if (chapterAudioRef && chapterAudioRef.current) {
-                      chapterAudioRef.current.currentTime = pos;
-                      setLocalProgress(pos);
+                    setIsDraggingSlider(false);
+                    setLocalProgress(pos);
+                    var audio = (chapterAudioRef && chapterAudioRef.current) || (window.APP_UTILS && window.APP_UTILS.getPersistentAudioElement && window.APP_UTILS.getPersistentAudioElement());
+                    if (audio) {
+                      var wasPlaying = !audio.paused;
+                      try {
+                        audio.currentTime = pos;
+                        if (wasPlaying && audio.paused) audio.play().catch(function() {});
+                      } catch (err) {
+                        console.warn("Seek error:", err);
+                      }
                     }
                   },
                   className: "flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"

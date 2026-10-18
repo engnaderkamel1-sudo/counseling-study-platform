@@ -25,7 +25,6 @@ function Build-App {
         "services/notificationService.js",
         "services/errorReportService.js",
         "services/edgeTtsService.js",
-        "services/speechService.js",
         "utils/helpers.js",
         "utils/embedHelpers.js",
         "components/SplashScreen.js",
