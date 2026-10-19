@@ -8,7 +8,7 @@
 window.EdgeTtsService = {
   DEFAULT_VOICE: "ar-EG-SalmaNeural",
   DEFAULT_REGION: "eastus",
-  CHUNK_CHAR_LIMIT: 1800,
+  CHUNK_CHAR_LIMIT: 1400,
   TRUSTED_CLIENT_TOKEN: "6A5AA1D4EAFF4E9FB37E23D68491D6F4",
   BASE_URL: "speech.platform.bing.com/consumer/speech/synthesize/readaloud",
   CHROMIUM_FULL_VERSION: "130.0.2849.68",
@@ -585,28 +585,8 @@ window.EdgeTtsService = {
       }
     }
 
-    // 2. استخدام محرك Edge-TTS المباشر في المتصفح بصوت سلمى مع إعادة المحاولة التلقائية (3 محاولات)
-    var lastDirectErr = null;
-    for (var directAttempt = 1; directAttempt <= 3; directAttempt++) {
-      try {
-        return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, function(st) {
-          if (typeof onProgress === "function") {
-            onProgress(directAttempt > 1 ? ("(محاولة " + directAttempt + "/3) " + st) : st);
-          }
-        });
-      } catch (dErr) {
-        lastDirectErr = dErr;
-        console.warn("Direct Edge-TTS attempt " + directAttempt + " error:", dErr);
-        if (directAttempt < 3) {
-          if (typeof onProgress === "function") {
-            onProgress("إعادة المحاولة (" + (directAttempt + 1) + "/3)...");
-          }
-          await new Promise(function(r) { setTimeout(r, 1000 * directAttempt); });
-        }
-      }
-    }
-
-    throw new Error(lastDirectErr ? lastDirectErr.message : "تعذر استلام بيانات الصوت من محرك سلمى بعد 3 محاولات.");
+    // 2. استخدام محرك Edge-TTS السحابي بصوت سلمى الرسمي (/api/synthesize)
+    return await self._synthesizeWithServerless(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
   },
 
   // -------------------------------------------------------------
