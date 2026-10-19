@@ -70,6 +70,7 @@ window.UsersManagementPage = function(props) {
       return function() {};
     }
     setIsLoading(true);
+    var hasDelivered = false; // منع استبدال البيانات الحقيقية بقائمة فارغة لاحقاً
 
     // جلب أولي فوري عبر REST API (يعمل دائماً على الموبايل بدون خطأ "client is offline")
     var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
@@ -84,6 +85,7 @@ window.UsersManagementPage = function(props) {
             var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
             return tB - tA;
           });
+          hasDelivered = true;
           setUsers(list);
           setIsLoading(false);
         }
@@ -98,22 +100,26 @@ window.UsersManagementPage = function(props) {
         snap.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
         });
+        // حماية: لو SDK رجّع قائمة فاضية وعندنا بيانات مسبقة — نتجاهلها
+        if (list.length === 0) {
+          if (!hasDelivered) setIsLoading(false); // لا يزال ينتظر
+          return;
+        }
         list.sort(function(a, b) {
           var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
           var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
           return tB - tA;
         });
-        if (list.length > 0) {
-          setUsers(list);
-        }
+        hasDelivered = true;
+        setUsers(list);
         setIsLoading(false);
       }, function(err) {
         console.warn("Realtime users listener failed:", err);
-        setIsLoading(false);
+        if (!hasDelivered) setIsLoading(false);
       });
     } catch (e) {
       console.error("Error setting up users listener:", e);
-      setIsLoading(false);
+      if (!hasDelivered) setIsLoading(false);
       return function() {};
     }
   };

@@ -103,32 +103,65 @@ window.AuthModal = function(props) {
         throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
       }
 
-      if (!window.db) {
-        throw new Error("تعذّر الاتصال بقاعدة البيانات. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.");
-      }
-
       var userStatus = "pending";
       var userRole = "student";
+      var nowIso = new Date().toISOString();
 
-      var userData = {
-        id: userDocId,
-        fullName: cleanFullName,
-        email: cleanEmail,
-        password: cleanPassword,
-        phone: cleanWhatsapp,
-        whatsapp: cleanWhatsapp,
-        studyType: studyType,
-        studyYear: studyYear,
-        church: cleanChurch,
-        diocese: cleanDiocese,
-        governorate: cleanGov,
-        role: userRole,
-        status: userStatus,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      // كتابة بيانات المستخدم عبر REST API (بدون WebSockets — يعمل على الموبايل دائماً)
+      var writeApiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
+      var writeUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users/" + userDocId + "?key=" + writeApiKey;
+      var firestoreFields = {
+        fields: {
+          id:          { stringValue: userDocId },
+          fullName:    { stringValue: cleanFullName },
+          email:       { stringValue: cleanEmail },
+          password:    { stringValue: cleanPassword },
+          phone:       { stringValue: cleanWhatsapp },
+          whatsapp:    { stringValue: cleanWhatsapp },
+          studyType:   { stringValue: studyType },
+          studyYear:   { stringValue: studyYear },
+          church:      { stringValue: cleanChurch },
+          diocese:     { stringValue: cleanDiocese },
+          governorate: { stringValue: cleanGov },
+          role:        { stringValue: userRole },
+          status:      { stringValue: userStatus },
+          createdAt:   { timestampValue: nowIso },
+          updatedAt:   { timestampValue: nowIso }
+        }
       };
 
-      await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
+      var writeOk = false;
+      try {
+        var writeRes = await fetch(writeUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+          body: JSON.stringify(firestoreFields)
+        });
+        if (writeRes.ok) {
+          writeOk = true;
+        } else {
+          var writeErr = await writeRes.json().catch(function() { return {}; });
+          console.warn("REST write non-ok:", writeErr);
+        }
+      } catch (restWriteErr) {
+        console.warn("REST write failed, falling back to SDK:", restWriteErr && restWriteErr.message);
+      }
+
+      // احتياط: إذا فشل REST، نحاول SDK
+      if (!writeOk) {
+        if (!window.db) {
+          throw new Error("تعذّر حفظ البيانات. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.");
+        }
+        var userData = {
+          id: userDocId, fullName: cleanFullName, email: cleanEmail, password: cleanPassword,
+          phone: cleanWhatsapp, whatsapp: cleanWhatsapp, studyType: studyType, studyYear: studyYear,
+          church: cleanChurch, diocese: cleanDiocese, governorate: cleanGov,
+          role: userRole, status: userStatus,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
+      }
 
       // إرسال إشعار فوري لموبايل المشرف
       if (window.NotificationService && typeof window.NotificationService.notifyAdminNewUserRegistration === "function") {
