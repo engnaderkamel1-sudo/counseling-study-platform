@@ -687,9 +687,9 @@ window.EdgeTtsService = {
       allSubtitles = allSubtitles.concat(chunkSubs);
       currentCumulativeTime += (chunkRes.duration || 0);
 
-      // فاصل زمني كافٍ (800 مللي ثانية) لضمان إغلاق المقبس السابق واستقرار السيرفر
+      // فاصل زمني كافٍ (1200 مللي ثانية) لضمان عدم حدوث أي حظر لسرعة الطلبات واستقرار السيرفر
       if (idx < chunks.length - 1) {
-        await new Promise(function(resolve) { setTimeout(resolve, 800); });
+        await new Promise(function(resolve) { setTimeout(resolve, 1200); });
       }
     }
 
