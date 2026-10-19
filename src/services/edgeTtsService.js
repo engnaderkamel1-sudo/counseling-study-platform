@@ -8,7 +8,7 @@
 window.EdgeTtsService = {
   DEFAULT_VOICE: "ar-EG-SalmaNeural",
   DEFAULT_REGION: "eastus",
-  CHUNK_CHAR_LIMIT: 1400,
+  CHUNK_CHAR_LIMIT: 900,
   TRUSTED_CLIENT_TOKEN: "6A5AA1D4EAFF4E9FB37E23D68491D6F4",
   BASE_URL: "speech.platform.bing.com/consumer/speech/synthesize/readaloud",
   CHROMIUM_FULL_VERSION: "130.0.2849.68",
