@@ -69,10 +69,10 @@ window.UsersManagementPage = function(props) {
       setIsLoading(false);
       return function() {};
     }
-    setIsLoading(true);
+
     var hasDelivered = false; // منع استبدال البيانات الحقيقية بقائمة فارغة لاحقاً
 
-    // جلب أولي فوري عبر REST API (يعمل دائماً على الموبايل بدون خطأ "client is offline")
+    // 1. جلب فوري عبر REST API — يعمل على الموبايل بدون WebSockets بدون خطأ "offline"
     var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
     var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users?pageSize=500&key=" + apiKey;
     fetch(restUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } })
@@ -87,24 +87,24 @@ window.UsersManagementPage = function(props) {
           });
           hasDelivered = true;
           setUsers(list);
-          setIsLoading(false);
         }
+        setIsLoading(false);
       })
-      .catch(function(err) { console.warn("REST users fetch notice (non-fatal):", err && err.message); });
+      .catch(function(err) {
+        console.warn("REST users fetch notice (non-fatal):", err && err.message);
+        setIsLoading(false);
+      });
 
-    // اشتراك حي عبر SDK للتحديثات الفورية (يكمل عمل REST)
-    if (!window.db) { setIsLoading(false); return function() {}; }
+    // 2. اشتراك حي عبر SDK فقط للتحديثات الحقيقية (إضافة / حذف / تعديل)
+    if (!window.db) { return function() {}; }
     try {
       return window.db.collection("users").onSnapshot(function(snap) {
         var list = [];
         snap.forEach(function(doc) {
           list.push(Object.assign({ id: doc.id }, doc.data()));
         });
-        // حماية: لو SDK رجّع قائمة فاضية وعندنا بيانات مسبقة — نتجاهلها
-        if (list.length === 0) {
-          if (!hasDelivered) setIsLoading(false); // لا يزال ينتظر
-          return;
-        }
+        // حماية مطلقة: لا نستبدل بيانات حقيقية بقائمة فارغة أبداً
+        if (list.length === 0) return;
         list.sort(function(a, b) {
           var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
           var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
@@ -115,11 +115,9 @@ window.UsersManagementPage = function(props) {
         setIsLoading(false);
       }, function(err) {
         console.warn("Realtime users listener failed:", err);
-        if (!hasDelivered) setIsLoading(false);
       });
     } catch (e) {
       console.error("Error setting up users listener:", e);
-      if (!hasDelivered) setIsLoading(false);
       return function() {};
     }
   };
