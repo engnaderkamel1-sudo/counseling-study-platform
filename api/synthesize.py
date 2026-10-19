@@ -100,12 +100,26 @@ class handler(BaseHTTPRequestHandler):
             audio_bytes, cues = asyncio.run(synthesize(text, voice))
 
             if len(audio_bytes) == 0:
-                self.send_response(500)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": "Speech synthesis engine returned empty audio data."}).encode("utf-8"))
-                return
+                # Retry once after 1 second if transient error
+                import time
+                time.sleep(1)
+                audio_bytes, cues = asyncio.run(synthesize(text, voice))
+
+            if len(audio_bytes) == 0:
+                # Check if text had any pronounceable letters
+                clean_t = clean_arabic_text(text)
+                has_letters = bool(re.search(r"[\u0600-\u06FFa-zA-Z0-9]", clean_t))
+                if not has_letters:
+                    # Return silent MP3 frame for non-pronounceable text
+                    audio_bytes = b"\xff\xfb\x90\x00" + (b"\x00" * 413)
+                    cues = []
+                else:
+                    self.send_response(500)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "تعذر توليد الصوت لهذا المقطع من خادم مايكروسوفت، يرجى المحاولة مرة أخرى."}).encode("utf-8"))
+                    return
 
             b64 = base64.b64encode(audio_bytes).decode("ascii")
 
