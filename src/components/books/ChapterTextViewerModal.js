@@ -23,7 +23,7 @@ window.ChapterTextViewerModal = function(props) {
   var allChaps = (activeBook && activeBook.audioChapters) || [];
   var allAudioChaps = allChaps.filter(function(c) { return c.audioUrl && c.audioUrl.trim(); });
   var curAudioIdx = allAudioChaps.findIndex(function(c) { return c.id === viewingChapterText.id; });
-  var hasAudio = !!(viewingChapterText.audioUrl && viewingChapterText.audioUrl.trim());
+  var hasAudio = !!(viewingChapterText && viewingChapterText.audioUrl && typeof viewingChapterText.audioUrl === "string" && viewingChapterText.audioUrl.trim() && viewingChapterText.audioUrl !== "null" && viewingChapterText.audioUrl !== "undefined");
   var isPlayingThis = playingChapterId === viewingChapterText.id;
 
   var [localProgress, setLocalProgress] = React.useState(0);
@@ -952,7 +952,27 @@ window.ChapterTextViewerModal = function(props) {
             className: "px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
           }, "▶️ تشغيل الصوت")
         )
-      ) : null,
+      ) : React.createElement(
+        "div",
+        { className: "p-2.5 px-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300 shrink-0 animate-fade-in" },
+        React.createElement("div", { className: "flex items-center gap-2 min-w-0" },
+          React.createElement("span", { className: "text-base shrink-0" }, "📄"),
+          React.createElement("div", { className: "min-w-0" },
+            React.createElement("span", { className: "font-bold text-slate-800 dark:text-white block text-xs" }, "نص مفرغ للقراءة فقط"),
+            React.createElement("span", { className: "text-slate-500 dark:text-slate-400 text-[11px] block truncate" }, "لم يتم توليد التسجيل الصوتي لهذا الفصل بعد")
+          )
+        ),
+        isAdmin ? React.createElement("button", {
+          type: "button",
+          onClick: function() {
+            onClose();
+            if (typeof props.handleGenerateChapterAudio === "function") {
+              props.handleGenerateChapterAudio(viewingChapterText);
+            }
+          },
+          className: "px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 active:scale-95 transition-all flex items-center gap-1 shrink-0"
+        }, "🎙️ توليد الصوت الآن") : null
+      ),
 
       // لوحة وأدوات وزن وضبط تزامن تظليل النص مع صوت المتحدث (Highlight Time Sync Shift - تظهر عند النقر على الترس ⚙️)
       hasAudio && showSyncSettings ? React.createElement(

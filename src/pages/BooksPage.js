@@ -2308,6 +2308,9 @@ window.BooksPage = function(props) {
           var chapIdx = workingChapters.findIndex(function(c) { return c.id === curTarget.id; });
           if (chapIdx >= 0) {
             var updatedChap = Object.assign({}, workingChapters[chapIdx], { audioUrl: finalUrl });
+            if (genRes && genRes.duration) {
+              updatedChap.audioDuration = genRes.duration;
+            }
             if (batchSubtitles && Array.isArray(batchSubtitles) && batchSubtitles.length > 0) {
               updatedChap.subtitles = batchSubtitles;
             }

@@ -8,7 +8,7 @@
 window.EdgeTtsService = {
   DEFAULT_VOICE: "ar-EG-SalmaNeural",
   DEFAULT_REGION: "eastus",
-  CHUNK_CHAR_LIMIT: 2600,
+  CHUNK_CHAR_LIMIT: 1800,
   TRUSTED_CLIENT_TOKEN: "6A5AA1D4EAFF4E9FB37E23D68491D6F4",
   BASE_URL: "speech.platform.bing.com/consumer/speech/synthesize/readaloud",
   CHROMIUM_FULL_VERSION: "130.0.2849.68",
@@ -546,7 +546,7 @@ window.EdgeTtsService = {
     var self = this;
     var azCfg = self.getAzureConfig();
 
-    // 1. محاولة استخدام Azure Speech إذا كان المفتاح متاحاً
+    // 1. محاولة استخدام Azure Speech إذا كان المفتاح متاحاً في الإعدادات
     if (azCfg.key1 || azCfg.key2) {
       var keyInfo = azCfg.key1 ? { key: azCfg.key1, keyIndex: 1, region: azCfg.region, statusText: "المفتاح الأساسي" }
                                : { key: azCfg.key2, keyIndex: 2, region: azCfg.region, statusText: "المفتاح الثاني" };
@@ -558,19 +558,24 @@ window.EdgeTtsService = {
             var backupInfo = { key: azCfg.key2, keyIndex: 2, region: azCfg.region, statusText: "المفتاح البديل" };
             return await self._synthesizeWithAzure(chunkText, voiceKey || azCfg.voice, backupInfo, onProgress);
           } catch (bErr) {
-            console.warn("Azure backup key failed, falling back to Serverless API:", bErr);
+            console.warn("Azure backup key failed, falling back to Direct Edge-TTS:", bErr);
           }
         }
-        console.warn("Azure Speech failed, falling back to Serverless API:", azErr);
+        console.warn("Azure Speech failed, falling back to Direct Edge-TTS:", azErr);
       }
     }
 
-    // 2. استخدام محرك سلمى السحابي مع إعادة المحاولة التلقائية
-    return await self._synthesizeWithServerlessApi(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    // 2. استخدام محرك Edge-TTS المباشر في المتصفح بصوت سلمى (المحرك الأساسي المجاني الفائق النقاء)
+    try {
+      return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    } catch (directErr) {
+      console.warn("Direct Edge-TTS WebSocket failed, trying serverless fallback:", directErr);
+      return await self._synthesizeWithServerlessApi(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    }
   },
 
   // -------------------------------------------------------------
-  // 6. الدالة العامة المعتمدة: تدعم التوليد المتوازي الفائق والتجميع الدقيق
+  // 6. الدالة العامة المعتمدة: تدعم الفصول الضخمة مع عدّاد الوقت والنسبة
   // -------------------------------------------------------------
   generateAudioForText: async function(text, voiceKey, onProgress) {
     var self = this;
@@ -608,72 +613,68 @@ window.EdgeTtsService = {
       };
     }
 
-    // حالة الفصول الطويلة: معالجة متوازية خفيفة (مقطعين معاً) لتسريع الإنجاز بنسبة 2.5x مع ثبات تام
+    // حالة الفصول الطويلة (تقطيع متتابع ودمج دقيق ومستقر)
     var allBlobs = [];
     var allSubtitles = [];
     var currentCumulativeTime = 0;
-    var CONCURRENCY = 2;
 
-    for (var idx = 0; idx < chunks.length; idx += CONCURRENCY) {
-      var batchIndices = [];
-      for (var b = 0; b < CONCURRENCY && (idx + b) < chunks.length; b++) {
-        batchIndices.push(idx + b);
-      }
-
-      var pct = Math.min(95, Math.round(((idx) / chunks.length) * 90) + 5);
-      var curPartLabel = batchIndices.map(function(i) { return i + 1; }).join(" و ");
-      var progressMsg = "جاري توليد الجزء (" + curPartLabel + " من " + chunks.length + ") بصوت سلمى...";
+    for (var idx = 0; idx < chunks.length; idx++) {
+      var chunkText = chunks[idx];
+      var pct = Math.round(((idx) / chunks.length) * 90) + 5;
+      var remainingSecs = Math.max(2, (chunks.length - idx) * 3);
+      var progressMsg = "جاري توليد الجزء (" + (idx + 1) + " من " + chunks.length + ") بصوت سلمى... (⏳ متبقي: ~" + remainingSecs + " ثانية)";
 
       if (typeof onProgress === "function") {
         onProgress({
-          current: Math.min(chunks.length, idx + batchIndices.length),
+          current: idx + 1,
           total: chunks.length,
           percent: pct,
           statusText: progressMsg
         });
       }
 
-      // تشغيل المقاطع بالتوازي
-      var batchPromises = batchIndices.map(function(chunkIdx) {
-        var cText = chunks[chunkIdx];
-        return self._generateSingleChunkResilient(cText, voice, function(subStatus) {
-          if (typeof onProgress === "function") {
-            onProgress({
-              current: Math.min(chunks.length, idx + batchIndices.length),
-              total: chunks.length,
-              percent: pct,
-              statusText: typeof subStatus === "string" ? ("أجزاء " + curPartLabel + ": " + subStatus) : progressMsg
-            });
-          }
-        });
-      });
-
-      var batchResults = await Promise.all(batchPromises);
-
-      // تجميع النتائج بالترتيب الصحيح
-      for (var r = 0; r < batchResults.length; r++) {
-        var chunkRes = batchResults[r];
-        var cText = chunks[batchIndices[r]];
-        if (chunkRes && chunkRes.blob && chunkRes.blob.size > 0) {
-          allBlobs.push(chunkRes.blob);
-          var chunkSubs = (chunkRes.subtitles && chunkRes.subtitles.length > 0)
-            ? chunkRes.subtitles.map(function(s) {
-                return {
-                  start: Math.round((currentCumulativeTime + (s.start || 0)) * 100) / 100,
-                  end: Math.round((currentCumulativeTime + (s.end || 0)) * 100) / 100,
-                  text: s.text
-                };
-              })
-            : self._buildSubtitlesForChunk(cText, currentCumulativeTime, chunkRes.duration);
-
-          allSubtitles = allSubtitles.concat(chunkSubs);
-          currentCumulativeTime += (chunkRes.duration || 0);
+      var chunkRes = null;
+      var lastErr = null;
+      for (var retry = 0; retry < 2; retry++) {
+        try {
+          chunkRes = await self._generateSingleChunkResilient(chunkText, voice, function(subStatus) {
+            if (typeof onProgress === "function") {
+              onProgress({
+                current: idx + 1,
+                total: chunks.length,
+                percent: pct,
+                statusText: typeof subStatus === "string" ? ("جزء " + (idx + 1) + ": " + subStatus) : progressMsg
+              });
+            }
+          });
+          break;
+        } catch (err) {
+          lastErr = err;
+          await new Promise(function(r) { setTimeout(r, 1200); });
         }
       }
 
-      // فاصل زمني قصير (300 مللي ثانية) لمنع حظر الطلبات المتتالية
-      if (idx + CONCURRENCY < chunks.length) {
-        await new Promise(function(resolve) { setTimeout(resolve, 300); });
+      if (!chunkRes) {
+        throw new Error("فشل توليد الجزء رقم " + (idx + 1) + " بعد المحاولة: " + (lastErr ? lastErr.message : ""));
+      }
+
+      allBlobs.push(chunkRes.blob);
+      var chunkSubs = (chunkRes.subtitles && chunkRes.subtitles.length > 0)
+        ? chunkRes.subtitles.map(function(s) {
+            return {
+              start: Math.round((currentCumulativeTime + (s.start || 0)) * 100) / 100,
+              end: Math.round((currentCumulativeTime + (s.end || 0)) * 100) / 100,
+              text: s.text
+            };
+          })
+        : self._buildSubtitlesForChunk(chunkText, currentCumulativeTime, chunkRes.duration);
+
+      allSubtitles = allSubtitles.concat(chunkSubs);
+      currentCumulativeTime += (chunkRes.duration || 0);
+
+      // فاصل زمني قصير (200 مللي ثانية) لتفادي أي ضغط
+      if (idx < chunks.length - 1) {
+        await new Promise(function(resolve) { setTimeout(resolve, 200); });
       }
     }
 

@@ -860,16 +860,20 @@ window.AudioChaptersView = function(props) {
         // زر سريع دائم لاستئناف توليد باقي أصوات الفصول دون الحاجة للبحث في الدروج
         chaps.length > 0 && typeof handleBatchGenerateAllAudio === "function" ? (function() {
           var missingAudioCount = chaps.filter(function(c) { return c.text && c.text.trim() && (!c.audioUrl || !c.audioUrl.trim()); }).length;
-          if (missingAudioCount === 0) return null;
+          var btnText = audioBatchProgress
+            ? "⏳ جاري التوليد..."
+            : (missingAudioCount > 0
+                ? ("🎙️ استئناف توليد باقي الفصول (" + missingAudioCount + " متبقية)")
+                : "🎙️ إعادة توليد صوت الفصول");
           return React.createElement(
             "button",
             {
               type: "button",
               onClick: handleBatchGenerateAllAudio,
               disabled: !!batchProgress || !!audioBatchProgress || !!srtBatchProgress,
-              className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-600/20 active:scale-95 transition-all animate-pulse"
+              className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-600/20 active:scale-95 transition-all " + (missingAudioCount > 0 ? "animate-pulse" : "")
             },
-            audioBatchProgress ? "⏳ جاري التوليد..." : ("🎙️ استئناف توليد باقي الفصول (" + missingAudioCount + ")")
+            btnText
           );
         })() : null,
         React.createElement(
@@ -1965,17 +1969,17 @@ window.AudioChaptersView = function(props) {
                 React.createElement("span", {
                   className: "font-medium flex items-center gap-1 text-slate-500 dark:text-slate-400"
                 }, "📄 صفحة PDF " + (chap.startPage || 1)),
-                // 1. شارة حالة النص
+                // 1. شارة حالة النص المفرغ
                 (function() {
                   var textLen = (chap.text || "").trim().length;
                   if (textLen > 100) {
                     return React.createElement("span", {
                       className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
-                    }, "📄 النص: مفرغ (" + textLen.toLocaleString() + " حرف)");
+                    }, "📄 نص الفصل: مكتمل (" + textLen.toLocaleString() + " حرف)");
                   } else {
                     return React.createElement("span", {
                       className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
-                    }, "📄 النص: غير مفرغ");
+                    }, "📄 نص الفصل: غير مفرغ بعد");
                   }
                 })(),
 
@@ -1986,15 +1990,15 @@ window.AudioChaptersView = function(props) {
                   if (hasDriveAudio) {
                     return React.createElement("span", {
                       className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
-                    }, "🎙️ الصوت: دائم على Drive" + (d > 0 ? (" (" + formatTime(d) + ")") : ""));
+                    }, "🎙️ الصوت: متوفر ومحفوظ" + (d > 0 ? (" (" + formatTime(d) + ")") : ""));
                   } else if (chap.audioUrl && chap.audioUrl.trim()) {
                     return React.createElement("span", {
                       className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
-                    }, "⚠️ الصوت: مؤقت (بحاجة لحفظ)");
+                    }, "⚠️ الصوت: مؤقت" + (d > 0 ? (" (" + formatTime(d) + ")") : ""));
                   } else {
                     return currentUser && currentUser.role === "admin" ? React.createElement("span", {
                       className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1"
-                    }, "❌ الصوت: غير مولد") : null;
+                    }, "❌ الصوت: غير مولد بعد") : null;
                   }
                 })(),
 
@@ -2005,15 +2009,15 @@ window.AudioChaptersView = function(props) {
                   if (hasSubs) {
                     return React.createElement("span", {
                       className: "text-violet-700 dark:text-violet-300 font-bold bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-md border border-violet-200 dark:border-violet-800 text-[11px] flex items-center gap-1"
-                    }, "✅ الـ SRT: متزامن ومحفوظ (" + chap.subtitles.length + " جملة)");
+                    }, "🎯 تزامن SRT: دقيق (" + chap.subtitles.length + " جملة)");
                   } else if (hasAudio) {
                     return React.createElement("span", {
                       className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
-                    }, "⚠️ الـ SRT: غير مولد (تظليل تقديري)");
+                    }, "⚡ تزامن تلقائي نشط (تظليل تقديري أثناء القراءة)");
                   } else {
                     return currentUser && currentUser.role === "admin" ? React.createElement("span", {
                       className: "text-slate-400 dark:text-slate-500 font-normal text-[11px] flex items-center gap-1"
-                    }, "⚪ الـ SRT: بانتظار توليد الصوت أولاً") : null;
+                    }, "⚪ تزامن SRT: بانتظار توليد الصوت أولاً") : null;
                   }
                 })(),
 
@@ -2210,7 +2214,7 @@ window.AudioChaptersView = function(props) {
             })(),
 
             // 2.7 زر إزالة / حذف ملف الصوت (للأدمن عند الرغبة بإلغاء التراك أو الفايل الفاضي وإعادة التوليد)
-            currentUser && currentUser.role === "admin" && chap.audioUrl && typeof handleClearChapterAudio === "function" ? React.createElement("button", {
+            currentUser && currentUser.role === "admin" && chap.audioUrl && chap.audioUrl.trim() && typeof handleClearChapterAudio === "function" ? React.createElement("button", {
               type: "button",
               onClick: function() { handleClearChapterAudio(chap.id); },
               disabled: (generatingAudioChapterId === chap.id) || !!audioBatchProgress,
@@ -2222,7 +2226,7 @@ window.AudioChaptersView = function(props) {
             ) : null,
 
             // 3. زر الاستماع للصوت إذا كان متاحاً
-            chap.audioUrl ? (function() {
+            (chap.audioUrl && typeof chap.audioUrl === "string" && chap.audioUrl.trim() && chap.audioUrl !== "null" && chap.audioUrl !== "undefined") ? (function() {
               var savedPos = 0;
               if (activeBook && activeBook.id) {
                 try {
