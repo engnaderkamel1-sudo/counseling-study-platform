@@ -8,11 +8,21 @@
 window.EdgeTtsService = {
   DEFAULT_VOICE: "ar-EG-SalmaNeural",
   DEFAULT_REGION: "eastus",
-  CHUNK_CHAR_LIMIT: 2500,
+  CHUNK_CHAR_LIMIT: 1000,
   TRUSTED_CLIENT_TOKEN: "6A5AA1D4EAFF4E9FB37E23D68491D6F4",
   BASE_URL: "speech.platform.bing.com/consumer/speech/synthesize/readaloud",
   CHROMIUM_FULL_VERSION: "130.0.2849.68",
   WIN_EPOCH: 11644473600,
+
+  // تنظيف النص العربي وتجريده من رموز الـ BOM والأرقام العلوية التي تعطل محركات الصوت
+  cleanText: function(text) {
+    if (!text) return "";
+    return text
+      .replace(/\ufeff/g, "")
+      .replace(/[\u200b\u200c\u200d]/g, "")
+      .replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]/g, "")
+      .trim();
+  },
 
   // قائمة الأصوات المتوافقة مع المنصة
   SUPPORTED_VOICES: [
@@ -447,8 +457,65 @@ window.EdgeTtsService = {
   },
 
   // -------------------------------------------------------------
-  // 5. توليد المقطع الواحد مع التبديل الذكي بين المحركات
+  // 5. تحويل البيانات وتوليد المقطع مع التبديل الذكي بين المحركات
   // -------------------------------------------------------------
+  _base64ToBlob: function(base64Data, contentType) {
+    contentType = contentType || "audio/mpeg";
+    var sliceSize = 1024;
+    var byteCharacters = atob(base64Data);
+    var byteArrays = [];
+    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      var slice = byteCharacters.slice(offset, offset + sliceSize);
+      var byteNumbers = new Array(slice.length);
+      for (var i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+  },
+
+  _synthesizeWithServerlessApi: async function(chunkText, voice, onProgress) {
+    var self = this;
+    if (typeof onProgress === "function") {
+      onProgress("جاري توليد الصوت عبر محرك سلمى السحابي...");
+    }
+
+    var cleanChunk = self.cleanText ? self.cleanText(chunkText) : (chunkText || "").trim();
+    var cleanVoice = (voice || self.DEFAULT_VOICE).split(" - ")[0].trim();
+
+    var resp = await fetch("/api/synthesize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: cleanChunk,
+        voice: cleanVoice
+      })
+    });
+
+    if (!resp.ok) {
+      var errData = null;
+      try { errData = await resp.json(); } catch (e) {}
+      var msg = (errData && errData.error) ? errData.error : ("رمز الخطأ: " + resp.status);
+      throw new Error("خطأ خدمة الصوت: " + msg);
+    }
+
+    var result = await resp.json();
+    if (!result.audioBase64) {
+      throw new Error("لم يتم استلام محتوى صوتي من السيرفر.");
+    }
+
+    var blob = self._base64ToBlob(result.audioBase64, "audio/mpeg");
+    var duration = await self._getAudioDuration(blob);
+
+    return {
+      audioUrl: URL.createObjectURL(blob),
+      blob: blob,
+      duration: duration,
+      subtitles: result.subtitles || []
+    };
+  },
+
   _generateSingleChunkResilient: async function(chunkText, voiceKey, onProgress) {
     var self = this;
     var azCfg = self.getAzureConfig();
@@ -465,15 +532,20 @@ window.EdgeTtsService = {
             var backupInfo = { key: azCfg.key2, keyIndex: 2, region: azCfg.region, statusText: "المفتاح البديل" };
             return await self._synthesizeWithAzure(chunkText, voiceKey || azCfg.voice, backupInfo, onProgress);
           } catch (bErr) {
-            console.warn("Azure backup key failed, falling back to Direct Edge-TTS:", bErr);
+            console.warn("Azure backup key failed, falling back to Serverless API:", bErr);
           }
         }
-        console.warn("Azure Speech failed, falling back to Direct Edge-TTS:", azErr);
+        console.warn("Azure Speech failed, falling back to Serverless API:", azErr);
       }
     }
 
-    // 2. استخدام محرك Edge-TTS المباشر في المتصفح (المحرك الافتراضي المجاني)
-    return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    // 2. استخدام محرك سلمى السحابي السريع /api/synthesize مع التراجع للمباشر إن لزم
+    try {
+      return await self._synthesizeWithServerlessApi(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    } catch (srvErr) {
+      console.warn("Serverless API failed, attempting direct Edge fallback:", srvErr);
+      return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    }
   },
 
   // -------------------------------------------------------------

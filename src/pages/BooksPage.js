@@ -257,9 +257,15 @@ window.BooksPage = function(props) {
               }
               var isCloudExpired = utils.isExpiredAudioUrl ? utils.isExpiredAudioUrl(ch.audioUrl) : (ch.audioUrl && (ch.audioUrl.indexOf("/tmp/gradio/") !== -1 || ch.audioUrl.indexOf("gradio_api/file") !== -1));
               var isCachedDrive = cachedCh && cachedCh.audioUrl && (cachedCh.audioUrl.indexOf("drive.google.com") !== -1 || cachedCh.audioUrl.indexOf("docs.google.com") !== -1);
-              var isCloudDrive = ch.audioUrl && (ch.audioUrl.indexOf("drive.google.com") !== -1 || ch.audioUrl.indexOf("docs.google.com") !== -1);
-              // الرابط الصوتي المعتمد هو رابط درايف السحابي أولاً، أو درايف المحلي، وإذا لم يوجد وأفرغناه في السحابة فيبقى فارغاً ولا يتم استعادة روابط الكاش المنتهية
-              var bestAudio = (isCloudDrive ? ch.audioUrl.trim() : "") || (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || "";
+              // الرابط الصوتي المعتمد: إذا كان الرابط في السحابة مفرغاً ("") فيعامل كحذف ولا يعاد إحياؤه من الكاش المحلي
+              var cloudAudioVal = (ch.audioUrl || "").trim();
+              var isCloudDrive = cloudAudioVal && (cloudAudioVal.indexOf("drive.google.com") !== -1 || cloudAudioVal.indexOf("docs.google.com") !== -1);
+              var bestAudio = "";
+              if (cloudAudioVal) {
+                bestAudio = isCloudDrive ? cloudAudioVal : (!isCloudExpired ? cloudAudioVal : "");
+              } else if (ch.audioUrl === undefined && isCachedDrive) {
+                bestAudio = cachedCh.audioUrl.trim();
+              }
               var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
@@ -1142,6 +1148,36 @@ window.BooksPage = function(props) {
       if (chapterAudioRef.current) chapterAudioRef.current.pause();
       setPlayingChapterId(null);
     }
+  };
+
+  var handleClearChapterAudio = async function(chapId) {
+    if (!activeBook) return;
+    var chaps = (activeBook.audioChapters || []).slice();
+    var idx = chaps.findIndex(function(c) { return c.id === chapId; });
+    if (idx < 0) return;
+    var chap = chaps[idx];
+
+    if (!window.confirm("⚠️ هل أنت متأكد من رغبتك في حذف ملف الصوت الخاص بالفصل («" + chap.title + "»)؟\nسيتحول الفصل إلى (غير مولد) مع الحفاظ على النص المفرغ والصفحات، لتتمكن من إعادة توليده بصوت «سلمى».")) {
+      return;
+    }
+
+    var updatedChap = Object.assign({}, chap, { audioUrl: "", subtitles: [] });
+    chaps[idx] = updatedChap;
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
+
+    setActiveBook(updatedBook);
+    utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);
+    var allBooksList = utils.getLocal(cfg.storageKeys.books, []) || [];
+    var bkIdx = allBooksList.findIndex(function(b) { return b.id === updatedBook.id; });
+    if (bkIdx >= 0) { allBooksList[bkIdx] = updatedBook; utils.setLocal(cfg.storageKeys.books, allBooksList); }
+
+    if (playingChapterId === chapId) {
+      if (chapterAudioRef.current) chapterAudioRef.current.pause();
+      setPlayingChapterId(null);
+    }
+
+    await safeCloudSaveBook(updatedBook);
+    alert("✅ تم حذف ملف الصوت بنجاح وأصبح الفصل متاحاً لإعادة التوليد.");
   };
 
   // تغيير ترتيب فصل أو جزء للأعلى أو للأسفل بحرية تامة
@@ -2247,8 +2283,14 @@ window.BooksPage = function(props) {
 
       try {
         var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(st) {
-          var label = (st && typeof st === "object" && st.statusText) ? st.statusText : (typeof st === "string" ? st : "جاري المعالجة...");
-          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + label);
+          if (st && typeof st === "object") {
+            setSingleAudioProgress(st);
+            var label = st.statusText || "جاري المعالجة...";
+            setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + label);
+          } else {
+            var label = typeof st === "string" ? st : "جاري المعالجة...";
+            setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + label);
+          }
         });
         var generatedUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
         var batchSubtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
@@ -2288,6 +2330,7 @@ window.BooksPage = function(props) {
 
     setGeneratingAudioChapterId(null);
     setAudioBatchProgress(null);
+    setSingleAudioProgress(null);
     setAudioStatusText("");
 
     if (audioCancelledRef.current) {
@@ -3357,7 +3400,8 @@ window.BooksPage = function(props) {
           handleToggleChapterPublish: handleToggleChapterPublish,
           handleToggleChapterOverride: handleToggleChapterOverride,
           handlePublishReadyChapters: handlePublishReadyChapters,
-          handleSaveChapterSubtitles: handleSaveChapterSubtitles
+          handleSaveChapterSubtitles: handleSaveChapterSubtitles,
+          handleClearChapterAudio: handleClearChapterAudio
         }) :
         bookStudyTab === "track1" ? (function() {
           var audioSrc = activeBook.audioUrl ? utils.getAudioStreamUrl(activeBook.audioUrl) : "";
