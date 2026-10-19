@@ -637,14 +637,11 @@ function App() {
       var unsubscribeUser = window.db.collection("users").doc(currentUser.id).onSnapshot({ includeMetadataChanges: true }, function(doc) {
         if (doc.exists) {
           var uData = doc.data();
-          // حماية من الكاش القديم: لا نوقف الحساب إذا كانت البيانات مسترجعة من الذاكرة المؤقتة (fromCache)
-          // ننتظر دائماً تأكيد الخادم الحي المباشر لتجنب تعليق الحساب خطأً
           if (doc.metadata && doc.metadata.fromCache && uData.status !== "approved") {
             return;
           }
 
           if (uData.status === "approved") {
-            // مزامنة أي تحديثات فورية أجراها المشرف (مثل تغيير كلمة المرور)
             if (currentUser.status !== "approved" || currentUser.password !== uData.password) {
               var merged = Object.assign({}, currentUser, uData);
               utils.setLocal("counsel_current_user", merged);
@@ -655,6 +652,11 @@ function App() {
             utils.removeLocal("counsel_current_user");
             setCurrentUser(null);
           }
+        } else if (!doc.metadata || !doc.metadata.fromCache) {
+          // المستخدم اتحذف من Firestore — تسجيل خروج فوري
+          alert("تنبيه: تم حذف حسابك من المنصة من قِبل المشرف.");
+          utils.removeLocal("counsel_current_user");
+          setCurrentUser(null);
         }
       }, function(err) {
         console.warn("User status listener warning:", err);
