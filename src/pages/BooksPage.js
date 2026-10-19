@@ -257,7 +257,9 @@ window.BooksPage = function(props) {
               }
               var isCloudExpired = utils.isExpiredAudioUrl ? utils.isExpiredAudioUrl(ch.audioUrl) : (ch.audioUrl && (ch.audioUrl.indexOf("/tmp/gradio/") !== -1 || ch.audioUrl.indexOf("gradio_api/file") !== -1));
               var isCachedDrive = cachedCh && cachedCh.audioUrl && (cachedCh.audioUrl.indexOf("drive.google.com") !== -1 || cachedCh.audioUrl.indexOf("docs.google.com") !== -1);
-              var bestAudio = (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
+              var isCloudDrive = ch.audioUrl && (ch.audioUrl.indexOf("drive.google.com") !== -1 || ch.audioUrl.indexOf("docs.google.com") !== -1);
+              // الرابط الصوتي المعتمد هو رابط درايف السحابي أولاً، أو درايف المحلي، وإذا لم يوجد وأفرغناه في السحابة فيبقى فارغاً ولا يتم استعادة روابط الكاش المنتهية
+              var bestAudio = (isCloudDrive ? ch.audioUrl.trim() : "") || (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || "";
               var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
@@ -2116,6 +2118,7 @@ window.BooksPage = function(props) {
   // توليد الصوت بالذكاء الاصطناعي لفصل مفرد أو لكافة الفصول
   var [generatingAudioChapterId, setGeneratingAudioChapterId] = React.useState(null);
   var [audioBatchProgress, setAudioBatchProgress] = React.useState(null);
+  var [singleAudioProgress, setSingleAudioProgress] = React.useState(null);
   var [audioStatusText, setAudioStatusText] = React.useState("");
   var audioCancelledRef = React.useRef(false);
 
@@ -2136,11 +2139,17 @@ window.BooksPage = function(props) {
     }
 
     setGeneratingAudioChapterId(chap.id);
+    setSingleAudioProgress({ current: 0, total: 1, percent: 5, statusText: "جاري الاتصال بمحرك الصوت والتجهيز..." });
     setAudioStatusText("جاري الاتصال بمحرك الصوت...");
 
     try {
-      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
-        setAudioStatusText(msg);
+      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(prog) {
+        if (prog && typeof prog === "object") {
+          setSingleAudioProgress(prog);
+          setAudioStatusText(prog.statusText || "");
+        } else {
+          setAudioStatusText(String(prog));
+        }
       });
       var audioUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
       var subtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
@@ -2148,6 +2157,7 @@ window.BooksPage = function(props) {
       if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
 
       // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
+      setSingleAudioProgress({ current: 1, total: 1, percent: 99, statusText: "☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive..." });
       setAudioStatusText("☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive...");
       var safeAudioName = (activeBook.title || "كتاب") + " - " + chap.title;
       var driveAudioUrl = await utils.uploadAudioUrlToDrive(audioUrl, safeAudioName, function(s) {
@@ -2187,6 +2197,7 @@ window.BooksPage = function(props) {
       alert("حدث خطأ أثناء توليد الصوت: " + (audioErr.message || audioErr));
     } finally {
       setGeneratingAudioChapterId(null);
+      setSingleAudioProgress(null);
       setAudioStatusText("");
     }
   };
@@ -3331,6 +3342,8 @@ window.BooksPage = function(props) {
           handleStopBatchAudio: handleStopBatchAudio,
           generatingAudioChapterId: generatingAudioChapterId,
           audioBatchProgress: audioBatchProgress,
+          singleAudioProgress: singleAudioProgress,
+          audioStatusText: audioStatusText,
           onOpenQualityAudit: function() { setIsQualityAuditOpen(true); },
           handlePublishToggle: handlePublishToggle,
           handleToggleChapterPublish: handleToggleChapterPublish,

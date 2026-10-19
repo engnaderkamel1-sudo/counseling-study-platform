@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"},{"hash":"a309ce5","date":"2026-10-12 17:52","message":"fix(chapters): make audio and pdf page optional when creating or editing chapters"}];
+window.APP_UPDATES_HISTORY = [{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"},{"hash":"1dd5dff","date":"2026-10-12 17:56","message":"force: update sw to v6 and deploy chapter optional audio"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1792385319",
-  buildTime: "2026-10-19T04:48:39",
+  version: "1.2.1792386674",
+  buildTime: "2026-10-19T05:11:14",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2501,9 +2501,15 @@ window.EdgeTtsService = {
 
     for (var idx = 0; idx < chunks.length; idx++) {
       var chunkText = chunks[idx];
+      var chunkPct = Math.round(((idx) / chunks.length) * 100);
       var progressMsg = "جاري توليد الجزء الصوتي (" + (idx + 1) + " من " + chunks.length + ") بصوت " + selectedVoice + "...";
       if (typeof onProgress === "function") {
-        onProgress(progressMsg);
+        onProgress({
+          current: idx + 1,
+          total: chunks.length,
+          percent: chunkPct,
+          statusText: progressMsg
+        });
       }
 
       var chunkRes = null;
@@ -2524,7 +2530,12 @@ window.EdgeTtsService = {
               waitSec = Math.ceil(parseFloat(matchSec[1])) + 2;
             }
             if (typeof onProgress === "function") {
-              onProgress("⏳ انتظار أمان للكوتا (" + waitSec + " ثانية) قبل الجزء " + (idx + 1) + "...");
+              onProgress({
+                current: idx + 1,
+                total: chunks.length,
+                percent: chunkPct,
+                statusText: "⏳ انتظار أمان للكوتا (" + waitSec + " ثانية) قبل الجزء " + (idx + 1) + "..."
+              });
             }
             await new Promise(function(r) { setTimeout(r, waitSec * 1000); });
           } else {
@@ -2541,6 +2552,17 @@ window.EdgeTtsService = {
       allBlobs.push(chunkRes.blob);
       totalDuration += chunkRes.duration;
 
+      // تحديث النسبة بعد اكتمال الجزء
+      var completedPct = Math.round(((idx + 1) / chunks.length) * 100);
+      if (typeof onProgress === "function") {
+        onProgress({
+          current: idx + 1,
+          total: chunks.length,
+          percent: completedPct,
+          statusText: "✓ تم إنجاز الجزء " + (idx + 1) + " من " + chunks.length + " (" + completedPct + "%)"
+        });
+      }
+
       // إذا كان هناك مقطع قادم، ننتظر ثانيتين فاصل أمان بسيط
       if (idx < chunks.length - 1) {
         await new Promise(function(r) { setTimeout(r, 2000); });
@@ -2548,7 +2570,12 @@ window.EdgeTtsService = {
     }
 
     if (typeof onProgress === "function") {
-      onProgress("جاري دمج الأجزاء الصوتية في ملف متكامل سليم...");
+      onProgress({
+        current: chunks.length,
+        total: chunks.length,
+        percent: 98,
+        statusText: "جاري دمج الأجزاء الصوتية في ملف متكامل سليم..."
+      });
     }
 
     var mergedBlob = await self._concatenateWavBlobs(allBlobs);
@@ -10032,6 +10059,7 @@ window.AudioChaptersView = function(props) {
   var handleStopBatchAudio = props.handleStopBatchAudio;
   var generatingAudioChapterId = props.generatingAudioChapterId;
   var audioBatchProgress = props.audioBatchProgress;
+  var singleAudioProgress = props.singleAudioProgress;
   var audioStatusText = props.audioStatusText;
   var isPlaylistModeProp = props.isPlaylistMode;
   var setIsPlaylistModeProp = props.setIsPlaylistMode;
@@ -10860,6 +10888,21 @@ window.AudioChaptersView = function(props) {
       currentUser && currentUser.role === "admin" ? React.createElement(
         "div",
         { className: "flex items-center gap-2 self-start sm:self-auto flex-wrap" },
+        // زر سريع دائم لاستئناف توليد باقي أصوات الفصول دون الحاجة للبحث في الدروج
+        chaps.length > 0 && typeof handleBatchGenerateAllAudio === "function" ? (function() {
+          var missingAudioCount = chaps.filter(function(c) { return c.text && c.text.trim() && (!c.audioUrl || !c.audioUrl.trim()); }).length;
+          if (missingAudioCount === 0) return null;
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleBatchGenerateAllAudio,
+              disabled: !!batchProgress || !!audioBatchProgress || !!srtBatchProgress,
+              className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-600/20 active:scale-95 transition-all animate-pulse"
+            },
+            audioBatchProgress ? "⏳ جاري التوليد..." : ("🎙️ استئناف توليد باقي الفصول (" + missingAudioCount + ")")
+          );
+        })() : null,
         React.createElement(
           "button",
           {
@@ -11950,67 +11993,58 @@ window.AudioChaptersView = function(props) {
                 React.createElement("span", {
                   className: "font-medium flex items-center gap-1 text-slate-500 dark:text-slate-400"
                 }, "📄 صفحة PDF " + (chap.startPage || 1)),
-                chap.audioUrl ? (function() {
-                  var d = (durationsMap && durationsMap[chap.id]) || chap.audioDuration || 0;
-                  var savedPos = 0;
-                  if (activeBook && activeBook.id) {
-                    try {
-                      var s = localStorage.getItem("counsel_audio_pos_" + activeBook.id + "_" + chap.id);
-                      if (s) savedPos = parseFloat(s) || 0;
-                    } catch (e) {}
-                  }
-                  return React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
-                    React.createElement("span", {
-                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 text-[11px]"
-                    },
-                      "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "صوت متاح ✓")
-                    ),
-                    savedPos > 3 ? React.createElement("span", {
-                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 flex items-center gap-1 text-[11px]"
-                    }, "📌 متوقف عند " + formatTime(savedPos)) : null
-                  );
-                })() : (currentUser && currentUser.role === "admin" ? React.createElement(
-                  "span",
-                  { className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1" },
-                  "⚠️ بدون صوت"
-                ) : null),
+                // 1. شارة حالة النص
                 (function() {
-                  var sP = Number(chap.startPage) || 1;
-                  var nextC = chaps[idx + 1];
-                  var defaultEnd = nextC && nextC.startPage ? (Number(nextC.startPage) - 1) : sP;
-                  var eP = Number(chap.endPage) || defaultEnd;
-                  var totalChapPages = Math.max(1, eP - sP + 1);
-                  var lastP = Number(chap.lastExtractedPage) || (chap.isComplete ? eP : 0);
-                  var pagesDone = chap.isComplete ? totalChapPages : (lastP >= sP ? Math.min(totalChapPages, lastP - sP + 1) : ((chap.text && chap.text.trim().length > 100) ? totalChapPages : 0));
                   var textLen = (chap.text || "").trim().length;
-                  var isDone = (pagesDone >= totalChapPages) && (textLen > 100);
-
-                  if (currentUser && currentUser.role === "admin") {
-                    if (isDone) {
-                      return React.createElement("span", {
-                        className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
-                      },
-                        "✅ مكتمل (" + totalChapPages + " ص)"
-                      );
-                    } else if (textLen > 0 || pagesDone > 0) {
-                      return React.createElement("span", {
-                        className: "text-amber-700 dark:text-amber-300 font-black bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
-                      },
-                        "⚠️ قيد الإعداد (" + pagesDone + " من " + totalChapPages + " ص)"
-                      );
-                    } else {
-                      return React.createElement("span", {
-                        className: "text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1"
-                      },
-                        "⚪ قيد الإعداد (" + totalChapPages + " ص)"
-                      );
-                    }
+                  if (textLen > 100) {
+                    return React.createElement("span", {
+                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
+                    }, "📄 النص: مفرغ (" + textLen.toLocaleString() + " حرف)");
                   } else {
-                    return textLen > 0 ? React.createElement("span", {
-                      className: "text-blue-600 dark:text-blue-400 font-medium text-[11px] flex items-center gap-1"
-                    }, "📖 متاح للقراءة") : null;
+                    return React.createElement("span", {
+                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
+                    }, "📄 النص: غير مفرغ");
                   }
                 })(),
+
+                // 2. شارة حالة الصوت الحقيقية
+                (function() {
+                  var hasDriveAudio = chap.audioUrl && (chap.audioUrl.indexOf("drive.google.com") !== -1 || chap.audioUrl.indexOf("docs.google.com") !== -1 || chap.audioUrl.indexOf("lh3.googleusercontent.com") !== -1);
+                  var d = (durationsMap && durationsMap[chap.id]) || chap.audioDuration || 0;
+                  if (hasDriveAudio) {
+                    return React.createElement("span", {
+                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
+                    }, "🎙️ الصوت: دائم على Drive" + (d > 0 ? (" (" + formatTime(d) + ")") : ""));
+                  } else if (chap.audioUrl && chap.audioUrl.trim()) {
+                    return React.createElement("span", {
+                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
+                    }, "⚠️ الصوت: مؤقت (بحاجة لحفظ)");
+                  } else {
+                    return currentUser && currentUser.role === "admin" ? React.createElement("span", {
+                      className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1"
+                    }, "❌ الصوت: غير مولد") : null;
+                  }
+                })(),
+
+                // 3. شارة حالة ملف التزامن SRT
+                (function() {
+                  var hasSubs = chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0;
+                  var hasAudio = chap.audioUrl && chap.audioUrl.trim();
+                  if (hasSubs) {
+                    return React.createElement("span", {
+                      className: "text-violet-700 dark:text-violet-300 font-bold bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-md border border-violet-200 dark:border-violet-800 text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: متزامن (" + chap.subtitles.length + " جملة)");
+                  } else if (hasAudio) {
+                    return React.createElement("span", {
+                      className: "text-teal-700 dark:text-teal-300 font-medium bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: تظليل تلقائي ذكي");
+                  } else {
+                    return currentUser && currentUser.role === "admin" ? React.createElement("span", {
+                      className: "text-slate-400 dark:text-slate-500 font-normal text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: بانتظار الصوت") : null;
+                  }
+                })(),
+
                 // شارة حالة نشر هذا الفصل للأدمن
                 currentUser && currentUser.role === "admin" ? React.createElement("span", {
                   className: "text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 " +
@@ -12019,13 +12053,10 @@ window.AudioChaptersView = function(props) {
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700")
                 },
                   chap.isPublished === true ? "🟢 متاح للدارسين" : "🔒 مسودة (مخفي)"
-                ) : null,
-                currentUser && currentUser.role === "admin" && chap.adminOverride ? React.createElement("span", {
-                  className: "text-[11px] font-black px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 flex items-center gap-1"
-                }, "🛡️ معتمد يدوياً (Override)") : null
+                ) : null
               ),
 
-              // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية
+              // شريط تقدم تفريغ النص لهذا الفصل بالنسبة المئوية
               isExtractingThis && currentChapProgress ? React.createElement(
                 "div",
                 { className: "mt-2.5 p-2.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/50 border border-emerald-500/30 space-y-1.5 animate-fade-in" },
@@ -12034,7 +12065,7 @@ window.AudioChaptersView = function(props) {
                   { className: "flex items-center justify-between text-xs flex-wrap gap-1" },
                   React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300" },
                     React.createElement("span", { className: "animate-spin inline-block text-[11px]" }, "⚙️"),
-                    React.createElement("span", null, "نسبة إنجاز هذا الفصل:"),
+                    React.createElement("span", null, "نسبة إنجاز النص:"),
                     React.createElement("span", { className: "font-mono font-black text-white px-2 py-0.5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-xs shadow-xs" },
                       currentChapProgress.percent + "%"
                     )
@@ -12050,16 +12081,38 @@ window.AudioChaptersView = function(props) {
                     className: "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300",
                     style: { width: Math.max(5, currentChapProgress.percent) + "%" }
                   })
+                )
+              ) : null,
+
+              // شريط تقدم توليد الصوت الحي لهذا الفصل بالنسبة المئوية وعدّاد الأجزاء
+              (generatingAudioChapterId === chap.id) && singleAudioProgress ? React.createElement(
+                "div",
+                { className: "mt-2.5 p-2.5 rounded-xl bg-purple-500/10 dark:bg-purple-950/50 border border-purple-500/30 space-y-1.5 animate-fade-in" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between text-xs flex-wrap gap-1" },
+                  React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-200" },
+                    React.createElement("span", { className: "animate-pulse text-[11px]" }, "🎙️"),
+                    React.createElement("span", null, "نسبة توليد الصوت:"),
+                    React.createElement("span", { className: "font-mono font-black text-white px-2 py-0.5 rounded-md bg-purple-600 dark:bg-purple-500 text-xs shadow-xs" },
+                      (singleAudioProgress.percent || 0) + "%"
+                    )
+                  ),
+                  React.createElement("div", { className: "text-[11px] text-purple-700 dark:text-purple-300 font-mono font-bold" },
+                    singleAudioProgress.total > 1 ? ("(جزء " + singleAudioProgress.current + " من " + singleAudioProgress.total + ")") : ""
+                  )
                 ),
-                currentChapProgress.remainingPages <= 2 ? React.createElement(
-                  "p",
-                  { className: "text-[10px] text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1 pt-0.5" },
-                  "⏳ أوشك هذا الفصل على الانتهاء! فاضل " + currentChapProgress.remainingPages + " صفحة فقط - ننصح بالانتظار لحظات ليتم حفظه تلقائيًا."
-                ) : currentChapProgress.percent <= 25 ? React.createElement(
-                  "p",
-                  { className: "text-[10px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 pt-0.5" },
-                  "💡 الفصل في بدايته (صفحة " + currentChapProgress.pageIndex + " من " + currentChapProgress.totalPages + ") - يمكنك إيقاف الاستخراج بأمان إن أردت."
-                ) : null
+                React.createElement(
+                  "div",
+                  { className: "w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden border border-purple-500/20" },
+                  React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-400 h-full rounded-full transition-all duration-300 shadow-xs",
+                    style: { width: Math.max(5, singleAudioProgress.percent || 0) + "%" }
+                  })
+                ),
+                React.createElement("p", { className: "text-[11px] text-purple-800 dark:text-purple-200 font-medium pt-0.5" },
+                  singleAudioProgress.statusText || audioStatusText || "جاري الاتصال بمحرك الصوت والتجهيز..."
+                )
               ) : null
             )
           ),
@@ -16156,7 +16209,9 @@ window.BooksPage = function(props) {
               }
               var isCloudExpired = utils.isExpiredAudioUrl ? utils.isExpiredAudioUrl(ch.audioUrl) : (ch.audioUrl && (ch.audioUrl.indexOf("/tmp/gradio/") !== -1 || ch.audioUrl.indexOf("gradio_api/file") !== -1));
               var isCachedDrive = cachedCh && cachedCh.audioUrl && (cachedCh.audioUrl.indexOf("drive.google.com") !== -1 || cachedCh.audioUrl.indexOf("docs.google.com") !== -1);
-              var bestAudio = (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || (cachedCh && cachedCh.audioUrl && cachedCh.audioUrl.trim()) || "";
+              var isCloudDrive = ch.audioUrl && (ch.audioUrl.indexOf("drive.google.com") !== -1 || ch.audioUrl.indexOf("docs.google.com") !== -1);
+              // الرابط الصوتي المعتمد هو رابط درايف السحابي أولاً، أو درايف المحلي، وإذا لم يوجد وأفرغناه في السحابة فيبقى فارغاً ولا يتم استعادة روابط الكاش المنتهية
+              var bestAudio = (isCloudDrive ? ch.audioUrl.trim() : "") || (isCachedDrive ? cachedCh.audioUrl.trim() : "") || (!isCloudExpired && ch.audioUrl && ch.audioUrl.trim()) || "";
               var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
@@ -18015,6 +18070,7 @@ window.BooksPage = function(props) {
   // توليد الصوت بالذكاء الاصطناعي لفصل مفرد أو لكافة الفصول
   var [generatingAudioChapterId, setGeneratingAudioChapterId] = React.useState(null);
   var [audioBatchProgress, setAudioBatchProgress] = React.useState(null);
+  var [singleAudioProgress, setSingleAudioProgress] = React.useState(null);
   var [audioStatusText, setAudioStatusText] = React.useState("");
   var audioCancelledRef = React.useRef(false);
 
@@ -18035,11 +18091,17 @@ window.BooksPage = function(props) {
     }
 
     setGeneratingAudioChapterId(chap.id);
+    setSingleAudioProgress({ current: 0, total: 1, percent: 5, statusText: "جاري الاتصال بمحرك الصوت والتجهيز..." });
     setAudioStatusText("جاري الاتصال بمحرك الصوت...");
 
     try {
-      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(msg) {
-        setAudioStatusText(msg);
+      var genRes = await window.EdgeTtsService.generateAudioForText(chap.text, null, function(prog) {
+        if (prog && typeof prog === "object") {
+          setSingleAudioProgress(prog);
+          setAudioStatusText(prog.statusText || "");
+        } else {
+          setAudioStatusText(String(prog));
+        }
       });
       var audioUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
       var subtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
@@ -18047,6 +18109,7 @@ window.BooksPage = function(props) {
       if (!audioUrl) throw new Error("لم يتم استلام رابط الصوت من الخدمة.");
 
       // رفع وتأمين الصوت تلقائياً إلى Google Drive لحفظه دائماً وملكاً للمستخدم
+      setSingleAudioProgress({ current: 1, total: 1, percent: 99, statusText: "☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive..." });
       setAudioStatusText("☁️ جاري حفظ وتأمين الملف الصوتي تلقائياً على Google Drive...");
       var safeAudioName = (activeBook.title || "كتاب") + " - " + chap.title;
       var driveAudioUrl = await utils.uploadAudioUrlToDrive(audioUrl, safeAudioName, function(s) {
@@ -18086,6 +18149,7 @@ window.BooksPage = function(props) {
       alert("حدث خطأ أثناء توليد الصوت: " + (audioErr.message || audioErr));
     } finally {
       setGeneratingAudioChapterId(null);
+      setSingleAudioProgress(null);
       setAudioStatusText("");
     }
   };
@@ -19230,6 +19294,8 @@ window.BooksPage = function(props) {
           handleStopBatchAudio: handleStopBatchAudio,
           generatingAudioChapterId: generatingAudioChapterId,
           audioBatchProgress: audioBatchProgress,
+          singleAudioProgress: singleAudioProgress,
+          audioStatusText: audioStatusText,
           onOpenQualityAudit: function() { setIsQualityAuditOpen(true); },
           handlePublishToggle: handlePublishToggle,
           handleToggleChapterPublish: handleToggleChapterPublish,

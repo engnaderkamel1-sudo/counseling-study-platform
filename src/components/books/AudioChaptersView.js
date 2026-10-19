@@ -27,6 +27,7 @@ window.AudioChaptersView = function(props) {
   var handleStopBatchAudio = props.handleStopBatchAudio;
   var generatingAudioChapterId = props.generatingAudioChapterId;
   var audioBatchProgress = props.audioBatchProgress;
+  var singleAudioProgress = props.singleAudioProgress;
   var audioStatusText = props.audioStatusText;
   var isPlaylistModeProp = props.isPlaylistMode;
   var setIsPlaylistModeProp = props.setIsPlaylistMode;
@@ -855,6 +856,21 @@ window.AudioChaptersView = function(props) {
       currentUser && currentUser.role === "admin" ? React.createElement(
         "div",
         { className: "flex items-center gap-2 self-start sm:self-auto flex-wrap" },
+        // زر سريع دائم لاستئناف توليد باقي أصوات الفصول دون الحاجة للبحث في الدروج
+        chaps.length > 0 && typeof handleBatchGenerateAllAudio === "function" ? (function() {
+          var missingAudioCount = chaps.filter(function(c) { return c.text && c.text.trim() && (!c.audioUrl || !c.audioUrl.trim()); }).length;
+          if (missingAudioCount === 0) return null;
+          return React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleBatchGenerateAllAudio,
+              disabled: !!batchProgress || !!audioBatchProgress || !!srtBatchProgress,
+              className: "inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-600/20 active:scale-95 transition-all animate-pulse"
+            },
+            audioBatchProgress ? "⏳ جاري التوليد..." : ("🎙️ استئناف توليد باقي الفصول (" + missingAudioCount + ")")
+          );
+        })() : null,
         React.createElement(
           "button",
           {
@@ -1945,67 +1961,58 @@ window.AudioChaptersView = function(props) {
                 React.createElement("span", {
                   className: "font-medium flex items-center gap-1 text-slate-500 dark:text-slate-400"
                 }, "📄 صفحة PDF " + (chap.startPage || 1)),
-                chap.audioUrl ? (function() {
-                  var d = (durationsMap && durationsMap[chap.id]) || chap.audioDuration || 0;
-                  var savedPos = 0;
-                  if (activeBook && activeBook.id) {
-                    try {
-                      var s = localStorage.getItem("counsel_audio_pos_" + activeBook.id + "_" + chap.id);
-                      if (s) savedPos = parseFloat(s) || 0;
-                    } catch (e) {}
-                  }
-                  return React.createElement("div", { className: "flex items-center gap-1.5 flex-wrap" },
-                    React.createElement("span", {
-                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 text-[11px]"
-                    },
-                      "⏱️ " + (d > 0 ? ("المدة: " + formatTime(d)) : "صوت متاح ✓")
-                    ),
-                    savedPos > 3 ? React.createElement("span", {
-                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 flex items-center gap-1 text-[11px]"
-                    }, "📌 متوقف عند " + formatTime(savedPos)) : null
-                  );
-                })() : (currentUser && currentUser.role === "admin" ? React.createElement(
-                  "span",
-                  { className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1" },
-                  "⚠️ بدون صوت"
-                ) : null),
+                // 1. شارة حالة النص
                 (function() {
-                  var sP = Number(chap.startPage) || 1;
-                  var nextC = chaps[idx + 1];
-                  var defaultEnd = nextC && nextC.startPage ? (Number(nextC.startPage) - 1) : sP;
-                  var eP = Number(chap.endPage) || defaultEnd;
-                  var totalChapPages = Math.max(1, eP - sP + 1);
-                  var lastP = Number(chap.lastExtractedPage) || (chap.isComplete ? eP : 0);
-                  var pagesDone = chap.isComplete ? totalChapPages : (lastP >= sP ? Math.min(totalChapPages, lastP - sP + 1) : ((chap.text && chap.text.trim().length > 100) ? totalChapPages : 0));
                   var textLen = (chap.text || "").trim().length;
-                  var isDone = (pagesDone >= totalChapPages) && (textLen > 100);
-
-                  if (currentUser && currentUser.role === "admin") {
-                    if (isDone) {
-                      return React.createElement("span", {
-                        className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
-                      },
-                        "✅ مكتمل (" + totalChapPages + " ص)"
-                      );
-                    } else if (textLen > 0 || pagesDone > 0) {
-                      return React.createElement("span", {
-                        className: "text-amber-700 dark:text-amber-300 font-black bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
-                      },
-                        "⚠️ قيد الإعداد (" + pagesDone + " من " + totalChapPages + " ص)"
-                      );
-                    } else {
-                      return React.createElement("span", {
-                        className: "text-slate-500 dark:text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1"
-                      },
-                        "⚪ قيد الإعداد (" + totalChapPages + " ص)"
-                      );
-                    }
+                  if (textLen > 100) {
+                    return React.createElement("span", {
+                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
+                    }, "📄 النص: مفرغ (" + textLen.toLocaleString() + " حرف)");
                   } else {
-                    return textLen > 0 ? React.createElement("span", {
-                      className: "text-blue-600 dark:text-blue-400 font-medium text-[11px] flex items-center gap-1"
-                    }, "📖 متاح للقراءة") : null;
+                    return React.createElement("span", {
+                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
+                    }, "📄 النص: غير مفرغ");
                   }
                 })(),
+
+                // 2. شارة حالة الصوت الحقيقية
+                (function() {
+                  var hasDriveAudio = chap.audioUrl && (chap.audioUrl.indexOf("drive.google.com") !== -1 || chap.audioUrl.indexOf("docs.google.com") !== -1 || chap.audioUrl.indexOf("lh3.googleusercontent.com") !== -1);
+                  var d = (durationsMap && durationsMap[chap.id]) || chap.audioDuration || 0;
+                  if (hasDriveAudio) {
+                    return React.createElement("span", {
+                      className: "text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800 text-[11px] flex items-center gap-1"
+                    }, "🎙️ الصوت: دائم على Drive" + (d > 0 ? (" (" + formatTime(d) + ")") : ""));
+                  } else if (chap.audioUrl && chap.audioUrl.trim()) {
+                    return React.createElement("span", {
+                      className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
+                    }, "⚠️ الصوت: مؤقت (بحاجة لحفظ)");
+                  } else {
+                    return currentUser && currentUser.role === "admin" ? React.createElement("span", {
+                      className: "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-md border border-rose-200 dark:border-rose-800 text-[11px] flex items-center gap-1"
+                    }, "❌ الصوت: غير مولد") : null;
+                  }
+                })(),
+
+                // 3. شارة حالة ملف التزامن SRT
+                (function() {
+                  var hasSubs = chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0;
+                  var hasAudio = chap.audioUrl && chap.audioUrl.trim();
+                  if (hasSubs) {
+                    return React.createElement("span", {
+                      className: "text-violet-700 dark:text-violet-300 font-bold bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-md border border-violet-200 dark:border-violet-800 text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: متزامن (" + chap.subtitles.length + " جملة)");
+                  } else if (hasAudio) {
+                    return React.createElement("span", {
+                      className: "text-teal-700 dark:text-teal-300 font-medium bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: تظليل تلقائي ذكي");
+                  } else {
+                    return currentUser && currentUser.role === "admin" ? React.createElement("span", {
+                      className: "text-slate-400 dark:text-slate-500 font-normal text-[11px] flex items-center gap-1"
+                    }, "⚡ الـ SRT: بانتظار الصوت") : null;
+                  }
+                })(),
+
                 // شارة حالة نشر هذا الفصل للأدمن
                 currentUser && currentUser.role === "admin" ? React.createElement("span", {
                   className: "text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 " +
@@ -2014,13 +2021,10 @@ window.AudioChaptersView = function(props) {
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700")
                 },
                   chap.isPublished === true ? "🟢 متاح للدارسين" : "🔒 مسودة (مخفي)"
-                ) : null,
-                currentUser && currentUser.role === "admin" && chap.adminOverride ? React.createElement("span", {
-                  className: "text-[11px] font-black px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 flex items-center gap-1"
-                }, "🛡️ معتمد يدوياً (Override)") : null
+                ) : null
               ),
 
-              // شريط تقدم تفريغ هذا الفصل بالنسبة المئوية
+              // شريط تقدم تفريغ النص لهذا الفصل بالنسبة المئوية
               isExtractingThis && currentChapProgress ? React.createElement(
                 "div",
                 { className: "mt-2.5 p-2.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/50 border border-emerald-500/30 space-y-1.5 animate-fade-in" },
@@ -2029,7 +2033,7 @@ window.AudioChaptersView = function(props) {
                   { className: "flex items-center justify-between text-xs flex-wrap gap-1" },
                   React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300" },
                     React.createElement("span", { className: "animate-spin inline-block text-[11px]" }, "⚙️"),
-                    React.createElement("span", null, "نسبة إنجاز هذا الفصل:"),
+                    React.createElement("span", null, "نسبة إنجاز النص:"),
                     React.createElement("span", { className: "font-mono font-black text-white px-2 py-0.5 rounded-md bg-emerald-600 dark:bg-emerald-500 text-xs shadow-xs" },
                       currentChapProgress.percent + "%"
                     )
@@ -2045,16 +2049,38 @@ window.AudioChaptersView = function(props) {
                     className: "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300",
                     style: { width: Math.max(5, currentChapProgress.percent) + "%" }
                   })
+                )
+              ) : null,
+
+              // شريط تقدم توليد الصوت الحي لهذا الفصل بالنسبة المئوية وعدّاد الأجزاء
+              (generatingAudioChapterId === chap.id) && singleAudioProgress ? React.createElement(
+                "div",
+                { className: "mt-2.5 p-2.5 rounded-xl bg-purple-500/10 dark:bg-purple-950/50 border border-purple-500/30 space-y-1.5 animate-fade-in" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between text-xs flex-wrap gap-1" },
+                  React.createElement("div", { className: "flex items-center gap-1.5 font-bold text-purple-900 dark:text-purple-200" },
+                    React.createElement("span", { className: "animate-pulse text-[11px]" }, "🎙️"),
+                    React.createElement("span", null, "نسبة توليد الصوت:"),
+                    React.createElement("span", { className: "font-mono font-black text-white px-2 py-0.5 rounded-md bg-purple-600 dark:bg-purple-500 text-xs shadow-xs" },
+                      (singleAudioProgress.percent || 0) + "%"
+                    )
+                  ),
+                  React.createElement("div", { className: "text-[11px] text-purple-700 dark:text-purple-300 font-mono font-bold" },
+                    singleAudioProgress.total > 1 ? ("(جزء " + singleAudioProgress.current + " من " + singleAudioProgress.total + ")") : ""
+                  )
                 ),
-                currentChapProgress.remainingPages <= 2 ? React.createElement(
-                  "p",
-                  { className: "text-[10px] text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1 pt-0.5" },
-                  "⏳ أوشك هذا الفصل على الانتهاء! فاضل " + currentChapProgress.remainingPages + " صفحة فقط - ننصح بالانتظار لحظات ليتم حفظه تلقائيًا."
-                ) : currentChapProgress.percent <= 25 ? React.createElement(
-                  "p",
-                  { className: "text-[10px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1 pt-0.5" },
-                  "💡 الفصل في بدايته (صفحة " + currentChapProgress.pageIndex + " من " + currentChapProgress.totalPages + ") - يمكنك إيقاف الاستخراج بأمان إن أردت."
-                ) : null
+                React.createElement(
+                  "div",
+                  { className: "w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden border border-purple-500/20" },
+                  React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-400 h-full rounded-full transition-all duration-300 shadow-xs",
+                    style: { width: Math.max(5, singleAudioProgress.percent || 0) + "%" }
+                  })
+                ),
+                React.createElement("p", { className: "text-[11px] text-purple-800 dark:text-purple-200 font-medium pt-0.5" },
+                  singleAudioProgress.statusText || audioStatusText || "جاري الاتصال بمحرك الصوت والتجهيز..."
+                )
               ) : null
             )
           ),

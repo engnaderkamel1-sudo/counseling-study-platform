@@ -350,9 +350,15 @@ window.EdgeTtsService = {
 
     for (var idx = 0; idx < chunks.length; idx++) {
       var chunkText = chunks[idx];
+      var chunkPct = Math.round(((idx) / chunks.length) * 100);
       var progressMsg = "جاري توليد الجزء الصوتي (" + (idx + 1) + " من " + chunks.length + ") بصوت " + selectedVoice + "...";
       if (typeof onProgress === "function") {
-        onProgress(progressMsg);
+        onProgress({
+          current: idx + 1,
+          total: chunks.length,
+          percent: chunkPct,
+          statusText: progressMsg
+        });
       }
 
       var chunkRes = null;
@@ -373,7 +379,12 @@ window.EdgeTtsService = {
               waitSec = Math.ceil(parseFloat(matchSec[1])) + 2;
             }
             if (typeof onProgress === "function") {
-              onProgress("⏳ انتظار أمان للكوتا (" + waitSec + " ثانية) قبل الجزء " + (idx + 1) + "...");
+              onProgress({
+                current: idx + 1,
+                total: chunks.length,
+                percent: chunkPct,
+                statusText: "⏳ انتظار أمان للكوتا (" + waitSec + " ثانية) قبل الجزء " + (idx + 1) + "..."
+              });
             }
             await new Promise(function(r) { setTimeout(r, waitSec * 1000); });
           } else {
@@ -390,6 +401,17 @@ window.EdgeTtsService = {
       allBlobs.push(chunkRes.blob);
       totalDuration += chunkRes.duration;
 
+      // تحديث النسبة بعد اكتمال الجزء
+      var completedPct = Math.round(((idx + 1) / chunks.length) * 100);
+      if (typeof onProgress === "function") {
+        onProgress({
+          current: idx + 1,
+          total: chunks.length,
+          percent: completedPct,
+          statusText: "✓ تم إنجاز الجزء " + (idx + 1) + " من " + chunks.length + " (" + completedPct + "%)"
+        });
+      }
+
       // إذا كان هناك مقطع قادم، ننتظر ثانيتين فاصل أمان بسيط
       if (idx < chunks.length - 1) {
         await new Promise(function(r) { setTimeout(r, 2000); });
@@ -397,7 +419,12 @@ window.EdgeTtsService = {
     }
 
     if (typeof onProgress === "function") {
-      onProgress("جاري دمج الأجزاء الصوتية في ملف متكامل سليم...");
+      onProgress({
+        current: chunks.length,
+        total: chunks.length,
+        percent: 98,
+        statusText: "جاري دمج الأجزاء الصوتية في ملف متكامل سليم..."
+      });
     }
 
     var mergedBlob = await self._concatenateWavBlobs(allBlobs);
