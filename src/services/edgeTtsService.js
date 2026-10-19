@@ -495,7 +495,7 @@ window.EdgeTtsService = {
     return new Blob(byteArrays, { type: contentType });
   },
 
-  _synthesizeWithServerlessApi: async function(chunkText, voice, onProgress) {
+  _synthesizeWithServerless: async function(chunkText, voice, onProgress) {
     var self = this;
     if (typeof onProgress === "function") {
       onProgress("جاري توليد الصوت عبر محرك سلمى السحابي...");
