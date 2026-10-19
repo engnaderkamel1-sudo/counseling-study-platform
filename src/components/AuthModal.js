@@ -50,8 +50,6 @@ window.AuthModal = function(props) {
     setErrorMsg("");
 
     try {
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
-
       var cleanEmail = email.trim().toLowerCase();
       var cleanPassword = password.trim();
       var cleanFullName = fullName.trim();
@@ -75,10 +73,38 @@ window.AuthModal = function(props) {
 
       var userDocId = "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
 
-      // فحص ما إذا كان الحساب مسجلاً مسبقاً
-      var snap = await window.db.collection("users").doc(userDocId).get();
-      if (snap.exists) {
+      // فحص ما إذا كان الحساب مسجلاً مسبقاً عبر REST API المباشر
+      // يعمل دائماً على الموبايل بدون خطأ "client is offline" لأنه HTTPS عادي بدون WebSockets
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
+      var userAlreadyExists = false;
+      try {
+        var checkUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users/" + userDocId + "?key=" + apiKey;
+        var checkRes = await fetch(checkUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        if (checkRes.ok) {
+          var checkData = await checkRes.json();
+          if (checkData && checkData.fields) userAlreadyExists = true;
+        }
+        // 404 = المستخدم غير موجود وهذا طبيعي
+      } catch (restErr) {
+        console.warn("REST user check notice (non-fatal):", restErr && restErr.message);
+        // احتياط: إذا فشل REST نحاول SDK مع timeout
+        if (window.db) {
+          try {
+            var sdkSnap = await Promise.race([
+              window.db.collection("users").doc(userDocId).get({ source: "server" }),
+              new Promise(function(_, rej) { setTimeout(function() { rej(new Error("timeout")); }, 5000); })
+            ]);
+            if (sdkSnap && sdkSnap.exists) userAlreadyExists = true;
+          } catch (e) { console.warn("SDK fallback check notice:", e && e.message); }
+        }
+      }
+
+      if (userAlreadyExists) {
         throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
+      }
+
+      if (!window.db) {
+        throw new Error("تعذّر الاتصال بقاعدة البيانات. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.");
       }
 
       var userStatus = "pending";

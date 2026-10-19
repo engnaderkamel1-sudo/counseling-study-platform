@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"}];
+window.APP_UPDATES_HISTORY = [{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1792411119",
-  buildTime: "2026-10-19T11:58:39",
+  version: "1.2.1792412056",
+  buildTime: "2026-10-19T12:14:16",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -5169,8 +5169,6 @@ window.AuthModal = function(props) {
     setErrorMsg("");
 
     try {
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
-
       var cleanEmail = email.trim().toLowerCase();
       var cleanPassword = password.trim();
       var cleanFullName = fullName.trim();
@@ -5194,10 +5192,38 @@ window.AuthModal = function(props) {
 
       var userDocId = "user_" + cleanEmail.replace(/[^a-zA-Z0-9]/g, "_");
 
-      // فحص ما إذا كان الحساب مسجلاً مسبقاً
-      var snap = await window.db.collection("users").doc(userDocId).get();
-      if (snap.exists) {
+      // فحص ما إذا كان الحساب مسجلاً مسبقاً عبر REST API المباشر
+      // يعمل دائماً على الموبايل بدون خطأ "client is offline" لأنه HTTPS عادي بدون WebSockets
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
+      var userAlreadyExists = false;
+      try {
+        var checkUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users/" + userDocId + "?key=" + apiKey;
+        var checkRes = await fetch(checkUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        if (checkRes.ok) {
+          var checkData = await checkRes.json();
+          if (checkData && checkData.fields) userAlreadyExists = true;
+        }
+        // 404 = المستخدم غير موجود وهذا طبيعي
+      } catch (restErr) {
+        console.warn("REST user check notice (non-fatal):", restErr && restErr.message);
+        // احتياط: إذا فشل REST نحاول SDK مع timeout
+        if (window.db) {
+          try {
+            var sdkSnap = await Promise.race([
+              window.db.collection("users").doc(userDocId).get({ source: "server" }),
+              new Promise(function(_, rej) { setTimeout(function() { rej(new Error("timeout")); }, 5000); })
+            ]);
+            if (sdkSnap && sdkSnap.exists) userAlreadyExists = true;
+          } catch (e) { console.warn("SDK fallback check notice:", e && e.message); }
+        }
+      }
+
+      if (userAlreadyExists) {
         throw new Error("يوجد حساب مسجل بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول.");
+      }
+
+      if (!window.db) {
+        throw new Error("تعذّر الاتصال بقاعدة البيانات. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.");
       }
 
       var userStatus = "pending";
@@ -15714,24 +15740,23 @@ window.LecturesPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
       setIsLoadingLectures(false);
-      if (cloudList) {
-        cloudList.sort(function(a, b) {
-          var dateA = new Date(a.date).getTime() || 0;
-          var dateB = new Date(b.date).getTime() || 0;
-          if (dateA !== dateB) return dateA - dateB;
-          return (a.sessionOrder || 1) - (b.sessionOrder || 1);
-        });
-
-        setLectures(cloudList);
-        utils.setLocal(cfg.storageKeys.lectures, cloudList);
-        if (cloudList.length > 0) {
-          setActiveLecture(function(prev) {
-            return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
-          });
-        } else {
-          setActiveLecture(null);
-        }
+      // حماية: لا نستبدل قائمة محاضرات موجودة بقائمة فارغة من السحابة
+      // يحدث هذا أثناء إعادة الاتصال عبر WebSocket قبل تحميل البيانات الفعلية
+      if (!cloudList || cloudList.length === 0) {
+        return; // احتفظ بالمحاضرات الحالية ولا تمسحها
       }
+      cloudList.sort(function(a, b) {
+        var dateA = new Date(a.date).getTime() || 0;
+        var dateB = new Date(b.date).getTime() || 0;
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+      });
+
+      setLectures(cloudList);
+      utils.setLocal(cfg.storageKeys.lectures, cloudList);
+      setActiveLecture(function(prev) {
+        return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
+      });
     });
     return function() {
       if (typeof unsubscribe === "function") unsubscribe();
@@ -22173,7 +22198,7 @@ window.UsersManagementPage = function(props) {
   var [users, setUsers] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
   var [searchQuery, setSearchQuery] = React.useState("");
-  var [activeFilter, setActiveFilter] = React.useState("pending"); // "pending", "approved", "rejected", "all"
+  var [activeFilter, setActiveFilter] = React.useState("all"); // "pending", "approved", "rejected", "all"
 
   // نافذة إضافة دارس يدوياً ومعتمد فوراً
   var [showManualAddModal, setShowManualAddModal] = React.useState(false);
@@ -22205,12 +22230,62 @@ window.UsersManagementPage = function(props) {
     "شمال سيناء", "جنوب سيناء", "خارج مصر / مقيم بالخارج"
   ];
 
+  // دالة مساعدة لتحليل قيمة Firestore REST API
+  var parseFirestoreValue = function(val) {
+    if (!val) return null;
+    if (val.stringValue !== undefined) return val.stringValue;
+    if (val.integerValue !== undefined) return parseInt(val.integerValue, 10);
+    if (val.doubleValue !== undefined) return parseFloat(val.doubleValue);
+    if (val.booleanValue !== undefined) return val.booleanValue;
+    if (val.nullValue !== undefined) return null;
+    if (val.timestampValue !== undefined) return { seconds: Math.floor(new Date(val.timestampValue).getTime() / 1000) };
+    if (val.mapValue !== undefined && val.mapValue.fields) {
+      var obj = {};
+      Object.keys(val.mapValue.fields).forEach(function(k) { obj[k] = parseFirestoreValue(val.mapValue.fields[k]); });
+      return obj;
+    }
+    if (val.arrayValue !== undefined && val.arrayValue.values) {
+      return val.arrayValue.values.map(parseFirestoreValue);
+    }
+    return null;
+  };
+
+  var parseRestUserDoc = function(doc) {
+    if (!doc || !doc.fields) return null;
+    var obj = {};
+    Object.keys(doc.fields).forEach(function(k) { obj[k] = parseFirestoreValue(doc.fields[k]); });
+    obj.id = doc.name ? doc.name.split("/").pop() : obj.id;
+    return obj;
+  };
+
   var fetchUsers = function() {
-    if (!window.db || !currentUser || currentUser.role !== "admin") {
+    if (!currentUser || currentUser.role !== "admin") {
       setIsLoading(false);
       return function() {};
     }
     setIsLoading(true);
+
+    // جلب أولي فوري عبر REST API (يعمل دائماً على الموبايل بدون خطأ "client is offline")
+    var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
+    var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users?pageSize=500&key=" + apiKey;
+    fetch(restUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.documents && data.documents.length > 0) {
+          var list = data.documents.map(parseRestUserDoc).filter(Boolean);
+          list.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tB - tA;
+          });
+          setUsers(list);
+          setIsLoading(false);
+        }
+      })
+      .catch(function(err) { console.warn("REST users fetch notice (non-fatal):", err && err.message); });
+
+    // اشتراك حي عبر SDK للتحديثات الفورية (يكمل عمل REST)
+    if (!window.db) { setIsLoading(false); return function() {}; }
     try {
       return window.db.collection("users").onSnapshot(function(snap) {
         var list = [];
@@ -22222,18 +22297,13 @@ window.UsersManagementPage = function(props) {
           var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
           return tB - tA;
         });
-        setUsers(list);
+        if (list.length > 0) {
+          setUsers(list);
+        }
         setIsLoading(false);
       }, function(err) {
-        console.warn("Realtime users listener failed, fetching directly:", err);
-        window.db.collection("users").get().then(function(snap) {
-          var list = [];
-          snap.forEach(function(doc) {
-            list.push(Object.assign({ id: doc.id }, doc.data()));
-          });
-          setUsers(list);
-          setIsLoading(false);
-        }).catch(function() { setIsLoading(false); });
+        console.warn("Realtime users listener failed:", err);
+        setIsLoading(false);
       });
     } catch (e) {
       console.error("Error setting up users listener:", e);

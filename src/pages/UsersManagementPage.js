@@ -4,7 +4,7 @@ window.UsersManagementPage = function(props) {
   var [users, setUsers] = React.useState([]);
   var [isLoading, setIsLoading] = React.useState(true);
   var [searchQuery, setSearchQuery] = React.useState("");
-  var [activeFilter, setActiveFilter] = React.useState("pending"); // "pending", "approved", "rejected", "all"
+  var [activeFilter, setActiveFilter] = React.useState("all"); // "pending", "approved", "rejected", "all"
 
   // نافذة إضافة دارس يدوياً ومعتمد فوراً
   var [showManualAddModal, setShowManualAddModal] = React.useState(false);
@@ -36,12 +36,62 @@ window.UsersManagementPage = function(props) {
     "شمال سيناء", "جنوب سيناء", "خارج مصر / مقيم بالخارج"
   ];
 
+  // دالة مساعدة لتحليل قيمة Firestore REST API
+  var parseFirestoreValue = function(val) {
+    if (!val) return null;
+    if (val.stringValue !== undefined) return val.stringValue;
+    if (val.integerValue !== undefined) return parseInt(val.integerValue, 10);
+    if (val.doubleValue !== undefined) return parseFloat(val.doubleValue);
+    if (val.booleanValue !== undefined) return val.booleanValue;
+    if (val.nullValue !== undefined) return null;
+    if (val.timestampValue !== undefined) return { seconds: Math.floor(new Date(val.timestampValue).getTime() / 1000) };
+    if (val.mapValue !== undefined && val.mapValue.fields) {
+      var obj = {};
+      Object.keys(val.mapValue.fields).forEach(function(k) { obj[k] = parseFirestoreValue(val.mapValue.fields[k]); });
+      return obj;
+    }
+    if (val.arrayValue !== undefined && val.arrayValue.values) {
+      return val.arrayValue.values.map(parseFirestoreValue);
+    }
+    return null;
+  };
+
+  var parseRestUserDoc = function(doc) {
+    if (!doc || !doc.fields) return null;
+    var obj = {};
+    Object.keys(doc.fields).forEach(function(k) { obj[k] = parseFirestoreValue(doc.fields[k]); });
+    obj.id = doc.name ? doc.name.split("/").pop() : obj.id;
+    return obj;
+  };
+
   var fetchUsers = function() {
-    if (!window.db || !currentUser || currentUser.role !== "admin") {
+    if (!currentUser || currentUser.role !== "admin") {
       setIsLoading(false);
       return function() {};
     }
     setIsLoading(true);
+
+    // جلب أولي فوري عبر REST API (يعمل دائماً على الموبايل بدون خطأ "client is offline")
+    var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
+    var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users?pageSize=500&key=" + apiKey;
+    fetch(restUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.documents && data.documents.length > 0) {
+          var list = data.documents.map(parseRestUserDoc).filter(Boolean);
+          list.sort(function(a, b) {
+            var tA = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
+            var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
+            return tB - tA;
+          });
+          setUsers(list);
+          setIsLoading(false);
+        }
+      })
+      .catch(function(err) { console.warn("REST users fetch notice (non-fatal):", err && err.message); });
+
+    // اشتراك حي عبر SDK للتحديثات الفورية (يكمل عمل REST)
+    if (!window.db) { setIsLoading(false); return function() {}; }
     try {
       return window.db.collection("users").onSnapshot(function(snap) {
         var list = [];
@@ -53,18 +103,13 @@ window.UsersManagementPage = function(props) {
           var tB = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
           return tB - tA;
         });
-        setUsers(list);
+        if (list.length > 0) {
+          setUsers(list);
+        }
         setIsLoading(false);
       }, function(err) {
-        console.warn("Realtime users listener failed, fetching directly:", err);
-        window.db.collection("users").get().then(function(snap) {
-          var list = [];
-          snap.forEach(function(doc) {
-            list.push(Object.assign({ id: doc.id }, doc.data()));
-          });
-          setUsers(list);
-          setIsLoading(false);
-        }).catch(function() { setIsLoading(false); });
+        console.warn("Realtime users listener failed:", err);
+        setIsLoading(false);
       });
     } catch (e) {
       console.error("Error setting up users listener:", e);

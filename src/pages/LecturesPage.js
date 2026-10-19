@@ -156,24 +156,23 @@ window.LecturesPage = function(props) {
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
       setIsLoadingLectures(false);
-      if (cloudList) {
-        cloudList.sort(function(a, b) {
-          var dateA = new Date(a.date).getTime() || 0;
-          var dateB = new Date(b.date).getTime() || 0;
-          if (dateA !== dateB) return dateA - dateB;
-          return (a.sessionOrder || 1) - (b.sessionOrder || 1);
-        });
-
-        setLectures(cloudList);
-        utils.setLocal(cfg.storageKeys.lectures, cloudList);
-        if (cloudList.length > 0) {
-          setActiveLecture(function(prev) {
-            return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
-          });
-        } else {
-          setActiveLecture(null);
-        }
+      // حماية: لا نستبدل قائمة محاضرات موجودة بقائمة فارغة من السحابة
+      // يحدث هذا أثناء إعادة الاتصال عبر WebSocket قبل تحميل البيانات الفعلية
+      if (!cloudList || cloudList.length === 0) {
+        return; // احتفظ بالمحاضرات الحالية ولا تمسحها
       }
+      cloudList.sort(function(a, b) {
+        var dateA = new Date(a.date).getTime() || 0;
+        var dateB = new Date(b.date).getTime() || 0;
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+      });
+
+      setLectures(cloudList);
+      utils.setLocal(cfg.storageKeys.lectures, cloudList);
+      setActiveLecture(function(prev) {
+        return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
+      });
     });
     return function() {
       if (typeof unsubscribe === "function") unsubscribe();
