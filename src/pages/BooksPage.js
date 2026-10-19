@@ -310,6 +310,9 @@ window.BooksPage = function(props) {
         setBooks(mergedList);
         setIsLoadingBooks(false);
         utils.setLocal(cfg.storageKeys.books, mergedList);
+        mergedList.forEach(function(b) {
+          if (b && b.id) utils.setLocal("counsel_book_data_" + b.id, b);
+        });
         setActiveBook(function(prev) {
           if (!prev) {
             var savedActiveId = utils.getLocal("counsel_active_book_id");
@@ -2217,6 +2220,23 @@ window.BooksPage = function(props) {
           updatedChap.subtitles = subtitles;
         }
         chaps[cIdx] = updatedChap;
+        // صمام أمان: الحفاظ على أي روابط صوتية للفصول الأخرى تم تحديثها في السحابة أو الكاش
+        try {
+          var allBks = utils.getLocal(cfg.storageKeys.books, []) || [];
+          var refB = allBks.find(function(b) { return b && b.id === latestBook.id; });
+          if (refB && Array.isArray(refB.audioChapters)) {
+            refB.audioChapters.forEach(function(rbc, rIdx) {
+              if (rIdx !== cIdx && rbc && rbc.audioUrl && (!chaps[rIdx] || !chaps[rIdx].audioUrl)) {
+                if (chaps[rIdx]) {
+                  chaps[rIdx] = Object.assign({}, chaps[rIdx], {
+                    audioUrl: rbc.audioUrl,
+                    audioDuration: rbc.audioDuration || chaps[rIdx].audioDuration
+                  });
+                }
+              }
+            });
+          }
+        } catch (ePreserve) {}
         latestBook.audioChapters = chaps;
         setActiveBook(latestBook);
         setPlayingChapterId(chap.id);
