@@ -1,83 +1,133 @@
-// خدمة تحويل النص إلى صوت (Text-to-Speech Service - تدعم Gemini AI TTS الرسمي و Azure Speech كخيار احتياطي)
+// خدمة تحويل النص إلى صوت (Text-to-Speech Service)
+// محرك صوت «سلمى» الرسمي المصري (ar-EG-SalmaNeural)
+// يدعم:
+// 1. التوليد المباشر عبر متصفح الويب (Direct Edge-TTS WebSocket مع تشفير Sec-MS-GEC) - مجاني وبدون كوتا
+// 2. محرك Microsoft Azure Speech الرسمي (في حال إدخال مفتاح في الإعدادات) مع التبديل التلقائي بين مفتاحين
+// 3. التقطيع الذكي للنصوص الضخمة، والدمج التلقائي، ومزامنة توقيتات النص (Subtitles / SRT)
+
 window.EdgeTtsService = {
-  // قائمة الأصوات المدعومة رسمياً من Gemini AI مع أسمائها وتوصيفها
-  GEMINI_VOICES: [
-    { id: "Aoede", name: "Aoede (صوت نسائي دافئ وهادئ - موصى به لكتب المشورة)", gender: "female" },
-    { id: "Kore", name: "Kore (صوت نسائي ناعم ومريح)", gender: "female" },
-    { id: "Leda", name: "Leda (صوت نسائي متزن وواضح)", gender: "female" },
-    { id: "Callirrhoe", name: "Callirrhoe (صوت نسائي خفيف ومشرق)", gender: "female" },
-    { id: "Puck", name: "Puck (صوت رجالي طبيعي وحيوي)", gender: "male" },
-    { id: "Fenrir", name: "Fenrir (صوت رجالي عميق ووقور)", gender: "male" },
-    { id: "Charon", name: "Charon (صوت رجالي هادئ وناضج)", gender: "male" }
+  DEFAULT_VOICE: "ar-EG-SalmaNeural",
+  DEFAULT_REGION: "eastus",
+  CHUNK_CHAR_LIMIT: 2500,
+  TRUSTED_CLIENT_TOKEN: "6A5AA1D4EAFF4E9FB37E23D68491D6F4",
+  BASE_URL: "speech.platform.bing.com/consumer/speech/synthesize/readaloud",
+  CHROMIUM_FULL_VERSION: "130.0.2849.68",
+  WIN_EPOCH: 11644473600,
+
+  // قائمة الأصوات المتوافقة مع المنصة
+  SUPPORTED_VOICES: [
+    { id: "ar-EG-SalmaNeural", name: "سلمى - مصري أنثوي نقي ودافئ (الموصى به)", gender: "female", region: "Egypt" },
+    { id: "ar-EG-ShakirNeural", name: "شاكر - مصري رجالي وقور", gender: "male", region: "Egypt" },
+    { id: "ar-SA-ZariyahNeural", name: "زارية - فصحى خليجي أنثوي", gender: "female", region: "Saudi Arabia" },
+    { id: "ar-SA-HamedNeural", name: "حامد - فصحى خليجي رجالي", gender: "male", region: "Saudi Arabia" }
   ],
 
-  DEFAULT_GEMINI_VOICE: "Aoede",
-
-  // الحصول على إعدادات الصوت
-  getVoiceConfig: function() {
+  // -------------------------------------------------------------
+  // 1. إعدادات محرك Azure Speech الرسمي ومراقبة الكوتا
+  // -------------------------------------------------------------
+  getAzureConfig: function() {
     var utils = window.APP_UTILS;
-    var voice = utils ? utils.getLocal("counsel_tts_gemini_voice", this.DEFAULT_GEMINI_VOICE) : this.DEFAULT_GEMINI_VOICE;
+    var key1 = utils ? utils.getLocal("counsel_azure_speech_key_1", "") : "";
+    var key2 = utils ? utils.getLocal("counsel_azure_speech_key_2", "") : "";
+    var region = utils ? utils.getLocal("counsel_azure_speech_region", this.DEFAULT_REGION) : this.DEFAULT_REGION;
+    var voice = utils ? utils.getLocal("counsel_azure_speech_voice", this.DEFAULT_VOICE) : this.DEFAULT_VOICE;
+
     return {
-      voice: voice || this.DEFAULT_GEMINI_VOICE
+      key1: (key1 || "").trim(),
+      key2: (key2 || "").trim(),
+      region: (region || this.DEFAULT_REGION).trim(),
+      voice: (voice || this.DEFAULT_VOICE).trim()
     };
   },
 
-  // حفظ الصوت المختار
-  saveVoiceConfig: function(config) {
+  saveAzureConfig: function(config) {
     var utils = window.APP_UTILS;
     if (!utils) return;
-    if (config.voice) utils.setLocal("counsel_tts_gemini_voice", config.voice.trim());
+    if (config.key1 !== undefined) utils.setLocal("counsel_azure_speech_key_1", config.key1.trim());
+    if (config.key2 !== undefined) utils.setLocal("counsel_azure_speech_key_2", config.key2.trim());
+    if (config.region !== undefined) utils.setLocal("counsel_azure_speech_region", config.region.trim());
+    if (config.voice !== undefined) utils.setLocal("counsel_azure_speech_voice", config.voice.trim());
   },
 
-  // الحد الأقصى الآمن لحجم المقطع الواحد (أقل من 6500 حرف لضمان عدم تجاوز حد 10000 توكن للدقيقة في باقة Gemini المجانية)
-  CHUNK_CHAR_LIMIT: 6000,
+  getUsageStats: function() {
+    var utils = window.APP_UTILS;
+    var currentMonth = new Date().toISOString().slice(0, 7);
+    var savedStats = utils ? utils.getLocal("counsel_azure_speech_usage", null) : null;
 
-  // تقسيم النص بذكاء بناءً على علامات الترقيم العربية ونهايات الفقرات والجمل
+    if (!savedStats || savedStats.month !== currentMonth) {
+      savedStats = {
+        month: currentMonth,
+        key1Chars: 0,
+        key2Chars: 0
+      };
+      if (utils) utils.setLocal("counsel_azure_speech_usage", savedStats);
+    }
+    return savedStats;
+  },
+
+  recordUsage: function(keyIndex, charCount) {
+    var utils = window.APP_UTILS;
+    if (!utils) return;
+    var stats = this.getUsageStats();
+    if (keyIndex === 1) stats.key1Chars = (stats.key1Chars || 0) + charCount;
+    if (keyIndex === 2) stats.key2Chars = (stats.key2Chars || 0) + charCount;
+    utils.setLocal("counsel_azure_speech_usage", stats);
+  },
+
+  // -------------------------------------------------------------
+  // 2. تقسيم النصوص الذكي ومزامنة التوقيتات
+  // -------------------------------------------------------------
   splitTextIntoChunks: function(text, maxChars) {
     var limit = maxChars || this.CHUNK_CHAR_LIMIT;
-    if (!text || text.length <= limit) return [text.trim()];
+    var cleaned = (text || "").trim();
+    if (!cleaned) return [];
+    if (cleaned.length <= limit) return [cleaned];
 
-    // تقسيم النص أولاً حسب الفقرات والأسطر
-    var paragraphs = text.split(/\n+/);
+    var paragraphs = cleaned.split(/\n+/);
     var chunks = [];
-    var currentChunk = "";
+    var current = "";
 
     for (var i = 0; i < paragraphs.length; i++) {
-      var para = paragraphs[i].trim();
-      if (!para) continue;
+      var p = paragraphs[i].trim();
+      if (!p) continue;
 
-      if ((currentChunk.length + para.length + 1) <= limit) {
-        currentChunk = (currentChunk ? currentChunk + "\n\n" : "") + para;
+      if ((current.length + p.length + 2) <= limit) {
+        current += (current ? "\n\n" : "") + p;
       } else {
-        // إذا كانت الفقرة بمفردها أكبر من الحد المسموح، نقسمها بالجمل وعلامات الترقيم
-        if (para.length > limit) {
-          var rawSentences = para.split(/([.!?؟\n]+)/);
-          for (var s = 0; s < rawSentences.length; s += 2) {
-            var sent = ((rawSentences[s] || "") + (rawSentences[s + 1] || "")).trim();
-            if (!sent) continue;
+        if (current) {
+          chunks.push(current);
+          current = "";
+        }
+        if (p.length > limit) {
+          var sentences = p.split(/([.!?؟\n]+)/);
+          var subChunk = "";
+          for (var s = 0; s < sentences.length; s += 2) {
+            var sent = (sentences[s] || "").trim();
+            var punct = (sentences[s + 1] || "").trim();
+            var fullSent = (sent + (punct ? " " + punct : "")).trim();
+            if (!fullSent) continue;
 
-            if ((currentChunk.length + sent.length + 1) <= limit) {
-              currentChunk = (currentChunk ? currentChunk + " " : "") + sent;
+            if ((subChunk.length + fullSent.length + 1) <= limit) {
+              subChunk += (subChunk ? " " : "") + fullSent;
             } else {
-              if (currentChunk.trim()) chunks.push(currentChunk.trim());
-              currentChunk = sent;
+              if (subChunk) chunks.push(subChunk);
+              subChunk = fullSent;
             }
           }
+          if (subChunk) current = subChunk;
         } else {
-          if (currentChunk.trim()) chunks.push(currentChunk.trim());
-          currentChunk = para;
+          current = p;
         }
       }
     }
 
-    if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim());
+    if (current.trim()) {
+      chunks.push(current.trim());
     }
 
-    return chunks.length > 0 ? chunks : [text.trim()];
+    return chunks.length > 0 ? chunks : [cleaned];
   },
 
-  // بناء توقيتات محاذاة النص للمقطع مع نقطة بداية تراكمية
   _buildSubtitlesForChunk: function(chunkText, startOffset, chunkDuration) {
     if (!chunkText || !chunkDuration || chunkDuration <= 0) return [];
     var rawParts = chunkText.split(/([.!?؟\n]+)/);
@@ -86,33 +136,61 @@ window.EdgeTtsService = {
     for (var i = 0; i < rawParts.length; i += 2) {
       var sText = (rawParts[i] || "").trim();
       var sPunct = (rawParts[i + 1] || "").trim();
+      if (!sText && !sPunct) continue;
       var combined = (sText + (sPunct ? " " + sPunct : "")).trim();
-      if (combined) sentences.push(combined);
+      if (!combined) continue;
+
+      if (combined.length > 85 && (combined.indexOf("،") !== -1 || combined.indexOf("؛") !== -1)) {
+        var subParts = combined.split(/([،؛]+)/);
+        var curSub = "";
+        for (var j = 0; j < subParts.length; j += 2) {
+          var pText = (subParts[j] || "").trim();
+          var pPunct = (subParts[j + 1] || "").trim();
+          var piece = (pText + (pPunct ? " " + pPunct : "")).trim();
+          if (!piece) continue;
+          if ((curSub.length + piece.length) > 85 && curSub.length >= 30) {
+            sentences.push(curSub.trim());
+            curSub = piece;
+          } else {
+            curSub = (curSub ? curSub + " " : "") + piece;
+          }
+        }
+        if (curSub.trim()) sentences.push(curSub.trim());
+      } else {
+        sentences.push(combined);
+      }
     }
+
     if (sentences.length === 0) sentences = [chunkText.trim()];
 
-    var totalChars = 0;
-    sentences.forEach(function(st) { totalChars += st.length; });
-    if (totalChars <= 0) totalChars = 1;
+    var totalWeight = 0;
+    var weights = sentences.map(function(s) {
+      var w = s.length;
+      if (/[.!?؟\n]/.test(s)) w += 15;
+      if (/[،؛]/.test(s)) w += 6;
+      totalWeight += w;
+      return w;
+    });
 
-    var curTime = startOffset;
+    if (totalWeight <= 0) totalWeight = 1;
+    var cumTime = startOffset;
     var subs = [];
-    for (var j = 0; j < sentences.length; j++) {
-      var segDur = (sentences[j].length / totalChars) * chunkDuration;
-      var start = Math.round(curTime * 100) / 100;
-      var end = Math.round((curTime + segDur) * 100) / 100;
-      subs.push({ start: start, end: end, text: sentences[j] });
-      curTime += segDur;
+
+    for (var k = 0; k < sentences.length; k++) {
+      var dur = (weights[k] / totalWeight) * chunkDuration;
+      var sStart = Math.round(cumTime * 100) / 100;
+      var sEnd = Math.round((cumTime + dur) * 100) / 100;
+      subs.push({
+        start: sStart,
+        end: sEnd,
+        text: sentences[k]
+      });
+      cumTime += dur;
     }
+
     return subs;
   },
 
-  // بناء توقيتات مبسطة للجمل داخل النص (للمزامنة مع القارئ)
-  _buildSubtitlesForText: function(text, duration) {
-    return this._buildSubtitlesForChunk(text, 0, duration);
-  },
-
-  // حساب دقيق لزمن المقطع الصوتي
   _getAudioDuration: async function(blob) {
     return new Promise(function(resolve) {
       try {
@@ -130,7 +208,7 @@ window.EdgeTtsService = {
         };
         setTimeout(function() {
           resolve((audio.duration && isFinite(audio.duration)) ? audio.duration : 0);
-        }, 3000);
+        }, 4000);
         audio.src = objUrl;
       } catch (err) {
         resolve(0);
@@ -138,284 +216,346 @@ window.EdgeTtsService = {
     });
   },
 
-  // تحويل Base64 إلى Blob
-  _base64ToBlob: function(base64Data, contentType) {
-    contentType = contentType || "audio/wav";
-    var sliceSize = 1024;
-    var byteCharacters = atob(base64Data);
-    var bytesLength = byteCharacters.length;
-    var slicesCount = Math.ceil(bytesLength / sliceSize);
-    var byteArrays = new Array(slicesCount);
-
-    for (var sliceIndex = 0; sliceIndex < slicesCount; ++sliceIndex) {
-      var begin = sliceIndex * sliceSize;
-      var end = Math.min(begin + sliceSize, bytesLength);
-      var bytes = new Array(end - begin);
-      for (var offset = begin, i = 0; offset < end; ++i, ++offset) {
-        bytes[i] = byteCharacters[offset].charCodeAt(0);
-      }
-      byteArrays[sliceIndex] = new Uint8Array(bytes);
-    }
-    return new Blob(byteArrays, { type: contentType });
+  // -------------------------------------------------------------
+  // 3. التوليد المباشر عبر WebSocket مع تشفير Sec-MS-GEC (مجاني 100%)
+  // -------------------------------------------------------------
+  _generateConnectionId: function() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 3 | 8)).toString(16);
+    }).replace(/-/g, "").toUpperCase();
   },
 
-  // دمج مصفوفة من ملفات WAV الصوتية في ملف WAV واحد سليم بدون تلف الهيدر (PCM Concatenation)
-  _concatenateWavBlobs: async function(wavBlobs) {
-    if (!wavBlobs || wavBlobs.length === 0) return null;
-    if (wavBlobs.length === 1) return wavBlobs[0];
-
-    var buffers = [];
-    for (var b = 0; b < wavBlobs.length; b++) {
-      var arrayBuf = await wavBlobs[b].arrayBuffer();
-      buffers.push(arrayBuf);
-    }
-
-    // استخراج معلومات الهيدر من أول ملف
-    var firstBuf = buffers[0];
-    var firstView = new DataView(firstBuf);
-
-    // التحقق من صيغة RIFF WAV
-    var isRiff = (firstView.getUint32(0, false) === 0x52494646); // 'RIFF'
-    var isWav = (firstView.getUint32(8, false) === 0x57415645);  // 'WAVE'
-
-    if (!isRiff || !isWav) {
-      // إذا لم تكن صيغة WAV قياسية، ندمجها كـ Blobs عادية
-      return new Blob(wavBlobs, { type: wavBlobs[0].type || "audio/wav" });
-    }
-
-    // البحث عن مقطع 'data' في الملف الأول
-    var pcmChunks = [];
-    var totalPcmLength = 0;
-    var numChannels = 1;
-    var sampleRate = 24000;
-    var bitsPerSample = 16;
-
-    for (var i = 0; i < buffers.length; i++) {
-      var buf = buffers[i];
-      var view = new DataView(buf);
-      var offset = 12; // بعد 'RIFF' و 'WAVE'
-      var dataFound = false;
-
-      while (offset < buf.byteLength - 8) {
-        var chunkId = view.getUint32(offset, false);
-        var chunkSize = view.getUint32(offset + 4, true);
-
-        if (chunkId === 0x666d7420) { // 'fmt '
-          numChannels = view.getUint16(offset + 8, true);
-          sampleRate = view.getUint32(offset + 10, true);
-          bitsPerSample = view.getUint16(offset + 22, true);
-        } else if (chunkId === 0x64617461) { // 'data'
-          var pcmData = new Uint8Array(buf, offset + 8, Math.min(chunkSize, buf.byteLength - (offset + 8)));
-          pcmChunks.push(pcmData);
-          totalPcmLength += pcmData.byteLength;
-          dataFound = true;
-          break;
-        }
-        offset += 8 + chunkSize;
-      }
-
-      if (!dataFound) {
-        // احتياطي إذا تعذر قراءة الشنك بدقة: تخطي أول 44 بايت (الهيدر القياسي)
-        var fallbackHeaderSize = Math.min(44, buf.byteLength);
-        var fallbackData = new Uint8Array(buf, fallbackHeaderSize);
-        pcmChunks.push(fallbackData);
-        totalPcmLength += fallbackData.byteLength;
-      }
-    }
-
-    // بناء هيدر WAV جديد بطول 44 بايت يغطي كامل الداتا المدمجة
-    var header = new ArrayBuffer(44);
-    var hv = new DataView(header);
-    var byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-    var blockAlign = numChannels * (bitsPerSample / 8);
-
-    // RIFF identifier
-    hv.setUint32(0, 0x52494646, false); // 'RIFF'
-    hv.setUint32(4, 36 + totalPcmLength, true); // File length - 8
-    hv.setUint32(8, 0x57415645, false); // 'WAVE'
-
-    // fmt subchunk
-    hv.setUint32(12, 0x666d7420, false); // 'fmt '
-    hv.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-    hv.setUint16(20, 1, true); // AudioFormat (1 for PCM)
-    hv.setUint16(22, numChannels, true);
-    hv.setUint32(24, sampleRate, true);
-    hv.setUint32(28, byteRate, true);
-    hv.setUint16(32, blockAlign, true);
-    hv.setUint16(34, bitsPerSample, true);
-
-    // data subchunk
-    hv.setUint32(36, 0x64617461, false); // 'data'
-    hv.setUint32(40, totalPcmLength, true);
-
-    var finalParts = [new Uint8Array(header)].concat(pcmChunks);
-    return new Blob(finalParts, { type: "audio/wav" });
+  _getTimestamp: function() {
+    return new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
   },
 
-  // طلب توليد مقطع صوتي فردي عبر Gemini
-  _synthesizeSingleChunk: async function(chunkText, voiceName, onProgress, apiKey) {
+  _escapeXml: function(str) {
+    return (str || "").replace(/[<>&'"]/g, function(c) {
+      switch (c) {
+        case "<": return "&lt;";
+        case ">": return "&gt;";
+        case "&": return "&amp;";
+        case "'": return "&apos;";
+        case '"': return "&quot;";
+        default: return c;
+      }
+    });
+  },
+
+  _generateSecMsGec: async function() {
+    if (!window.crypto || !window.crypto.subtle) {
+      throw new Error("متصفحك لا يدعم تشفير Web Crypto المطلوب لتوليد الصوت المباشر.");
+    }
+    var unixSeconds = Math.floor(Date.now() / 1000);
+    var t = unixSeconds + this.WIN_EPOCH;
+    t -= (t % 300);
+    t *= 10000000; // 1e9 / 100 (ticks)
+    var rawStr = Math.floor(t) + this.TRUSTED_CLIENT_TOKEN;
+    var encoded = new TextEncoder().encode(rawStr);
+    var hashBuffer = await window.crypto.subtle.digest("SHA-256", encoded);
+    var hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(function(b) { return b.toString(16).padStart(2, "0"); }).join("").toUpperCase();
+  },
+
+  _synthesizeWithDirectEdge: async function(chunkText, voiceKey, onProgress) {
     var self = this;
-    var selectedVoice = voiceName || self.getVoiceConfig().voice || self.DEFAULT_GEMINI_VOICE;
+    var voice = (voiceKey || self.DEFAULT_VOICE).split(" - ")[0].trim();
+    var connId = self._generateConnectionId();
+    var secMsGec = await self._generateSecMsGec();
+    var secVersion = "1-" + self.CHROMIUM_FULL_VERSION;
 
-    var payload = {
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: chunkText }]
+    var wssUrl = "wss://" + self.BASE_URL + "/edge/v1?TrustedClientToken=" + self.TRUSTED_CLIENT_TOKEN +
+      "&Sec-MS-GEC=" + secMsGec +
+      "&Sec-MS-GEC-Version=" + secVersion +
+      "&ConnectionId=" + connId;
+
+    return new Promise(function(resolve, reject) {
+      var ws = null;
+      var isClosed = false;
+      var audioChunks = [];
+      var timeoutId = null;
+
+      try {
+        ws = new WebSocket(wssUrl);
+      } catch (wsErr) {
+        return reject(wsErr);
+      }
+
+      timeoutId = setTimeout(function() {
+        if (!isClosed) {
+          isClosed = true;
+          try { ws.close(); } catch (e) {}
+          reject(new Error("استغرقت معالجة المقطع وقتاً أطول من المتوقع (مهلة الاتصال)."));
         }
-      ],
-      generationConfig: {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: selectedVoice
+      }, 45000);
+
+      ws.onopen = function() {
+        if (typeof onProgress === "function") {
+          onProgress("جاري الاتصال السحابي وتوليد صوت سلمى...");
+        }
+
+        // 1. تهيئة التوليد
+        var speechConfig = {
+          context: {
+            synthesis: {
+              audio: {
+                metadataoptions: { sentenceBoundaryEnabled: false, wordBoundaryEnabled: true },
+                outputFormat: "audio-24khz-48kbitrate-mono-mp3"
+              }
             }
           }
-        }
-      }
-    };
+        };
+        var configMsg = "X-Timestamp:" + self._getTimestamp() + "\r\n" +
+          "Content-Type:application/json; charset=utf-8\r\n" +
+          "Path:speech.config\r\n\r\n" +
+          JSON.stringify(speechConfig);
+        ws.send(configMsg);
 
-    var endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=" + encodeURIComponent(apiKey);
+        // 2. إرسال النص بصيغة SSML
+        var ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ar-EG'>" +
+          "<voice name='" + voice + "'>" +
+          "<prosody pitch='+0Hz' rate='+0%' volume='+0%'>" +
+          self._escapeXml(chunkText) +
+          "</prosody>" +
+          "</voice></speak>";
+
+        var ssmlMsg = "X-RequestId:" + connId + "\r\n" +
+          "Content-Type:application/ssml+xml\r\n" +
+          "X-Timestamp:" + self._getTimestamp() + "Z\r\n" +
+          "Path:ssml\r\n\r\n" +
+          ssml;
+        ws.send(ssmlMsg);
+      };
+
+      ws.onmessage = function(event) {
+        if (typeof event.data === "string") {
+          if (event.data.indexOf("Path:turn.end") !== -1) {
+            isClosed = true;
+            clearTimeout(timeoutId);
+            try { ws.close(); } catch (e) {}
+            var finalBlob = new Blob(audioChunks, { type: "audio/mpeg" });
+            self._getAudioDuration(finalBlob).then(function(dur) {
+              resolve({
+                blob: finalBlob,
+                duration: dur,
+                audioUrl: URL.createObjectURL(finalBlob)
+              });
+            });
+          }
+        } else {
+          // رسالة ثنائية: استخراج ترويسة البيانات وتدفق الصوت
+          var reader = new FileReader();
+          reader.onload = function() {
+            var buf = reader.result;
+            var u8 = new Uint8Array(buf);
+            if (u8.length < 2) return;
+            var headerLen = (u8[0] << 8) | (u8[1] + 2);
+            if (headerLen > u8.length) return;
+
+            var headerBytes = u8.slice(0, headerLen);
+            var headerStr = new TextDecoder().decode(headerBytes);
+            if (headerStr.indexOf("Path:audio") !== -1) {
+              var audioData = u8.slice(headerLen);
+              if (audioData.length > 0) {
+                audioChunks.push(audioData);
+              }
+            }
+          };
+          reader.readAsArrayBuffer(event.data);
+        }
+      };
+
+      ws.onerror = function(err) {
+        if (!isClosed) {
+          isClosed = true;
+          clearTimeout(timeoutId);
+          reject(new Error("حدث خطأ في الاتصال بمحرك Edge-TTS المباشر."));
+        }
+      };
+
+      ws.onclose = function() {
+        if (!isClosed) {
+          isClosed = true;
+          clearTimeout(timeoutId);
+          if (audioChunks.length > 0) {
+            var finalBlob = new Blob(audioChunks, { type: "audio/mpeg" });
+            self._getAudioDuration(finalBlob).then(function(dur) {
+              resolve({
+                blob: finalBlob,
+                duration: dur,
+                audioUrl: URL.createObjectURL(finalBlob)
+              });
+            });
+          } else {
+            reject(new Error("أغلق الاتصال دون استلام بيانات الصوت."));
+          }
+        }
+      };
+    });
+  },
+
+  // -------------------------------------------------------------
+  // 4. التوليد عبر Microsoft Azure Speech الرسمي (في حال توفر مفتاح)
+  // -------------------------------------------------------------
+  _synthesizeWithAzure: async function(text, voice, keyInfo, onProgress) {
+    var self = this;
+    var endpoint = "https://" + encodeURIComponent(keyInfo.region) + ".tts.speech.microsoft.com/cognitiveservices/v1";
+    var cleanVoice = (voice || self.DEFAULT_VOICE).split(" - ")[0].trim();
+
+    var ssml = "<speak version='1.0' xml:lang='ar-EG'>" +
+      "<voice xml:lang='ar-EG' xml:gender='Female' name='" + cleanVoice + "'>" +
+      self._escapeXml(text) +
+      "</voice></speak>";
+
+    if (typeof onProgress === "function") {
+      onProgress("جاري توليد الصوت عبر محرك Azure الرسمي بصوت سلمى (" + (keyInfo.statusText || "") + ")...");
+    }
 
     var resp = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      headers: {
+        "Ocp-Apim-Subscription-Key": keyInfo.key,
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-16khz-128kbitrate-mono-mp3",
+        "User-Agent": "CounselingStudyPlatform"
+      },
+      body: ssml
     });
 
     if (!resp.ok) {
-      var errData = null;
-      try { errData = await resp.json(); } catch (e) {}
-      var msg = (errData && errData.error && errData.error.message) ? errData.error.message : ("رمز الخطأ: " + resp.status);
-      throw new Error(msg);
+      if (resp.status === 429) throw new Error("QUOTA_EXCEEDED");
+      var errTxt = "";
+      try { errTxt = await resp.text(); } catch (e) {}
+      throw new Error("خطأ Azure Speech (" + resp.status + "): " + errTxt);
     }
 
-    var result = await resp.json();
-    var candidate = result.candidates && result.candidates[0];
-    var part = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0];
-
-    if (!part || !part.inlineData || !part.inlineData.data) {
-      throw new Error("لم يتم استلام محتوى صوتي من محرك Gemini.");
-    }
-
-    var mimeType = part.inlineData.mimeType || "audio/wav";
-    var blob = self._base64ToBlob(part.inlineData.data, mimeType);
+    var blob = await resp.blob();
     var duration = await self._getAudioDuration(blob);
+    self.recordUsage(keyInfo.keyIndex, text.length);
 
     return {
+      audioUrl: URL.createObjectURL(blob),
       blob: blob,
       duration: duration
     };
   },
 
-  // توليد الصوت مباشرة عبر محرك Gemini 3.8 Flash TTS الرسمي
-  _synthesizeWithGemini: async function(text, voiceName, onProgress) {
+  // -------------------------------------------------------------
+  // 5. توليد المقطع الواحد مع التبديل الذكي بين المحركات
+  // -------------------------------------------------------------
+  _generateSingleChunkResilient: async function(chunkText, voiceKey, onProgress) {
     var self = this;
-    var utils = window.APP_UTILS;
-    var apiKey = "";
-    if (window.GeminiAIService && typeof window.GeminiAIService.getApiKey === "function") {
-      apiKey = await window.GeminiAIService.getApiKey();
-    }
-    if (!apiKey && utils) {
-      apiKey = utils.getLocal("counsel_ai_api_key", "");
-    }
+    var azCfg = self.getAzureConfig();
 
-    if (!apiKey) {
-      throw new Error("لا يوجد مفتاح ذكاء اصطناعي محفوظ في صفحة «الإعدادات». يرجى حفظ المفتاح أولاً لتفعيل توليد الصوت.");
-    }
-
-    var selectedVoice = voiceName || self.getVoiceConfig().voice || self.DEFAULT_GEMINI_VOICE;
-
-    // 1. فحص طول النص وتقطيعه إلى أجزاء آمنة لتفادي تجاوز حد الدقيقة (10000 توكن)
-    var chunks = self.splitTextIntoChunks(text, self.CHUNK_CHAR_LIMIT);
-
-    // حالة النص القصير (مقطع واحد فقط)
-    if (chunks.length <= 1) {
-      if (typeof onProgress === "function") {
-        onProgress("جاري توليد الصوت الذكي بصوت " + selectedVoice + " عبر محرك Google Gemini...");
+    // 1. محاولة استخدام Azure Speech إذا كان المفتاح متاحاً
+    if (azCfg.key1 || azCfg.key2) {
+      var keyInfo = azCfg.key1 ? { key: azCfg.key1, keyIndex: 1, region: azCfg.region, statusText: "المفتاح الأساسي" }
+                               : { key: azCfg.key2, keyIndex: 2, region: azCfg.region, statusText: "المفتاح الثاني" };
+      try {
+        return await self._synthesizeWithAzure(chunkText, voiceKey || azCfg.voice, keyInfo, onProgress);
+      } catch (azErr) {
+        if (azErr.message === "QUOTA_EXCEEDED" && azCfg.key2 && keyInfo.keyIndex === 1) {
+          try {
+            var backupInfo = { key: azCfg.key2, keyIndex: 2, region: azCfg.region, statusText: "المفتاح البديل" };
+            return await self._synthesizeWithAzure(chunkText, voiceKey || azCfg.voice, backupInfo, onProgress);
+          } catch (bErr) {
+            console.warn("Azure backup key failed, falling back to Direct Edge-TTS:", bErr);
+          }
+        }
+        console.warn("Azure Speech failed, falling back to Direct Edge-TTS:", azErr);
       }
-      var singleRes = await self._synthesizeSingleChunk(chunks[0] || text, selectedVoice, onProgress, apiKey);
-      var singleUrl = URL.createObjectURL(singleRes.blob);
+    }
+
+    // 2. استخدام محرك Edge-TTS المباشر في المتصفح (المحرك الافتراضي المجاني)
+    return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+  },
+
+  // -------------------------------------------------------------
+  // 6. الدالة العامة المعتمدة: تدعم النصوص القصيرة والفصول الضخمة
+  // -------------------------------------------------------------
+  generateAudioForText: async function(text, voiceKey, onProgress) {
+    var self = this;
+    var voice = (voiceKey || self.DEFAULT_VOICE).split(" - ")[0].trim();
+    var cleanedText = (text || "").trim();
+    if (!cleanedText) {
+      throw new Error("لا يوجد نص لتوليد الصوت منه.");
+    }
+
+    var chunks = self.splitTextIntoChunks(cleanedText, self.CHUNK_CHAR_LIMIT);
+    if (chunks.length === 0) {
+      throw new Error("تعذر تجهيز مقاطع النص.");
+    }
+
+    // حالة المقطع الواحد
+    if (chunks.length === 1) {
+      if (typeof onProgress === "function") {
+        onProgress({ current: 1, total: 1, percent: 30, statusText: "جاري توليد الصوت بصوت «سلمى»..." });
+      }
+      var singleRes = await self._generateSingleChunkResilient(chunks[0], voice, function(st) {
+        if (typeof onProgress === "function") {
+          onProgress({ current: 1, total: 1, percent: 60, statusText: typeof st === "string" ? st : "جاري المعالجة..." });
+        }
+      });
+      var singleSubs = self._buildSubtitlesForChunk(chunks[0], 0, singleRes.duration);
+
       return {
-        audioUrl: singleUrl,
+        audioUrl: singleRes.audioUrl,
         blob: singleRes.blob,
-        duration: singleRes.duration
+        duration: singleRes.duration,
+        subtitles: singleSubs,
+        toString: function() { return this.audioUrl; }
       };
     }
 
-    // حالة النص الطويل (تقطيع متتابع ودمج سليم بدون كسر الكوتا)
+    // حالة الفصول الطويلة (تقطيع متتابع ودمج)
     var allBlobs = [];
-    var totalDuration = 0;
+    var allSubtitles = [];
+    var currentCumulativeTime = 0;
 
     for (var idx = 0; idx < chunks.length; idx++) {
       var chunkText = chunks[idx];
-      var chunkPct = Math.round(((idx) / chunks.length) * 100);
-      var progressMsg = "جاري توليد الجزء الصوتي (" + (idx + 1) + " من " + chunks.length + ") بصوت " + selectedVoice + "...";
+      var pct = Math.round(((idx) / chunks.length) * 90) + 5;
+      var progressMsg = "جاري توليد الجزء (" + (idx + 1) + " من " + chunks.length + ") بصوت سلمى...";
+
       if (typeof onProgress === "function") {
         onProgress({
           current: idx + 1,
           total: chunks.length,
-          percent: chunkPct,
+          percent: pct,
           statusText: progressMsg
         });
       }
 
       var chunkRes = null;
       var lastErr = null;
-
-      // محاولة التوليد مع معالجة ذكية إذا طلب جوجل الانتظار
-      for (var attempt = 0; attempt < 3; attempt++) {
+      for (var retry = 0; retry < 2; retry++) {
         try {
-          chunkRes = await self._synthesizeSingleChunk(chunkText, selectedVoice, onProgress, apiKey);
-          break;
-        } catch (err) {
-          lastErr = err;
-          // إذا كان الخطأ متعلقاً بالكوتا ومعدل الطلبات في الدقيقة
-          if (err.message && (err.message.includes("quota") || err.message.includes("Quota") || err.message.includes("429") || err.message.includes("retry in"))) {
-            var waitSec = 25;
-            var matchSec = err.message.match(/retry in\s*([\d\.]+)\s*s/i);
-            if (matchSec && matchSec[1]) {
-              waitSec = Math.ceil(parseFloat(matchSec[1])) + 2;
-            }
+          chunkRes = await self._generateSingleChunkResilient(chunkText, voice, function(subStatus) {
             if (typeof onProgress === "function") {
               onProgress({
                 current: idx + 1,
                 total: chunks.length,
-                percent: chunkPct,
-                statusText: "⏳ انتظار أمان للكوتا (" + waitSec + " ثانية) قبل الجزء " + (idx + 1) + "..."
+                percent: pct,
+                statusText: typeof subStatus === "string" ? ("جزء " + (idx + 1) + ": " + subStatus) : progressMsg
               });
             }
-            await new Promise(function(r) { setTimeout(r, waitSec * 1000); });
-          } else {
-            // خطأ شبكة عابر: انتظار ثانيتين والمحاولة مجدداً
-            await new Promise(function(r) { setTimeout(r, 2500); });
-          }
+          });
+          break;
+        } catch (err) {
+          lastErr = err;
+          await new Promise(function(r) { setTimeout(r, 2000); });
         }
       }
 
       if (!chunkRes) {
-        throw new Error("فشل توليد الجزء الصوتي رقم " + (idx + 1) + ": " + (lastErr ? lastErr.message : "خطأ غير معروف"));
+        throw new Error("فشل توليد الجزء رقم " + (idx + 1) + " بعد المحاولة: " + (lastErr ? lastErr.message : ""));
       }
 
       allBlobs.push(chunkRes.blob);
-      totalDuration += chunkRes.duration;
-
-      // تحديث النسبة بعد اكتمال الجزء
-      var completedPct = Math.round(((idx + 1) / chunks.length) * 100);
-      if (typeof onProgress === "function") {
-        onProgress({
-          current: idx + 1,
-          total: chunks.length,
-          percent: completedPct,
-          statusText: "✓ تم إنجاز الجزء " + (idx + 1) + " من " + chunks.length + " (" + completedPct + "%)"
-        });
-      }
-
-      // إذا كان هناك مقطع قادم، ننتظر ثانيتين فاصل أمان بسيط
-      if (idx < chunks.length - 1) {
-        await new Promise(function(r) { setTimeout(r, 2000); });
-      }
+      var chunkSubs = self._buildSubtitlesForChunk(chunkText, currentCumulativeTime, chunkRes.duration);
+      allSubtitles = allSubtitles.concat(chunkSubs);
+      currentCumulativeTime += chunkRes.duration;
     }
 
     if (typeof onProgress === "function") {
@@ -423,42 +563,19 @@ window.EdgeTtsService = {
         current: chunks.length,
         total: chunks.length,
         percent: 98,
-        statusText: "جاري دمج الأجزاء الصوتية في ملف متكامل سليم..."
+        statusText: "جاري دمج المقاطع في ملف صوتي واحد متكامل..."
       });
     }
 
-    var mergedBlob = await self._concatenateWavBlobs(allBlobs);
-    var mergedUrl = URL.createObjectURL(mergedBlob);
-    var finalDuration = await self._getAudioDuration(mergedBlob);
-    if (!finalDuration || finalDuration <= 0) {
-      finalDuration = totalDuration;
-    }
+    var combinedBlob = new Blob(allBlobs, { type: "audio/mp3" });
+    var combinedUrl = URL.createObjectURL(combinedBlob);
 
     return {
-      audioUrl: mergedUrl,
-      blob: mergedBlob,
-      duration: finalDuration
-    };
-  },
-
-  // الدالة العامة لتوليد الصوت (تدعم استدعاء Gemini AI TTS الرسمي مع التقطيع والدمج الكامل)
-  generateAudioForText: async function(text, voiceKey, onProgress) {
-    var self = this;
-    var cleanedText = (text || "").trim();
-    if (!cleanedText) {
-      throw new Error("لا يوجد نص لتوليد الصوت منه.");
-    }
-
-    var res = await self._synthesizeWithGemini(cleanedText, voiceKey, onProgress);
-    var subs = self._buildSubtitlesForText(cleanedText, res.duration);
-
-    return {
-      audioUrl: res.audioUrl,
-      blob: res.blob,
-      duration: res.duration,
-      subtitles: subs,
+      audioUrl: combinedUrl,
+      blob: combinedBlob,
+      duration: currentCumulativeTime,
+      subtitles: allSubtitles,
       toString: function() { return this.audioUrl; }
     };
   }
 };
-
