@@ -271,7 +271,7 @@ window.EdgeTtsService = {
   _synthesizeWithDirectEdge: async function(chunkText, voiceKey, onProgress) {
     var self = this;
     var voice = (voiceKey || self.DEFAULT_VOICE).split(" - ")[0].trim();
-    var connId = self._generateConnectionId();
+    var connId = self._generateConnectionId().toLowerCase();
     var secMsGec = await self._generateSecMsGec();
     var secVersion = "1-" + self.CHROMIUM_FULL_VERSION;
 
@@ -286,6 +286,20 @@ window.EdgeTtsService = {
       var audioChunks = [];
       var timeoutId = null;
 
+      var cleanup = function() {
+        if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+        if (ws) {
+          try {
+            ws.onopen = null;
+            ws.onmessage = null;
+            ws.onerror = null;
+            ws.onclose = null;
+            ws.close();
+          } catch (e) {}
+          ws = null;
+        }
+      };
+
       try {
         ws = new WebSocket(wssUrl);
         ws.binaryType = "arraybuffer";
@@ -296,14 +310,14 @@ window.EdgeTtsService = {
       timeoutId = setTimeout(function() {
         if (!isClosed) {
           isClosed = true;
-          try { ws.close(); } catch (e) {}
+          cleanup();
           reject(new Error("استغرقت معالجة المقطع وقتاً أطول من المتوقع (مهلة الاتصال)."));
         }
       }, 45000);
 
       ws.onopen = function() {
         if (typeof onProgress === "function") {
-          onProgress("جاري الاتصال السحابي وتوليد صوت سلمى...");
+          onProgress("جاري الاتصال وتوليد صوت سلمى...");
         }
 
         // 1. تهيئة التوليد
@@ -324,10 +338,11 @@ window.EdgeTtsService = {
         ws.send(configMsg);
 
         // 2. إرسال النص بصيغة SSML
+        var cleanChunk = self.cleanText ? self.cleanText(chunkText) : (chunkText || "").trim();
         var ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='ar-EG'>" +
           "<voice name='" + voice + "'>" +
           "<prosody pitch='+0Hz' rate='+0%' volume='+0%'>" +
-          self._escapeXml(chunkText) +
+          self._escapeXml(cleanChunk) +
           "</prosody>" +
           "</voice></speak>";
 
@@ -343,8 +358,7 @@ window.EdgeTtsService = {
         if (typeof event.data === "string") {
           if (event.data.indexOf("Path:turn.end") !== -1) {
             isClosed = true;
-            clearTimeout(timeoutId);
-            try { ws.close(); } catch (e) {}
+            cleanup();
             if (audioChunks.length === 0) {
               return reject(new Error("انتهت المعالجة دون استلام بيانات صوتية من الخادم."));
             }
@@ -384,15 +398,15 @@ window.EdgeTtsService = {
       ws.onerror = function(err) {
         if (!isClosed) {
           isClosed = true;
-          clearTimeout(timeoutId);
-          reject(new Error("حدث خطأ في الاتصال بمحرك Edge-TTS المباشر."));
+          cleanup();
+          reject(new Error("حدث انقطاع في الاتصال بمحرك Edge-TTS المباشر."));
         }
       };
 
-      ws.onclose = function() {
+      ws.onclose = function(ev) {
         if (!isClosed) {
           isClosed = true;
-          clearTimeout(timeoutId);
+          cleanup();
           if (audioChunks.length > 0) {
             var finalBlob = new Blob(audioChunks, { type: "audio/mpeg" });
             self._getAudioDuration(finalBlob).then(function(dur) {
@@ -401,9 +415,15 @@ window.EdgeTtsService = {
                 duration: dur,
                 audioUrl: URL.createObjectURL(finalBlob)
               });
+            }).catch(function() {
+              resolve({
+                blob: finalBlob,
+                duration: 0,
+                audioUrl: URL.createObjectURL(finalBlob)
+              });
             });
           } else {
-            reject(new Error("أغلق الاتصال دون استلام بيانات الصوت."));
+            reject(new Error("أغلق الاتصال دون استلام بيانات الصوت (كود: " + (ev ? ev.code : "N/A") + ")."));
           }
         }
       };
@@ -565,13 +585,28 @@ window.EdgeTtsService = {
       }
     }
 
-    // 2. استخدام محرك Edge-TTS المباشر في المتصفح بصوت سلمى (المحرك الأساسي المجاني الفائق النقاء)
-    try {
-      return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
-    } catch (directErr) {
-      console.warn("Direct Edge-TTS WebSocket failed, trying serverless fallback:", directErr);
-      return await self._synthesizeWithServerlessApi(chunkText, voiceKey || self.DEFAULT_VOICE, onProgress);
+    // 2. استخدام محرك Edge-TTS المباشر في المتصفح بصوت سلمى مع إعادة المحاولة التلقائية (3 محاولات)
+    var lastDirectErr = null;
+    for (var directAttempt = 1; directAttempt <= 3; directAttempt++) {
+      try {
+        return await self._synthesizeWithDirectEdge(chunkText, voiceKey || self.DEFAULT_VOICE, function(st) {
+          if (typeof onProgress === "function") {
+            onProgress(directAttempt > 1 ? ("(محاولة " + directAttempt + "/3) " + st) : st);
+          }
+        });
+      } catch (dErr) {
+        lastDirectErr = dErr;
+        console.warn("Direct Edge-TTS attempt " + directAttempt + " error:", dErr);
+        if (directAttempt < 3) {
+          if (typeof onProgress === "function") {
+            onProgress("إعادة المحاولة (" + (directAttempt + 1) + "/3)...");
+          }
+          await new Promise(function(r) { setTimeout(r, 1000 * directAttempt); });
+        }
+      }
     }
+
+    throw new Error(lastDirectErr ? lastDirectErr.message : "تعذر استلام بيانات الصوت من محرك سلمى بعد 3 محاولات.");
   },
 
   // -------------------------------------------------------------
@@ -672,9 +707,9 @@ window.EdgeTtsService = {
       allSubtitles = allSubtitles.concat(chunkSubs);
       currentCumulativeTime += (chunkRes.duration || 0);
 
-      // فاصل زمني قصير (200 مللي ثانية) لتفادي أي ضغط
+      // فاصل زمني كافٍ (800 مللي ثانية) لضمان إغلاق المقبس السابق واستقرار السيرفر
       if (idx < chunks.length - 1) {
-        await new Promise(function(resolve) { setTimeout(resolve, 200); });
+        await new Promise(function(resolve) { setTimeout(resolve, 800); });
       }
     }
 
