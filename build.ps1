@@ -19,6 +19,7 @@ function Build-App {
     $modules = @(
         "config/appConfig.js",
         "config/versesBank.js",
+        "config/term1LecturesData.js",
         "config/firebase.js",
         "services/cloudSync.js",
         "services/geminiService.js",

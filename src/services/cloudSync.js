@@ -1,21 +1,92 @@
 // خدمة المزامنة السحابية اللحظية مع فايربيز
 window.CloudSyncService = {
-  // الاشتراك اللحظي في المحاضرات
+  // الاشتراك اللحظي في المحاضرات مع جلب مباشر فوري ومضمون (Direct REST Fetch + Realtime Listener)
   subscribeLectures: function(onUpdate) {
-    if (!window.db) return function() {};
-    try {
-      return window.db.collection("lectures").orderBy("date", "desc").onSnapshot(function(snapshot) {
-        var list = [];
-        snapshot.forEach(function(doc) {
-          list.push(Object.assign({ id: doc.id }, doc.data()));
-        });
+    var self = this;
+    var hasDelivered = false;
+
+    var handleUpdate = function(list) {
+      if (!list || !Array.isArray(list)) return;
+      hasDelivered = true;
+      if (typeof onUpdate === "function") {
         onUpdate(list);
-      }, function(err) {
-        console.warn("Firestore lectures read fallback to local:", err);
-      });
-    } catch (e) {
-      return function() {};
+      }
+    };
+
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو المتصفح الخفي (Incognito)
+    var fetchRestLectures = function(retryCount) {
+      var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 12000) : null;
+      var fetchOpts = {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+      };
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/lectures?key=" + apiKey + "&pageSize=100";
+      if (controller) fetchOpts.signal = controller.signal;
+
+      fetch(restUrl, fetchOpts)
+        .then(function(res) {
+          if (timeoutId) clearTimeout(timeoutId);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.documents && Array.isArray(data.documents)) {
+            var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+            restList = restList.filter(function(l) { return !l.isDeleted; });
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
+          }
+        })
+        .catch(function(errRest) {
+          if (timeoutId) clearTimeout(timeoutId);
+          console.warn("Direct REST lectures fetch notice:", errRest && errRest.message);
+          // إعادة محاولة واحدة سريعة إذا لم يكن قد تم تسليم أي بيانات بعد
+          if (!hasDelivered && (retryCount || 0) < 2) {
+            setTimeout(function() { fetchRestLectures((retryCount || 0) + 1); }, 1500);
+          }
+        });
+    };
+
+    fetchRestLectures(0);
+
+    // 2. الاستماع اللحظي المستمر لأي تحديث جديد
+    var setupRealtime = function() {
+      if (!window.db) return function() {};
+      try {
+        return window.db.collection("lectures").onSnapshot(function(snapshot) {
+          var list = [];
+          snapshot.forEach(function(doc) {
+            var item = Object.assign({ id: doc.id }, doc.data());
+            if (!item.isDeleted) list.push(item);
+          });
+          handleUpdate(list);
+        }, function(err) {
+          console.warn("Firestore subscribeLectures realtime error:", err);
+        });
+      } catch (e) {
+        return function() {};
+      }
+    };
+
+    var unsub = null;
+    if (window.db) {
+      unsub = setupRealtime();
+    } else {
+      var checkTimer = setInterval(function() {
+        if (window.db) {
+          clearInterval(checkTimer);
+          unsub = setupRealtime();
+        }
+      }, 500);
+      setTimeout(function() { clearInterval(checkTimer); }, 10000);
     }
+
+    return function() {
+      if (typeof unsub === "function") unsub();
+    };
   },
 
   // حفظ أو تعديل محاضرة سحابياً

@@ -7,11 +7,18 @@ window.LecturesPage = function(props) {
   var ai = window.GeminiAIService;
 
   var [lectures, setLectures] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.lectures, []);
+    var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (Array.isArray(local) && local.length > 0) return local;
+    if (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) {
+      return window.DEFAULT_TERM1_LECTURES;
+    }
+    return [];
   });
   var [isLoadingLectures, setIsLoadingLectures] = React.useState(function() {
     var cached = utils.getLocal(cfg.storageKeys.lectures, []);
-    return !cached || cached.length === 0;
+    var hasLocal = Array.isArray(cached) && cached.length > 0;
+    var hasDefault = Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0;
+    return !hasLocal && !hasDefault;
   });
 
   var [activeLecture, setActiveLecture] = React.useState(null);

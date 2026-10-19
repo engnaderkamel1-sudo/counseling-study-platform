@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"}];
+window.APP_UPDATES_HISTORY = [{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1792409689",
-  buildTime: "2026-10-19T11:34:49",
+  version: "1.2.1792411119",
+  buildTime: "2026-10-19T11:58:39",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -545,6 +545,420 @@ window.getTodayVerse = function() {
   }
 };
 
+// Module: config/term1LecturesData.js
+// Default Term 1 Lectures Safety Buffer
+window.DEFAULT_TERM1_LECTURES = [
+  {
+    "id": "lec-20260919-1",
+    "orderIndex": 1,
+    "sessionOrder": 1,
+    "date": "2026-09-19",
+    "title": "افتتاحية التيرم: كلمة ترحيب بالدارسين واحتياجات النفسية",
+    "subject": "الشخصية الإنسانية",
+    "speaker": "نيافة الأنبا دانيال ود. مجدي اسحق",
+    "notes": "جلسة افتتاحية: كلمة ترحيب بالدارسين يلقيها نيافة الحبر الجليل الأنبا دانيال، ومحاضرة الاحتياجات النفسية للدكتور مجدي اسحق.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20260926-2",
+    "orderIndex": 2,
+    "sessionOrder": 1,
+    "date": "2026-09-26",
+    "title": "ما هي المشورة؟ وأهدافها",
+    "subject": "علم المشورة (ب)",
+    "speaker": "د. اميل جوزيف",
+    "notes": "مدخل أساسي في علم المشورة وأهداف العملية المشورية.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261002-3",
+    "orderIndex": 3,
+    "sessionOrder": 1,
+    "date": "2026-10-02",
+    "title": "الجسد 1",
+    "subject": "رؤية كتابية للجسد",
+    "speaker": "د. عادل حليم",
+    "notes": "محاضرة أونلاين عبر زووم (من 6 إلى 9 مساءً) - الجزء الأول من رؤية كتابية للجسد.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261003-4",
+    "orderIndex": 4,
+    "sessionOrder": 1,
+    "date": "2026-10-03",
+    "title": "العلاج النفسي الأرثوذكسي",
+    "subject": "علم المشورة (أ)",
+    "speaker": "القمص مكاريوس موريس",
+    "notes": "أسس العلاج والتعامل النفسي من المنظور الأرثوذكسي الكنسي والروحي.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261010-5",
+    "orderIndex": 5,
+    "sessionOrder": 1,
+    "date": "2026-10-10",
+    "title": "ثماني أساسيات جوهرية للمشورة",
+    "subject": "علم المشورة (ب)",
+    "speaker": "أ. فخري عازر",
+    "notes": "محاضرة أونلاين عبر زووم - ثماني أساسيات جوهرية وأعمدة هامة للمشير.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261016-6",
+    "orderIndex": 6,
+    "sessionOrder": 1,
+    "date": "2026-10-16",
+    "title": "الجسد 2",
+    "subject": "رؤية كتابية للجسد",
+    "speaker": "د. عادل حليم",
+    "notes": "محاضرة أونلاين عبر زووم (من 6 إلى 9 مساءً) - الجزء الثاني من رؤية كتابية للجسد.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261017-7",
+    "orderIndex": 7,
+    "sessionOrder": 1,
+    "date": "2026-10-17",
+    "title": "النفس الإنسانية وتشريحها",
+    "subject": "النفس الإنسانية",
+    "speaker": "د. مايكل فيكتور",
+    "notes": "فهم عميق وتكوين النفس الإنسانية وتشريح قواها ودوافعها.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261024-8",
+    "orderIndex": 8,
+    "sessionOrder": 1,
+    "date": "2026-10-24",
+    "title": "شخصيتك أعرفها طورها",
+    "subject": "الشخصية الإنسانية",
+    "speaker": "د. مجدي اسحق",
+    "notes": "استكشاف وتطوير ملامح وأنماط الشخصية الإنسانية وتنميتها.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261030-9",
+    "orderIndex": 9,
+    "sessionOrder": 1,
+    "date": "2026-10-30",
+    "title": "العلاقة المشورية واللائحة الخاصة بالمشيرين",
+    "subject": "علم المشورة (ب)",
+    "speaker": "د. مارجو موريس",
+    "notes": "محاضرة أونلاين عبر زووم (من 12 إلى 3 ظهراً) - حدود وديناميكية العلاقة المشورية وميثاق أخلاقيات المشير.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261031-10",
+    "orderIndex": 10,
+    "sessionOrder": 1,
+    "date": "2026-10-31",
+    "title": "الحيل الدفاعية",
+    "subject": "النفس الإنسانية",
+    "speaker": "د. مايكل فيكتور",
+    "notes": "الآليات النفسية اللاشعورية والحيل الدفاعية (Defense Mechanisms) وطرق تمييزها.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261106-11",
+    "orderIndex": 11,
+    "sessionOrder": 1,
+    "date": "2026-11-06",
+    "title": "الجسد 3",
+    "subject": "رؤية كتابية للجسد",
+    "speaker": "د. عادل حليم",
+    "notes": "محاضرة أونلاين عبر زووم (من 6 إلى 9 مساءً) - الجزء الثالث من رؤية كتابية للجسد.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261107-12",
+    "orderIndex": 12,
+    "sessionOrder": 1,
+    "date": "2026-11-07",
+    "title": "الصورة الذاتية",
+    "subject": "الشخصية الإنسانية",
+    "speaker": "د. مجدي اسحق",
+    "notes": "مفهوم الذات، بناء الصورة الذاتية الصحية وشفاء تشوهات صورة النفس.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261114-13",
+    "orderIndex": 13,
+    "sessionOrder": 1,
+    "date": "2026-11-14",
+    "title": "كيف تنشأ الحالات النفسية / الاكتئاب",
+    "subject": "النفس الإنسانية",
+    "speaker": "د. اميل جوزيف",
+    "notes": "آليات نشوء الاضطرابات النفسية ودراسة مفصلة عن الاكتئاب وأنواعه وطرق التدخل.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261120-14",
+    "orderIndex": 14,
+    "sessionOrder": 1,
+    "date": "2026-11-20",
+    "title": "الجسد 4",
+    "subject": "رؤية كتابية للجسد",
+    "speaker": "د. عادل حليم",
+    "notes": "محاضرة أونلاين عبر زووم (من 6 إلى 9 مساءً) - الجزء الرابع والختامي من رؤية كتابية للجسد.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261121-15",
+    "orderIndex": 15,
+    "sessionOrder": 1,
+    "date": "2026-11-21",
+    "title": "دروس هامة في علم المشورة",
+    "subject": "علم المشورة (أ)",
+    "speaker": "د. جورج نزيه",
+    "notes": "تطبيقات وإرشادات عملية مستفادة في جلسات المشورة.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261128-16",
+    "orderIndex": 16,
+    "sessionOrder": 1,
+    "date": "2026-11-28",
+    "title": "الاضطرابات الشخصية والنفسية",
+    "subject": "النفس الإنسانية",
+    "speaker": "م. مدحت فوزي",
+    "notes": "التعرف على الاضطرابات الشخصية والنفسية وأبعادها السلوكية.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261204-17",
+    "orderIndex": 17,
+    "sessionOrder": 1,
+    "date": "2026-12-04",
+    "title": "المشير الأعظم ومعايير النضج النفسي",
+    "subject": "علم المشورة (أ)",
+    "speaker": "د. أليس توفيق",
+    "notes": "محاضرة أونلاين عبر زووم (من 6 إلى 9 مساءً) - تشمل دراسة 'المشير الأعظم' (علم المشورة أ) و'معايير النضج النفسي' (الشخصية الإنسانية).",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261205-18",
+    "orderIndex": 18,
+    "sessionOrder": 1,
+    "date": "2026-12-05",
+    "title": "الإعتراف شفاء للنفس",
+    "subject": "علم المشورة (أ)",
+    "speaker": "القس يوساب عبد الله",
+    "notes": "سر الاعتراف وعلاقته بالشفاء النفسي والروحي.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261211-19",
+    "orderIndex": 19,
+    "sessionOrder": 1,
+    "date": "2026-12-11",
+    "title": "المشاعر والأفكار",
+    "subject": "النفس الإنسانية",
+    "speaker": "د. مارجو موريس",
+    "notes": "محاضرة أونلاين عبر زووم (من 12 إلى 3 ظهراً) - العلاقة التفاعلية بين الأفكار والمشاعر وكيفية تنظيم الوجدان.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261218-20",
+    "orderIndex": 20,
+    "sessionOrder": 1,
+    "date": "2026-12-18",
+    "title": "محاذير في المشورة",
+    "subject": "علم المشورة (ب)",
+    "speaker": "د. ماهر الضبع",
+    "notes": "الأخطاء الشائعة والمحاذير الأخلاقية والمهنية التي يجب على المشير تجنبها.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20261225-21",
+    "orderIndex": 21,
+    "sessionOrder": 1,
+    "date": "2026-12-25",
+    "title": "الجذور اللاهوتية للمشورة",
+    "subject": "علم المشورة (أ)",
+    "speaker": "القمص مكاريوس موريس",
+    "notes": "محاضرة أونلاين عبر زووم (من 12 إلى 3 ظهراً) - التأصيل اللاهوتي والكنسي للمشورة المسيحية.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20270101-22",
+    "orderIndex": 22,
+    "sessionOrder": 1,
+    "date": "2027-01-01",
+    "title": "كيف تتكون هويتي النفسية",
+    "subject": "النفس الإنسانية",
+    "speaker": "د. أمل عادل",
+    "notes": "مراحل تشكل الهوية النفسية، العوامل المؤثرة، والوصول إلى الهوية السوية.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20270109-23",
+    "orderIndex": 23,
+    "sessionOrder": 1,
+    "date": "2027-01-09",
+    "title": "عرض الكابستون (الدارسين الأكاديمي)",
+    "subject": "مشروع التخرج والتقييم",
+    "speaker": "لجنة التقييم وهيئة التدريس",
+    "notes": "جلسة تقديم ومناقشة مشاريع الكابستون للدارسين في المساق الأكاديمي.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  },
+  {
+    "id": "lec-20270123-24",
+    "orderIndex": 24,
+    "sessionOrder": 1,
+    "date": "2027-01-23",
+    "title": "الامتحان (التيرم الأول)",
+    "subject": "الامتحانات والتقييم النهائي",
+    "speaker": "إدارة المعهد والمنسق الأكاديمي",
+    "notes": "الامتحان النهائي لمواد التيرم الأول لجميع الدارسين.",
+    "mediaUrl": "",
+    "handoutUrl": "",
+    "handoutName": "",
+    "audioSummaryUrl": "",
+    "writtenSummary": "",
+    "quizQuestions": [],
+    "lastPosition": 0
+  }
+]
+;
+
 // Module: config/firebase.js
 // تهيئة وإعداد فايربيز وقاعدة البيانات السحابية لمشروع دراسة المشورة
 window.FIREBASE_CONFIG = {
@@ -588,22 +1002,93 @@ window.FIREBASE_CONFIG = {
 // Module: services/cloudSync.js
 // خدمة المزامنة السحابية اللحظية مع فايربيز
 window.CloudSyncService = {
-  // الاشتراك اللحظي في المحاضرات
+  // الاشتراك اللحظي في المحاضرات مع جلب مباشر فوري ومضمون (Direct REST Fetch + Realtime Listener)
   subscribeLectures: function(onUpdate) {
-    if (!window.db) return function() {};
-    try {
-      return window.db.collection("lectures").orderBy("date", "desc").onSnapshot(function(snapshot) {
-        var list = [];
-        snapshot.forEach(function(doc) {
-          list.push(Object.assign({ id: doc.id }, doc.data()));
-        });
+    var self = this;
+    var hasDelivered = false;
+
+    var handleUpdate = function(list) {
+      if (!list || !Array.isArray(list)) return;
+      hasDelivered = true;
+      if (typeof onUpdate === "function") {
         onUpdate(list);
-      }, function(err) {
-        console.warn("Firestore lectures read fallback to local:", err);
-      });
-    } catch (e) {
-      return function() {};
+      }
+    };
+
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو المتصفح الخفي (Incognito)
+    var fetchRestLectures = function(retryCount) {
+      var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 12000) : null;
+      var fetchOpts = {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
+      };
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
+      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/lectures?key=" + apiKey + "&pageSize=100";
+      if (controller) fetchOpts.signal = controller.signal;
+
+      fetch(restUrl, fetchOpts)
+        .then(function(res) {
+          if (timeoutId) clearTimeout(timeoutId);
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function(data) {
+          if (data && data.documents && Array.isArray(data.documents)) {
+            var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+            restList = restList.filter(function(l) { return !l.isDeleted; });
+            if (restList.length > 0) {
+              handleUpdate(restList);
+            }
+          }
+        })
+        .catch(function(errRest) {
+          if (timeoutId) clearTimeout(timeoutId);
+          console.warn("Direct REST lectures fetch notice:", errRest && errRest.message);
+          // إعادة محاولة واحدة سريعة إذا لم يكن قد تم تسليم أي بيانات بعد
+          if (!hasDelivered && (retryCount || 0) < 2) {
+            setTimeout(function() { fetchRestLectures((retryCount || 0) + 1); }, 1500);
+          }
+        });
+    };
+
+    fetchRestLectures(0);
+
+    // 2. الاستماع اللحظي المستمر لأي تحديث جديد
+    var setupRealtime = function() {
+      if (!window.db) return function() {};
+      try {
+        return window.db.collection("lectures").onSnapshot(function(snapshot) {
+          var list = [];
+          snapshot.forEach(function(doc) {
+            var item = Object.assign({ id: doc.id }, doc.data());
+            if (!item.isDeleted) list.push(item);
+          });
+          handleUpdate(list);
+        }, function(err) {
+          console.warn("Firestore subscribeLectures realtime error:", err);
+        });
+      } catch (e) {
+        return function() {};
+      }
+    };
+
+    var unsub = null;
+    if (window.db) {
+      unsub = setupRealtime();
+    } else {
+      var checkTimer = setInterval(function() {
+        if (window.db) {
+          clearInterval(checkTimer);
+          unsub = setupRealtime();
+        }
+      }, 500);
+      setTimeout(function() { clearInterval(checkTimer); }, 10000);
     }
+
+    return function() {
+      if (typeof unsub === "function") unsub();
+    };
   },
 
   // حفظ أو تعديل محاضرة سحابياً
@@ -15080,11 +15565,18 @@ window.LecturesPage = function(props) {
   var ai = window.GeminiAIService;
 
   var [lectures, setLectures] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.lectures, []);
+    var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (Array.isArray(local) && local.length > 0) return local;
+    if (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) {
+      return window.DEFAULT_TERM1_LECTURES;
+    }
+    return [];
   });
   var [isLoadingLectures, setIsLoadingLectures] = React.useState(function() {
     var cached = utils.getLocal(cfg.storageKeys.lectures, []);
-    return !cached || cached.length === 0;
+    var hasLocal = Array.isArray(cached) && cached.length > 0;
+    var hasDefault = Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0;
+    return !hasLocal && !hasDefault;
   });
 
   var [activeLecture, setActiveLecture] = React.useState(null);
@@ -24717,7 +25209,12 @@ function App() {
   var [activeToast, setActiveToast] = React.useState(null);
 
   var [appLectures, setAppLectures] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.lectures, []);
+    var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (Array.isArray(local) && local.length > 0) return local;
+    if (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) {
+      return window.DEFAULT_TERM1_LECTURES;
+    }
+    return [];
   });
   var [isTopZoomDismissed, setIsTopZoomDismissed] = React.useState(false);
 

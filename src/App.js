@@ -184,7 +184,12 @@ function App() {
   var [activeToast, setActiveToast] = React.useState(null);
 
   var [appLectures, setAppLectures] = React.useState(function() {
-    return utils.getLocal(cfg.storageKeys.lectures, []);
+    var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (Array.isArray(local) && local.length > 0) return local;
+    if (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) {
+      return window.DEFAULT_TERM1_LECTURES;
+    }
+    return [];
   });
   var [isTopZoomDismissed, setIsTopZoomDismissed] = React.useState(false);
 
