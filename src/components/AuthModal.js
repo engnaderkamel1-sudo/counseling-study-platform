@@ -1,3 +1,31 @@
+// دالة مساعدة لتحليل قيم Firestore REST API
+var parseAuthFirestoreValue = function(val) {
+  if (!val) return null;
+  if (val.stringValue !== undefined) return val.stringValue;
+  if (val.integerValue !== undefined) return parseInt(val.integerValue, 10);
+  if (val.doubleValue !== undefined) return parseFloat(val.doubleValue);
+  if (val.booleanValue !== undefined) return val.booleanValue;
+  if (val.nullValue !== undefined) return null;
+  if (val.timestampValue !== undefined) return { seconds: Math.floor(new Date(val.timestampValue).getTime() / 1000) };
+  if (val.mapValue !== undefined && val.mapValue.fields) {
+    var obj = {};
+    Object.keys(val.mapValue.fields).forEach(function(k) { obj[k] = parseAuthFirestoreValue(val.mapValue.fields[k]); });
+    return obj;
+  }
+  if (val.arrayValue !== undefined && val.arrayValue.values) {
+    return val.arrayValue.values.map(parseAuthFirestoreValue);
+  }
+  return null;
+};
+
+var parseAuthRestUserDoc = function(doc) {
+  if (!doc || !doc.fields) return null;
+  var obj = {};
+  Object.keys(doc.fields).forEach(function(k) { obj[k] = parseAuthFirestoreValue(doc.fields[k]); });
+  obj.id = doc.name ? doc.name.split("/").pop() : obj.id;
+  return obj;
+};
+
 // نافذة وشاشة تسجيل الدخول وبوابة اعتماد الدارسين
 window.AuthModal = function(props) {
   var isOpen = props.isOpen;
@@ -219,8 +247,6 @@ window.AuthModal = function(props) {
     setErrorMsg("");
 
     try {
-      if (!window.db) throw new Error("قاعدة البيانات غير متصلة بالإنترنت حالياً.");
-
       var ident = loginIdentifier.trim().toLowerCase();
       var pwd = loginPassword.trim();
 
@@ -231,36 +257,72 @@ window.AuthModal = function(props) {
       var userDocId = "user_" + ident.replace(/[^a-zA-Z0-9]/g, "_");
       var isMasterAdmin = (ident === MASTER_ADMIN_EMAIL.toLowerCase());
 
-      var fetchWithTimeout = function(promise, timeoutMs) {
-        return Promise.race([
-          promise,
-          new Promise(function(_, reject) {
-            setTimeout(function() {
-              reject(new Error("استغرق التحقق وقتاً طويلاً. يرجى التأكد من اتصال الإنترنت ثم إعادة المحاولة."));
-            }, timeoutMs || 8000);
-          })
-        ]);
-      };
-
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
       var userDoc = null;
-      var directSnap = null;
+
+      // 1. محاولة جلب المستخدم فوراً عبر REST API المباشر (HTTPS عادي، يعمل دائماً على الموبايل بدون WebSockets وبدون أخطاء offline)
       try {
-        directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get({ source: "server" }), 5000);
-      } catch (srvErr) {
-        directSnap = await fetchWithTimeout(window.db.collection("users").doc(userDocId).get(), 8000);
+        var directUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users/" + userDocId + "?key=" + apiKey;
+        var directRes = await fetch(directUrl, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        if (directRes.ok) {
+          var directData = await directRes.json();
+          if (directData && directData.fields) {
+            userDoc = parseAuthRestUserDoc(directData);
+          }
+        }
+
+        // إذا لم نجد الحساب بالمعرف المباشر، نبحث عبر استعلام REST بالبريد الإلكتروني
+        if (!userDoc) {
+          var queryUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents:runQuery?key=" + apiKey;
+          var queryBody = {
+            structuredQuery: {
+              from: [{ collectionId: "users" }],
+              where: {
+                fieldFilter: {
+                  field: { fieldPath: "email" },
+                  op: "EQUAL",
+                  value: { stringValue: ident }
+                }
+              },
+              limit: 1
+            }
+          };
+          var queryRes = await fetch(queryUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+            body: JSON.stringify(queryBody)
+          });
+          if (queryRes.ok) {
+            var queryData = await queryRes.json();
+            if (Array.isArray(queryData) && queryData.length > 0 && queryData[0].document) {
+              userDoc = parseAuthRestUserDoc(queryData[0].document);
+            }
+          }
+        }
+      } catch (restErr) {
+        console.warn("REST login check notice (non-fatal):", restErr && restErr.message);
       }
 
-      if (directSnap && directSnap.exists) {
-        userDoc = Object.assign({ id: directSnap.id }, directSnap.data());
-      } else {
-        var emailSnap = null;
+      // 2. إذا لم يعثر عليه REST (أو حدث خطأ شبكة)، نحاول كاحتياط أخير عبر SDK
+      if (!userDoc && window.db) {
         try {
-          emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get({ source: "server" }), 5000);
-        } catch (srvErr2) {
-          emailSnap = await fetchWithTimeout(window.db.collection("users").where("email", "==", ident).limit(1).get(), 8000);
-        }
-        if (emailSnap && !emailSnap.empty) {
-          userDoc = Object.assign({ id: emailSnap.docs[0].id }, emailSnap.docs[0].data());
+          var directSnap = await Promise.race([
+            window.db.collection("users").doc(userDocId).get(),
+            new Promise(function(_, reject) { setTimeout(function() { reject(new Error("timeout")); }, 4000); })
+          ]);
+          if (directSnap && directSnap.exists) {
+            userDoc = Object.assign({ id: directSnap.id }, directSnap.data());
+          } else {
+            var emailSnap = await Promise.race([
+              window.db.collection("users").where("email", "==", ident).limit(1).get(),
+              new Promise(function(_, reject) { setTimeout(function() { reject(new Error("timeout")); }, 4000); })
+            ]);
+            if (emailSnap && !emailSnap.empty) {
+              userDoc = Object.assign({ id: emailSnap.docs[0].id }, emailSnap.docs[0].data());
+            }
+          }
+        } catch (sdkErr) {
+          console.warn("SDK login check notice:", sdkErr && sdkErr.message);
         }
       }
 
