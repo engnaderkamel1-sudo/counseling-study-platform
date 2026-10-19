@@ -13,6 +13,8 @@ def clean_arabic_text(text):
     cleaned = text.replace("\ufeff", "").replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")
     # Remove superscript footnote numbers
     cleaned = re.sub(r"[¹²³⁴⁵⁶⁷⁸⁹⁰]", "", cleaned)
+    # Replace bullets and long dashes with simple punctuation
+    cleaned = cleaned.replace("•", "- ").replace("–", "-").replace("—", "-")
     # Remove isolated non-printable control chars except newlines and tabs
     return "".join(ch for ch in cleaned if ch in "\n\r\t" or ord(ch) >= 32).strip()
 
@@ -69,7 +71,7 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(content_length).decode("utf-8") if content_length > 0 else ""
+            body = self.rfile.read(content_length).decode("utf-8-sig") if content_length > 0 else ""
             data = json.loads(body) if body else {}
 
             text = data.get("text") or data.get("q") or ""
