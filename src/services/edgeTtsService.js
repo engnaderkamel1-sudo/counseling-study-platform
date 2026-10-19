@@ -278,6 +278,7 @@ window.EdgeTtsService = {
 
       try {
         ws = new WebSocket(wssUrl);
+        ws.binaryType = "arraybuffer";
       } catch (wsErr) {
         return reject(wsErr);
       }
@@ -334,6 +335,9 @@ window.EdgeTtsService = {
             isClosed = true;
             clearTimeout(timeoutId);
             try { ws.close(); } catch (e) {}
+            if (audioChunks.length === 0) {
+              return reject(new Error("انتهت المعالجة دون استلام بيانات صوتية من الخادم."));
+            }
             var finalBlob = new Blob(audioChunks, { type: "audio/mpeg" });
             self._getAudioDuration(finalBlob).then(function(dur) {
               resolve({
@@ -341,28 +345,29 @@ window.EdgeTtsService = {
                 duration: dur,
                 audioUrl: URL.createObjectURL(finalBlob)
               });
+            }).catch(function() {
+              resolve({
+                blob: finalBlob,
+                duration: 0,
+                audioUrl: URL.createObjectURL(finalBlob)
+              });
             });
           }
-        } else {
-          // رسالة ثنائية: استخراج ترويسة البيانات وتدفق الصوت
-          var reader = new FileReader();
-          reader.onload = function() {
-            var buf = reader.result;
-            var u8 = new Uint8Array(buf);
-            if (u8.length < 2) return;
-            var headerLen = (u8[0] << 8) | (u8[1] + 2);
-            if (headerLen > u8.length) return;
+        } else if (event.data instanceof ArrayBuffer) {
+          // استخراج فوري متزامن لترويسة البيانات وتدفق الصوت
+          var u8 = new Uint8Array(event.data);
+          if (u8.length < 2) return;
+          var headerLen = (u8[0] << 8) | u8[1];
+          if (headerLen + 2 > u8.length) return;
 
-            var headerBytes = u8.slice(0, headerLen);
-            var headerStr = new TextDecoder().decode(headerBytes);
-            if (headerStr.indexOf("Path:audio") !== -1) {
-              var audioData = u8.slice(headerLen);
-              if (audioData.length > 0) {
-                audioChunks.push(audioData);
-              }
+          var headerBytes = u8.slice(2, headerLen + 2);
+          var headerStr = new TextDecoder().decode(headerBytes);
+          if (headerStr.indexOf("Path:audio") !== -1) {
+            var audioData = u8.slice(headerLen + 2);
+            if (audioData.length > 0) {
+              audioChunks.push(audioData);
             }
-          };
-          reader.readAsArrayBuffer(event.data);
+          }
         }
       };
 

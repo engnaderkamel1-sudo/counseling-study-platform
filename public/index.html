@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"},{"hash":"05d9b6e","date":"2026-10-12 18:15","message":"fix(player): auto play generated audio, save duration, and bump sw cache to v7"}];
+window.APP_UPDATES_HISTORY = [{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027جديد\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"},{"hash":"696eb30","date":"2026-10-12 21:35","message":"docs(rules): update firestore.rules to allow read/write on notes, notifications, and recycle_bin"},{"hash":"ec645fe","date":"2026-10-12 21:31","message":"fix(notifications): ensure deleted notifications are dismissed locally and allow Firestore notification deletions"},{"hash":"a0905cd","date":"2026-10-12 21:26","message":"Update counseling platform bundle"},{"hash":"d7a8c51","date":"2026-10-12 21:21","message":"Update counseling platform bundle"},{"hash":"b8880e9","date":"2026-10-12 21:12","message":"Update counseling platform bundle"},{"hash":"876442e","date":"2026-10-12 21:08","message":"Update counseling platform bundle"},{"hash":"1ba22fb","date":"2026-10-12 21:04","message":"Update counseling platform bundle"},{"hash":"9b4b9c2","date":"2026-10-12 20:57","message":"Update counseling platform bundle"},{"hash":"9cce7ea","date":"2026-10-12 19:27","message":"deploy: trigger vercel live build for PM/AM labels"},{"hash":"20285e3","date":"2026-10-12 19:26","message":"Update counseling platform bundle"},{"hash":"5ebcc98","date":"2026-10-12 19:11","message":"deploy: trigger vercel live build for 12h time format"},{"hash":"a32df59","date":"2026-10-12 19:10","message":"Update counseling platform bundle"},{"hash":"9ce52ed","date":"2026-10-12 19:03","message":"deploy: trigger vercel production build for audio proxy range and mime fixes"},{"hash":"c3a27b7","date":"2026-10-12 18:59","message":"Update counseling platform bundle"},{"hash":"c2679bc","date":"2026-10-12 18:56","message":"fix(audio): support HTTP 206 Range requests, sniff WAV vs MP3 in proxy, and enable seamless chapter playback"},{"hash":"552dd1e","date":"2026-10-12 18:54","message":"deploy(audio): trigger vercel build for exclusive player"},{"hash":"bc4e706","date":"2026-10-12 18:47","message":"Update counseling platform bundle"},{"hash":"4018604","date":"2026-10-12 18:44","message":"fix(audio): detect correct audio content-type in proxy"},{"hash":"5fc7b31","date":"2026-10-12 18:36","message":"fix(audio): pipe drive audio through audio-proxy to eliminate CORP and enable instant streaming"},{"hash":"6116c59","date":"2026-10-12 18:30","message":"docs(rules): enforce zero-delay deployment and cache-busting rule"},{"hash":"96c095a","date":"2026-10-12 18:25","message":"deploy: trigger vercel webhook build for audio fixes"},{"hash":"2829778","date":"2026-10-12 18:19","message":"perf(deploy): force no-cache on vercel for instant updates and sw v7"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1792391432",
-  buildTime: "2026-10-19T06:30:32",
+  version: "1.2.1792392637",
+  buildTime: "2026-10-19T06:50:37",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2429,6 +2429,7 @@ window.EdgeTtsService = {
 
       try {
         ws = new WebSocket(wssUrl);
+        ws.binaryType = "arraybuffer";
       } catch (wsErr) {
         return reject(wsErr);
       }
@@ -2485,6 +2486,9 @@ window.EdgeTtsService = {
             isClosed = true;
             clearTimeout(timeoutId);
             try { ws.close(); } catch (e) {}
+            if (audioChunks.length === 0) {
+              return reject(new Error("انتهت المعالجة دون استلام بيانات صوتية من الخادم."));
+            }
             var finalBlob = new Blob(audioChunks, { type: "audio/mpeg" });
             self._getAudioDuration(finalBlob).then(function(dur) {
               resolve({
@@ -2492,28 +2496,29 @@ window.EdgeTtsService = {
                 duration: dur,
                 audioUrl: URL.createObjectURL(finalBlob)
               });
+            }).catch(function() {
+              resolve({
+                blob: finalBlob,
+                duration: 0,
+                audioUrl: URL.createObjectURL(finalBlob)
+              });
             });
           }
-        } else {
-          // رسالة ثنائية: استخراج ترويسة البيانات وتدفق الصوت
-          var reader = new FileReader();
-          reader.onload = function() {
-            var buf = reader.result;
-            var u8 = new Uint8Array(buf);
-            if (u8.length < 2) return;
-            var headerLen = (u8[0] << 8) | (u8[1] + 2);
-            if (headerLen > u8.length) return;
+        } else if (event.data instanceof ArrayBuffer) {
+          // استخراج فوري متزامن لترويسة البيانات وتدفق الصوت
+          var u8 = new Uint8Array(event.data);
+          if (u8.length < 2) return;
+          var headerLen = (u8[0] << 8) | u8[1];
+          if (headerLen + 2 > u8.length) return;
 
-            var headerBytes = u8.slice(0, headerLen);
-            var headerStr = new TextDecoder().decode(headerBytes);
-            if (headerStr.indexOf("Path:audio") !== -1) {
-              var audioData = u8.slice(headerLen);
-              if (audioData.length > 0) {
-                audioChunks.push(audioData);
-              }
+          var headerBytes = u8.slice(2, headerLen + 2);
+          var headerStr = new TextDecoder().decode(headerBytes);
+          if (headerStr.indexOf("Path:audio") !== -1) {
+            var audioData = u8.slice(headerLen + 2);
+            if (audioData.length > 0) {
+              audioChunks.push(audioData);
             }
-          };
-          reader.readAsArrayBuffer(event.data);
+          }
         }
       };
 
@@ -18299,6 +18304,9 @@ window.BooksPage = function(props) {
     var workingBook = Object.assign({}, activeBook);
     var workingChapters = (workingBook.audioChapters || []).slice();
 
+    var successGeneratedCount = 0;
+    var lastBatchError = null;
+
     for (var ai = 0; ai < pendingAudioChaps.length; ai++) {
       if (audioCancelledRef.current) break;
       var curTarget = pendingAudioChaps[ai];
@@ -18312,8 +18320,9 @@ window.BooksPage = function(props) {
       setGeneratingAudioChapterId(curTarget.id);
 
       try {
-        var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
-          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + status);
+        var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(st) {
+          var label = (st && typeof st === "object" && st.statusText) ? st.statusText : (typeof st === "string" ? st : "جاري المعالجة...");
+          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + label);
         });
         var generatedUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
         var batchSubtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
@@ -18342,9 +18351,11 @@ window.BooksPage = function(props) {
             var bkIdx = allBooksList.findIndex(function(b) { return b.id === workingBook.id; });
             if (bkIdx >= 0) { allBooksList[bkIdx] = workingBook; utils.setLocal(cfg.storageKeys.books, allBooksList); }
             await safeCloudSaveBook(workingBook);
+            successGeneratedCount++;
           }
         }
       } catch (genErr) {
+        lastBatchError = genErr;
         console.warn("Failed generating audio for chapter " + curTarget.title, genErr);
       }
     }
@@ -18354,9 +18365,11 @@ window.BooksPage = function(props) {
     setAudioStatusText("");
 
     if (audioCancelledRef.current) {
-      alert("تم إيقاف توليد الصوت وحفظ الفصول التي اكتمل توليدها.");
+      alert("تم إيقاف توليد الصوت وحفظ الفصول التي اكتمل توليدها (" + successGeneratedCount + ").");
+    } else if (successGeneratedCount > 0) {
+      alert("🎉 تم توليد وحفظ الصوت بنجاح لـ (" + successGeneratedCount + " من " + pendingAudioChaps.length + ") فصول!");
     } else {
-      alert("🎉 اكتمل توليد الصوت لكافة الفصول بنجاح! يمكنك الاستماع إليها الآن.");
+      alert("⚠️ تعذر توليد الصوت للفصول: " + (lastBatchError ? (lastBatchError.message || lastBatchError) : "يرجى التحقق من اتصال الإنترنت ومفاتيح الصوت في الإعدادات."));
     }
   };
 

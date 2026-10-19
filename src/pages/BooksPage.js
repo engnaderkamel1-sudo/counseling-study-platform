@@ -2230,6 +2230,9 @@ window.BooksPage = function(props) {
     var workingBook = Object.assign({}, activeBook);
     var workingChapters = (workingBook.audioChapters || []).slice();
 
+    var successGeneratedCount = 0;
+    var lastBatchError = null;
+
     for (var ai = 0; ai < pendingAudioChaps.length; ai++) {
       if (audioCancelledRef.current) break;
       var curTarget = pendingAudioChaps[ai];
@@ -2243,8 +2246,9 @@ window.BooksPage = function(props) {
       setGeneratingAudioChapterId(curTarget.id);
 
       try {
-        var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(status) {
-          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + status);
+        var genRes = await window.EdgeTtsService.generateAudioForText(curTarget.text, null, function(st) {
+          var label = (st && typeof st === "object" && st.statusText) ? st.statusText : (typeof st === "string" ? st : "جاري المعالجة...");
+          setAudioStatusText("فصل (" + (ai + 1) + " من " + pendingAudioChaps.length + "): " + label);
         });
         var generatedUrl = (genRes && typeof genRes === "object" && genRes.audioUrl) ? genRes.audioUrl : genRes;
         var batchSubtitles = (genRes && typeof genRes === "object" && genRes.subtitles) ? genRes.subtitles : null;
@@ -2273,9 +2277,11 @@ window.BooksPage = function(props) {
             var bkIdx = allBooksList.findIndex(function(b) { return b.id === workingBook.id; });
             if (bkIdx >= 0) { allBooksList[bkIdx] = workingBook; utils.setLocal(cfg.storageKeys.books, allBooksList); }
             await safeCloudSaveBook(workingBook);
+            successGeneratedCount++;
           }
         }
       } catch (genErr) {
+        lastBatchError = genErr;
         console.warn("Failed generating audio for chapter " + curTarget.title, genErr);
       }
     }
@@ -2285,9 +2291,11 @@ window.BooksPage = function(props) {
     setAudioStatusText("");
 
     if (audioCancelledRef.current) {
-      alert("تم إيقاف توليد الصوت وحفظ الفصول التي اكتمل توليدها.");
+      alert("تم إيقاف توليد الصوت وحفظ الفصول التي اكتمل توليدها (" + successGeneratedCount + ").");
+    } else if (successGeneratedCount > 0) {
+      alert("🎉 تم توليد وحفظ الصوت بنجاح لـ (" + successGeneratedCount + " من " + pendingAudioChaps.length + ") فصول!");
     } else {
-      alert("🎉 اكتمل توليد الصوت لكافة الفصول بنجاح! يمكنك الاستماع إليها الآن.");
+      alert("⚠️ تعذر توليد الصوت للفصول: " + (lastBatchError ? (lastBatchError.message || lastBatchError) : "يرجى التحقق من اتصال الإنترنت ومفاتيح الصوت في الإعدادات."));
     }
   };
 
