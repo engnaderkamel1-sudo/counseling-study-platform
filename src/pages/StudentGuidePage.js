@@ -37,9 +37,40 @@ window.StudentGuidePage = function(props) {
     {
       id: "doc_curriculum",
       title: "المنهج الدراسي وخطة المشورة",
-      description: "المقرر الشامل لمواد ودراسة المشورة لجميع الفصول الدراسية",
-      files: [],
-      driveUrl: "",
+      description: "المقرر الشامل لمواد ودراسة المشورة لجميع الفصول الدراسية (مقسم بالمواد والمحاضرات)",
+      files: [
+        {
+          name: "منهج المشورة المعتمد - السنة الأولى (كامل 104 صفحات)",
+          url: "./curriculum/oula_mashora_smart.pdf",
+          size: "3.02 MB"
+        },
+        {
+          name: "1. النفس الإنسانية (CED 102)",
+          url: "./curriculum/subjects/subject_1_nafs_insaneya.pdf",
+          size: "1.8 MB"
+        },
+        {
+          name: "2. الشخصية الإنسانية (CED 101)",
+          url: "./curriculum/subjects/subject_2_shakhseya_insaneya.pdf",
+          size: "1.7 MB"
+        },
+        {
+          name: "3. علم المشورة أ (CED 103)",
+          url: "./curriculum/subjects/subject_3_elm_mashora_a.pdf",
+          size: "1.6 MB"
+        },
+        {
+          name: "4. علم المشورة ب (CED 104)",
+          url: "./curriculum/subjects/subject_4_elm_mashora_b.pdf",
+          size: "1.9 MB"
+        },
+        {
+          name: "5. علم النفس العصبي (Neuropsychology)",
+          url: "./curriculum/subjects/subject_5_neuropsychology.pdf",
+          size: "1.8 MB"
+        }
+      ],
+      driveUrl: "./curriculum/oula_mashora_smart.pdf",
       category: "لوائح ومنهج",
       icon: "📑",
       order: 1

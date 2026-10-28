@@ -242,9 +242,10 @@ window.CloudSyncService = {
   },
 
   // حفظ أو تعديل كتاب مع تنقية سحابية آمنة وحماية المستند من تجاوز 1MB
-  saveBook: function(book) {
+  saveBook: function(book, options) {
     if (!window.db || !book) return Promise.resolve();
     var docId = book.id || ("book-" + Date.now());
+    var opts = options || {};
     try {
       // حفظ الغلاف في الكاش المحلي لضمان ظهوره الفوري دائماً على الجهاز
       if (book.coverUrl && typeof book.coverUrl === "string" && book.coverUrl.trim()) {
@@ -265,6 +266,11 @@ window.CloudSyncService = {
         cleanBook.isPublished = true;
       } else if (cleanBook.publishStatus === "draft") {
         cleanBook.isPublished = false;
+      }
+      // صمام أمان درع حماية الفصول (Empty-Chapters Shield):
+      // يُمنع مسح أو تصفير مصفوفة الفصول في السحابة إذا كانت فارغة ما لم يكن هناك تصريح صريح allowEmptyChapters
+      if ((!cleanBook.audioChapters || !Array.isArray(cleanBook.audioChapters) || cleanBook.audioChapters.length === 0) && opts.allowEmptyChapters !== true) {
+        delete cleanBook.audioChapters;
       }
       return window.db.collection("books").doc(docId).set(cleanBook, { merge: true }).catch(function(err) {
         console.error("Firestore saveBook error for " + docId + ":", err);

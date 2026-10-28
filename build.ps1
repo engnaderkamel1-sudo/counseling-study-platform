@@ -20,6 +20,7 @@ function Build-App {
         "config/appConfig.js",
         "config/versesBank.js",
         "config/term1LecturesData.js",
+        "config/curriculumData.js",
         "config/firebase.js",
         "services/cloudSync.js",
         "services/geminiService.js",

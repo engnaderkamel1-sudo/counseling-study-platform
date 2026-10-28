@@ -215,7 +215,8 @@ window.BooksPage = function(props) {
     if (!bookToSave) return true;
     setCloudSyncStatus("saving");
     try {
-      await cloud.saveBook(bookToSave);
+      var saveOpts = Object.assign({}, options || {}, { allowEmptyChapters: !!(options && options.allowEmptyChapters || bookToSave.__allowEmpty) });
+      await cloud.saveBook(bookToSave, saveOpts);
       setCloudSyncStatus("synced");
       setCloudSyncError(null);
       return true;
@@ -244,10 +245,29 @@ window.BooksPage = function(props) {
         // حماية النصوص المفرغة محلياً من الحذف عبر الدمج الذكي والمزامنة العكسية التلقائية (Zero Data Loss + Auto Cloud Sync)
         var mergedList = cleanCloudList.map(function(cb) {
           var cached = utils.getLocal("counsel_book_data_" + cb.id);
-          if (cached && cached.audioChapters) {
+          var backupKey = "counsel_book_chapters_backup_" + cb.id;
+          var permBackup = utils.getLocal(backupKey, []);
+          var localChaps = (cached && Array.isArray(cached.audioChapters) && cached.audioChapters.length > 0)
+            ? cached.audioChapters
+            : (Array.isArray(permBackup) && permBackup.length > 0 ? permBackup : []);
+          var cloudChaps = Array.isArray(cb.audioChapters) ? cb.audioChapters : [];
+
+          // درع حماية الفصول (Empty-Chapters Shield): إذا كانت السحابة خالية ولدينا فصول محلياً، لا نسمح بالتصفير
+          if (cloudChaps.length === 0 && localChaps.length > 0) {
+            console.warn("Empty-Chapters Shield activated: Recovering chapters from local storage for book:", cb.id);
+            var recoveredBook = Object.assign({}, cb, { audioChapters: localChaps });
+            safeCloudSaveBook(recoveredBook, { silent: true });
+            return recoveredBook;
+          }
+
+          if (cloudChaps.length > 0) {
+            utils.setLocal(backupKey, cloudChaps);
+          }
+
+          if (localChaps.length > 0 || cloudChaps.length > 0) {
             var needCloudSync = false;
-            var mergedChaps = (cb.audioChapters || []).map(function(ch) {
-              var cachedCh = cached.audioChapters.find(function(cc) {
+            var mergedChaps = (cloudChaps.length > 0 ? cloudChaps : localChaps).map(function(ch) {
+              var cachedCh = localChaps.find(function(cc) {
                 return cc.id === ch.id || (cc.title && ch.title && cc.title.trim() === ch.title.trim());
               });
               var cachedTextLen = cachedCh && cachedCh.text ? cachedCh.text.length : 0;
@@ -1532,7 +1552,7 @@ window.BooksPage = function(props) {
     if (chapsToDelete.length === 0) return alert("لا توجد فصول صوتية لحذفها");
     if (!window.confirm("هل أنت متأكد من مسح جميع فصول هذا الكتاب (" + chapsToDelete.length + " فصل)؟\n\nسيتم حفظها بأمان في سلة المحذوفات لمدة 7 أيام مع إمكانية استرجاعها.")) return;
 
-    var updatedBook = Object.assign({}, activeBook, { audioChapters: [] });
+    var updatedBook = Object.assign({}, activeBook, { audioChapters: [], __allowEmpty: true });
     await safeCloudSaveBook(updatedBook);
     setActiveBook(updatedBook);
     if (chapterAudioRef.current) chapterAudioRef.current.pause();
@@ -2826,11 +2846,23 @@ window.BooksPage = function(props) {
       isPublished: newIsPublished
     });
 
+    var prevCachedData = utils.getLocal("counsel_book_data_" + newBookId, null);
+    var permBackupChaps = utils.getLocal("counsel_book_chapters_backup_" + newBookId, []);
+    var existingChapters = (existingBook && Array.isArray(existingBook.audioChapters) && existingBook.audioChapters.length > 0)
+      ? existingBook.audioChapters
+      : ((prevCachedData && Array.isArray(prevCachedData.audioChapters) && prevCachedData.audioChapters.length > 0)
+          ? prevCachedData.audioChapters
+          : (Array.isArray(permBackupChaps) && permBackupChaps.length > 0 ? permBackupChaps : []));
+
     if (!existingBook) {
       newB.totalPages = parseInt(newTotalPages) || 300;
       newB.currentPage = 1;
       newB.chapters = Array.from({ length: parseInt(newChaptersCount) || 1 }, function(_, i) { return { title: 'فصل ' + (i + 1), time: 0, page: 1 }; });
-      newB.audioChapters = (detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : [];
+      newB.audioChapters = existingChapters.length > 0 ? existingChapters : ((detectedChaptersList && detectedChaptersList.length > 0) ? detectedChaptersList : []);
+    } else {
+      if (existingChapters.length > 0 && (!newB.audioChapters || newB.audioChapters.length === 0)) {
+        newB.audioChapters = existingChapters;
+      }
     }
 
     await safeCloudSaveBook(newB, { silent: false });
@@ -2911,7 +2943,23 @@ window.BooksPage = function(props) {
       }
 
       // 3. اعتماد القائمة السحابية وتحديث الحالة والتخزين بأمان تام (عدم تصفير الكتب المحلية إذا تعثر جلب السحابة)
-      var finalBooks = cloudBooks.length > 0 ? cloudBooks : localBooks;
+      var finalBooks = (cloudBooks.length > 0 ? cloudBooks : localBooks).map(function(fb) {
+        var localB = localBooks.find(function(lb) { return lb.id === fb.id; });
+        var cachedData = utils.getLocal("counsel_book_data_" + fb.id, null);
+        var permBackup = utils.getLocal("counsel_book_chapters_backup_" + fb.id, []);
+        var chapsToPreserve = (fb.audioChapters && fb.audioChapters.length > 0)
+          ? fb.audioChapters
+          : ((localB && localB.audioChapters && localB.audioChapters.length > 0)
+              ? localB.audioChapters
+              : ((cachedData && cachedData.audioChapters && cachedData.audioChapters.length > 0)
+                  ? cachedData.audioChapters
+                  : permBackup));
+        if (chapsToPreserve && chapsToPreserve.length > 0) {
+          utils.setLocal("counsel_book_chapters_backup_" + fb.id, chapsToPreserve);
+          return Object.assign({}, fb, { audioChapters: chapsToPreserve });
+        }
+        return fb;
+      });
       finalBooks = sanitizeBooksList(finalBooks);
       utils.setLocal(cfg.storageKeys.books, finalBooks);
       setBooks(finalBooks);
