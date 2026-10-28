@@ -1,16 +1,11 @@
 // شاشة المنهج الدراسي والتقارير التفاعلية وعارض المنهج الذكي
-// تدعم العارض الأصلي فائق الدقة للخطوط العربية، تقسيم المواد والمحاضرات، والذكاء الاصطناعي
+// تدعم العارض الأصلي فائق الدقة بدون أي أشرطة جانبية مشتتة مع وضع ملء الشاشة الممتد
 window.CurriculumPage = function(props) {
   var currentUser = props.currentUser || { role: "student" };
   var isAdmin = currentUser && currentUser.role === "admin";
   var ai = window.GeminiAIService;
   var utils = window.APP_UTILS;
   var curriculumData = window.CURRICULUM_DATA || { subjects: [] };
-
-  // نمط العارض: "native" هو العارض الأصلي فائق الدقة للخطوط العربية (افتراضي)، أو "canvas"
-  var [viewerMode, setViewerMode] = React.useState(function() {
-    return utils && utils.getLocal ? utils.getLocal("counsel_curriculum_viewer_mode", "native") : "native";
-  });
 
   // حالة المادة المختارة
   var [selectedSubjectId, setSelectedSubjectId] = React.useState(function() {
@@ -22,18 +17,10 @@ window.CurriculumPage = function(props) {
     return utils && utils.getLocal ? utils.getLocal("counsel_curriculum_page", 1) : 1;
   });
   var [pdfTotalPages, setPdfTotalPages] = React.useState(104);
-  var [pdfScale, setPdfScale] = React.useState(1.5);
-  var [pdfRotation, setPdfRotation] = React.useState(0);
-  var [pdfTheme, setPdfTheme] = React.useState(function() {
-    return utils && utils.getLocal ? utils.getLocal("counsel_curriculum_theme", "normal") : "normal";
-  });
-  var [isPdfLoading, setIsPdfLoading] = React.useState(false);
   var [isFullScreen, setIsFullScreen] = React.useState(false);
   var [activeLectureForViewer, setActiveLectureForViewer] = React.useState(null);
 
-  var pdfCanvasRef = React.useRef(null);
   var pdfViewerContainerRef = React.useRef(null);
-  var pdfRenderTaskRef = React.useRef(null);
   var iframeRef = React.useRef(null);
 
   // حالة نافذة الذكاء الاصطناعي (تلخيص / بنك أسئلة / تقرير)
@@ -49,9 +36,6 @@ window.CurriculumPage = function(props) {
   var [uploadStatusMsg, setUploadStatusMsg] = React.useState("");
   var [isUploading, setIsUploading] = React.useState(false);
 
-  // كائن وثيقة الـ PDF لعارض اللوحة
-  var [pdfDoc, setPdfDoc] = React.useState(null);
-
   // استخراج المادة الحالية
   var activeSubject = curriculumData.subjects.find(function(s) {
     return s.id === selectedSubjectId;
@@ -59,91 +43,29 @@ window.CurriculumPage = function(props) {
 
   var activePdfBaseUrl = curriculumData.pdfUrl || "./curriculum/oula_mashora_smart.pdf";
 
-  // دالة تحميل مستند الـ PDF لعارض اللوحة مع خرائط الحروف المتقدمة
-  var loadPdfDocument = function(urlOrData) {
-    if (!window.pdfjsLib) return;
-    setIsPdfLoading(true);
-
-    var options = {
-      cMapUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/",
-      cMapPacked: true,
-      standardFontDataUrl: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/standard_fonts/"
-    };
-
-    var loadPromise;
-    if (typeof urlOrData === "string") {
-      loadPromise = window.pdfjsLib.getDocument(Object.assign({ url: urlOrData }, options)).promise;
-    } else {
-      loadPromise = window.pdfjsLib.getDocument(Object.assign({ data: urlOrData }, options)).promise;
-    }
-
-    loadPromise.then(function(loadedDoc) {
-      setPdfDoc(loadedDoc);
-      setPdfTotalPages(loadedDoc.numPages);
-      setIsPdfLoading(false);
-      renderPage(loadedDoc, pdfCurrentPage, pdfScale, pdfRotation);
-    }).catch(function(err) {
-      console.warn("Failed to load PDF via pdfjsLib:", err);
-      setIsPdfLoading(false);
-    });
+  // دالة بناء رابط الـ PDF المباشر مع إخفاء الشريط الجانبي للمعاينات وملء العرض
+  var buildPdfUrl = function(pageNum) {
+    var p = pageNum || pdfCurrentPage || 1;
+    // navpanes=0 تخفي شريط المعاينات الجانبي على اليسار
+    // pagemode=none تلغي أي نوافذ منبثقة أو فهارس جانبية
+    // view=FitH تجعل الصفحة تملأ العرض بالكامل لتكون واسعة ومريحة للقراءة
+    return activePdfBaseUrl + "#page=" + p + "&navpanes=0&pagemode=none&view=FitH";
   };
 
-  // تهيئة مستند الـ PDF عند فتح الصفحة
+  // مراقبة حدث تبديل ملء الشاشة في المتصفح
   React.useEffect(function() {
-    if (viewerMode === "canvas") {
-      loadPdfDocument(activePdfBaseUrl);
-    }
-  }, [viewerMode]);
+    var handleFsChange = function() {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("webkitfullscreenchange", handleFsChange);
+    return function() {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("webkitfullscreenchange", handleFsChange);
+    };
+  }, []);
 
-  // دالة رسم الصفحة على الـ Canvas
-  var renderPage = function(doc, pageNum, scale, rotation) {
-    var d = doc || pdfDoc;
-    if (!d || !pdfCanvasRef.current) return;
-    var validNum = Math.max(1, Math.min(pageNum, d.numPages));
-    var curScale = scale || pdfScale;
-    var curRot = typeof rotation === "number" ? rotation : pdfRotation;
-
-    if (pdfRenderTaskRef.current) {
-      try {
-        pdfRenderTaskRef.current.cancel();
-      } catch (e) {}
-    }
-
-    d.getPage(validNum).then(function(page) {
-      var canvas = pdfCanvasRef.current;
-      if (!canvas) return;
-      var context = canvas.getContext("2d");
-      var dpr = window.devicePixelRatio || 1;
-      var viewport = page.getViewport({ scale: curScale * dpr, rotation: curRot });
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      canvas.style.width = (viewport.width / dpr) + "px";
-      canvas.style.height = (viewport.height / dpr) + "px";
-
-      var renderContext = {
-        canvasContext: context,
-        viewport: viewport
-      };
-
-      var task = page.render(renderContext);
-      pdfRenderTaskRef.current = task;
-      task.promise.then(function() {
-        pdfRenderTaskRef.current = null;
-        setPdfCurrentPage(validNum);
-        if (utils && utils.setLocal) {
-          utils.setLocal("counsel_curriculum_page", validNum);
-        }
-      }).catch(function(err) {
-        if (err && err.name === "RenderingCancelledException") return;
-        console.warn("Render page error:", err);
-      });
-    }).catch(function(err) {
-      console.warn("Get page error:", err);
-    });
-  };
-
-  // تغيير الصفحة
+  // تغيير الصفحة والانتقال الفوري
   var handlePageChange = function(targetPage) {
     var p = parseInt(targetPage, 10);
     if (isNaN(p)) return;
@@ -152,11 +74,8 @@ window.CurriculumPage = function(props) {
     if (utils && utils.setLocal) {
       utils.setLocal("counsel_curriculum_page", valid);
     }
-
-    if (viewerMode === "native" && iframeRef.current) {
-      iframeRef.current.src = activePdfBaseUrl + "#page=" + valid + "&zoom=100";
-    } else if (viewerMode === "canvas" && pdfDoc) {
-      renderPage(pdfDoc, valid, pdfScale, pdfRotation);
+    if (iframeRef.current) {
+      iframeRef.current.src = buildPdfUrl(valid);
     }
   };
 
@@ -177,40 +96,21 @@ window.CurriculumPage = function(props) {
     }, 150);
   };
 
-  // تبديل نمط العارض بين الأصلي واللوحة
-  var handleToggleViewerMode = function(mode) {
-    setViewerMode(mode);
-    if (utils && utils.setLocal) {
-      utils.setLocal("counsel_curriculum_viewer_mode", mode);
-    }
-    if (mode === "canvas" && !pdfDoc) {
-      loadPdfDocument(activePdfBaseUrl);
-    }
-  };
-
-  // تكبير وتصغير (في نمط اللوحة)
-  var handleZoom = function(delta) {
-    var nextScale = Math.max(0.75, Math.min(2.5, pdfScale + delta));
-    setPdfScale(nextScale);
-    if (viewerMode === "canvas") {
-      renderPage(pdfDoc, pdfCurrentPage, nextScale, pdfRotation);
-    }
-  };
-
-  // تدوير
-  var handleRotate = function() {
-    var nextRot = (pdfRotation + 90) % 360;
-    setPdfRotation(nextRot);
-    if (viewerMode === "canvas") {
-      renderPage(pdfDoc, pdfCurrentPage, pdfScale, nextRot);
-    }
-  };
-
-  // وضع القراءة
-  var handleThemeChange = function(newTheme) {
-    setPdfTheme(newTheme);
-    if (utils && utils.setLocal) {
-      utils.setLocal("counsel_curriculum_theme", newTheme);
+  // تبديل وضع ملء الشاشة
+  var handleToggleFullScreen = function() {
+    if (!document.fullscreenElement) {
+      if (pdfViewerContainerRef.current && pdfViewerContainerRef.current.requestFullscreen) {
+        pdfViewerContainerRef.current.requestFullscreen().catch(function() {
+          setIsFullScreen(true);
+        });
+      } else {
+        setIsFullScreen(true);
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+      setIsFullScreen(false);
     }
   };
 
@@ -351,15 +251,15 @@ window.CurriculumPage = function(props) {
     var reader = new FileReader();
     reader.onload = function(evt) {
       var buffer = evt.target.result;
-      if (viewerMode === "canvas") {
-        loadPdfDocument(buffer);
-      }
       if (utils && utils.saveOfflinePdf) {
         utils.saveOfflinePdf("curriculum_full_pdf", buffer).then(function() {
           setIsUploading(false);
           setShowUploadModal(false);
+          if (iframeRef.current) {
+            iframeRef.current.src = buildPdfUrl(pdfCurrentPage);
+          }
           alert("تم تحديث وحفظ ملف المنهج بنجاح على جهازك! متاح دائماً للقراءة بدون إنترنت.");
-        }).catch(function(e) {
+        }).catch(function() {
           setIsUploading(false);
           setShowUploadModal(false);
           alert("تم تحميل الملف في العارض بنجاح.");
@@ -409,8 +309,7 @@ window.CurriculumPage = function(props) {
             { className: "flex flex-wrap items-center gap-2 pt-1" },
             React.createElement("span", { className: "text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700" }, "📑 104 صفحات"),
             React.createElement("span", { className: "text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700" }, "🎓 5 مواد رئيسية"),
-            React.createElement("span", { className: "text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700" }, "🎙️ 21 محاضرة متكاملة"),
-            React.createElement("span", { className: "text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2.5 py-1 rounded-xl border border-emerald-300 dark:border-emerald-800" }, "✨ خطوط عربية أصلية صافية 100%")
+            React.createElement("span", { className: "text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700" }, "🎙️ 21 محاضرة متكاملة")
           )
         ),
         React.createElement(
@@ -431,13 +330,13 @@ window.CurriculumPage = function(props) {
           React.createElement(
             "a",
             {
-              href: activePdfBaseUrl + "#page=" + pdfCurrentPage,
+              href: buildPdfUrl(pdfCurrentPage),
               target: "_blank",
               rel: "noopener noreferrer",
               className: "px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-2 active:scale-95 transition-all border border-slate-200 dark:border-slate-700"
             },
             React.createElement("span", null, "↗️"),
-            React.createElement("span", null, "فتح بملء الشاشة")
+            React.createElement("span", null, "فتح في تبويب مستقل")
           ),
           // زر التقرير التفاعلي الشامل
           React.createElement(
@@ -646,19 +545,21 @@ window.CurriculumPage = function(props) {
       )
     ),
 
-    // 5. عارض المنهج الدراسي فائق الدقة (Native & Clean)
+    // 5. عارض المنهج الدراسي فائق الدقة الممتد بالكامل (Native Viewer)
     React.createElement(
       "div",
       {
         ref: pdfViewerContainerRef,
-        className: "bg-slate-900 dark:bg-slate-950 rounded-3xl border border-slate-700/80 dark:border-slate-800 shadow-2xl overflow-hidden space-y-3 p-4 sm:p-5 transition-all " +
-          (isFullScreen ? "fixed inset-0 z-[9999] rounded-none p-3 h-screen w-screen flex flex-col justify-between" : "")
+        className: "bg-slate-900 dark:bg-slate-950 rounded-3xl border border-slate-700/80 dark:border-slate-800 shadow-2xl overflow-hidden transition-all " +
+          (isFullScreen
+            ? "fixed inset-0 z-[9999] rounded-none p-3 h-screen w-screen flex flex-col justify-between bg-slate-950"
+            : "space-y-3 p-4 sm:p-5")
       },
 
       // شريط أدوات العارض
       React.createElement(
         "div",
-        { className: "flex flex-wrap items-center justify-between gap-3 text-white border-b border-slate-800 pb-3 text-xs" },
+        { className: "flex flex-wrap items-center justify-between gap-3 text-white border-b border-slate-800 pb-3 text-xs shrink-0" },
         // يمين: اسم المحاضرة أو المادة
         React.createElement(
           "div",
@@ -708,7 +609,7 @@ window.CurriculumPage = function(props) {
           )
         ),
 
-        // يسار: أزرار الصفحات ونمط العارض والتكبير
+        // يسار: أزرار الصفحات والتكبير وملء الشاشة
         React.createElement(
           "div",
           { className: "flex items-center gap-1.5" },
@@ -752,29 +653,11 @@ window.CurriculumPage = function(props) {
             "◀"
           ),
 
-          // زر تبديل نمط العارض (بين الأصلي فائق الدقة واللوحة)
-          React.createElement(
-            "div",
-            { className: "flex items-center bg-slate-800 rounded-xl p-0.5 border border-slate-700" },
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { handleToggleViewerMode("native"); },
-              title: "العارض الأصلي فائق الدقة (حروف عربية متصلة 100%)",
-              className: "px-2 py-1 rounded-lg text-[10px] font-bold " + (viewerMode === "native" ? "bg-emerald-600 text-white" : "text-slate-400")
-            }, "أصلي فائق"),
-            React.createElement("button", {
-              type: "button",
-              onClick: function() { handleToggleViewerMode("canvas"); },
-              title: "عارض اللوحة المباشر",
-              className: "px-2 py-1 rounded-lg text-[10px] font-bold " + (viewerMode === "canvas" ? "bg-indigo-600 text-white" : "text-slate-400")
-            }, "لوحة")
-          ),
-
           // فتح في تبويب خارجي
           React.createElement(
             "a",
             {
-              href: activePdfBaseUrl + "#page=" + pdfCurrentPage,
+              href: buildPdfUrl(pdfCurrentPage),
               target: "_blank",
               rel: "noopener noreferrer",
               className: "p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all font-bold",
@@ -783,48 +666,35 @@ window.CurriculumPage = function(props) {
             "↗️"
           ),
 
-          // ملء الشاشة
+          // ملء الشاشة (الممتد لعرض الورقة فقط دون المعاينات الجانبية)
           React.createElement(
             "button",
             {
               type: "button",
-              onClick: function() { setIsFullScreen(!isFullScreen); },
-              className: "p-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all font-bold",
-              title: isFullScreen ? "الخروج من ملء الشاشة" : "وضع ملء الشاشة للقراءة"
+              onClick: handleToggleFullScreen,
+              className: "px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition-all font-bold flex items-center gap-1 shadow-sm active:scale-95",
+              title: isFullScreen ? "الخروج من ملء الشاشة" : "وضع ملء الشاشة للورقة فقط"
             },
-            isFullScreen ? "🗗" : "⛶"
+            React.createElement("span", null, isFullScreen ? "🗗" : "⛶"),
+            React.createElement("span", { className: "hidden sm:inline" }, isFullScreen ? "خروج" : "ملء الشاشة")
           )
         )
       ),
 
-      // مساحة العرض
-      viewerMode === "native" ? React.createElement(
-        "div",
-        { className: "w-full overflow-hidden rounded-2xl border border-slate-800 bg-white" },
-        React.createElement("iframe", {
-          ref: iframeRef,
-          key: "curriculum-native-iframe-" + pdfCurrentPage,
-          src: activePdfBaseUrl + "#page=" + pdfCurrentPage + "&zoom=100",
-          title: "عارض المنهج الأصلي",
-          className: "w-full h-[75vh] min-h-[600px] border-none rounded-2xl bg-white",
-          style: { display: "block" }
-        })
-      ) : React.createElement(
+      // مساحة العرض الممتدة للورقة فقط (بدون معارض جانبية أو شريط معاينات)
+      React.createElement(
         "div",
         {
-          className: "w-full overflow-auto flex items-center justify-center min-h-[500px] p-2 rounded-2xl " +
-            (pdfTheme === "sepia" ? "bg-[#fbf0d9]" : (pdfTheme === "dark" ? "bg-slate-950" : "bg-slate-900/50"))
+          className: "w-full overflow-hidden rounded-2xl border border-slate-800 bg-white " +
+            (isFullScreen ? "flex-1 h-full min-h-0" : "h-[75vh] min-h-[600px]")
         },
-        isPdfLoading && React.createElement(
-          "div",
-          { className: "text-center space-y-2 text-white p-8" },
-          React.createElement("div", { className: "animate-spin text-3xl" }, "⏳"),
-          React.createElement("p", { className: "text-xs font-bold" }, "جاري تجهيز وعرض صفحات المنهج بدقة عالية...")
-        ),
-        React.createElement("canvas", {
-          ref: pdfCanvasRef,
-          className: "shadow-2xl rounded-xl max-w-full transition-all " +
-            (pdfTheme === "sepia" ? "sepia-[0.35] brightness-95" : (pdfTheme === "dark" ? "invert hue-rotate-180 brightness-90" : ""))
+        React.createElement("iframe", {
+          ref: iframeRef,
+          key: "curriculum-native-iframe-" + pdfCurrentPage + "-" + (isFullScreen ? "fs" : "norm"),
+          src: buildPdfUrl(pdfCurrentPage),
+          title: "عارض المنهج الأصلي",
+          className: "w-full h-full border-none rounded-2xl bg-white",
+          style: { display: "block" }
         })
       )
     ),
