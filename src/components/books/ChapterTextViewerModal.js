@@ -64,6 +64,50 @@ window.ChapterTextViewerModal = function(props) {
   var [isSavingOffset, setIsSavingOffset] = React.useState(false);
   var [offsetSavedNotice, setOffsetSavedNotice] = React.useState("");
   var [srtNotice, setSrtNotice] = React.useState("");
+  var [asyncSubtitles, setAsyncSubtitles] = React.useState(function() {
+    if (!viewingChapterText) return null;
+    if (viewingChapterText.subtitles && Array.isArray(viewingChapterText.subtitles) && viewingChapterText.subtitles.length > 0) {
+      return viewingChapterText.subtitles;
+    }
+    try {
+      var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
+      if (cached) {
+        var parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  React.useEffect(function() {
+    if (!viewingChapterText || !activeBook) return;
+    var subs = viewingChapterText.subtitles;
+    if (subs && Array.isArray(subs) && subs.length > 0) {
+      setAsyncSubtitles(subs);
+      return;
+    }
+    try {
+      var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
+      if (cached) {
+        var parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAsyncSubtitles(parsed);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    if ((window.CloudSyncService || window.cloudSync) && typeof (window.CloudSyncService || window.cloudSync).getChapterSubtitles === "function") {
+      (window.CloudSyncService || window.cloudSync).getChapterSubtitles(activeBook.id, viewingChapterText.id).then(function(res) {
+        if (res && Array.isArray(res) && res.length > 0) {
+          setAsyncSubtitles(res);
+          try {
+            localStorage.setItem("counsel_cached_subtitles_" + viewingChapterText.id, JSON.stringify(res));
+          } catch (e) {}
+        }
+      }).catch(function() {});
+    }
+  }, [viewingChapterText && viewingChapterText.id, activeBook && activeBook.id]);
   var [isGeneratingSrt, setIsGeneratingSrt] = React.useState(false);
 
   // تحديث الإزاحة عند تغيير الفصل
@@ -215,7 +259,13 @@ window.ChapterTextViewerModal = function(props) {
     }
     setIsGeneratingSrt(true);
     try {
-      var subs = generateSubtitlesFromDuration(viewingChapterText.text, dur);
+      var subs = null;
+      if (window.EdgeTtsService && typeof window.EdgeTtsService.generateAccurateSubtitles === "function") {
+        subs = await window.EdgeTtsService.generateAccurateSubtitles(viewingChapterText.text, dur);
+      }
+      if (!subs || subs.length === 0) {
+        subs = generateSubtitlesFromDuration(viewingChapterText.text, dur);
+      }
       if (!subs || subs.length === 0) throw new Error("تعذر إنشاء التوقيتات.");
       await onSaveChapterSubtitles(viewingChapterText.id, subs);
       setSrtNotice("✅ تم توليد وحفظ تزامن (" + subs.length + " جملة) بنجاح!");
@@ -252,9 +302,20 @@ window.ChapterTextViewerModal = function(props) {
     };
 
     var content = subs.map(function(item, idx) {
+      var sStart = 0, sEnd = 0, sText = "";
+      if (typeof item === "string") {
+        var p = item.split("|");
+        sStart = parseFloat(p[0]) || 0;
+        sEnd = parseFloat(p[1]) || 0;
+        sText = p.slice(2).join("|").trim();
+      } else if (item && typeof item === "object") {
+        sStart = typeof item.start === "number" ? item.start : (parseFloat(item.start) || 0);
+        sEnd = typeof item.end === "number" ? item.end : (parseFloat(item.end) || 0);
+        sText = (item.text || "").trim();
+      }
       return (idx + 1) + "\n" +
-        formatSrtTime(item.start) + " --> " + formatSrtTime(item.end) + "\n" +
-        item.text.trim() + "\n";
+        formatSrtTime(sStart) + " --> " + formatSrtTime(sEnd) + "\n" +
+        sText + "\n";
     }).join("\n");
 
     var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
@@ -322,13 +383,26 @@ window.ChapterTextViewerModal = function(props) {
   // تقسيم نص الفصل إلى جُمل وعبارات دقيقة وقصيرة (سطر بسطر) للحفاظ على تركيز القارئ ودقة المتابعة
   var segments = React.useMemo(function() {
     // 1. إذا وُجدت توقيتات زمنية حقيقية للفصل (Subtitles / SRT)
-    if (viewingChapterText && Array.isArray(viewingChapterText.subtitles) && viewingChapterText.subtitles.length > 0) {
-      return viewingChapterText.subtitles.map(function(sub, idx) {
-        var sStart = typeof sub.start === "number" ? sub.start : (parseFloat(sub.start) || 0);
-        var sEnd = typeof sub.end === "number" ? sub.end : (parseFloat(sub.end) || 0);
+    var effectiveSubs = (asyncSubtitles && asyncSubtitles.length > 0)
+      ? asyncSubtitles
+      : ((viewingChapterText && Array.isArray(viewingChapterText.subtitles) && viewingChapterText.subtitles.length > 0) ? viewingChapterText.subtitles : null);
+
+    if (effectiveSubs && effectiveSubs.length > 0) {
+      return effectiveSubs.map(function(sub, idx) {
+        var sStart = 0, sEnd = 0, sText = "";
+        if (typeof sub === "string") {
+          var p = sub.split("|");
+          sStart = parseFloat(p[0]) || 0;
+          sEnd = parseFloat(p[1]) || 0;
+          sText = p.slice(2).join("|").trim();
+        } else if (sub && typeof sub === "object") {
+          sStart = typeof sub.start === "number" ? sub.start : (parseFloat(sub.start) || 0);
+          sEnd = typeof sub.end === "number" ? sub.end : (parseFloat(sub.end) || 0);
+          sText = (sub.text || "").trim();
+        }
         return {
           id: idx,
-          text: sub.text,
+          text: sText,
           startTime: sStart,
           endTime: sEnd,
           startRatio: (localDuration > 0) ? (sStart / localDuration) : 0,
@@ -1068,7 +1142,7 @@ window.ChapterTextViewerModal = function(props) {
           React.createElement("div", null,
             React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
               React.createElement("span", { className: "font-black text-slate-900 dark:text-white text-xs" }, "ملف التزامن الدقيق (SRT):"),
-              (viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length > 0)
+              ((viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length > 0) || (asyncSubtitles && asyncSubtitles.length > 0))
                 ? React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]" }, "🎯 متزامن بدقة (" + viewingChapterText.subtitles.length + " جملة)")
                 : React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold text-[10px]" }, "تزامن تقديري (لم يتم حفظ SRT)")
             ),

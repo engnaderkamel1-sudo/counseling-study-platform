@@ -240,9 +240,20 @@ window.AudioChaptersView = function(props) {
 
     var downloadSubtitlesAsFile = function(subsList) {
       var content = subsList.map(function(item, idx) {
+        var sStart = 0, sEnd = 0, sText = "";
+        if (typeof item === "string") {
+          var p = item.split("|");
+          sStart = parseFloat(p[0]) || 0;
+          sEnd = parseFloat(p[1]) || 0;
+          sText = p.slice(2).join("|").trim();
+        } else if (item && typeof item === "object") {
+          sStart = typeof item.start === "number" ? item.start : (parseFloat(item.start) || 0);
+          sEnd = typeof item.end === "number" ? item.end : (parseFloat(item.end) || 0);
+          sText = (item.text || "").trim();
+        }
         return (idx + 1) + "\n" +
-          formatSrtTime(item.start) + " --> " + formatSrtTime(item.end) + "\n" +
-          item.text.trim() + "\n";
+          formatSrtTime(sStart) + " --> " + formatSrtTime(sEnd) + "\n" +
+          sText + "\n";
       }).join("\n");
       var blob = new Blob([content], { type: "text/plain;charset=utf-8" });
       var url = URL.createObjectURL(blob);
@@ -254,6 +265,18 @@ window.AudioChaptersView = function(props) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     };
+
+    if ((!existingSubs || !Array.isArray(existingSubs) || existingSubs.length === 0) && (targetChap.hasSubtitles || targetChap.subtitlesCount)) {
+      if ((window.CloudSyncService || window.cloudSync) && typeof (window.CloudSyncService || window.cloudSync).getChapterSubtitles === "function" && activeBook && activeBook.id) {
+        try {
+          var fetchedSubs = await (window.CloudSyncService || window.cloudSync).getChapterSubtitles(activeBook.id, targetChap.id);
+          if (fetchedSubs && Array.isArray(fetchedSubs) && fetchedSubs.length > 0) {
+            existingSubs = fetchedSubs;
+            targetChap.subtitles = fetchedSubs;
+          }
+        } catch (eF) {}
+      }
+    }
 
     if (existingSubs && Array.isArray(existingSubs) && existingSubs.length > 0) {
       downloadSubtitlesAsFile(existingSubs);
@@ -290,7 +313,13 @@ window.AudioChaptersView = function(props) {
         throw new Error("تعذر تحديد مدة التسجيل الصوتي للفصل بدقة. يرجى تشغيل المقطع لثانية ثم المحاولة مجدداً.");
       }
 
-      var generatedSubs = generateSubtitlesFromDuration(targetChap.text, dur);
+      var generatedSubs = null;
+      if (window.EdgeTtsService && typeof window.EdgeTtsService.generateAccurateSubtitles === "function") {
+        generatedSubs = await window.EdgeTtsService.generateAccurateSubtitles(targetChap.text, dur);
+      }
+      if (!generatedSubs || generatedSubs.length === 0) {
+        generatedSubs = generateSubtitlesFromDuration(targetChap.text, dur);
+      }
       if (!generatedSubs || generatedSubs.length === 0) {
         throw new Error("تعذر إنشاء توقيتات التزامن.");
       }
@@ -320,7 +349,7 @@ window.AudioChaptersView = function(props) {
     }
 
     var pendingChaps = readyChaps.filter(function(c) {
-      return !c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0;
+      return (!c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0) && !c.hasSubtitles && !c.subtitlesCount;
     });
 
     var targets = pendingChaps.length > 0 ? pendingChaps : readyChaps;
@@ -361,7 +390,13 @@ window.AudioChaptersView = function(props) {
         }
 
         if (dur && dur > 0) {
-          var subs = generateSubtitlesFromDuration(curChap.text, dur);
+          var subs = null;
+          if (window.EdgeTtsService && typeof window.EdgeTtsService.generateAccurateSubtitles === "function") {
+            subs = await window.EdgeTtsService.generateAccurateSubtitles(curChap.text, dur);
+          }
+          if (!subs || subs.length === 0) {
+            subs = generateSubtitlesFromDuration(curChap.text, dur);
+          }
           if (subs && subs.length > 0 && handleSaveChapterSubtitles) {
             await handleSaveChapterSubtitles(curChap.id, subs);
             successCount++;
@@ -1031,7 +1066,7 @@ window.AudioChaptersView = function(props) {
         chaps.length > 0 && typeof handleSaveChapterSubtitles === "function" ? (function() {
           var audioAndTextChaps = chaps.filter(function(c) { return c.text && c.text.trim() && c.audioUrl && c.audioUrl.trim(); });
           if (audioAndTextChaps.length === 0) return null;
-          var missingSrtCount = audioAndTextChaps.filter(function(c) { return !c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0; }).length;
+          var missingSrtCount = audioAndTextChaps.filter(function(c) { return (!c.subtitles || !Array.isArray(c.subtitles) || c.subtitles.length === 0) && !c.hasSubtitles && !c.subtitlesCount; }).length;
           var srtBtnLabel = srtBatchProgress
             ? ("⏳ جاري توليد الـ SRT (" + srtBatchProgress.current + "/" + srtBatchProgress.total + ")...")
             : (missingSrtCount > 0)
@@ -2004,12 +2039,13 @@ window.AudioChaptersView = function(props) {
 
                 // 3. شارة حالة ملف التزامن SRT
                 (function() {
-                  var hasSubs = chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0;
+                  var hasSubs = (chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0) || !!chap.hasSubtitles || (chap.subtitlesCount > 0);
+                  var subsCount = (chap.subtitles && chap.subtitles.length) || chap.subtitlesCount || 0;
                   var hasAudio = chap.audioUrl && chap.audioUrl.trim();
                   if (hasSubs) {
                     return React.createElement("span", {
                       className: "text-violet-700 dark:text-violet-300 font-bold bg-violet-50 dark:bg-violet-950/40 px-2 py-0.5 rounded-md border border-violet-200 dark:border-violet-800 text-[11px] flex items-center gap-1"
-                    }, "🎯 تزامن SRT: دقيق (" + chap.subtitles.length + " جملة)");
+                    }, "🎯 تزامن SRT: دقيق (" + subsCount + " جملة)");
                   } else if (hasAudio) {
                     return React.createElement("span", {
                       className: "text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 text-[11px] flex items-center gap-1"
@@ -2195,7 +2231,8 @@ window.AudioChaptersView = function(props) {
             // 2.6 زر ملف الـ SRT (يظهر عند توفر ملف الصوت فقط لتوليد أو تحديث التزامن الدقيق)
             currentUser && currentUser.role === "admin" && chap.text && chap.audioUrl && (function() {
               var isSrtGen = (srtGeneratingChapId === chap.id);
-              var hasSubs = chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0;
+              var hasSubs = (chap.subtitles && Array.isArray(chap.subtitles) && chap.subtitles.length > 0) || !!chap.hasSubtitles || (chap.subtitlesCount > 0);
+              var subsCount = (chap.subtitles && chap.subtitles.length) || chap.subtitlesCount || 0;
               return React.createElement("button", {
                 type: "button",
                 onClick: function() { handleGenerateOrDownloadSrt(chap); },
@@ -2206,10 +2243,10 @@ window.AudioChaptersView = function(props) {
                     : hasSubs
                       ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
                       : "bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-800 active:scale-95"),
-                title: hasSubs ? ("تزامن الـ SRT جاهز ومحفوظ بالمشغل (" + chap.subtitles.length + " جملة) - اضغط للتحديث والتنزيل") : "توليد ملف تزامن الكلمات (SRT) للتحكم الدقيق بالقراءة"
+                title: hasSubs ? ("تزامن الـ SRT جاهز ومحفوظ بالمشغل (" + subsCount + " جملة) - اضغط للتحديث والتنزيل") : "توليد ملف تزامن الكلمات (SRT) للتحكم الدقيق بالقراءة"
               },
               React.createElement("span", null, isSrtGen ? "⏳" : (hasSubs ? "✅" : "⚡")),
-              React.createElement("span", null, isSrtGen ? "جاري ضبط SRT..." : (hasSubs ? ("تحديث الـ SRT (" + chap.subtitles.length + ")") : "توليد الـ SRT"))
+              React.createElement("span", null, isSrtGen ? "جاري ضبط SRT..." : (hasSubs ? ("تحديث الـ SRT (" + subsCount + ")") : "توليد الـ SRT"))
               );
             })(),
 

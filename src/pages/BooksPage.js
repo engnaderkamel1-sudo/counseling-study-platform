@@ -1491,6 +1491,14 @@ window.BooksPage = function(props) {
     chaps[idx] = chap;
     var updatedBook = Object.assign({}, activeBook, { audioChapters: chaps });
 
+    try {
+      if ((window.CloudSyncService || window.cloudSync) && typeof (window.CloudSyncService || window.cloudSync).saveChapterSubtitles === "function") {
+        await (window.CloudSyncService || window.cloudSync).saveChapterSubtitles(activeBook.id, chapterId, subtitles);
+      }
+    } catch (eSub) {
+      console.warn("Subcollection save warning:", eSub);
+    }
+
     await safeCloudSaveBook(updatedBook, { silent: false });
     setActiveBook(updatedBook);
     utils.setLocal("counsel_book_data_" + updatedBook.id, updatedBook);

@@ -267,6 +267,26 @@ window.CloudSyncService = {
       } else if (cleanBook.publishStatus === "draft") {
         cleanBook.isPublished = false;
       }
+      // عزل التوقيتات في مستندات فرعية مستقلة per-chapter لحماية مستند الكتاب من تخطي 1MB
+      if (cleanBook.audioChapters && Array.isArray(cleanBook.audioChapters)) {
+        var self = this;
+        cleanBook.audioChapters = cleanBook.audioChapters.map(function(ch) {
+          if (!ch) return ch;
+          var chClean = Object.assign({}, ch);
+          if (chClean.subtitles && Array.isArray(chClean.subtitles) && chClean.subtitles.length > 0) {
+            chClean.hasSubtitles = true;
+            chClean.subtitlesCount = chClean.subtitles.length;
+            try {
+              if (typeof self.saveChapterSubtitles === "function" && docId && chClean.id) {
+                self.saveChapterSubtitles(docId, chClean.id, chClean.subtitles);
+              }
+            } catch (eSub) {}
+            delete chClean.subtitles;
+          }
+          return chClean;
+        });
+      }
+
       // صمام أمان درع حماية الفصول (Empty-Chapters Shield):
       // يُمنع مسح أو تصفير مصفوفة الفصول في السحابة إذا كانت فارغة ما لم يكن هناك تصريح صريح allowEmptyChapters
       if ((!cleanBook.audioChapters || !Array.isArray(cleanBook.audioChapters) || cleanBook.audioChapters.length === 0) && opts.allowEmptyChapters !== true) {
@@ -298,6 +318,54 @@ window.CloudSyncService = {
       text: text,
       cachedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
+  },
+
+
+
+  saveChapterSubtitles: function(bookId, chapterId, subtitles) {
+    if (!bookId || !chapterId || !subtitles) return Promise.resolve();
+    if (window.db) {
+      return window.db.collection("books").doc(bookId).collection("cached_pages").doc("sub_" + chapterId).set({
+        chapterId: chapterId,
+        subtitles: subtitles,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    }
+    return Promise.resolve();
+  },
+
+  getChapterSubtitles: async function(bookId, chapterId) {
+    if (!bookId || !chapterId) return null;
+    var self = this;
+    // 1. محاولة الجلب السريع من Firebase SDK إذا كان متاحاً
+    if (window.db) {
+      try {
+        var doc = await window.db.collection("books").doc(bookId).collection("cached_pages").doc("sub_" + chapterId).get();
+        if (doc && doc.exists && doc.data() && Array.isArray(doc.data().subtitles)) {
+          return doc.data().subtitles;
+        }
+      } catch (eDb) {
+        console.warn("getChapterSubtitles SDK notice:", eDb);
+      }
+    }
+    // 2. محاولة الجلب المباشر عبر REST API (تخطي أي قيود للشبكة أو تأخر تهيئة SDK)
+    try {
+      var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
+      var url = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/books/" + bookId + "/cached_pages/sub_" + chapterId + "?key=" + apiKey;
+      var resp = await fetch(url, { cache: "no-store" });
+      if (resp.ok) {
+        var data = await resp.json();
+        if (data && data.fields && data.fields.subtitles) {
+          var parsed = self.parseFirestoreValue(data.fields.subtitles);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      }
+    } catch (eRest) {
+      console.warn("getChapterSubtitles REST notice:", eRest);
+    }
+    return null;
   },
 
   getCachedPageText: async function(bookId, pageNum) {
@@ -815,3 +883,5 @@ window.CloudSyncService = {
     }
   }
 };
+
+window.cloudSync = window.CloudSyncService;
