@@ -44,12 +44,16 @@ window.NotificationService = {
     var permission = await Notification.requestPermission();
     if (permission === "granted") {
       window.NotificationService.playNotificationChime();
-      new Notification("منصة دراسة المشورة", {
+            new Notification("منصة دراسة المشورة", {
         body: "تم تفعيل الإشعارات بنجاح! ستصلك تنبيهات فور نزول أي محاضرة أو إعلان هام.",
         icon: "icon-192.png",
         badge: "icon-192.png",
         vibrate: [250, 100, 250]
       });
+      if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        var user = (window.currentUser || (window.utils && window.utils.getLocal && window.utils.getLocal("counsel_current_user", null)));
+        window.WebPushService.registerServiceWorkerAndSubscribe(user, { sendWelcomePush: true }).catch(function() {});
+      }
       return true;
     }
     return false;
@@ -69,6 +73,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "all",
+          tag: "lec_" + lecture.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast notification:", e);
     }
@@ -88,6 +102,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "all",
+          tag: "handout_" + lecture.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast handout notification:", e);
     }
@@ -107,6 +131,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#books",
+          target: "all",
+          tag: "book_" + book.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast book notification:", e);
     }
@@ -125,6 +159,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: target || "all",
+          tag: "announcement_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
       return true;
     } catch (e) {
       console.warn("Could not broadcast announcement:", e);
@@ -148,6 +192,18 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "user",
+          targetUserId: user.id || "",
+          targetUserEmail: (user.email || "").toLowerCase().trim(),
+          tag: "direct_" + (user.id || Date.now()),
+          ttl: 86400
+        }).catch(function() {});
+      }
       return true;
     } catch (e) {
       console.warn("Could not send direct user notification:", e);
@@ -219,6 +275,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#users",
+          target: "admin",
+          tag: "reg_" + (userData.id || Date.now()),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin notification:", e);
     }
@@ -313,6 +379,25 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        var expireMs = Date.now() + (2 * 60 * 60 * 1000);
+        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
+          var pLec = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+          if (pLec && pLec.targetDate) {
+            expireMs = pLec.targetDate.getTime() + (2 * 60 * 60 * 1000);
+          }
+        }
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: lecture.zoomUrl || "/#lectures",
+          zoomUrl: lecture.zoomUrl || "",
+          target: "all",
+          tag: "zoom_link_" + lecture.id,
+          expireAt: expireMs,
+          ttl: 7200
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast zoom link notification:", e);
     }
@@ -354,6 +439,25 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        var expireMsRem = Date.now() + (2 * 60 * 60 * 1000);
+        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
+          var pLecRem = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+          if (pLecRem && pLecRem.targetDate) {
+            expireMsRem = pLecRem.targetDate.getTime() + (2 * 60 * 60 * 1000);
+          }
+        }
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: lecture.zoomUrl || "/#lectures",
+          zoomUrl: lecture.zoomUrl || "",
+          target: "all",
+          tag: "zoom_rem_" + lecture.id + "_" + reminderType,
+          expireAt: expireMsRem,
+          ttl: 7200
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast zoom reminder:", e);
     }

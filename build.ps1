@@ -25,6 +25,7 @@ function Build-App {
         "services/cloudSync.js",
         "services/geminiService.js",
         "services/notificationService.js",
+        "services/webPushService.js",
         "services/errorReportService.js",
         "services/edgeTtsService.js",
         "utils/helpers.js",

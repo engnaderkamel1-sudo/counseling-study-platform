@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v1793169151';
+const CACHE_NAME = 'counseling-pwa-v1793603428';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -112,16 +112,30 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (e) {
-    data = { title: 'تنبيه منصة المشورة', body: event.data ? event.data.text() : '' };
+    data = { title: 'تنبيه منصة المشورة 🎓', body: event.data ? event.data.text() : '' };
   }
-  const title = data.title || 'منصة دراسة المشورة';
+
+  // فحص الصلاحية الزمنية للإشعار: إذا كان منتهي الصلاحية لا يتم عرضه نهائياً
+  if (data.expireAt && typeof data.expireAt === 'number' && Date.now() > data.expireAt) {
+    return;
+  }
+
+  const title = data.title || 'منصة دراسة المشورة 🎓';
+  const targetUrl = data.zoomUrl || data.url || '/';
   const options = {
     body: data.body || 'لديك إشعار جديد في منصة دراسة المشورة.',
     icon: 'icon-192.png',
     badge: 'icon-192.png',
     vibrate: [250, 100, 250],
-    tag: data.tag || 'counsel_push_' + Date.now(),
-    data: { url: data.url || '/' }
+    dir: 'rtl',
+    lang: 'ar',
+    tag: data.tag || ('counsel_push_' + Date.now()),
+    renotify: true,
+    data: {
+      url: targetUrl,
+      zoomUrl: data.zoomUrl || '',
+      tag: data.tag || ''
+    }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });

@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"},{"hash":"814c3ab","date":"2026-10-12 21:36","message":"feat(community): add interactive feature request system with personal admin replies and notifications"}];
+window.APP_UPDATES_HISTORY = [{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"},{"hash":"2d3e0a2","date":"2026-10-15 08:41","message":"feat: add zero-quota smart study analytics and student engagement dashboard"},{"hash":"788e53e","date":"2026-10-15 08:39","message":"feat: enable silent auto-update and dynamic service worker cache busting"},{"hash":"0399170","date":"2026-10-15 08:35","message":"feat: add header audio resume button and automatic legacy history scanner"},{"hash":"5ad6351","date":"2026-10-15 08:32","message":"chore: update build bundle with latest git log and version"},{"hash":"55a39e0","date":"2026-10-15 08:32","message":"feat: add persistent smart floating mini-player for 1-click audio resume"},{"hash":"869e5c5","date":"2026-10-13 13:28","message":"fix: prevent false account suspension from stale client cache and ensure fresh server status"},{"hash":"86f0361","date":"2026-10-12 22:14","message":"fix: restore AudioChaptersView component to fix React error 130 in BooksPage"},{"hash":"5cf2047","date":"2026-10-12 22:08","message":"Add skip button and refine pause state on splash screen"},{"hash":"f08ff1f","date":"2026-10-12 22:07","message":"Add smart splash screen with 30 daily verses, hold to pause, skip button, and student greetings"},{"hash":"b4d65c5","date":"2026-10-12 22:02","message":"fix(notifications): wipe up to 500 notifications in cloud batch on delete all"},{"hash":"1b19369","date":"2026-10-12 21:54","message":"fix(notifications): ensure permanent cloud delete and instantaneous reactive removal"},{"hash":"58a1aaf","date":"2026-10-12 21:52","message":"Update counseling platform bundle"},{"hash":"5e5e5e4","date":"2026-10-12 21:50","message":"feat(community): add polite decline workflow and UI badges for unsupported feature requests"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793169151",
-  buildTime: "2026-10-28T06:32:31",
+  version: "1.2.1793603428",
+  buildTime: "2026-11-02T07:10:28",
   // بوابة رفع الملفات التلقائية إلى جوجل درايف
   driveUploadEndpoint: "https://script.google.com/macros/s/AKfycbzVQ7NkIeykIhT8vU61Chphju1nnOjuEp1MvxKGnx2bBQix0MaV5R0z5cELFs5CSiJW/exec",
   // مفاتيح التخزين المحلي الآمن
@@ -2415,12 +2415,16 @@ window.NotificationService = {
     var permission = await Notification.requestPermission();
     if (permission === "granted") {
       window.NotificationService.playNotificationChime();
-      new Notification("منصة دراسة المشورة", {
+            new Notification("منصة دراسة المشورة", {
         body: "تم تفعيل الإشعارات بنجاح! ستصلك تنبيهات فور نزول أي محاضرة أو إعلان هام.",
         icon: "icon-192.png",
         badge: "icon-192.png",
         vibrate: [250, 100, 250]
       });
+      if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        var user = (window.currentUser || (window.utils && window.utils.getLocal && window.utils.getLocal("counsel_current_user", null)));
+        window.WebPushService.registerServiceWorkerAndSubscribe(user, { sendWelcomePush: true }).catch(function() {});
+      }
       return true;
     }
     return false;
@@ -2440,6 +2444,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "all",
+          tag: "lec_" + lecture.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast notification:", e);
     }
@@ -2459,6 +2473,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "all",
+          tag: "handout_" + lecture.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast handout notification:", e);
     }
@@ -2478,6 +2502,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#books",
+          target: "all",
+          tag: "book_" + book.id,
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast book notification:", e);
     }
@@ -2496,6 +2530,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: target || "all",
+          tag: "announcement_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
       return true;
     } catch (e) {
       console.warn("Could not broadcast announcement:", e);
@@ -2519,6 +2563,18 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#lectures",
+          target: "user",
+          targetUserId: user.id || "",
+          targetUserEmail: (user.email || "").toLowerCase().trim(),
+          tag: "direct_" + (user.id || Date.now()),
+          ttl: 86400
+        }).catch(function() {});
+      }
       return true;
     } catch (e) {
       console.warn("Could not send direct user notification:", e);
@@ -2590,6 +2646,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#users",
+          target: "admin",
+          tag: "reg_" + (userData.id || Date.now()),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin notification:", e);
     }
@@ -2684,6 +2750,25 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        var expireMs = Date.now() + (2 * 60 * 60 * 1000);
+        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
+          var pLec = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+          if (pLec && pLec.targetDate) {
+            expireMs = pLec.targetDate.getTime() + (2 * 60 * 60 * 1000);
+          }
+        }
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: lecture.zoomUrl || "/#lectures",
+          zoomUrl: lecture.zoomUrl || "",
+          target: "all",
+          tag: "zoom_link_" + lecture.id,
+          expireAt: expireMs,
+          ttl: 7200
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast zoom link notification:", e);
     }
@@ -2725,6 +2810,25 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        var expireMsRem = Date.now() + (2 * 60 * 60 * 1000);
+        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
+          var pLecRem = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
+          if (pLecRem && pLecRem.targetDate) {
+            expireMsRem = pLecRem.targetDate.getTime() + (2 * 60 * 60 * 1000);
+          }
+        }
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: lecture.zoomUrl || "/#lectures",
+          zoomUrl: lecture.zoomUrl || "",
+          target: "all",
+          tag: "zoom_rem_" + lecture.id + "_" + reminderType,
+          expireAt: expireMsRem,
+          ttl: 7200
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not broadcast zoom reminder:", e);
     }
@@ -2814,6 +2918,126 @@ window.NotificationService = {
   }
 };
 
+
+// Module: services/webPushService.js
+// Web Push Client Service (Service Worker & PushManager Subscription)
+// Handles device registration for background Web Push and server dispatching
+
+(function() {
+  var VAPID_PUBLIC_KEY = "BAtx_VsX7sQqBLrErkVgQhJXjecTxKV0ohn_ICVeQsAjuskf2dAqTKA3982-WlTVeDiPMQ9ubQaBmfnlgW07660";
+
+  function urlBase64ToUint8Array(base64String) {
+    var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    var rawData = window.atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+
+    for (var i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  window.WebPushService = {
+    vapidPublicKey: VAPID_PUBLIC_KEY,
+
+    // التحقق من دعم المتصفح لإشعارات الخلفية
+    isSupported: function() {
+      return typeof window !== "undefined" &&
+             ("serviceWorker" in navigator) &&
+             ("PushManager" in window) &&
+             ("Notification" in window);
+    },
+
+    // تسجيل الـ Service Worker واشتراك الجهاز في خدمة الدفع
+    registerServiceWorkerAndSubscribe: async function(currentUser, options) {
+      if (!this.isSupported()) {
+        console.warn("Web Push is not supported by this browser.");
+        return null;
+      }
+
+      options = options || {};
+
+      try {
+        var registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+        await navigator.serviceWorker.ready;
+
+        var subscription = await registration.pushManager.getSubscription();
+        var isNewSubscription = false;
+
+        if (!subscription) {
+          var convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
+          isNewSubscription = true;
+        }
+
+        // حفظ بيانات اشتراك الجهاز في وثيقة المستخدم بقاعدة البيانات
+        if (subscription && currentUser && window.db) {
+          var subJson = JSON.stringify(subscription);
+          var userId = currentUser.id;
+
+          if (!userId && currentUser.email) {
+            userId = currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+          }
+
+          if (userId) {
+            var updatePayload = {
+              pushSubscription: subJson,
+              pushUpdatedAt: (window.firebase && firebase.firestore && firebase.firestore.FieldValue)
+                ? firebase.firestore.FieldValue.serverTimestamp()
+                : new Date().toISOString()
+            };
+
+            window.db.collection("users").doc(userId).set(updatePayload, { merge: true })
+              .catch(function(err) {
+                console.warn("Could not save push subscription to Firestore:", err);
+              });
+          }
+
+          // إرسال إشعار ترحيبي لمرة واحدة فقط عند التفعيل اليدوي الصريح
+          if (options.sendWelcomePush && isNewSubscription) {
+            this.triggerServerPush({
+              subscription: subJson,
+              title: "🔔 تم تفعيل إشعارات المشورة بنجاح",
+              body: "ستصلك الآن تنبيهات المحاضرات وروابط زووم حتى وإن كان التطبيق أو المتصفح مغلقاً تماماً!"
+            }).catch(function() {});
+          }
+        }
+
+        return subscription;
+      } catch (err) {
+        console.warn("Error subscribing to web push:", err);
+        return null;
+      }
+    },
+
+    // إرسال إشعار سحابي للأجهزة المشتركة في الخلفية عبر /api/send-push
+    triggerServerPush: async function(payload) {
+      try {
+        var res = await fetch("/api/send-push", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload || {})
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+        return null;
+      } catch (err) {
+        console.warn("Server push dispatch error:", err);
+        return null;
+      }
+    }
+  };
+})();
 
 // Module: services/errorReportService.js
 // خدمة التقاط أخطاء النظام السحابية
@@ -26676,40 +26900,75 @@ function App() {
     };
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
-    // الاستماع للإشعارات الواردة
+    // الاستماع للإشعارات الواردة وحمايتها من التنبيهات القديمة
     var unsubscribeNotifs = function() {};
     if (window.NotificationService && typeof window.NotificationService.subscribeNotifications === "function") {
       var initialLoad = true;
       var lastNotifiedId = null;
+
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
         var curDismissed = utils.getLocal("counsel_dismissed_notifs", []);
         setDismissedNotifIds(curDismissed);
         setNotificationsList(list || []);
+
         if (list && list.length > 0) {
           var latest = list[0];
+          var readNotifs = utils.getLocal("counsel_read_notif_ids", []);
+          var alertedNotifs = utils.getLocal("counsel_alerted_notif_ids", []);
+
+          // استخراج وتدقيق وقت إنشاء الإشعار
+          var notifTime = 0;
+          if (latest.createdAt && latest.createdAt.toMillis) notifTime = latest.createdAt.toMillis();
+          else if (latest.createdAt && latest.createdAt.seconds) notifTime = latest.createdAt.seconds * 1000;
+          else if (latest.createdAt) notifTime = new Date(latest.createdAt).getTime() || 0;
+
+          // 1. قاعدة ذهبية صارمة: أي إشعار مر على إنشائه أكثر من ساعة لا يطلق رنين أو تنبيه منبثق
+          var nowMs = Date.now();
+          var isRecent = notifTime > 0 && (nowMs - notifTime) < (60 * 60 * 1000);
+
+          // 2. فحص إذا كان الإشعار قد تم تنبيه المستخدم به سابقاً في الذاكرة المحلية
+          var isAlreadyAlerted = (latest.id && alertedNotifs.indexOf(latest.id) !== -1);
+          var isAlreadySeen = (latest.id && (curDismissed.indexOf(latest.id) !== -1 || readNotifs.indexOf(latest.id) !== -1));
+
+          // 3. فحص خاص بمحاضرات وتذكيرات زووم: إذا كان موعد المحاضرة قد انقضى لا يتم التنبيه
+          var isZoomAlert = (latest.type === "zoom_reminder" || latest.type === "zoom_link" || !!latest.zoomUrl);
+          var isZoomExpired = false;
+          if (isZoomAlert) {
+            var lectures = (Array.isArray(appLectures) && appLectures.length > 0)
+              ? appLectures
+              : utils.getLocal(cfg.storageKeys.lectures, []);
+            var relatedLec = latest.lectureId ? lectures.find(function(l) { return l.id === latest.lectureId; }) : null;
+            if (relatedLec && relatedLec.date && utils.parseLectureDateTime) {
+              var parsedLec = utils.parseLectureDateTime(relatedLec.date, relatedLec.zoomTimeStr || relatedLec.startTime, relatedLec.notes);
+              if (parsedLec && parsedLec.targetDate) {
+                // إذا انقضى موعد البدء بأكثر من 30 دقيقة نعتبره منتهياً ولا ننبه عنه
+                if ((nowMs - parsedLec.targetDate.getTime()) > (30 * 60 * 1000)) {
+                  isZoomExpired = true;
+                }
+              }
+            } else if (!isRecent) {
+              isZoomExpired = true;
+            }
+          }
+
+          // عند التحميل الأولي للتطبيق: نمنع أي تنبيهات مباغتة لإشعارات سابقة
           if (initialLoad) {
             lastNotifiedId = latest.id;
             initialLoad = false;
-            // فحص إذا كان الإشعار الأخير جديداً (خلال آخر 3 ساعات) وهو تنبيه زوم ولم يره المستخدم
-            var notifTime = 0;
-            if (latest.createdAt && latest.createdAt.toMillis) notifTime = latest.createdAt.toMillis();
-            else if (latest.createdAt && latest.createdAt.seconds) notifTime = latest.createdAt.seconds * 1000;
-            else if (latest.createdAt) notifTime = new Date(latest.createdAt).getTime() || 0;
-
-            var isRecent = (Date.now() - notifTime) < (3 * 60 * 60 * 1000);
-            var isZoomAlert = (latest.type === "zoom_reminder" || latest.type === "zoom_link");
-            var readNotifs = utils.getLocal("counsel_read_notif_ids", []);
-            var isUnseen = curDismissed.indexOf(latest.id) === -1 && readNotifs.indexOf(latest.id) === -1;
-
-            if (!isRecent || !isZoomAlert || !isUnseen) {
+            if (!isRecent || isAlreadyAlerted || isAlreadySeen || isZoomExpired) {
               return;
             }
           }
 
-          if (latest.id === lastNotifiedId && !initialLoad) {
+          if (latest.id === lastNotifiedId) {
             return;
           }
           lastNotifiedId = latest.id;
+
+          // التحقق من الصلاحية قبل التنبيه
+          if (!isRecent || isAlreadyAlerted || isAlreadySeen || isZoomExpired) {
+            return;
+          }
 
           var shouldNotify = false;
           var isAdmin = !!(currentUser && currentUser.role === "admin");
@@ -26718,7 +26977,6 @@ function App() {
 
           // تصنيف وفلترة مستلمي الإشعار بدقة
           if (latest.target === "user") {
-            // إشعار موجه لدارس بعينه (اختبار أو تنبيه خاص)
             var currentUserId = currentUser ? (currentUser.id || "") : "";
             var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
             var targetId = latest.targetUserId || "";
@@ -26730,17 +26988,22 @@ function App() {
               shouldNotify = false;
             }
           } else if (isRegistration || isErrorReport) {
-            // إشعار طلبات الدارسين الجدد وبلاغات الأعطال يظهر فقط لمشرف المنصة
             if (isAdmin) {
               shouldNotify = true;
             }
           } else {
-            // إشعارات المحاضرات والتعميمات العامة تظهر لجميع الدارسين المعتمدين
             shouldNotify = true;
           }
 
           if (shouldNotify) {
-            // تشغيل الرنين والاهتزاز فور وصول الإشعار
+            // تسجيل الإشعار في قائمة التنبيهات لمنع تكراره مستقبلاً
+            if (latest.id) {
+              alertedNotifs.push(latest.id);
+              if (alertedNotifs.length > 150) alertedNotifs = alertedNotifs.slice(-150);
+              utils.setLocal("counsel_alerted_notif_ids", alertedNotifs);
+            }
+
+            // تشغيل الرنين والاهتزاز
             if (window.NotificationService && typeof window.NotificationService.playNotificationChime === "function") {
               window.NotificationService.playNotificationChime();
             }
@@ -26760,6 +27023,8 @@ function App() {
                   icon: "icon-192.png",
                   badge: "icon-192.png",
                   vibrate: [250, 100, 250],
+                  dir: "rtl",
+                  lang: "ar",
                   tag: latest.id || "counsel_notify",
                   renotify: true,
                   data: {
@@ -26770,7 +27035,6 @@ function App() {
                   }
                 };
 
-                // محاولة الإظهار عبر Service Worker لضمان الظهور في درج إشعارات الموبايل وشاشة القفل
                 if (navigator.serviceWorker && navigator.serviceWorker.ready) {
                   navigator.serviceWorker.ready.then(function(reg) {
                     if (reg && reg.showNotification) {
@@ -26951,6 +27215,9 @@ function App() {
     if (window.NotificationService && typeof window.NotificationService.requestPermission === "function") {
       var granted = await window.NotificationService.requestPermission();
       setHasNotificationPermission(granted);
+      if (granted && window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        await window.WebPushService.registerServiceWorkerAndSubscribe(currentUser, { sendWelcomePush: true });
+      }
     }
   };
 
@@ -27053,6 +27320,11 @@ function App() {
     if (currentUser && currentUser.status === "approved") {
       if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
         window.CloudSyncService.recordLoginLog(currentUser);
+      }
+      if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        if (("Notification" in window) && Notification.permission === "granted") {
+          window.WebPushService.registerServiceWorkerAndSubscribe(currentUser).catch(function() {});
+        }
       }
       if (window.CloudSyncService && typeof window.CloudSyncService.sendPresenceHeartbeat === "function") {
         window.CloudSyncService.sendPresenceHeartbeat(currentUser);

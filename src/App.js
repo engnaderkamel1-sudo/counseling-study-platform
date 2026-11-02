@@ -325,40 +325,75 @@ function App() {
     };
     window.addEventListener("beforeinstallprompt", handleBeforeInstall);
 
-    // الاستماع للإشعارات الواردة
+    // الاستماع للإشعارات الواردة وحمايتها من التنبيهات القديمة
     var unsubscribeNotifs = function() {};
     if (window.NotificationService && typeof window.NotificationService.subscribeNotifications === "function") {
       var initialLoad = true;
       var lastNotifiedId = null;
+
       unsubscribeNotifs = window.NotificationService.subscribeNotifications(function(list) {
         var curDismissed = utils.getLocal("counsel_dismissed_notifs", []);
         setDismissedNotifIds(curDismissed);
         setNotificationsList(list || []);
+
         if (list && list.length > 0) {
           var latest = list[0];
+          var readNotifs = utils.getLocal("counsel_read_notif_ids", []);
+          var alertedNotifs = utils.getLocal("counsel_alerted_notif_ids", []);
+
+          // استخراج وتدقيق وقت إنشاء الإشعار
+          var notifTime = 0;
+          if (latest.createdAt && latest.createdAt.toMillis) notifTime = latest.createdAt.toMillis();
+          else if (latest.createdAt && latest.createdAt.seconds) notifTime = latest.createdAt.seconds * 1000;
+          else if (latest.createdAt) notifTime = new Date(latest.createdAt).getTime() || 0;
+
+          // 1. قاعدة ذهبية صارمة: أي إشعار مر على إنشائه أكثر من ساعة لا يطلق رنين أو تنبيه منبثق
+          var nowMs = Date.now();
+          var isRecent = notifTime > 0 && (nowMs - notifTime) < (60 * 60 * 1000);
+
+          // 2. فحص إذا كان الإشعار قد تم تنبيه المستخدم به سابقاً في الذاكرة المحلية
+          var isAlreadyAlerted = (latest.id && alertedNotifs.indexOf(latest.id) !== -1);
+          var isAlreadySeen = (latest.id && (curDismissed.indexOf(latest.id) !== -1 || readNotifs.indexOf(latest.id) !== -1));
+
+          // 3. فحص خاص بمحاضرات وتذكيرات زووم: إذا كان موعد المحاضرة قد انقضى لا يتم التنبيه
+          var isZoomAlert = (latest.type === "zoom_reminder" || latest.type === "zoom_link" || !!latest.zoomUrl);
+          var isZoomExpired = false;
+          if (isZoomAlert) {
+            var lectures = (Array.isArray(appLectures) && appLectures.length > 0)
+              ? appLectures
+              : utils.getLocal(cfg.storageKeys.lectures, []);
+            var relatedLec = latest.lectureId ? lectures.find(function(l) { return l.id === latest.lectureId; }) : null;
+            if (relatedLec && relatedLec.date && utils.parseLectureDateTime) {
+              var parsedLec = utils.parseLectureDateTime(relatedLec.date, relatedLec.zoomTimeStr || relatedLec.startTime, relatedLec.notes);
+              if (parsedLec && parsedLec.targetDate) {
+                // إذا انقضى موعد البدء بأكثر من 30 دقيقة نعتبره منتهياً ولا ننبه عنه
+                if ((nowMs - parsedLec.targetDate.getTime()) > (30 * 60 * 1000)) {
+                  isZoomExpired = true;
+                }
+              }
+            } else if (!isRecent) {
+              isZoomExpired = true;
+            }
+          }
+
+          // عند التحميل الأولي للتطبيق: نمنع أي تنبيهات مباغتة لإشعارات سابقة
           if (initialLoad) {
             lastNotifiedId = latest.id;
             initialLoad = false;
-            // فحص إذا كان الإشعار الأخير جديداً (خلال آخر 3 ساعات) وهو تنبيه زوم ولم يره المستخدم
-            var notifTime = 0;
-            if (latest.createdAt && latest.createdAt.toMillis) notifTime = latest.createdAt.toMillis();
-            else if (latest.createdAt && latest.createdAt.seconds) notifTime = latest.createdAt.seconds * 1000;
-            else if (latest.createdAt) notifTime = new Date(latest.createdAt).getTime() || 0;
-
-            var isRecent = (Date.now() - notifTime) < (3 * 60 * 60 * 1000);
-            var isZoomAlert = (latest.type === "zoom_reminder" || latest.type === "zoom_link");
-            var readNotifs = utils.getLocal("counsel_read_notif_ids", []);
-            var isUnseen = curDismissed.indexOf(latest.id) === -1 && readNotifs.indexOf(latest.id) === -1;
-
-            if (!isRecent || !isZoomAlert || !isUnseen) {
+            if (!isRecent || isAlreadyAlerted || isAlreadySeen || isZoomExpired) {
               return;
             }
           }
 
-          if (latest.id === lastNotifiedId && !initialLoad) {
+          if (latest.id === lastNotifiedId) {
             return;
           }
           lastNotifiedId = latest.id;
+
+          // التحقق من الصلاحية قبل التنبيه
+          if (!isRecent || isAlreadyAlerted || isAlreadySeen || isZoomExpired) {
+            return;
+          }
 
           var shouldNotify = false;
           var isAdmin = !!(currentUser && currentUser.role === "admin");
@@ -367,7 +402,6 @@ function App() {
 
           // تصنيف وفلترة مستلمي الإشعار بدقة
           if (latest.target === "user") {
-            // إشعار موجه لدارس بعينه (اختبار أو تنبيه خاص)
             var currentUserId = currentUser ? (currentUser.id || "") : "";
             var currentUserEmail = currentUser ? (currentUser.email || "").toLowerCase().trim() : "";
             var targetId = latest.targetUserId || "";
@@ -379,17 +413,22 @@ function App() {
               shouldNotify = false;
             }
           } else if (isRegistration || isErrorReport) {
-            // إشعار طلبات الدارسين الجدد وبلاغات الأعطال يظهر فقط لمشرف المنصة
             if (isAdmin) {
               shouldNotify = true;
             }
           } else {
-            // إشعارات المحاضرات والتعميمات العامة تظهر لجميع الدارسين المعتمدين
             shouldNotify = true;
           }
 
           if (shouldNotify) {
-            // تشغيل الرنين والاهتزاز فور وصول الإشعار
+            // تسجيل الإشعار في قائمة التنبيهات لمنع تكراره مستقبلاً
+            if (latest.id) {
+              alertedNotifs.push(latest.id);
+              if (alertedNotifs.length > 150) alertedNotifs = alertedNotifs.slice(-150);
+              utils.setLocal("counsel_alerted_notif_ids", alertedNotifs);
+            }
+
+            // تشغيل الرنين والاهتزاز
             if (window.NotificationService && typeof window.NotificationService.playNotificationChime === "function") {
               window.NotificationService.playNotificationChime();
             }
@@ -409,6 +448,8 @@ function App() {
                   icon: "icon-192.png",
                   badge: "icon-192.png",
                   vibrate: [250, 100, 250],
+                  dir: "rtl",
+                  lang: "ar",
                   tag: latest.id || "counsel_notify",
                   renotify: true,
                   data: {
@@ -419,7 +460,6 @@ function App() {
                   }
                 };
 
-                // محاولة الإظهار عبر Service Worker لضمان الظهور في درج إشعارات الموبايل وشاشة القفل
                 if (navigator.serviceWorker && navigator.serviceWorker.ready) {
                   navigator.serviceWorker.ready.then(function(reg) {
                     if (reg && reg.showNotification) {
@@ -600,6 +640,9 @@ function App() {
     if (window.NotificationService && typeof window.NotificationService.requestPermission === "function") {
       var granted = await window.NotificationService.requestPermission();
       setHasNotificationPermission(granted);
+      if (granted && window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        await window.WebPushService.registerServiceWorkerAndSubscribe(currentUser, { sendWelcomePush: true });
+      }
     }
   };
 
@@ -702,6 +745,11 @@ function App() {
     if (currentUser && currentUser.status === "approved") {
       if (window.CloudSyncService && typeof window.CloudSyncService.recordLoginLog === "function") {
         window.CloudSyncService.recordLoginLog(currentUser);
+      }
+      if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
+        if (("Notification" in window) && Notification.permission === "granted") {
+          window.WebPushService.registerServiceWorkerAndSubscribe(currentUser).catch(function() {});
+        }
       }
       if (window.CloudSyncService && typeof window.CloudSyncService.sendPresenceHeartbeat === "function") {
         window.CloudSyncService.sendPresenceHeartbeat(currentUser);
