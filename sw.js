@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v1793603428';
+const CACHE_NAME = 'counseling-pwa-v1793604931';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -124,13 +124,14 @@ self.addEventListener('push', (event) => {
   const targetUrl = data.zoomUrl || data.url || '/';
   const options = {
     body: data.body || 'لديك إشعار جديد في منصة دراسة المشورة.',
-    icon: 'icon-192.png',
-    badge: 'icon-192.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     vibrate: [250, 100, 250],
     dir: 'rtl',
     lang: 'ar',
     tag: data.tag || ('counsel_push_' + Date.now()),
     renotify: true,
+    requireInteraction: true,
     data: {
       url: targetUrl,
       zoomUrl: data.zoomUrl || '',

@@ -137,7 +137,13 @@ module.exports = async function handler(req, res) {
       webpush.sendNotification(
         sub,
         Buffer.from(payload, 'utf8'),
-        { TTL: pushTTL }
+        {
+          TTL: pushTTL,
+          urgency: 'high',
+          headers: {
+            'Urgency': 'high'
+          }
+        }
       )
     )
   );
