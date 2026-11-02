@@ -44,19 +44,11 @@ window.ChapterTextViewerModal = function(props) {
   var [isFullScreen, setIsFullScreen] = React.useState(false);
   var [showSyncSettings, setShowSyncSettings] = React.useState(false);
 
-  // حالة إزاحة تزامن الصوت مع النص (Time Shift بالثواني مع الكسور مثل +1.5s أو -2s)
+  // حالة إزاحة تزامن الصوت مع النص (الاعتماد دائماً وبشكل قطعي على الإعداد السحابي المعتمد للفصل)
   var [timeOffset, setTimeOffset] = React.useState(function() {
-    // 1. الأولوية للإعداد المحفوظ في الفصل سحابياً
     if (viewingChapterText && viewingChapterText.timeOffset !== undefined) {
       return parseFloat(viewingChapterText.timeOffset) || 0;
     }
-    // 2. أو الإعداد المحفوظ محلياً على جهاز المستخدم لهذا الفصل
-    try {
-      var saved = localStorage.getItem("counsel_time_offset_" + (viewingChapterText ? viewingChapterText.id : ""));
-      if (saved !== null && !isNaN(parseFloat(saved))) {
-        return parseFloat(saved);
-      }
-    } catch (e) {}
     return 0;
   });
 
@@ -69,11 +61,14 @@ window.ChapterTextViewerModal = function(props) {
     if (viewingChapterText.subtitles && Array.isArray(viewingChapterText.subtitles) && viewingChapterText.subtitles.length > 0) {
       return viewingChapterText.subtitles;
     }
+    var targetCount = viewingChapterText.subtitlesCount ? parseInt(viewingChapterText.subtitlesCount, 10) : 0;
     try {
       var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
       if (cached) {
         var parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0 && (!targetCount || parsed.length === targetCount)) {
+          return parsed;
+        }
       }
     } catch (e) {}
     return null;
@@ -86,19 +81,24 @@ window.ChapterTextViewerModal = function(props) {
       setAsyncSubtitles(subs);
       return;
     }
+    var targetCount = viewingChapterText.subtitlesCount ? parseInt(viewingChapterText.subtitlesCount, 10) : 0;
     try {
       var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
       if (cached) {
         var parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        // التحقق الذكي: لا نعتمد الكاش إلا إذا كان يطابق عدد جمل السحابة المحدث
+        if (Array.isArray(parsed) && parsed.length > 0 && (!targetCount || parsed.length === targetCount)) {
           setAsyncSubtitles(parsed);
           return;
+        } else {
+          try { localStorage.removeItem("counsel_cached_subtitles_" + viewingChapterText.id); } catch (eRem) {}
         }
       }
     } catch (e) {}
 
-    if ((window.CloudSyncService || window.cloudSync) && typeof (window.CloudSyncService || window.cloudSync).getChapterSubtitles === "function") {
-      (window.CloudSyncService || window.cloudSync).getChapterSubtitles(activeBook.id, viewingChapterText.id).then(function(res) {
+    var cloudService = window.CloudSyncService || window.cloudSync;
+    if (cloudService && typeof cloudService.getChapterSubtitles === "function") {
+      cloudService.getChapterSubtitles(activeBook.id, viewingChapterText.id).then(function(res) {
         if (res && Array.isArray(res) && res.length > 0) {
           setAsyncSubtitles(res);
           try {
@@ -107,22 +107,16 @@ window.ChapterTextViewerModal = function(props) {
         }
       }).catch(function() {});
     }
-  }, [viewingChapterText && viewingChapterText.id, activeBook && activeBook.id]);
+  }, [viewingChapterText && viewingChapterText.id, viewingChapterText && viewingChapterText.subtitlesCount, activeBook && activeBook.id]);
   var [isGeneratingSrt, setIsGeneratingSrt] = React.useState(false);
 
-  // تحديث الإزاحة عند تغيير الفصل
+  // تحديث الإزاحة عند تغيير الفصل: الاعتماد دائماً وبشكل قطعي على الإعداد السحابي المعتمد للفصل
   React.useEffect(function() {
     if (viewingChapterText) {
-      var defaultOffset = (viewingChapterText.timeOffset !== undefined) ? (parseFloat(viewingChapterText.timeOffset) || 0) : 0;
-      try {
-        var localVal = localStorage.getItem("counsel_time_offset_" + viewingChapterText.id);
-        if (localVal !== null && !isNaN(parseFloat(localVal))) {
-          defaultOffset = parseFloat(localVal);
-        }
-      } catch (e) {}
-      setTimeOffset(defaultOffset);
+      var cloudOffset = (viewingChapterText.timeOffset !== undefined) ? (parseFloat(viewingChapterText.timeOffset) || 0) : 0;
+      setTimeOffset(cloudOffset);
     }
-  }, [viewingChapterText && viewingChapterText.id]);
+  }, [viewingChapterText && viewingChapterText.id, viewingChapterText && viewingChapterText.timeOffset]);
 
   var handleAdjustOffset = function(delta) {
     setTimeOffset(function(prev) {
