@@ -480,7 +480,7 @@ window.ChapterTextViewerModal = function(props) {
         endRatio: endRatio
       };
     });
-  }, [viewingChapterText && viewingChapterText.text, viewingChapterText && viewingChapterText.subtitles, localDuration]);
+  }, [viewingChapterText && viewingChapterText.text, viewingChapterText && viewingChapterText.subtitles, asyncSubtitles, localDuration]);
 
   // تحديد الفقرة النشطة حالياً بناءً على موضع الصوت مع تطبيق الإزاحة الزمنية (Time Offset / Shift)
   var activeSegmentIdx = React.useMemo(function() {
