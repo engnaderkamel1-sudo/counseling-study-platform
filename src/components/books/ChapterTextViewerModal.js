@@ -62,8 +62,10 @@ window.ChapterTextViewerModal = function(props) {
       return viewingChapterText.subtitles;
     }
     var targetCount = viewingChapterText.subtitlesCount ? parseInt(viewingChapterText.subtitlesCount, 10) : 0;
+    var durKey = viewingChapterText.audioDuration ? Math.round(viewingChapterText.audioDuration) : 0;
+    var cacheKey = "counsel_cached_subtitles_v2_" + viewingChapterText.id + "_" + durKey;
     try {
-      var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
+      var cached = localStorage.getItem(cacheKey);
       if (cached) {
         var parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0 && (!targetCount || parsed.length === targetCount)) {
@@ -82,16 +84,19 @@ window.ChapterTextViewerModal = function(props) {
       return;
     }
     var targetCount = viewingChapterText.subtitlesCount ? parseInt(viewingChapterText.subtitlesCount, 10) : 0;
+    var durKey = viewingChapterText.audioDuration ? Math.round(viewingChapterText.audioDuration) : 0;
+    var cacheKey = "counsel_cached_subtitles_v2_" + viewingChapterText.id + "_" + durKey;
     try {
-      var cached = localStorage.getItem("counsel_cached_subtitles_" + viewingChapterText.id);
+      // إزالة الكاش القديم غير المرتبط بمدة الصوت
+      localStorage.removeItem("counsel_cached_subtitles_" + viewingChapterText.id);
+      var cached = localStorage.getItem(cacheKey);
       if (cached) {
         var parsed = JSON.parse(cached);
-        // التحقق الذكي: لا نعتمد الكاش إلا إذا كان يطابق عدد جمل السحابة المحدث
         if (Array.isArray(parsed) && parsed.length > 0 && (!targetCount || parsed.length === targetCount)) {
           setAsyncSubtitles(parsed);
           return;
         } else {
-          try { localStorage.removeItem("counsel_cached_subtitles_" + viewingChapterText.id); } catch (eRem) {}
+          try { localStorage.removeItem(cacheKey); } catch (eRem) {}
         }
       }
     } catch (e) {}
@@ -102,12 +107,12 @@ window.ChapterTextViewerModal = function(props) {
         if (res && Array.isArray(res) && res.length > 0) {
           setAsyncSubtitles(res);
           try {
-            localStorage.setItem("counsel_cached_subtitles_" + viewingChapterText.id, JSON.stringify(res));
+            localStorage.setItem(cacheKey, JSON.stringify(res));
           } catch (e) {}
         }
       }).catch(function() {});
     }
-  }, [viewingChapterText && viewingChapterText.id, viewingChapterText && viewingChapterText.subtitlesCount, activeBook && activeBook.id]);
+  }, [viewingChapterText && viewingChapterText.id, viewingChapterText && viewingChapterText.subtitlesCount, viewingChapterText && viewingChapterText.audioDuration, activeBook && activeBook.id]);
   var [isGeneratingSrt, setIsGeneratingSrt] = React.useState(false);
 
   // تحديث الإزاحة عند تغيير الفصل: الاعتماد دائماً وبشكل قطعي على الإعداد السحابي المعتمد للفصل

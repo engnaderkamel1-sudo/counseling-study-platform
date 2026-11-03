@@ -20,6 +20,16 @@ window.BooksPage = function(props) {
         } catch (e) {}
         return false;
       }
+      if (id === "book-1791651887196") {
+        try {
+          var ch10 = (b.audioChapters || []).find(function(c) { return c && c.id === "chap_1791651928435_10"; });
+          if (ch10 && ch10.text && ch10.text.length > 34500) {
+            utils.removeLocal("counsel_book_data_book-1791651887196");
+            utils.removeLocal("counsel_book_chapters_backup_book-1791651887196");
+            localStorage.removeItem("counsel_audio_pos_book-1791651887196_chap_1791651928435_10");
+          }
+        } catch (eClean) {}
+      }
       return true;
     });
   };
@@ -270,14 +280,14 @@ window.BooksPage = function(props) {
               var cachedCh = localChaps.find(function(cc) {
                 return cc.id === ch.id || (cc.title && ch.title && cc.title.trim() === ch.title.trim());
               });
-              var cachedTextLen = cachedCh && cachedCh.text ? cachedCh.text.length : 0;
-              var cloudTextLen = ch.text ? ch.text.length : 0;
-              if (cachedTextLen > cloudTextLen) {
+              var cachedText = (cachedCh && cachedCh.text) ? cachedCh.text.trim() : "";
+              var cloudText = (ch && ch.text) ? ch.text.trim() : "";
+              if (!cloudText && cachedText) {
                 needCloudSync = true;
               }
               var isCloudExpired = utils.isExpiredAudioUrl ? utils.isExpiredAudioUrl(ch.audioUrl) : (ch.audioUrl && (ch.audioUrl.indexOf("/tmp/gradio/") !== -1 || ch.audioUrl.indexOf("gradio_api/file") !== -1));
               var isCachedDrive = cachedCh && cachedCh.audioUrl && (cachedCh.audioUrl.indexOf("drive.google.com") !== -1 || cachedCh.audioUrl.indexOf("docs.google.com") !== -1);
-              // الرابط الصوتي المعتمد: إذا كان الرابط في السحابة مفرغاً ("") فيعامل كحذف ولا يعاد إحياؤه من الكاش المحلي
+              // الرابط الصوتي المعتمد: السحابة دائماً صاحبة القرار النهائي، ولا يتم اللجوء للكاش إلا إذا كان حقل السحابة غير معرف
               var cloudAudioVal = (ch.audioUrl || "").trim();
               var isCloudDrive = cloudAudioVal && (cloudAudioVal.indexOf("drive.google.com") !== -1 || cloudAudioVal.indexOf("docs.google.com") !== -1);
               var bestAudio = "";
@@ -286,7 +296,8 @@ window.BooksPage = function(props) {
               } else if (ch.audioUrl === undefined && isCachedDrive) {
                 bestAudio = cachedCh.audioUrl.trim();
               }
-              var bestText = (cachedTextLen > cloudTextLen) ? cachedCh.text : (ch.text || "");
+              // النص المعتمد: النص السحابي هو المعتمد القطعي، ولا يعتمد الكاش إلا إذا كان النص في السحابة فارغاً
+              var bestText = cloudText ? ch.text : cachedText;
               var bestLastPage = ch.lastExtractedPage !== undefined ? ch.lastExtractedPage : (cachedCh ? cachedCh.lastExtractedPage : undefined);
               var bestIsComplete = ch.isComplete || (cachedCh ? cachedCh.isComplete : false);
               var bestIsPub = (cachedCh && cachedCh.isPublished !== undefined) ? cachedCh.isPublished : ch.isPublished;
