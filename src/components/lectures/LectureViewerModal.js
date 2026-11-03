@@ -15,7 +15,17 @@ window.LectureViewerModal = function(props) {
   var filteredLectures = props.filteredLectures || [];
   var onSelectLecture = props.onSelectLecture;
 
-  var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'handout', 'summary', 'audio_summary', 'quiz'
+  var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'slides', 'mindmap', 'quiz', 'handout', 'audio_summary'
+  var [showPackageModal, setShowPackageModal] = React.useState(false);
+  var [genSummaryPages, setGenSummaryPages] = React.useState(5);
+  var [genSlidesCount, setGenSlidesCount] = React.useState(15);
+  var [genQuizCount, setGenQuizCount] = React.useState(10);
+  var [genCustomPrompt, setGenCustomPrompt] = React.useState("");
+  var [genSelected, setGenSelected] = React.useState({ summary: true, slides: true, mindMap: true, quiz: true });
+  var [packageGenStatus, setPackageGenStatus] = React.useState("");
+  var [aiEditTarget, setAiEditTarget] = React.useState(null);
+  var [aiEditPrompt, setAiEditPrompt] = React.useState("");
+  var [isRefining, setIsRefining] = React.useState(false);
   var [isAiGenerating, setIsAiGenerating] = React.useState(false);
   var [quizUserAnswers, setQuizUserAnswers] = React.useState({});
   var [quizSubmitted, setQuizSubmitted] = React.useState(false);
@@ -208,6 +218,176 @@ window.LectureViewerModal = function(props) {
     }
   };
 
+  // فحص حالة المسودة لكل ركن
+  var getIsDraft = function(comp) {
+    if (!activeLecture) return false;
+    var ps = activeLecture.publishStatus || {};
+    if (ps[comp] !== undefined) return !ps[comp];
+    if (comp === "slides" && activeLecture.presentationSlides && activeLecture.presentationSlides.isPublished !== undefined) {
+      return !activeLecture.presentationSlides.isPublished;
+    }
+    if (comp === "mindMap" && activeLecture.mindMapData && activeLecture.mindMapData.isPublished !== undefined) {
+      return !activeLecture.mindMapData.isPublished;
+    }
+    if (comp === "quiz" && activeLecture.quizQuestions && activeLecture.quizQuestions.isPublished !== undefined) {
+      return !activeLecture.quizQuestions.isPublished;
+    }
+    if (comp === "summary" && activeLecture.summaryData && activeLecture.summaryData.isPublished !== undefined) {
+      return !activeLecture.summaryData.isPublished;
+    }
+    return false;
+  };
+
+  // تبديل حالة النشر لركن محدد
+  var handlePublishToggle = function(comp, shouldPublish) {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    var ps = Object.assign({}, activeLecture.publishStatus || {});
+    ps[comp] = shouldPublish;
+    var updated = Object.assign({}, activeLecture, { publishStatus: ps });
+    if (comp === "slides" && updated.presentationSlides) updated.presentationSlides.isPublished = shouldPublish;
+    if (comp === "mindMap" && updated.mindMapData) updated.mindMapData.isPublished = shouldPublish;
+    if (comp === "quiz" && updated.quizQuestions) updated.quizQuestions.isPublished = shouldPublish;
+    if (comp === "summary" && updated.summaryData) updated.summaryData.isPublished = shouldPublish;
+    cloud.saveLecture(updated);
+    if (onSelectLecture) onSelectLecture(updated);
+  };
+
+  // نشر الحزمة كاملة لجميع الطلاب بنقرة واحدة
+  var handlePublishAll = function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    var ps = { summary: true, slides: true, mindMap: true, quiz: true };
+    var updated = Object.assign({}, activeLecture, { publishStatus: ps });
+    if (updated.presentationSlides) updated.presentationSlides.isPublished = true;
+    if (updated.mindMapData) updated.mindMapData.isPublished = true;
+    if (updated.quizQuestions) updated.quizQuestions.isPublished = true;
+    if (updated.summaryData) updated.summaryData.isPublished = true;
+    cloud.saveLecture(updated);
+    if (onSelectLecture) onSelectLecture(updated);
+    alert("تم اعتماد ونشر الحزمة التعليمية كاملة لجميع الطلاب بنجاح! 🚀");
+  };
+
+  // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
+  var handleGenerateFullPackage = async function() {
+    if (!window.EducationalAIService) {
+      alert("خدمة الذكاء الاصطناعي التعليمية قيد التهيئة...");
+      return;
+    }
+    setIsAiGenerating(true);
+    setPackageGenStatus("جاري استماع النموذج وتحليل المحاضرة وتوليد الأركان المحددة بالذكاء الاصطناعي...");
+    try {
+      var sourceContent = activeLecture.notes || activeLecture.writtenSummary || activeLecture.title;
+      var result = await window.EducationalAIService.generateCompletePackage(
+        activeLecture.title,
+        sourceContent,
+        {
+          summaryPages: parseInt(genSummaryPages, 10) || 5,
+          slidesCount: parseInt(genSlidesCount, 10) || 15,
+          quizCount: parseInt(genQuizCount, 10) || 10,
+          customInstructions: genCustomPrompt,
+          selectedComponents: genSelected
+        }
+      );
+
+      var updated = Object.assign({}, activeLecture);
+      if (!updated.publishStatus) {
+        updated.publishStatus = { summary: false, slides: false, mindMap: false, quiz: false };
+      }
+
+      if (result.summary) {
+        updated.summaryData = result.summary;
+        var fullSummaryText = (result.summary.overview ? (result.summary.overview + "\n\n") : "");
+        if (Array.isArray(result.summary.learningObjectives) && result.summary.learningObjectives.length > 0) {
+          fullSummaryText += "🎯 أهداف التعلم:\n" + result.summary.learningObjectives.map(function(o) { return "• " + o; }).join("\n") + "\n\n";
+        }
+        if (Array.isArray(result.summary.sections)) {
+          result.summary.sections.forEach(function(sec) {
+            fullSummaryText += "📌 " + sec.title + ":\n" + sec.content + "\n";
+            if (Array.isArray(sec.keyPoints) && sec.keyPoints.length > 0) {
+              fullSummaryText += sec.keyPoints.map(function(kp) { return "  - " + kp; }).join("\n") + "\n";
+            }
+            fullSummaryText += "\n";
+          });
+        }
+        if (Array.isArray(result.summary.keyTakeaways) && result.summary.keyTakeaways.length > 0) {
+          fullSummaryText += "🌟 خلاصات ونقاط جوهرية:\n" + result.summary.keyTakeaways.map(function(kt) { return "• " + kt; }).join("\n") + "\n\n";
+        }
+        updated.writtenSummary = fullSummaryText.trim();
+        updated.publishStatus.summary = false;
+      }
+
+      if (result.slides) {
+        updated.presentationSlides = result.slides;
+        updated.publishStatus.slides = false;
+      }
+
+      if (result.mindMap) {
+        updated.mindMapData = result.mindMap;
+        updated.publishStatus.mindMap = false;
+      }
+
+      if (result.quiz && Array.isArray(result.quiz.questions)) {
+        updated.quizQuestions = result.quiz.questions;
+        updated.publishStatus.quiz = false;
+      }
+
+      cloud.saveLecture(updated);
+      if (onSelectLecture) onSelectLecture(updated);
+      setShowPackageModal(false);
+      alert("تم توليد الحزمة التعليمية الشاملة بنجاح! تم حفظ كافة الأركان كمسودة للمراجعة والاعتماد.");
+    } catch (err) {
+      alert("خطأ أثناء توليد الحزمة: " + err.message);
+    } finally {
+      setIsAiGenerating(false);
+      setPackageGenStatus("");
+    }
+  };
+
+  // تطبيق تعديل فردي بالذكاء الاصطناعي على ركن محدد
+  var handleApplyRefinement = async function() {
+    if (!aiEditTarget || !aiEditPrompt.trim()) return;
+    setIsRefining(true);
+    try {
+      var currentData = null;
+      if (aiEditTarget === "slides") currentData = activeLecture.presentationSlides;
+      else if (aiEditTarget === "mindMap") currentData = activeLecture.mindMapData;
+      else if (aiEditTarget === "quiz") currentData = activeLecture.quizQuestions;
+      else if (aiEditTarget === "summary") currentData = activeLecture.summaryData || activeLecture.writtenSummary;
+
+      var refined = await window.EducationalAIService.refineComponent(
+        aiEditTarget,
+        currentData,
+        activeLecture.title,
+        activeLecture.notes || activeLecture.writtenSummary,
+        aiEditPrompt
+      );
+
+      var updated = Object.assign({}, activeLecture);
+      if (aiEditTarget === "slides") updated.presentationSlides = refined;
+      else if (aiEditTarget === "mindMap") updated.mindMapData = refined;
+      else if (aiEditTarget === "quiz") updated.quizQuestions = Array.isArray(refined.questions) ? refined.questions : (Array.isArray(refined) ? refined : [refined]);
+      else if (aiEditTarget === "summary") {
+        updated.summaryData = refined;
+        if (refined.overview || refined.sections) {
+          updated.writtenSummary = refined.overview || activeLecture.writtenSummary;
+        }
+      }
+
+      var ps = Object.assign({}, updated.publishStatus || {});
+      ps[aiEditTarget] = false;
+      updated.publishStatus = ps;
+
+      cloud.saveLecture(updated);
+      if (onSelectLecture) onSelectLecture(updated);
+      setAiEditTarget(null);
+      setAiEditPrompt("");
+      alert("تم تحديث الركن بالذكاء الاصطناعي بنجاح وحفظه كمسودة للمراجعة!");
+    } catch (err) {
+      alert("خطأ أثناء تعديل الركن: " + err.message);
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
   return React.createElement(
     "div",
     {
@@ -298,6 +478,26 @@ window.LectureViewerModal = function(props) {
           },
           React.createElement("span", null, "➕"),
           React.createElement("span", null, "إضافة جلسة ثانية لهذا اليوم")
+        ),
+        currentUser.role === "admin" && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowPackageModal(true); },
+            className: "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+          },
+          React.createElement("span", null, "✨"),
+          React.createElement("span", null, "توليد الحزمة التعليمية الشاملة")
+        ),
+        currentUser.role === "admin" && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handlePublishAll,
+            className: "px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5"
+          },
+          React.createElement("span", null, "🚀"),
+          React.createElement("span", null, "نشر الحزمة كاملة للطلاب")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",
@@ -417,13 +617,19 @@ window.LectureViewerModal = function(props) {
         "div",
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
-          { id: "media", label: "المشاهدة والاستماع (فيديو التسجيل)" },
-          { id: "handout", label: "المرفقات والملفات" },
-          { id: "summary", label: "الملخص المكتوب" },
-          { id: "audio_summary", label: "الملخص الصوتي" },
-          { id: "quiz", label: "الاختبار التفاعلي" },
-          { id: "notes", label: "✍️ تدوين الملاحظات" }
-        ].map(function(tab) {
+          { id: "media", label: "📺 المشاهدة والاستماع" },
+          { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
+          { id: "slides", label: "📊 شرائح العرض", isDraft: getIsDraft("slides") },
+          { id: "mindmap", label: "🧠 الخريطة الذهنية", isDraft: getIsDraft("mindMap") },
+          { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
+          { id: "handout", label: "📁 المرفقات والملفات" },
+          { id: "audio_summary", label: "🎧 الملخص الصوتي" },
+          { id: "notes", label: "✍️ الملاحظات" }
+        ].filter(function(tab) {
+          if (currentUser.role === "admin") return true;
+          if (tab.id === "media" || tab.id === "handout" || tab.id === "notes" || tab.id === "audio_summary") return true;
+          return !tab.isDraft;
+        }).map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
             "button",
@@ -892,6 +1098,38 @@ window.LectureViewerModal = function(props) {
         )
       ),
 
+      // تبويب شرائح العرض التقديمي
+      activeSubTab === "slides" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        window.PresentationSlidesViewer ? React.createElement(
+          window.PresentationSlidesViewer,
+          {
+            slides: activeLecture.presentationSlides,
+            isDraft: getIsDraft("slides"),
+            isAdmin: currentUser.role === "admin",
+            onPublishToggle: handlePublishToggle,
+            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+          }
+        ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الشرائح...")
+      ),
+
+      // تبويب الخريطة الذهنية الشجرية
+      activeSubTab === "mindmap" && React.createElement(
+        "div",
+        { className: "space-y-4" },
+        window.InteractiveMindMapViewer ? React.createElement(
+          window.InteractiveMindMapViewer,
+          {
+            mindMap: activeLecture.mindMapData,
+            isDraft: getIsDraft("mindMap"),
+            isAdmin: currentUser.role === "admin",
+            onPublishToggle: handlePublishToggle,
+            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+          }
+        ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الخريطة...")
+      ),
+
       // 5. تبويب الكويز والاختبار التفاعلي
       activeSubTab === "quiz" && React.createElement(
         "div",
@@ -1267,6 +1505,242 @@ window.LectureViewerModal = function(props) {
           )
         )
       );
-    })()
+    })(),
+
+    // نافذة توليد الحزمة التعليمية الشاملة بالأرقام المرنة
+    showPackageModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget && !isAiGenerating) setShowPackageModal(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5" },
+
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-2xl" }, "✨"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "توليد الحزمة التعليمية الشاملة"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, "حدد الأعداد والمعايير الرقمية بدقة")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isAiGenerating,
+              onClick: function() { setShowPackageModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold"
+            },
+            "✕"
+          )
+        ),
+
+        // جسم النافذة: حقول الأرقام المرنة
+        React.createElement(
+          "div",
+          { className: "space-y-4" },
+
+          // 1. عدد صفحات الملخص
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📄 عمق الملخص الموسع (بالصفحات):"),
+              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الصفحات التقديرية المطلوبة")
+            ),
+            React.createElement("input", {
+              type: "number",
+              min: 1,
+              max: 20,
+              value: genSummaryPages,
+              onChange: function(e) { setGenSummaryPages(e.target.value); },
+              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          ),
+
+          // 2. عدد شرائح العرض
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📊 عدد شرائح العرض التقديمي:"),
+              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الشرائح المطلوبة بالضبط")
+            ),
+            React.createElement("input", {
+              type: "number",
+              min: 3,
+              max: 40,
+              value: genSlidesCount,
+              onChange: function(e) { setGenSlidesCount(e.target.value); },
+              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          ),
+
+          // 3. عدد أسئلة الكويز
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📝 عدد أسئلة الكويز التفاعلي:"),
+              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الأسئلة المطلوبة بالضبط")
+            ),
+            React.createElement("input", {
+              type: "number",
+              min: 3,
+              max: 30,
+              value: genQuizCount,
+              onChange: function(e) { setGenQuizCount(e.target.value); },
+              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          ),
+
+          // 4. خيارات التحديد المخصصة
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-2" },
+            React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1" }, "الأركان المطلوب توليدها:"),
+            React.createElement(
+              "div",
+              { className: "grid grid-cols-2 gap-2" },
+              [
+                { id: "summary", label: "📄 الملخص الموسع" },
+                { id: "slides", label: "📊 شرائح العرض" },
+                { id: "mindMap", label: "🧠 الخريطة الذهنية" },
+                { id: "quiz", label: "📝 الكويز التفاعلي" }
+              ].map(function(item) {
+                var checked = genSelected[item.id] !== false;
+                return React.createElement(
+                  "label",
+                  { key: item.id, className: "flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer" },
+                  React.createElement("input", {
+                    type: "checkbox",
+                    checked: checked,
+                    onChange: function(e) {
+                      var n = Object.assign({}, genSelected);
+                      n[item.id] = e.target.checked;
+                      setGenSelected(n);
+                    },
+                    className: "rounded text-indigo-600 focus:ring-indigo-500"
+                  }),
+                  item.label
+                );
+              })
+            )
+          ),
+
+          // 5. ملاحظات وتوجيهات خاصة
+          React.createElement(
+            "div",
+            { className: "space-y-1" },
+            React.createElement("label", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "ملاحظات أو توجيهات خاصة (اختياري):"),
+            React.createElement("textarea", {
+              rows: 2,
+              value: genCustomPrompt,
+              onChange: function(e) { setGenCustomPrompt(e.target.value); },
+              placeholder: "مثال: ركز على الأمثلة العملية للتشجيع وقاعدة 1 إلى 9...",
+              className: "w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          )
+        ),
+
+        // حالة التحميل أثناء التوليد
+        isAiGenerating && React.createElement(
+          "div",
+          { className: "p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 animate-pulse" },
+          React.createElement("span", { className: "w-3 h-3 rounded-full bg-indigo-600 animate-ping" }),
+          React.createElement("span", null, packageGenStatus || "جاري التوليد...")
+        ),
+
+        // أزرار التحكم السفلية
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isAiGenerating,
+              onClick: function() { setShowPackageModal(false); },
+              className: "px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isAiGenerating,
+              onClick: handleGenerateFullPackage,
+              className: "px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold shadow-md flex items-center gap-2 disabled:opacity-50"
+            },
+            React.createElement("span", null, "🚀"),
+            React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "بدء التوليد الذكي الآن")
+          )
+        )
+      )
+    ),
+
+    // نافذة التعديل وإعادة الصياغة بالذكاء الاصطناعي لركن محدد
+    aiEditTarget && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget && !isRefining) setAiEditTarget(null); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5" },
+          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "✨ طلب تعديل بالذكاء الاصطناعي: " + aiEditTarget),
+          React.createElement("button", {
+            type: "button",
+            onClick: function() { setAiEditTarget(null); },
+            className: "text-slate-400 hover:text-slate-600 font-bold"
+          }, "✕")
+        ),
+        React.createElement("p", { className: "text-xs text-slate-500" }, "اكتب توجيهاتك بدقة ليقوم النموذج بتعديل هذا الركن فقط وإعادة حفظه كمسودة للمراجعة:"),
+        React.createElement("textarea", {
+          rows: 3,
+          value: aiEditPrompt,
+          onChange: function(e) { setAiEditPrompt(e.target.value); },
+          placeholder: "مثال: أعد صياغة النقطة الثالثة واجعلها أكثر عمقاً...",
+          className: "w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        }),
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-2" },
+          React.createElement("button", {
+            type: "button",
+            disabled: isRefining,
+            onClick: function() { setAiEditTarget(null); },
+            className: "px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500"
+          }, "إلغاء"),
+          React.createElement("button", {
+            type: "button",
+            disabled: isRefining || !aiEditPrompt.trim(),
+            onClick: handleApplyRefinement,
+            className: "px-5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-xs"
+          }, isRefining ? "جاري التعديل..." : "تطبيق التعديل الآن")
+        )
+      )
+    )
   );
 };
