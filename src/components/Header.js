@@ -107,6 +107,16 @@ window.Header = function(props) {
                   for (var i = 0; i < names.length; i++) caches.delete(names[i]);
                 });
               }
+              try {
+                localStorage.removeItem("counsel_books_data");
+                localStorage.removeItem("counsel_book_data_book-1791651887196");
+                localStorage.removeItem("counsel_book_chapters_backup_book-1791651887196");
+                Object.keys(localStorage).forEach(function(k) {
+                  if (k.indexOf("counsel_cached_subtitles_") === 0 || k.indexOf("counsel_audio_pos_") === 0) {
+                    localStorage.removeItem(k);
+                  }
+                });
+              } catch (e) {}
               window.location.reload(true);
             },
             title: "تحديث فوري وإفراغ الذاكرة المؤقتة",
