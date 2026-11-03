@@ -64,7 +64,11 @@ window.LectureRow = function(props) {
           { className: "flex items-center gap-2 flex-wrap" },
           React.createElement("span", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate" }, lec.title),
           lec.subject && React.createElement("span", { className: "text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0" }, lec.subject),
-          (lec.sessionOrder && lec.sessionOrder > 1) && React.createElement("span", { className: "text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded-md shrink-0" }, "جلسة " + lec.sessionOrder)
+          (lec.sessionOrder && (lec.sessionOrder > 1 || props.hasMultipleSessions)) && React.createElement(
+            "span",
+            { className: "text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 shrink-0" },
+            "جلسة " + (lec.sessionOrder || 1)
+          )
         ),
         React.createElement(
           "div",
@@ -129,10 +133,24 @@ window.LectureRow = function(props) {
       ),
       // شارة الحالة
       React.createElement("span", { className: "text-[11px] font-bold px-2.5 py-0.5 rounded-md shrink-0 " + st.badgeClass }, st.label),
-      // أزرار المسؤول (تعديل وحذف)
+      // أزرار المسؤول (تعديل وحذف وإضافة جلسة تالية)
       currentUser.role === "admin" && React.createElement(
         "div",
         { className: "flex items-center gap-1" },
+        props.onAddSession && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function(e) {
+              e.stopPropagation();
+              props.onAddSession(lec);
+            },
+            title: "إضافة جلسة أو محاضرة ثانية لهذا اليوم (" + (lec.date || "") + ")",
+            className: "p-1.5 rounded-xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors font-bold flex items-center gap-0.5 shadow-2xs"
+          },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", { className: "hidden xl:inline text-[10px]" }, "جلسة ثانية")
+        ),
         lec.zoomUrl && React.createElement(
           "button",
           {

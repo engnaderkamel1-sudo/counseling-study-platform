@@ -282,14 +282,22 @@ window.AddLectureModal = function(props) {
             React.createElement("label", { className: "block text-xs font-semibold mb-1" }, "ترتيب الجلسة في اليوم"),
             React.createElement("select", {
               value: newSessionOrder,
-              onChange: function(e) { setNewSessionOrder(e.target.value); },
-              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs"
+              onChange: function(e) { setNewSessionOrder(parseInt(e.target.value) || 1); },
+              className: "w-full px-3 py-2 rounded-xl border bg-slate-50 dark:bg-slate-800 text-xs font-bold"
             }, [
-              React.createElement("option", { key: 1, value: 1 }, "المحاضرة الأولى"),
-              React.createElement("option", { key: 2, value: 2 }, "المحاضرة الثانية"),
-              React.createElement("option", { key: 3, value: 3 }, "المحاضرة الثالثة")
+              React.createElement("option", { key: 1, value: 1 }, "المحاضرة الأولى (جلسة 1)"),
+              React.createElement("option", { key: 2, value: 2 }, "المحاضرة الثانية (جلسة 2)"),
+              React.createElement("option", { key: 3, value: 3 }, "المحاضرة الثالثة (جلسة 3)"),
+              React.createElement("option", { key: 4, value: 4 }, "المحاضرة الرابعة (جلسة 4)")
             ])
           )
+        ),
+
+        (parseInt(newSessionOrder) > 1) && React.createElement(
+          "div",
+          { className: "p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200 font-bold animate-in fade-in duration-150" },
+          React.createElement("span", { className: "text-base" }, "✨"),
+          React.createElement("span", null, "تسجيل جلسة ثانية/إضافية لنفس اليوم الدراسي (" + (newDate || "") + ")")
         ),
 
         // المحاضر

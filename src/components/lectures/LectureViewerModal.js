@@ -231,6 +231,11 @@ window.LectureViewerModal = function(props) {
             actSeq.isExam
               ? React.createElement("span", { className: "text-xs font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800" }, "📝 امتحان وتقييم نهائي")
               : React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "المحاضرة رقم: " + actSeq.num),
+            (activeLecture.sessionOrder && (activeLecture.sessionOrder > 1 || props.hasMultipleSessions)) && React.createElement(
+              "span",
+              { className: "text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2.5 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800" },
+              "الجلسة رقم: " + activeLecture.sessionOrder
+            ),
             React.createElement("span", { className: "text-xs font-bold px-2.5 py-0.5 rounded-lg " + (st.badgeClass || "") }, st.label || "")
           ),
           React.createElement("h3", { className: "text-lg font-bold text-slate-900 dark:text-white" }, activeLecture.title),
@@ -282,6 +287,17 @@ window.LectureViewerModal = function(props) {
             className: "px-3 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs"
           },
           "تعديل البيانات والروابط"
+        ),
+        props.onAddSession && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { props.onAddSession(activeLecture); },
+            className: "px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 text-xs font-bold transition-all flex items-center gap-1 shadow-2xs border border-indigo-200 dark:border-indigo-900",
+            title: "إضافة محاضرة أو جلسة تالية لنفس تاريخ هذا اليوم"
+          },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", null, "إضافة جلسة ثانية لهذا اليوم")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",

@@ -188,6 +188,15 @@ window.LecturesPage = function(props) {
     if (l.date && datesList.indexOf(l.date) === -1) datesList.push(l.date);
   });
 
+  // خريطة لتحديد تواريخ الأيام التي تضم أكثر من جلسة واحدة
+  var dateSessionsCount = {};
+  lectures.forEach(function(l) {
+    var d = (l.date || "").trim();
+    if (d) {
+      dateSessionsCount[d] = (dateSessionsCount[d] || 0) + 1;
+    }
+  });
+
   // خريطة الترقيم التسلسلي الزمني التلقائي
   var chronoList = lectures.slice().sort(function(a, b) {
     var dateA = new Date(a.date).getTime() || 0;
@@ -328,6 +337,41 @@ window.LecturesPage = function(props) {
       }
     });
     return questions;
+  };
+
+  var handleAddSessionForLecture = function(targetLec) {
+    if (!targetLec) return;
+    var targetDate = (targetLec.date || "").trim() || new Date().toISOString().split("T")[0];
+    var sameDateLectures = lectures.filter(function(l) {
+      return (l.date || "").trim() === targetDate;
+    });
+    var maxSession = 1;
+    sameDateLectures.forEach(function(l) {
+      var s = parseInt(l.sessionOrder) || 1;
+      if (s > maxSession) maxSession = s;
+    });
+    var nextSession = maxSession + 1;
+
+    setNewDate(targetDate);
+    setNewSessionOrder(nextSession);
+    setNewSubject(targetLec.subject || "");
+    setNewTitle("");
+    setNewSpeaker("");
+    setNewMediaUrl("");
+    setNewHandoutUrl("");
+    setNewHandoutName("");
+    setNewAudioSummaryUrl("");
+    setNewWrittenSummary("");
+    setNewQuizText("");
+    setNewNotes("");
+    setNewZoomUrl("");
+    setNewMeetingId("");
+    setNewPasscode("");
+    setNewZoomTimeStr("");
+    setSelectedFile(null);
+
+    if (activeLecture) setActiveLecture(null);
+    setShowAddModal(true);
   };
 
   var handleAddLecture = async function(e) {
@@ -1061,6 +1105,8 @@ window.LecturesPage = function(props) {
         var isCurrent = activeLecture && activeLecture.id === lec.id;
         var isDone = completedIds.indexOf(lec.id) !== -1;
 
+        var hasMultiSessions = (dateSessionsCount[(lec.date || "").trim()] || 0) > 1;
+
         return React.createElement(window.LectureRow, {
           key: lec.id,
           lec: lec,
@@ -1068,13 +1114,15 @@ window.LecturesPage = function(props) {
           st: st,
           isCurrent: isCurrent,
           isCompleted: isDone,
+          hasMultipleSessions: hasMultiSessions,
           onToggleCompleted: handleToggleCompleted,
           currentUser: currentUser,
           utils: utils,
           onSelect: function(item) { setActiveLecture(item); },
           onEdit: function(item) { openEditModal(item); },
           onDelete: function(item) { handleDeleteLecture(item); },
-          onClearZoom: function(item) { handleClearZoomLink(item); }
+          onClearZoom: function(item) { handleClearZoomLink(item); },
+          onAddSession: handleAddSessionForLecture
         });
       })
     ) : React.createElement(
@@ -1107,7 +1155,9 @@ window.LecturesPage = function(props) {
       handleClearZoom: handleClearZoomLink,
       handleSavePosition: handleSavePosition,
       filteredLectures: filteredLectures,
-      onSelectLecture: function(item) { setActiveLecture(item); }
+      onSelectLecture: function(item) { setActiveLecture(item); },
+      hasMultipleSessions: activeLecture && ((dateSessionsCount[(activeLecture.date || "").trim()] || 0) > 1),
+      onAddSession: handleAddSessionForLecture
     }),
 
     // نافذة إضافة محاضرة جديدة (للمسؤول فقط)
