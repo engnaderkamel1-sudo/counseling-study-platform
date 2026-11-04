@@ -56,6 +56,10 @@ window.LectureViewerModal = function(props) {
   var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
   var [ttsTextMode, setTtsTextMode] = React.useState("summary"); // 'summary' or 'objectives'
 
+  // حالة تعديل ولصق التفريغ النصي يدوياً للمسؤول
+  var [isEditingTranscript, setIsEditingTranscript] = React.useState(false);
+  var [editTranscriptText, setEditTranscriptText] = React.useState("");
+
   var stopTts = function() {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
@@ -1202,18 +1206,35 @@ window.LectureViewerModal = function(props) {
                   wordCount + " كلمة مسجلة"
                 )
               ),
-              wordCount > 0 && React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() {
-                    navigator.clipboard.writeText(transcriptText);
-                    alert("تم نسخ تفريغ المحاضرة بالكامل إلى الحافظة بنجاح!");
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2" },
+                currentUser.role === "admin" && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      setEditTranscriptText(transcriptText);
+                      setIsEditingTranscript(true);
+                    },
+                    className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
                   },
-                  className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
-                },
-                React.createElement("span", null, "📋"),
-                React.createElement("span", null, "نسخ النص كاملاً")
+                  React.createElement("span", null, "✏️"),
+                  React.createElement("span", null, transcriptText ? "تعديل التفريغ" : "كتابة / لصق تفريغ")
+                ),
+                wordCount > 0 && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      navigator.clipboard.writeText(transcriptText);
+                      alert("تم نسخ تفريغ المحاضرة بالكامل إلى الحافظة بنجاح!");
+                    },
+                    className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                  },
+                  React.createElement("span", null, "📋"),
+                  React.createElement("span", null, "نسخ النص كاملاً")
+                )
               )
             ),
             transcriptText ? React.createElement(
@@ -1222,9 +1243,19 @@ window.LectureViewerModal = function(props) {
               transcriptText
             ) : React.createElement(
               "div",
-              { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-2" },
+              { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-3" },
               React.createElement("div", { className: "text-3xl" }, "📜"),
-              React.createElement("p", { className: "font-bold text-slate-600 dark:text-slate-300" }, "لا يوجد تفريغ نصي مسجل لهذه المحاضرة حتى الآن.")
+              React.createElement("p", { className: "font-bold text-slate-600 dark:text-slate-300" }, "لا يوجد تفريغ نصي مسجل لهذه المحاضرة حتى الآن."),
+              currentUser.role === "admin" && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setEditTranscriptText(""); setIsEditingTranscript(true); },
+                  className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5"
+                },
+                React.createElement("span", null, "✍️"),
+                React.createElement("span", null, "إضافة أو لصق تفريغ نصي للمحاضرة")
+              )
             )
           );
         })()
@@ -2043,6 +2074,75 @@ window.LectureViewerModal = function(props) {
             },
             React.createElement("span", null, "🚀"),
             React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "بدء التوليد الذكي الآن")
+          )
+        )
+      )
+    ),
+
+    // نافذة تحرير ولصق التفريغ النصي للمسؤول
+    isEditingTranscript && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget) setIsEditingTranscript(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-2xl" }, "📜"),
+            React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تحرير أو لصق التفريغ النصي للمحاضرة")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsEditingTranscript(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold"
+            },
+            "✕"
+          )
+        ),
+        React.createElement("p", { className: "text-xs text-slate-500" }, "يمكنك كتابة أو تعديل أو لصق تفريغ المحاضرة بالكامل هنا، وسيتم حفظه فوراً في السحابة:"),
+        React.createElement("textarea", {
+          rows: 15,
+          value: editTranscriptText,
+          onChange: function(e) { setEditTranscriptText(e.target.value); },
+          placeholder: "الصق نص تفريغ المحاضرة هنا...",
+          className: "w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white font-sans leading-loose focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        }),
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsEditingTranscript(false); },
+              className: "px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                var updated = Object.assign({}, activeLecture, { transcript: editTranscriptText.trim() });
+                cloud.saveLecture(updated);
+                if (onSelectLecture) onSelectLecture(updated);
+                setIsEditingTranscript(false);
+                alert("تم حفظ التفريغ النصي للمحاضرة بنجاح!");
+              },
+              className: "px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
+            },
+            React.createElement("span", null, "💾"),
+            React.createElement("span", null, "حفظ التفريغ النصي")
           )
         )
       )

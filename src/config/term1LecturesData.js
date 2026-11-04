@@ -8,7 +8,7 @@ window.DEFAULT_TERM1_LECTURES = [
     "subject": "الشخصية الإنسانية",
     "speaker": "نيافة الأنبا دانيال ود. مجدي اسحق",
     "notes": "جلسة افتتاحية: كلمة ترحيب بالدارسين يلقيها نيافة الحبر الجليل الأنبا دانيال، ومحاضرة الاحتياجات النفسية للدكتور مجدي اسحق.",
-    "mediaUrl": "https://youtu.be/WbL5wMZXKp0",
+    "mediaUrl": "https://youtu.be/rY-dobbiTZg",
     "handoutUrl": "",
     "handoutName": "",
     "audioSummaryUrl": "",
