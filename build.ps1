@@ -53,8 +53,6 @@ function Build-App {
         "components/books/PdfReaderView.js",
         "components/books/AudioChaptersView.js",
         "components/lectures/LectureRow.js",
-        "components/lectures/PresentationSlidesViewer.js",
-        "components/lectures/InteractiveMindMapViewer.js",
         "components/lectures/InteractiveQuizViewer.js",
         "components/lectures/VisualDiagramsViewer.js",
         "components/lectures/LectureViewerModal.js",

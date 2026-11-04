@@ -336,21 +336,42 @@
       return { questions: questions, isPublished: false, targetCount: count };
     },
 
+    // 4.4 توليد المخططات والرسوم البيانية التفاعلية (Visuals / Infographics)
+    generateVisualsOnly: async function(lectureTitle, lectureContent, customInstructions) {
+      var prompt = "أنت مصمم معلومات بيانية وبصرية (Infographics Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
+        "المطلوب: تحليل المحاضرة واستخراج 3 إلى 4 مخططات بصرية وتفاعلية تغطي جوانب الدرس بأسلوب احترافي مطابق لـ Google NotebookLM.\n\n" +
+        "عنوان المحاضرة: " + (lectureTitle || "") + "\n\n" +
+        "المحتوى المرجعي للمحاضرة:\n" + (lectureContent || "") + "\n\n" +
+        (customInstructions ? ("توجيهات إضافية من الأستاذ:\n" + customInstructions + "\n\n") : "") +
+        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم:\n" +
+        "1. مخطط هرمي (pyramid) يوضح التدرج المفاهيمي في المحاضرة مع حقول: id, type='pyramid', title, subtitle, badge, levels (مصفوفة كائنات تضم level, title, color, desc, isPeak).\n" +
+        "2. مخطط دائري (pie) يوضح النسب المئوية وتوزيع الأدوار أو الوقت مع حقول: id, type='pie', title, subtitle, badge, slices (مصفوفة كائنات تضم label, percentage, color, desc).\n" +
+        "3. مصفوفة مقارنة بصرية (comparison) تقارن بين مفهومين أساسيين مع حقول: id, type='comparison', title, subtitle, badge, left (كائن يضم title, icon, items: [aspect, value]), right (كائن يضم title, icon, items: [aspect, value]).\n" +
+        "4. بطاقة مؤشرات أو نسب (metric_card) تبرز معادلة أو قاعدة عددية مع حقول: id, type='metric_card', title, subtitle, badge, metrics: [num, label, color, note], takeaway.\n\n" +
+        "الرد الحصري بهيكل JSON النقي المطلوب.";
+
+      var raw = await window.EducationalAIService.callModel(
+        prompt,
+        "أنت مصمم معلومات بصرية تعليمية. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
+        { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
+      );
+      return window.EducationalAIService._cleanAndParseJson(raw);
+    },
+
     // 4.5 المحرك المتسلسل الكامل (Sequential Step-by-Step Chained Generation)
     generateCompletePackage: async function(lectureTitle, lectureContent, options, onProgress) {
       options = options || {};
 
       var summaryPages = parseInt(options.summaryPages, 10) || 5;
-      var slidesCount = parseInt(options.slidesCount, 10) || 15;
       var quizCount = parseInt(options.quizCount, 10) || 10;
       var customInstructions = (options.customInstructions || "").trim();
-      var selected = options.selectedComponents || { summary: true, slides: true, mindMap: true, quiz: true };
+      var selected = options.selectedComponents || { summary: true, visuals: true, quiz: true };
 
       var output = {};
 
       // الخطوة 1: الملخص الموسع
       if (selected.summary !== false) {
-        if (onProgress) onProgress(15, "جاري إعداد وصياغة الملخص الموسع الشامل (" + summaryPages + " صفحات)... [1/4]");
+        if (onProgress) onProgress(20, "جاري إعداد وصياغة الملخص الموسع الشامل (" + summaryPages + " صفحات)... [1/3]");
         try {
           output.summary = await window.EducationalAIService.generateSummaryOnly(
             lectureTitle,
@@ -364,40 +385,24 @@
         }
       }
 
-      // الخطوة 2: شرائح العرض
-      if (selected.slides !== false) {
-        if (onProgress) onProgress(45, "جاري تصميم وبناء شرائح العرض التقديمي (" + slidesCount + " شريحة)... [2/4]");
+      // الخطوة 2: المخططات البصرية والرسوم التفاعلية
+      if (selected.visuals !== false) {
+        if (onProgress) onProgress(60, "جاري تصميم وبناء المخططات البصرية والرسوم التفاعلية... [2/3]");
         try {
-          output.slides = await window.EducationalAIService.generateSlidesOnly(
-            lectureTitle,
-            lectureContent,
-            slidesCount,
-            customInstructions
-          );
-        } catch (slideErr) {
-          console.error("Slides step error:", slideErr);
-          throw new Error("فشل تصميم الشرائح: " + slideErr.message);
-        }
-      }
-
-      // الخطوة 3: الخريطة الذهنية
-      if (selected.mindMap !== false) {
-        if (onProgress) onProgress(70, "جاري بناء وتفريع الخريطة الذهنية الشجرية... [3/4]");
-        try {
-          output.mindMap = await window.EducationalAIService.generateMindMapOnly(
+          output.visuals = await window.EducationalAIService.generateVisualsOnly(
             lectureTitle,
             lectureContent,
             customInstructions
           );
-        } catch (mapErr) {
-          console.error("Mind map step error:", mapErr);
-          throw new Error("فشل بناء الخريطة الذهنية: " + mapErr.message);
+        } catch (visErr) {
+          console.error("Visuals step error:", visErr);
+          throw new Error("فشل تصميم المخططات البصرية: " + visErr.message);
         }
       }
 
-      // الخطوة 4: الكويز التفاعلي
+      // الخطوة 3: الكويز التفاعلي
       if (selected.quiz !== false) {
-        if (onProgress) onProgress(90, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [4/4]");
+        if (onProgress) onProgress(90, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [3/3]");
         try {
           output.quiz = await window.EducationalAIService.generateQuizOnly(
             lectureTitle,

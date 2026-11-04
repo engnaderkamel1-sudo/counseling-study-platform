@@ -32,7 +32,7 @@ window.LectureViewerModal = function(props) {
     return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_quiz_count", 10), 10) || 10) : 10;
   });
   var [genCustomPrompt, setGenCustomPrompt] = React.useState("");
-  var [genSelected, setGenSelected] = React.useState({ summary: true, transcript: true, slides: true, mindMap: true, quiz: true });
+  var [genSelected, setGenSelected] = React.useState({ transcript: true, summary: true, visuals: true, quiz: true });
   var [isFetchingYouTubeTranscript, setIsFetchingYouTubeTranscript] = React.useState(false);
   var [packageGenStatus, setPackageGenStatus] = React.useState("");
   var [aiEditTarget, setAiEditTarget] = React.useState(null);
@@ -339,14 +339,9 @@ window.LectureViewerModal = function(props) {
         updated.publishStatus.summary = false;
       }
 
-      if (result.slides) {
-        updated.presentationSlides = result.slides;
-        updated.publishStatus.slides = false;
-      }
-
-      if (result.mindMap) {
-        updated.mindMapData = result.mindMap;
-        updated.publishStatus.mindMap = false;
+      if (result.visuals) {
+        updated.visualsData = result.visuals;
+        updated.visualsDataJson = JSON.stringify(result.visuals);
       }
 
       if (result.quiz && Array.isArray(result.quiz.questions)) {
@@ -398,6 +393,8 @@ window.LectureViewerModal = function(props) {
       writtenSummary: "",
       summaryData: null,
       summaryDataJson: "",
+      visualsData: null,
+      visualsDataJson: "",
       presentationSlides: null,
       slidesData: null,
       slidesDataJson: "",
@@ -406,7 +403,7 @@ window.LectureViewerModal = function(props) {
       quizQuestions: [],
       transcript: "",
       transcriptText: "",
-      publishStatus: { summary: false, slides: false, mindMap: false, quiz: false, transcript: false }
+      publishStatus: { summary: false, visuals: false, quiz: false, transcript: false }
     });
 
     try {
@@ -707,11 +704,9 @@ window.LectureViewerModal = function(props) {
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "📺 مشاهدة المحاضرة" },
+          { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript") },
           { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
-          { id: "transcript", label: "📜 تفريغ المحاضرة", isDraft: getIsDraft("transcript") },
           { id: "visuals", label: "📊 المخططات البصرية (Visuals)" },
-          { id: "slides", label: "📊 شرائح العرض", isDraft: getIsDraft("slides") },
-          { id: "mindmap", label: "🧠 الخريطة الذهنية", isDraft: getIsDraft("mindMap") },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
           { id: "handout", label: "📁 المرفقات والملفات" },
           { id: "notes", label: "✍️ الملاحظات" }
@@ -735,7 +730,7 @@ window.LectureViewerModal = function(props) {
       ),
 
       // شريط التنبيه وإخلاء المسؤولية للحزمة الذكية (الملخص الموسع، شرائح العرض، الخريطة الذهنية، الاختبار التفاعلي)
-      (activeSubTab === "summary" || activeSubTab === "slides" || activeSubTab === "mindmap" || activeSubTab === "quiz") && !isDisclaimerDismissed && React.createElement(
+      (activeSubTab === "summary" || activeSubTab === "visuals" || activeSubTab === "quiz") && !isDisclaimerDismissed && React.createElement(
         "div",
         {
           className: "flex items-start sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium transition-all shadow-xs animate-fadeIn"
@@ -1177,54 +1172,7 @@ window.LectureViewerModal = function(props) {
         ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض المخططات البصرية...")
       ),
 
-      // تبويب شرائح العرض التقديمي
-      activeSubTab === "slides" && React.createElement(
-        "div",
-        { className: "space-y-4" },
-        window.PresentationSlidesViewer ? React.createElement(
-          window.PresentationSlidesViewer,
-          {
-            slides: activeLecture.presentationSlides || activeLecture.slidesData || (function() { try { return JSON.parse(activeLecture.slidesDataJson); } catch(e){ return null; } })(),
-            isDraft: getIsDraft("slides"),
-            isAdmin: currentUser.role === "admin",
-            onPublishToggle: handlePublishToggle,
-            onRequestEdit: function(comp) { setAiEditTarget(comp); },
-            onUpdateSlides: function(newSlides) {
-              var updated = Object.assign({}, activeLecture);
-              if (updated.presentationSlides && typeof updated.presentationSlides === "object" && !Array.isArray(updated.presentationSlides)) {
-                updated.presentationSlides = Object.assign({}, updated.presentationSlides, { items: newSlides });
-              } else {
-                updated.presentationSlides = newSlides;
-              }
-              updated.slidesData = newSlides;
-              updated.slidesDataJson = JSON.stringify(newSlides);
-              cloud.saveLecture(updated);
-              if (onSelectLecture) onSelectLecture(updated);
-            }
-          }
-        ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الشرائح...")
-      ),
 
-      // تبويب الخريطة الذهنية الشجرية
-      activeSubTab === "mindmap" && React.createElement(
-        "div",
-        { className: "space-y-4" },
-        window.InteractiveMindMapViewer ? React.createElement(
-          window.InteractiveMindMapViewer,
-          {
-            mindMap: activeLecture.mindMapData || (function() { try { return JSON.parse(activeLecture.mindMapDataJson); } catch(e){ return null; } })(),
-            isDraft: getIsDraft("mindMap"),
-            isAdmin: currentUser.role === "admin",
-            onPublishToggle: handlePublishToggle,
-            onRequestEdit: function(comp) { setAiEditTarget(comp); },
-            onUpdateQuiz: function(newQuestions) {
-              var updated = Object.assign({}, activeLecture, { quizQuestions: newQuestions });
-              cloud.saveLecture(updated);
-              if (onSelectLecture) onSelectLecture(updated);
-            }
-          }
-        ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الخريطة...")
-      ),
 
       // 5. تبويب الكويز والاختبار التفاعلي
       activeSubTab === "quiz" && React.createElement(
@@ -1685,29 +1633,7 @@ window.LectureViewerModal = function(props) {
             })
           ),
 
-          // 2. عدد شرائح العرض
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📊 عدد شرائح العرض التقديمي:"),
-              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الشرائح المطلوبة بالضبط")
-            ),
-            React.createElement("input", {
-              type: "number",
-              min: 3,
-              max: 40,
-              value: genSlidesCount,
-              onChange: function(e) {
-                var v = e.target.value;
-                setGenSlidesCount(v);
-                if (utils && utils.setLocal) utils.setLocal("counsel_gen_slides_count", v);
-              },
-              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            })
-          ),
+
 
           // 3. عدد أسئلة الكويز
           React.createElement(
@@ -1742,10 +1668,9 @@ window.LectureViewerModal = function(props) {
               "div",
               { className: "grid grid-cols-2 gap-2" },
               [
-                { id: "summary", label: "📄 الملخص الموسع" },
                 { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو" },
-                { id: "slides", label: "📊 شرائح العرض" },
-                { id: "mindMap", label: "🧠 الخريطة الذهنية" },
+                { id: "summary", label: "📄 الملخص الموسع" },
+                { id: "visuals", label: "📊 المخططات البصرية (Visuals)" },
                 { id: "quiz", label: "📝 الكويز التفاعلي" }
               ].map(function(item) {
                 var checked = genSelected[item.id] !== false;
