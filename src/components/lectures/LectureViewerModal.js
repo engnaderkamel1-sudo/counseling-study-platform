@@ -345,6 +345,40 @@ window.LectureViewerModal = function(props) {
     }
   };
 
+  // مسح وتصفير الحزمة التعليمية المولدة بالكامل للبدء من جديد
+  var handleClearAiPackage = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    var confirmMsg = "هل أنت متأكد من مسح الحزمة التعليمية المولدة لهذه المحاضرة للبدء من جديد؟\n\n" +
+      "⚠️ سيتم تصفير: الملخص المكتوب، شرائح العرض، الخريطة الذهنية، الكويز، والتفريغ النصي.\n" +
+      "✅ ستبقى كافة بيانات المحاضرة الأساسية وروابط الفيديو واليوتيوب والمذكرات محفوظة بالكامل دون مساس.";
+    if (!window.confirm(confirmMsg)) return;
+
+    var updated = Object.assign({}, activeLecture, {
+      writtenSummary: "",
+      summaryData: null,
+      summaryDataJson: "",
+      presentationSlides: null,
+      slidesData: null,
+      slidesDataJson: "",
+      mindMapData: null,
+      mindMapDataJson: "",
+      quizQuestions: [],
+      transcript: "",
+      transcriptText: "",
+      publishStatus: { summary: false, slides: false, mindMap: false, quiz: false, transcript: false }
+    });
+
+    try {
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
+      if (onSelectLecture) onSelectLecture(updated);
+      alert("تم مسح الحزمة التعليمية بنجاح! أصبحت المحاضرة الآن خالية من أي محتوى آلي سابق ويمكنك إعادة توليدها في أي وقت.");
+    } catch (err) {
+      alert("حدث خطأ أثناء مسح الحزمة: " + (err && err.message ? err.message : err));
+    }
+  };
+
   // تطبيق تعديل فردي بالذكاء الاصطناعي على ركن محدد
   var handleApplyRefinement = async function() {
     if (!aiEditTarget || !aiEditPrompt.trim()) return;
@@ -501,6 +535,17 @@ window.LectureViewerModal = function(props) {
           },
           React.createElement("span", null, "🚀"),
           React.createElement("span", null, "نشر الحزمة كاملة للطلاب")
+        ),
+        currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript || activeLecture.summaryData) && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleClearAiPackage,
+            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95",
+            title: "مسح وتصفير الحزمة المولدة لهذه المحاضرة للبدء من جديد"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "مسح الحزمة المولدة")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",
@@ -1737,6 +1782,20 @@ window.LectureViewerModal = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+          (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript) && React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isAiGenerating,
+              onClick: function() {
+                setShowPackageModal(false);
+                handleClearAiPackage();
+              },
+              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all"
+            },
+            React.createElement("span", null, "🗑️"),
+            React.createElement("span", null, "مسح الحزمة الحالية")
+          ),
           React.createElement(
             "button",
             {

@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"},{"hash":"e9a6839","date":"2026-10-15 08:44","message":"fix: move resume audio to dedicated sub-header row to prevent header crowding"}];
+window.APP_UPDATES_HISTORY = [{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793785767",
-  buildTime: "2026-11-04T09:49:27",
+  version: "1.2.1793787156",
+  buildTime: "2026-11-04T10:12:36",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -572,430 +572,8 @@ window.DEFAULT_TERM1_LECTURES = [
     "handoutUrl": "",
     "handoutName": "",
     "audioSummaryUrl": "",
-    "writtenSummary": "المقدمة وأهداف التعلم:\nفي الخمسينات كان هناك شبه \"طلاق\" وصراع مستمر بين علم النفس والمسيحية؛ الخدام يرون علماء النفس علمانيين، وعلماء النفس يرون الخدام دراويش، حتى حدثت \"المصالحة الكبرى\" وتم تعميد مبادئ علم النفس في الكنيسة ليولد \"علم النفس المسيحي\".\n\nالأهداف التعليمية:\n1. فهم نشأة معهد المشورة والفرق الجوهري بين المشورة وسر الاعتراف.\n2. استيعاب تقسيم فرويد لجلسة الإرشاد النفسي وحدود علم النفس العاجز.\n3. استكشاف هرم ماسلو للاحتياجات وتعديله مسيحياً بالاحتياج السادس (الله اللانهائي).\n4. التعمق في تفاصيل الأمان والجمال والقبول غير المشروط وقوة التشجيع المدمرة لصغر النفس.\n\nالمحور الأول: نشأة المشورة والفرق بينها وبين الاعتراف:\nبدأت الرحلة عام 2004 بحلم في سيارة أثناء العودة من مؤتمر ببني سويف، وتحول لشرارة بطلب من قداسة البابا شنوده الثالث، مع تخوف استراتيجي ذكي: \"يا ترى إيه اللي هيحصل من صراع بين اللي بيعملوا مشورة والآباء الكهنة؟\".\nالمشورة تمنح رصيداً نفسياً يبني عليه الإنسان علاقته بنفسه وبالآخرين، بينما سر الاعتراف هو سر كنسي روحي للتوبة والحل والغفران.\n\nالمحور الثاني: جلسة فرويد ونعمة الله:\nقسّم فرويد جلسة الساعة إلى:\n- ثلثي الجلسة (35-40 دقيقة): تهوية نفسية (Ventilation) واستماع كامل.\n- 10% مناقشة وأخذ وعطاء.\n- 10% نصائح مباشرة وتوجيه (في النهاية وليس البداية).\nنهاية علم النفس هي تحدي المسيحية، فجلسة المشورة المسيحية تسندها نعمة وبركة ربنا التي تصنع الفارق حيث يعجز التحليل النفسي البشري.\n\nالمحور الثالث: هرم ماسلو المعدل والاحتياج السادس:\n- القاعدة: الاحتياجات الفسيولوجية (أكل، شرب، نوم، جمال).\n- المستوى الثاني: الأمان (الوظيفي والصحي والممتلكات).\n- المستوى الثالث: الحب والقبول (أن تكون محباً ومحبوباً).\n- المستوى الرابع: التقدير والاحترام.\n- المستوى الخامس: تحقيق الذات والنجاح.\n- التعديل المسيحي (الاحتياج السادس في القمة): الاحتياج إلى الله (اللانهائي)، فبدونه لا يسعد الإنسان مهما أشبع المستويات السابقة (\"جعل الأبدية في قلوبهم\").\n\nالمحور الرابع: تشريح الاحتياجات وقوة التشجيع:\n- الحاجة للجمال: نقل الإنسان من هوس الجمال السطحي الخارجي كسلعة إلى جمال الجوهر الداخلي (مقارنة بين أبيجايل وميكال). 95% من السيدات يصبن باكتئاب بعد التجميل لأن المشكلة في عدم قبول النفس.\n- الحاجة للأمان: هو القبول غير المشروط، حب الإنسان رغم ضعفه وليس لميزة فيه (كما أحب الله إبراهيم رغم كذبه مرتين).\n- الحاجة للحب: الإنصات الجيد = أنا مسموع = أنا مفهوم = أنا مرغوب = أنا محبوب. المسيح لمس الأبرص قبل أن يشفيه ليمنحه القبول النفسي أولاً.\n- قاعدة (1 : 9) الذهبية في التشجيع: مقابل كل كلمة نقد سلبية يحتاج الطفل أو الخادم إلى 9 كلمات تشجيع لمحو الأثر المدمر للنقد.",
-    "quizQuestions": [
-      {
-        "id": "q1",
-        "question": "ما هو التقسيم الزمني الدقيق الذي وضعه فرويد لجلسة المشورة التي مدتها ساعة؟",
-        "options": [
-          "ثلثي الجلسة استماع وتهوية نفسية (35-40 دقيقة)، 10% مناقشة، و10% نصائح وتوجيه في النهاية.",
-          "نصف الجلسة نصائح مباشرة، ونصفها استماع وتفريغ نفسي.",
-          "الجلسة بالكامل استماع فقط دون أي تدخل أو نقاش.",
-          "40 دقيقة مناقشة ونقاش علمي، و20 دقيقة نصائح وإرشادات سريعة."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "أكدت المحاضرة أن فرويد خصص 35 إلى 40 دقيقة للاستماع الكامل (Ventilation) لتفريغ الشحنة، ثم 10% مناقشة، وأخيراً 10% فقط للنصيحة في نهاية الجلسة."
-      },
-      {
-        "id": "q2",
-        "question": "ما هو التخوف الذكي الذي طرحه قداسة البابا شنوده الثالث عند تأسيس معهد المشورة سنة 2004؟",
-        "options": [
-          "حدوث تداخل أو صراع بين القائمين على المشورة والآباء الكهنة الذين يأخذون الاعترافات.",
-          "ارتفاع التكلفة المالية للمعهد وعدم توفر مقرات للدراسة.",
-          "رفض الخدام والدارسين لدراسة العلوم النفسية.",
-          "صعوبة الحصول على كتب ومراجع المشورة من الخارج."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "كان تخوف البابا شنودة استراتيجياً حول كيفية تنظيم العلاقة بين المشير وأب الاعتراف لمنع أي صدام، ولهذا ركزت أول محاضرة على تمييز المشورة عن سر الاعتراف."
-      },
-      {
-        "id": "q3",
-        "question": "ما هو الفارق الجوهري بين جلسة المشورة وسر الاعتراف الكنسي؟",
-        "options": [
-          "المشورة تمنح رصيداً نفسياً وإرشاداً للحياة، بينما سر الاعتراف هو سر كنسي للتوبة والحل والغفران.",
-          "المشورة تلغي الحاجة للاعتراف إذا تحسنت نفسية الشخص.",
-          "سر الاعتراف مخصص للأطفال فقط، بينما المشورة للكبار.",
-          "لا يوجد أي فرق جوهري بينهما وكلاهما يؤديان نفس الوظيفة تماماً."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "المشورة تساعد الإنسان على فهم ذاته وبناء رصيد نفسي ناضج، بينما الاعتراف سر كهنوتي روحي ينال فيه التائب الحل ومغفرة الخطايا بالنعمة."
-      },
-      {
-        "id": "q4",
-        "question": "ما هو 'الاحتياج السادس' الذي أضافه المنظور المسيحي إلى قمة هرم ماسلو للاحتياجات؟",
-        "options": [
-          "الاحتياج إلى الله اللانهائي.",
-          "الاحتياج إلى الشهرة والظهور الإعلامي.",
-          "الاحتياج إلى الثراء وتكديس الأموال.",
-          "الاحتياج إلى السفر والترفيه."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "أكدت المحاضرة أن إشباع كل احتياجات ماسلو يترك فراغاً، مستشهدة بقول سليمان الحكيم 'جعل الأبدية في قلوبهم'، فالإنسان كائن أزلي لا يشبعه إلا الإله اللانهائي."
-      },
-      {
-        "id": "q5",
-        "question": "ماذا تعني 'قاعدة (1 : 9)' الذهبية في التربية والخدمة كما وردت في المحاضرة؟",
-        "options": [
-          "مقابل كل كلمة نقد سلبية واحدة، نحتاج 9 كلمات تشجيع لمحو أثرها السلبي المدمر.",
-          "أن يستمر الاجتماع ساعة مقابل 9 ساعات خدمة بالمنزل.",
-          "أن يقضي الخادم ساعة دراسة مقابل 9 ساعات صلاة.",
-          "أن نقبل خادماً واحداً من بين كل 9 متقدمين للخدمة."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "النقد السلبي يكسر النفس ويورث صغر النفس، ولذلك نحتاج 9 جرعات تشجيع مضاعفة لمعادلة الأثر التدميري لكلمة النقد الواحدة."
-      },
-      {
-        "id": "q6",
-        "question": "لماذا لمس السيد المسيح الأبرص بيده قبل أن يشفيه من مرضه؟",
-        "options": [
-          "ليمنحه إحساساً عميقاً بالحب والقبول النفسي الذي حُرم منه لسنوات بسبب نبذ المجتمع له.",
-          "لأنه لم يكن يستطيع الشفاء دون لمس جسدي.",
-          "للتأكد من درجة حرارته ومدى خطورة المرض.",
-          "ليثبت لرجال الدين أنه خالف العادات السائدة فقط."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "اللمسة هنا كانت شفاءً نفسياً وإشباعاً لحاجة القبول والحب قبل الشفاء الجسدي؛ الأبرص كان محروماً من أي لمسة إنسانية بسبب نجاسته بحسب الشريعة."
-      },
-      {
-        "id": "q7",
-        "question": "ما هو المفهوم الحقيقي للأمان النفسي بحسب دراسة المشورة؟",
-        "options": [
-          "القبول غير المشروط؛ أن تحبني بالرغم من ضعفي وعيوبي وليس لأن فيّ ميزة معينة.",
-          "امتلاك رصيد مالي كبير في البنوك وعقارات متعددة.",
-          "عدم التعرض لأي مشاكل أو ضغوطات في الحياة اليومية.",
-          "الاعتماد الكامل على آراء الآخرين ومديحهم الدائم."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "الأمان ينبع من الشعور بالقبول المطلق بالرغم من النقص، مثلما قبل الله أبانا إبراهيم ودافع عنه رغم وقوعه في الضعف والكذب مرتين بخصوص سارة."
-      },
-      {
-        "id": "q8",
-        "question": "ما هي النتيجة الإحصائية الصادمة لعمليات التجميل التي نوقشت في المحاضرة؟",
-        "options": [
-          "أن 95% من السيدات يصبن باكتئاب بعد التجميل لأن الأزمة الحقيقية هي عدم قبول النفس وليس عيوب الشكل.",
-          "أن 95% يشعرن بسعادة مطلقة وتنتهي كل مشاكلهن النفسية.",
-          "أن جميع العمليات تفشل طبياً في أول أسبوعين.",
-          "أن التجميل يزيد من جودة الفهم والحكمة لدى الشخص."
-        ],
-        "correctAnswerIndex": 0,
-        "explanation": "الأزمة ليست في شكل الأنف أو الملامح بل في عدم قبول الذات؛ ونقل الشخص من الجمال السطحي كسلعة إلى جمال الجوهر وجودة الفهم (كأبيجايل) هو جوهر المشورة."
-      }
-    ],
-    "lastPosition": 0,
-    "presentationSlides": {
-      "isPublished": true,
-      "items": [
-        {
-          "slideNumber": 1,
-          "title": "معهد المشورة الأم بالمعادي: هندسة النفس بالنعمة الإلهية",
-          "icon": "⛪",
-          "bullets": [
-            "تاريخ التأسيس وتكامل الأدوار بين الروحانية وعلم النفس.",
-            "تعميد علم النفس داخل الكنيسة الأرثوذكسية كأداة للخدمة.",
-            "رؤية كنسية ناضجة لبناء الإنسان المتكامل نفسياً وروحياً."
-          ],
-          "presenterNotes": "الافتتاحية لترسيخ أن المشورة ليست بدعة بل أداة خدمة بنعمة الله."
-        },
-        {
-          "slideNumber": 2,
-          "title": "التسلسل الزمني لنشأة معهد المشورة (2004)",
-          "icon": "⏳",
-          "bullets": [
-            "البداية: حلم في عربية عائدة من مؤتمر ببني سويف سنة 2004.",
-            "الشرارة: طلب ومباركة قداسة البابا شنوده الثالث لتأسيس المعهد.",
-            "الانتشار: من فكرة صغيرة إلى معهد مركزي وفروع تغطي الكرازة."
-          ],
-          "presenterNotes": "التأكيد على الشرعية الكنسية والدعم البابوي منذ اللحظة الأولى."
-        },
-        {
-          "slideNumber": 3,
-          "title": "مخاوف البابا شنودة الثالث والحل الاستراتيجي",
-          "icon": "💡",
-          "bullets": [
-            "التخوف الذكي: حدوث صراع أو تداخل بين المشيرين والآباء الكهنة.",
-            "السؤال الجوهري: كيف نميز بين الجلسة المشورية وسر الاعتراف؟",
-            "الحل: وضع مبادئ صارمة تفصل بوضوح بين النطاقين من المحاضرة الأولى."
-          ],
-          "presenterNotes": "حكمة البابا شنودة في استشراف أي صدام محتمل ومعالجته تنظيمياً."
-        },
-        {
-          "slideNumber": 4,
-          "title": "مقارنة حاسمة: أب الاعتراف مقابل المشير النفسي",
-          "icon": "⚖️",
-          "bullets": [
-            "سر الاعتراف: سر كنسي كهنوتي غايته التوبة والحل والغفران الروحي.",
-            "المشورة: عملية إرشادية تمنح رصيداً نفسياً لعلاقة الإنسان بذاته والآخرين.",
-            "التكامل: المشورة لا تلغي الاعتراف بل تمهد الأرضية النفسية لنضجه."
-          ],
-          "presenterNotes": "هذه الشريحة أساسية لكل خادم لتجنب الخلط بين السر الكنسي والخدمة النفسية."
-        },
-        {
-          "slideNumber": 5,
-          "title": "الصراع التاريخي في الخمسينات: قطيعة ومصالحة",
-          "icon": "⚔️",
-          "bullets": [
-            "نظرة الكنيسة القديمة: علماء النفس علمانيون وملحدون.",
-            "نظرة علماء النفس: الخدام ورجال الدين دراويش وغير علميين.",
-            "المصالحة الكبرى: بدأت في أمريكا وكندا لتعميد مبادئ علم النفس كتابياً."
-          ],
-          "presenterNotes": "شرح خلفية التوتر التاريخي وكيف تحول إلى تكامل ناضج."
-        },
-        {
-          "slideNumber": 6,
-          "title": "مفهوم علم النفس المسيحي: النعمة والعلم",
-          "icon": "🕊️",
-          "bullets": [
-            "أخذ أدوات علم النفس الرصينة وتنقيتها من الفلسفات المادية.",
-            "إضفاء الصبغة الروحية والكتابية والكنسية على أدوات الفهم البشري.",
-            "الهدف: شفاء النفس وهندستها بالنعمة الإلهية."
-          ],
-          "presenterNotes": "التكامل بين ما هو إنساني علمي وما هو إلهي فائق."
-        },
-        {
-          "slideNumber": 7,
-          "title": "معادلة جلسة المشورة عند فرويد (الساعة الذهبية)",
-          "icon": "⏱️",
-          "bullets": [
-            "35 إلى 40 دقيقة (60-70%): تهوية نفسية (Ventilation) واستماع كامل.",
-            "10% مناقشة: استيضاح وتفاعل ذكي مع ما طرحه المسترشد.",
-            "10% نصائح مباشرة: تأتي في النهاية تماماً (عكس الخطأ الشائع بالبدء بالنصح)."
-          ],
-          "presenterNotes": "التركيز على أهمية الإنصات؛ المشير الذي يبدأ بالنصيحة يفشل في فهم المشكلة."
-        },
-        {
-          "slideNumber": 8,
-          "title": "حدود علم النفس البشري وتحدي النعمة",
-          "icon": "🛑",
-          "bullets": [
-            "صدمة فرويد: تغيير شخصية يحتاج 3 جلسات أسبوعياً لمدة 7 سنين دون ضمان!",
-            "عجز التحليل المجرد: علم النفس البشري يقف عاجزاً عند تغيير الأعماق.",
-            "نهاية علم النفس هي بداية النعمة: عمل الروح القدس يختصر السنين بالبركة."
-          ],
-          "presenterNotes": "الفارق الجوهري بين العلاج النفسي العلماني والعلاج المسنود بالصلاة والنعمة."
-        },
-        {
-          "slideNumber": 9,
-          "title": "هرم ماسلو التقليدي ونقده التحليلي",
-          "icon": "🔺",
-          "bullets": [
-            "الترتيب التقليدي: فسيولوجي -> أمان -> حب وانتماء -> تقدير -> تحقيق الذات.",
-            "عيوب النظرية: افتراض حتمية التدرج الصارم وتجاهل الفروق الفردية.",
-            "الفراغ القاتل: إشباع المستويات الخمسة لا يحقق السعادة الحقيقية للإنسان."
-          ],
-          "presenterNotes": "نقد ماسلو من واقع تجربة سليمان الحكيم؛ المادة والتقدير لا يشبعان روح الإنسان."
-        },
-        {
-          "slideNumber": 10,
-          "title": "هرم الاحتياجات المسيحي المعدل (الاحتياج السادس)",
-          "icon": "👑",
-          "bullets": [
-            "القمة اللانهائية: إضافة الاحتياج إلى الله في قمة الهرم.",
-            "آية الفصل: 'جعل الأبدية في قلوبهم' (جامعة 3: 11).",
-            "المعادلة: كل إشباع بدون الله يترك فراغاً، والله يمنح المعنى لكل الاحتياجات."
-          ],
-          "presenterNotes": "هذه هي الإضافة الأكاديمية والروحية الأبرز لمعهد المشورة الأرثوذكسية."
-        },
-        {
-          "slideNumber": 11,
-          "title": "تشريح الحاجة للجمال: الجوهر مقابل السلعة",
-          "icon": "🪞",
-          "bullets": [
-            "الجمال الخارجي تحول لسلعة ضاغطة ومقارنات تدمر القبول الذاتي.",
-            "إحصائية: 95% من السيدات يصبن باكتئاب بعد عمليات التجميل لغياب قبول النفس.",
-            "النموذج الكتابي: جودة الفهم (أبيجايل الحكيمة مقابل ميكال الجميلة سيئة الطبع)."
-          ],
-          "presenterNotes": "الجمال الحقيقي ينبع من الداخل ومن تصالح الإنسان مع صورته المخلوقة."
-        },
-        {
-          "slideNumber": 12,
-          "title": "الحاجة للأمان والقبول غير المشروط",
-          "icon": "🛡️",
-          "bullets": [
-            "الأمان الحقيقي ليس رصيداً في البنك، بل 'القبول غير المشروط'.",
-            "أن تحبني 'بالرغم من' ضعفي وعيوبي، وليس 'لأن' فيّ ميزة معينة.",
-            "المثال الإلهي: حب الله لأبونا إبراهيم ودفاعه عنه أمام ملك جرار رغم كذبه."
-          ],
-          "presenterNotes": "التربية بالتهديد تسلب الأمان، وحضن الأم والقبول هما أساس السلام النفسي."
-        },
-        {
-          "slideNumber": 13,
-          "title": "معادلة الحب والإنصات الشافي",
-          "icon": "❤️",
-          "bullets": [
-            "الحب الأخرس والإهمال وجهان للحرمان العاطفي والوجدان المشوه.",
-            "سلسلة الإنصات: إنصات جيد = أنا مسموع = أنا مفهوم = أنا مرغوب = أنا محبوب.",
-            "لمسة المسيح للأبرص: لمسه قبل أن يشفيه ليمنحه الشفاء النفسي بالقبول أولاً."
-          ],
-          "presenterNotes": "الاستماع ليس مهارة إرشادية فقط، بل هو أبلغ تعبير عن المحبة والتقدير."
-        },
-        {
-          "slideNumber": 14,
-          "title": "قاعدة (1 : 9) الذهبية وقوة التشجيع",
-          "icon": "🌱",
-          "bullets": [
-            "سر التربية والخدمة يكمن في كلمة واحدة: 'التشجيع'.",
-            "القاعدة: مقابل كل كلمة نقد سلبية، نحتاج 9 كلمات تشجيع لمحو أثرها المدمر!",
-            "أمثلة التشجيع الإلهي: جدعون الخائف -> 'يا جبار البأس'، بطرس بعد الإنكار -> 'ارع خرافي'."
-          ],
-          "presenterNotes": "النقد يكسر النفس وصغر النفس يشوه المواهب، والتشجيع يصنع معجزات التغيير."
-        },
-        {
-          "slideNumber": 15,
-          "title": "الخلاصة ورسالة معهد المشورة",
-          "icon": "🎯",
-          "bullets": [
-            "المشورة خدمة وعي، وسر الاعتراف سر نعمة وغفران.",
-            "الإنسان كائن متكامل يحتاج لإشباع فسيولوجي ونفسي وقمة لانهائية في الله.",
-            "الرسالة: بناء خدام ناضجين يقودون النفوس بالحب غير المشروط والتشجيع."
-          ],
-          "presenterNotes": "خاتمة تجمع كل خيوط المحاضرة الأولى وتضع هدفاً تطبيقياً واضحاً."
-        }
-      ]
-    },
-    "mindMapData": {
-      "isPublished": true,
-      "root": {
-        "id": "root",
-        "title": "الاحتياجات النفسية ومعهد المشورة الأرثوذكسية",
-        "icon": "⛪",
-        "children": [
-          {
-            "id": "b1",
-            "title": "نشأة معهد المشورة والاعتراف",
-            "icon": "⏳",
-            "children": [
-              {
-                "id": "b1-1",
-                "title": "حلم في سيارة سنة 2004 من بني سويف"
-              },
-              {
-                "id": "b1-2",
-                "title": "مباركة البابا شنودة الثالث وتخوفاته الذكية"
-              },
-              {
-                "id": "b1-3",
-                "title": "الفارق: المشورة رصيد نفسي والاعتراف سر كنسي"
-              }
-            ]
-          },
-          {
-            "id": "b2",
-            "title": "المصالحة بين علم النفس والمسيحية",
-            "icon": "🕊️",
-            "children": [
-              {
-                "id": "b2-1",
-                "title": "القطيعة السابقة في الخمسينات (علمانيين ودراويش)"
-              },
-              {
-                "id": "b2-2",
-                "title": "تعميد علم النفس وإضفاء الصبغة الكتابية"
-              },
-              {
-                "id": "b2-3",
-                "title": "جلسة الساعة عند فرويد",
-                "children": [
-                  {
-                    "id": "b2-3-1",
-                    "title": "35-40 دقيقة تهوية نفسية واستماع (60-70%)"
-                  },
-                  {
-                    "id": "b2-3-2",
-                    "title": "10% مناقشة واستيضاح"
-                  },
-                  {
-                    "id": "b2-3-3",
-                    "title": "10% نصائح في النهاية"
-                  }
-                ]
-              },
-              {
-                "id": "b2-4",
-                "title": "عجز علم النفس وتحدي النعمة الإلهية"
-              }
-            ]
-          },
-          {
-            "id": "b3",
-            "title": "هرم ماسلو والاحتياج السادس",
-            "icon": "🔺",
-            "children": [
-              {
-                "id": "b3-1",
-                "title": "المستويات الخمسة التقليدية (فسيولوجي، أمان، حب، تقدير، ذات)"
-              },
-              {
-                "id": "b3-2",
-                "title": "نقد حتمية التدرج وتجاهل الفروق الشخصية"
-              },
-              {
-                "id": "b3-3",
-                "title": "الاحتياج السادس في القمة: الله اللانهائي (جعل الأبدية في قلوبهم)"
-              }
-            ]
-          },
-          {
-            "id": "b4",
-            "title": "تشريح الاحتياجات التطبيقية",
-            "icon": "❤️",
-            "children": [
-              {
-                "id": "b4-1",
-                "title": "الحاجة للجمال",
-                "children": [
-                  {
-                    "id": "b4-1-1",
-                    "title": "جمال الشكل كسلعة واكتئاب التجميل (95%)"
-                  },
-                  {
-                    "id": "b4-1-2",
-                    "title": "جمال الجوهر الداخلي (أبيجايل مقابل ميكال)"
-                  }
-                ]
-              },
-              {
-                "id": "b4-2",
-                "title": "الحاجة للأمان والقبول",
-                "children": [
-                  {
-                    "id": "b4-2-1",
-                    "title": "القبول غير المشروط (الحب بالرغم من الضعف)"
-                  },
-                  {
-                    "id": "b4-2-2",
-                    "title": "مثال محبة الله لإبراهيم رغم سقوطه"
-                  }
-                ]
-              },
-              {
-                "id": "b4-3",
-                "title": "الحاجة للحب والإنصات",
-                "children": [
-                  {
-                    "id": "b4-3-1",
-                    "title": "معادلة الإنصات: مسموع = مفهوم = محبوب"
-                  },
-                  {
-                    "id": "b4-3-2",
-                    "title": "لمس الأبرص قبل الشفاء كقبول نفسي"
-                  }
-                ]
-              },
-              {
-                "id": "b4-4",
-                "title": "قوة التشجيع وهزيمة صغر النفس",
-                "children": [
-                  {
-                    "id": "b4-4-1",
-                    "title": "قاعدة 1 إلى 9 (مقابل نقد واحد 9 تشجيع)"
-                  },
-                  {
-                    "id": "b4-4-2",
-                    "title": "تشجيع جدعون الخائف وتشجيع بطرس بعد الإنكار"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    "publishStatus": {
-      "summary": true,
-      "slides": true,
-      "mindMap": true,
-      "quiz": true
-    }
+    "writtenSummary": "",
+    "quizQuestions": []
   },
   {
     "id": "lec-20260926-2",
@@ -16847,6 +16425,40 @@ window.LectureViewerModal = function(props) {
     }
   };
 
+  // مسح وتصفير الحزمة التعليمية المولدة بالكامل للبدء من جديد
+  var handleClearAiPackage = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    var confirmMsg = "هل أنت متأكد من مسح الحزمة التعليمية المولدة لهذه المحاضرة للبدء من جديد؟\n\n" +
+      "⚠️ سيتم تصفير: الملخص المكتوب، شرائح العرض، الخريطة الذهنية، الكويز، والتفريغ النصي.\n" +
+      "✅ ستبقى كافة بيانات المحاضرة الأساسية وروابط الفيديو واليوتيوب والمذكرات محفوظة بالكامل دون مساس.";
+    if (!window.confirm(confirmMsg)) return;
+
+    var updated = Object.assign({}, activeLecture, {
+      writtenSummary: "",
+      summaryData: null,
+      summaryDataJson: "",
+      presentationSlides: null,
+      slidesData: null,
+      slidesDataJson: "",
+      mindMapData: null,
+      mindMapDataJson: "",
+      quizQuestions: [],
+      transcript: "",
+      transcriptText: "",
+      publishStatus: { summary: false, slides: false, mindMap: false, quiz: false, transcript: false }
+    });
+
+    try {
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
+      if (onSelectLecture) onSelectLecture(updated);
+      alert("تم مسح الحزمة التعليمية بنجاح! أصبحت المحاضرة الآن خالية من أي محتوى آلي سابق ويمكنك إعادة توليدها في أي وقت.");
+    } catch (err) {
+      alert("حدث خطأ أثناء مسح الحزمة: " + (err && err.message ? err.message : err));
+    }
+  };
+
   // تطبيق تعديل فردي بالذكاء الاصطناعي على ركن محدد
   var handleApplyRefinement = async function() {
     if (!aiEditTarget || !aiEditPrompt.trim()) return;
@@ -17003,6 +16615,17 @@ window.LectureViewerModal = function(props) {
           },
           React.createElement("span", null, "🚀"),
           React.createElement("span", null, "نشر الحزمة كاملة للطلاب")
+        ),
+        currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript || activeLecture.summaryData) && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleClearAiPackage,
+            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95",
+            title: "مسح وتصفير الحزمة المولدة لهذه المحاضرة للبدء من جديد"
+          },
+          React.createElement("span", null, "🗑️"),
+          React.createElement("span", null, "مسح الحزمة المولدة")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",
@@ -18239,6 +17862,20 @@ window.LectureViewerModal = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
+          (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript) && React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isAiGenerating,
+              onClick: function() {
+                setShowPackageModal(false);
+                handleClearAiPackage();
+              },
+              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all"
+            },
+            React.createElement("span", null, "🗑️"),
+            React.createElement("span", null, "مسح الحزمة الحالية")
+          ),
           React.createElement(
             "button",
             {
