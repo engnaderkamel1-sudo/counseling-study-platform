@@ -114,12 +114,12 @@ window.GeminiAIService = {
 
     // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
     var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-    var candidateModels = autoModels.length > 0 ? autoModels : [
-      "gemini-2.0-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro",
-      "gemini-pro"
+    var candidateModels = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.6-flash",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest"
     ];
 
     var lastErrorMessage = "";
@@ -218,12 +218,12 @@ window.GeminiAIService = {
     
     // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
     var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
-    var candidateModels = autoModels.length > 0 ? autoModels : [
-      "gemini-2.0-flash",
-      "gemini-1.5-flash-latest",
-      "gemini-1.5-flash-8b",
-      "gemini-1.5-pro",
-      "gemini-pro"
+    var candidateModels = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.6-flash",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest"
     ];
     
     var lastError = "";
