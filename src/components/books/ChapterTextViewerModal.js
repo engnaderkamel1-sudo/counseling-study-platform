@@ -32,7 +32,37 @@ window.ChapterTextViewerModal = function(props) {
   var [localSpeed, setLocalSpeed] = React.useState(1);
   var [isDraggingSlider, setIsDraggingSlider] = React.useState(false);
   var [sliderDragValue, setSliderDragValue] = React.useState(0);
-  var [autoScrollEnabled, setAutoScrollEnabled] = React.useState(true);
+  var [autoScrollEnabled, setAutoScrollEnabledState] = React.useState(function() {
+    try {
+      var saved = localStorage.getItem("counsel_auto_scroll_enabled");
+      return saved !== null ? (saved === "true" || saved === true) : true;
+    } catch (e) {
+      return true;
+    }
+  });
+  var autoScrollRef = React.useRef(autoScrollEnabled);
+  autoScrollRef.current = autoScrollEnabled;
+  var isUserInteractingRef = React.useRef(false);
+  var userInteractionTimeoutRef = React.useRef(null);
+
+  var toggleAutoScroll = function() {
+    setAutoScrollEnabledState(function(prev) {
+      var next = !prev;
+      autoScrollRef.current = next;
+      try {
+        localStorage.setItem("counsel_auto_scroll_enabled", next ? "true" : "false");
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  var handleContainerScrollOrTouch = function() {
+    isUserInteractingRef.current = true;
+    if (userInteractionTimeoutRef.current) clearTimeout(userInteractionTimeoutRef.current);
+    userInteractionTimeoutRef.current = setTimeout(function() {
+      isUserInteractingRef.current = false;
+    }, 4500);
+  };
   var [readerTheme, setReaderTheme] = React.useState(function() {
     try {
       return localStorage.getItem("counsel_reader_theme") || "normal";
@@ -511,13 +541,20 @@ window.ChapterTextViewerModal = function(props) {
     return segments.length - 1;
   }, [isPlayingThis, localProgress, localDuration, segments, timeOffset]);
 
-  // التمرير السلس للفقرة النشطة تلقائياً أثناء تشغيل الصوت
+  // التمرير السلس للفقرة النشطة داخل صندوق النص فقط دون تحريك الشاشة أو نافذة المتصفح نهائياً
   React.useEffect(function() {
-    if (autoScrollEnabled && isPlayingThis && activeSegmentIdx >= 0) {
-      var targetEl = document.getElementById("chapter-segment-" + activeSegmentIdx);
-      if (targetEl) {
-        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
+    if (!autoScrollRef.current || !autoScrollEnabled || !isPlayingThis || activeSegmentIdx < 0 || isUserInteractingRef.current) {
+      return;
+    }
+    var targetEl = document.getElementById("chapter-segment-" + activeSegmentIdx);
+    var container = textContainerRef.current;
+    if (targetEl && container) {
+      var targetTop = targetEl.offsetTop - container.offsetTop;
+      var targetScroll = targetTop - (container.clientHeight / 2) + (targetEl.clientHeight / 2);
+      container.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: "smooth"
+      });
     }
   }, [activeSegmentIdx, autoScrollEnabled, isPlayingThis]);
 
@@ -789,11 +826,11 @@ window.ChapterTextViewerModal = function(props) {
               React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
                 React.createElement("button", {
                   type: "button",
-                  onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
+                  onClick: toggleAutoScroll,
                   className: "px-2 py-1 rounded-lg text-[10px] font-bold border transition-all " +
                     (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
-                  title: autoScrollEnabled ? "المتابعة التلقائية مفعلة" : "المتابعة التلقائية متوقفة"
-                }, autoScrollEnabled ? "📍 متابعة" : "📍 متوقفة"),
+                  title: autoScrollEnabled ? "المتابعة التلقائية مفعلة (اضغط لإيقاف تحريك النص)" : "المتابعة التلقائية متوقفة (اضغط للتفعيل)"
+                }, autoScrollEnabled ? "📍 تحريك النص ✓" : "📍 تحريك متوقف"),
                 React.createElement("button", {
                   type: "button",
                   onClick: cycleSpeed,
@@ -828,11 +865,11 @@ window.ChapterTextViewerModal = function(props) {
                 React.createElement("div", { className: "flex items-center gap-1 sm:gap-1.5 flex-wrap" },
                   React.createElement("button", {
                     type: "button",
-                    onClick: function() { setAutoScrollEnabled(!autoScrollEnabled); },
+                    onClick: toggleAutoScroll,
                     className: "px-2 py-0.5 rounded-xl text-[10px] sm:text-[11px] font-bold border transition-all flex items-center gap-1 active:scale-95 " +
                       (autoScrollEnabled ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-slate-800 text-slate-400 border-slate-700"),
-                    title: autoScrollEnabled ? "تحريك الشاشة تلقائياً مع قراءة الصوت مفعل (اضغط للإيقاف)" : "تحريك الشاشة التلقائي متوقف (اضغط للتفعيل)"
-                  }, autoScrollEnabled ? "📍 تحريك الشاشة ✓" : "📍 تحريك متوقف"),
+                    title: autoScrollEnabled ? "تحريك النص تلقائياً مع قراءة الصوت مفعل (اضغط للإيقاف)" : "تحريك النص التلقائي متوقف (اضغط للتفعيل)"
+                  }, autoScrollEnabled ? "📍 تحريك النص ✓" : "📍 تحريك متوقف"),
                   setIsPlaylistMode ? React.createElement("button", {
                     type: "button",
                     onClick: function() { setIsPlaylistMode(!isPlaylistMode); },
@@ -1194,6 +1231,8 @@ window.ChapterTextViewerModal = function(props) {
         "div",
         {
           ref: textContainerRef,
+          onScroll: handleContainerScrollOrTouch,
+          onTouchMove: handleContainerScrollOrTouch,
           className: "overflow-y-auto flex-1 min-h-[140px] md:min-h-[380px] p-3 sm:p-5 rounded-2xl border leading-relaxed font-sans select-text space-y-1.5 transition-colors " +
             (readerTheme === "sepia"
               ? "bg-[#fbf0d9] border-[#edd9be] text-[#433422] selection:bg-amber-300 selection:text-amber-950"
