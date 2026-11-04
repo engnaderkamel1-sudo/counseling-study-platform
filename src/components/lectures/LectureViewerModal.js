@@ -22,11 +22,18 @@ window.LectureViewerModal = function(props) {
     setIsDisclaimerDismissed(false);
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
-  var [genSummaryPages, setGenSummaryPages] = React.useState(5);
-  var [genSlidesCount, setGenSlidesCount] = React.useState(15);
-  var [genQuizCount, setGenQuizCount] = React.useState(10);
+  var [genSummaryPages, setGenSummaryPages] = React.useState(function() {
+    return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_summary_pages", 5), 10) || 5) : 5;
+  });
+  var [genSlidesCount, setGenSlidesCount] = React.useState(function() {
+    return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_slides_count", 15), 10) || 15) : 15;
+  });
+  var [genQuizCount, setGenQuizCount] = React.useState(function() {
+    return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_quiz_count", 10), 10) || 10) : 10;
+  });
   var [genCustomPrompt, setGenCustomPrompt] = React.useState("");
-  var [genSelected, setGenSelected] = React.useState({ summary: true, slides: true, mindMap: true, quiz: true });
+  var [genSelected, setGenSelected] = React.useState({ summary: true, transcript: true, slides: true, mindMap: true, quiz: true });
+  var [isFetchingYouTubeTranscript, setIsFetchingYouTubeTranscript] = React.useState(false);
   var [packageGenStatus, setPackageGenStatus] = React.useState("");
   var [aiEditTarget, setAiEditTarget] = React.useState(null);
   var [aiEditPrompt, setAiEditPrompt] = React.useState("");
@@ -207,6 +214,35 @@ window.LectureViewerModal = function(props) {
   };
 
   // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
+  // جلب تفريغ المحاضرة الحرفي من فيديو اليوتيوب مباشرة
+  var handleFetchYouTubeTranscriptDirectly = async function() {
+    if (!activeLecture || !activeLecture.mediaUrl) {
+      alert("هذه المحاضرة لا تحتوي على رابط فيديو يوتيوب لجلب التفريغ منه.");
+      return;
+    }
+    setIsFetchingYouTubeTranscript(true);
+    try {
+      var resp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
+      var data = await resp.json();
+      if (!resp.ok || !data.success) {
+        throw new Error(data.error || "تعذر جلب تفريغ الفيديو من يوتيوب.");
+      }
+      var updated = Object.assign({}, activeLecture, {
+        transcript: data.transcript,
+        transcriptText: data.transcript
+      });
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
+      if (onSelectLecture) onSelectLecture(updated);
+      alert("✅ تم جلب تفريغ المحاضرة من فيديو اليوتيوب بنجاح! (" + data.wordCount + " كلمة مسجلة).");
+    } catch (err) {
+      alert("تنبيه: " + (err && err.message ? err.message : err));
+    } finally {
+      setIsFetchingYouTubeTranscript(false);
+    }
+  };
+
   var handleGenerateFullPackage = async function() {
     if (!window.EducationalAIService) {
       alert("خدمة الذكاء الاصطناعي التعليمية قيد التهيئة...");
@@ -271,6 +307,26 @@ window.LectureViewerModal = function(props) {
       if (result.quiz && Array.isArray(result.quiz.questions)) {
         updated.quizQuestions = result.quiz.questions;
         updated.publishStatus.quiz = false;
+      }
+
+      // 5. جلب تفريغ المحاضرة من فيديو اليوتيوب إذا كان الخيار محدداً
+      if (genSelected.transcript !== false && activeLecture.mediaUrl) {
+        setPackageGenStatus("جاري استخراج وتنسيق تفريغ المحاضرة من فيديو اليوتيوب بالكامل...");
+        try {
+          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
+          if (transResp.ok) {
+            var transData = await transResp.json();
+            if (transData.success && transData.transcript) {
+              updated.transcript = transData.transcript;
+              updated.transcriptText = transData.transcript;
+              if (updated.publishStatus) updated.publishStatus.transcript = false;
+            }
+          } else {
+            console.warn("YouTube transcript API returned status:", transResp.status);
+          }
+        } catch (tErr) {
+          console.warn("Failed to fetch YouTube transcript in package generator:", tErr);
+        }
       }
 
       cloud.saveLecture(updated);
@@ -984,6 +1040,17 @@ window.LectureViewerModal = function(props) {
               React.createElement(
                 "div",
                 { className: "flex items-center gap-2" },
+                currentUser.role === "admin" && activeLecture.mediaUrl && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    disabled: isFetchingYouTubeTranscript,
+                    onClick: handleFetchYouTubeTranscriptDirectly,
+                    className: "px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs disabled:opacity-50"
+                  },
+                  React.createElement("span", null, isFetchingYouTubeTranscript ? "⏳" : "⚡"),
+                  React.createElement("span", null, isFetchingYouTubeTranscript ? "جاري جلب تفريغ الفيديو..." : "جلب التفريغ من فيديو اليوتيوب")
+                ),
                 currentUser.role === "admin" && React.createElement(
                   "button",
                   {
@@ -1535,7 +1602,11 @@ window.LectureViewerModal = function(props) {
               min: 1,
               max: 20,
               value: genSummaryPages,
-              onChange: function(e) { setGenSummaryPages(e.target.value); },
+              onChange: function(e) {
+                var v = e.target.value;
+                setGenSummaryPages(v);
+                if (utils && utils.setLocal) utils.setLocal("counsel_gen_summary_pages", v);
+              },
               className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
             })
           ),
@@ -1555,7 +1626,11 @@ window.LectureViewerModal = function(props) {
               min: 3,
               max: 40,
               value: genSlidesCount,
-              onChange: function(e) { setGenSlidesCount(e.target.value); },
+              onChange: function(e) {
+                var v = e.target.value;
+                setGenSlidesCount(v);
+                if (utils && utils.setLocal) utils.setLocal("counsel_gen_slides_count", v);
+              },
               className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
             })
           ),
@@ -1575,7 +1650,11 @@ window.LectureViewerModal = function(props) {
               min: 3,
               max: 30,
               value: genQuizCount,
-              onChange: function(e) { setGenQuizCount(e.target.value); },
+              onChange: function(e) {
+                var v = e.target.value;
+                setGenQuizCount(v);
+                if (utils && utils.setLocal) utils.setLocal("counsel_gen_quiz_count", v);
+              },
               className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
             })
           ),
@@ -1590,6 +1669,7 @@ window.LectureViewerModal = function(props) {
               { className: "grid grid-cols-2 gap-2" },
               [
                 { id: "summary", label: "📄 الملخص الموسع" },
+                { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو" },
                 { id: "slides", label: "📊 شرائح العرض" },
                 { id: "mindMap", label: "🧠 الخريطة الذهنية" },
                 { id: "quiz", label: "📝 الكويز التفاعلي" }
