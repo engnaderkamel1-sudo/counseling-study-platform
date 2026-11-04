@@ -1089,14 +1089,29 @@ window.LectureViewerModal = function(props) {
               React.createElement("div", { className: "text-3xl" }, "📜"),
               React.createElement("p", { className: "font-bold text-slate-600 dark:text-slate-300" }, "لا يوجد تفريغ نصي مسجل لهذه المحاضرة حتى الآن."),
               currentUser.role === "admin" && React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() { setEditTranscriptText(""); setIsEditingTranscript(true); },
-                  className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5"
-                },
-                React.createElement("span", null, "✍️"),
-                React.createElement("span", null, "إضافة أو لصق تفريغ نصي للمحاضرة")
+                "div",
+                { className: "flex flex-wrap items-center justify-center gap-3 pt-2" },
+                activeLecture.mediaUrl && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    disabled: isFetchingYouTubeTranscript,
+                    onClick: handleFetchYouTubeTranscriptDirectly,
+                    className: "px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md inline-flex items-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+                  },
+                  React.createElement("span", null, isFetchingYouTubeTranscript ? "⏳" : "⚡"),
+                  React.createElement("span", null, isFetchingYouTubeTranscript ? "جاري جلب تفريغ الفيديو من يوتيوب..." : "جلب التفريغ من فيديو اليوتيوب الآن")
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { setEditTranscriptText(""); setIsEditingTranscript(true); },
+                    className: "px-4 py-2 rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-2xs hover:bg-slate-100 inline-flex items-center gap-1.5 active:scale-95 transition-all"
+                  },
+                  React.createElement("span", null, "✍️"),
+                  React.createElement("span", null, "كتابة أو لصق تفريغ يدوي")
+                )
               )
             )
           );
