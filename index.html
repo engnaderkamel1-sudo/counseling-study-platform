@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"}];
+window.APP_UPDATES_HISTORY = [{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793789612",
-  buildTime: "2026-11-04T10:53:32",
+  version: "1.2.1793790029",
+  buildTime: "2026-11-04T11:00:29",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -16677,39 +16677,32 @@ window.LectureViewerModal = function(props) {
   var [isSavingOfflineAudio, setIsSavingOfflineAudio] = React.useState(false);
   var [hasOfflineAudio, setHasOfflineAudio] = React.useState(false);
 
-  // حالة القارئ الصوتي المدمج لنطق الملخص
-  var [ttsPlaying, setTtsPlaying] = React.useState(false);
-  var [ttsPaused, setTtsPaused] = React.useState(false);
-  var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
+  // حالة القارئ الصوتي المعتمد بصوت «سلمى» المصري (Edge-TTS)
+  var [salmaAudioUrl, setSalmaAudioUrl] = React.useState(null);
+  var [isGeneratingSalma, setIsGeneratingSalma] = React.useState(false);
+  var [salmaStatusText, setSalmaStatusText] = React.useState("");
+  var [salmaProgressPct, setSalmaProgressPct] = React.useState(0);
   var [ttsTextMode, setTtsTextMode] = React.useState("summary"); // 'summary' or 'objectives'
 
   // حالة تعديل ولصق التفريغ النصي يدوياً للمسؤول
   var [isEditingTranscript, setIsEditingTranscript] = React.useState(false);
   var [editTranscriptText, setEditTranscriptText] = React.useState("");
 
-  var stopTts = function() {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    setTtsPlaying(false);
-    setTtsPaused(false);
-  };
-
-  var playTts = function(overrideSpeed, overrideMode) {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      alert("متصفحك لا يدعم خاصية القارئ الصوتي المباشر.");
+  // توليد وتشغيل الملخص بصوت «سلمى» المصري النقي
+  var handleGenerateSalmaAudio = async function(modeOverride) {
+    if (!window.EdgeTtsService) {
+      alert("خدمة الصوت السحابية قيد التهيئة، يرجى الانتظار ثوانٍ قليلة.");
       return;
     }
-    var speedToUse = overrideSpeed !== undefined ? overrideSpeed : ttsSpeed;
-    var modeToUse = overrideMode !== undefined ? overrideMode : ttsTextMode;
+    var mode = modeOverride || ttsTextMode;
     var textToRead = "";
 
-    if (modeToUse === "objectives") {
+    if (mode === "objectives") {
       var summaryObj = activeLecture.summaryData || (function() { try { return JSON.parse(activeLecture.summaryDataJson); } catch(e){ return null; } })();
       if (summaryObj && Array.isArray(summaryObj.learningObjectives) && summaryObj.learningObjectives.length > 0) {
-        textToRead = "أهداف التعلم للمحاضرة: " + summaryObj.learningObjectives.join(". ") + ". ";
+        textToRead = "أهداف التعلم لمحاضرة " + activeLecture.title + ":\n" + summaryObj.learningObjectives.join(". ") + ".\n\n";
         if (Array.isArray(summaryObj.keyTakeaways) && summaryObj.keyTakeaways.length > 0) {
-          textToRead += "أهم الخلاصات: " + summaryObj.keyTakeaways.join(". ");
+          textToRead += "أهم الخلاصات الجوهرية:\n" + summaryObj.keyTakeaways.join(". ");
         }
       } else {
         textToRead = activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
@@ -16719,58 +16712,38 @@ window.LectureViewerModal = function(props) {
     }
 
     if (!textToRead || !textToRead.trim()) {
-      alert("لا يوجد ملخص مكتوب للقراءة حتى الآن لهذه المحاضرة.");
+      alert("لا يوجد نص ملخص مكتوب لتوليد الصوت منه. يرجى التأكد من وجود ملخص للمحاضرة أولاً.");
       return;
     }
 
-    var cleanText = textToRead
-      .replace(/[•#*_\-–—]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+    setIsGeneratingSalma(true);
+    setSalmaStatusText("جاري الاتصال بمحرك صوت «سلمى» المصري وتوليد الصوت...");
+    setSalmaProgressPct(15);
 
-    window.speechSynthesis.cancel();
-    var utter = new SpeechSynthesisUtterance(cleanText);
-    utter.lang = "ar-EG";
-    utter.rate = speedToUse;
+    try {
+      var res = await window.EdgeTtsService.generateAudioForText(
+        textToRead,
+        "ar-EG-SalmaNeural",
+        function(prog) {
+          if (prog && typeof prog === "object") {
+            if (prog.percent) setSalmaProgressPct(prog.percent);
+            if (prog.statusText) setSalmaStatusText(prog.statusText);
+          } else if (typeof prog === "string") {
+            setSalmaStatusText(prog);
+          }
+        }
+      );
 
-    var voices = window.speechSynthesis.getVoices();
-    var arVoice = voices.find(function(v) { return v.lang && v.lang.toLowerCase().indexOf("ar") !== -1; });
-    if (arVoice) utter.voice = arVoice;
-
-    utter.onstart = function() {
-      setTtsPlaying(true);
-      setTtsPaused(false);
-    };
-    utter.onend = function() {
-      setTtsPlaying(false);
-      setTtsPaused(false);
-    };
-    utter.onerror = function() {
-      setTtsPlaying(false);
-      setTtsPaused(false);
-    };
-
-    window.speechSynthesis.speak(utter);
-  };
-
-  var togglePauseTts = function() {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-      setTtsPaused(false);
-    } else {
-      window.speechSynthesis.pause();
-      setTtsPaused(true);
+      var url = (res && res.audioUrl) ? res.audioUrl : (res && res.blob ? URL.createObjectURL(res.blob) : res);
+      setSalmaAudioUrl(url);
+      setSalmaProgressPct(100);
+      setSalmaStatusText("تم تجهيز الصوت بصوت «سلمى» بنجاح!");
+    } catch (err) {
+      alert("تعذر توليد صوت سلمى: " + (err && err.message ? err.message : err));
+    } finally {
+      setIsGeneratingSalma(false);
     }
   };
-
-  React.useEffect(function() {
-    return function() {
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
 
   // فحص توفر ملف صوتي أوفلاين في الذاكرة المحلية
   var checkOfflineAudio = async function(lecId) {
@@ -17892,7 +17865,7 @@ window.LectureViewerModal = function(props) {
         "div",
         { className: "space-y-5" },
 
-        // 1. بطاقة القارئ الصوتي المدمج لملخص المحاضرة
+        // 1. بطاقة القارئ الصوتي المعتمد بصوت «سلمى» المصري (Edge-TTS)
         React.createElement(
           "div",
           { className: "p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border border-indigo-700/50 shadow-xl space-y-5" },
@@ -17904,14 +17877,17 @@ window.LectureViewerModal = function(props) {
               { className: "flex items-center gap-3.5" },
               React.createElement(
                 "div",
-                { className: "w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-2xl flex items-center justify-center shrink-0 shadow-inner " + (ttsPlaying && !ttsPaused ? "animate-pulse" : "") },
+                { className: "w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-2xl flex items-center justify-center shrink-0 shadow-inner " + (isGeneratingSalma ? "animate-pulse" : "") },
                 "🎙️"
               ),
               React.createElement(
                 "div",
                 { className: "space-y-0.5" },
-                React.createElement("h3", { className: "text-base sm:text-lg font-black text-white" }, "القارئ الصوتي الذكي لملخص المحاضرة"),
-                React.createElement("p", { className: "text-xs text-indigo-200/80" }, "استمع لنطق الملخص الأكاديمي الشامل للمحاضرة بصوت نقي ومريح")
+                React.createElement("h3", { className: "text-base sm:text-lg font-black text-white flex items-center gap-2" },
+                  "القارئ الصوتي لملخص المحاضرة",
+                  React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold" }, "صوت سلمى المصري")
+                ),
+                React.createElement("p", { className: "text-xs text-indigo-200/80" }, "استمع لنطق المحاضرة بصوت «سلمى» الطبيعي الدافئ المعتمد في المنصة")
               )
             ),
             React.createElement(
@@ -17921,7 +17897,8 @@ window.LectureViewerModal = function(props) {
                 "button",
                 {
                   type: "button",
-                  onClick: function() { setTtsTextMode("summary"); if (ttsPlaying) playTts(ttsSpeed, "summary"); },
+                  disabled: isGeneratingSalma,
+                  onClick: function() { setTtsTextMode("summary"); setSalmaAudioUrl(null); },
                   className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "summary" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
                 },
                 "📄 الملخص الموسع"
@@ -17930,7 +17907,8 @@ window.LectureViewerModal = function(props) {
                 "button",
                 {
                   type: "button",
-                  onClick: function() { setTtsTextMode("objectives"); if (ttsPlaying) playTts(ttsSpeed, "objectives"); },
+                  disabled: isGeneratingSalma,
+                  onClick: function() { setTtsTextMode("objectives"); setSalmaAudioUrl(null); },
                   className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "objectives" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
                 },
                 "🎯 الأهداف والخلاصات"
@@ -17938,68 +17916,77 @@ window.LectureViewerModal = function(props) {
             )
           ),
 
-          // شريط أزرار التحكم في القراءة الصوتية
-          React.createElement(
+          // شريط حالة التوليد أو المشغل الصوتي المباشر
+          isGeneratingSalma ? React.createElement(
             "div",
-            { className: "flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/10" },
+            { className: "p-4 rounded-2xl bg-white/10 border border-white/10 space-y-2.5 text-center animate-in fade-in" },
+            React.createElement("div", { className: "text-xs font-bold text-emerald-300 animate-pulse" },
+              salmaStatusText || "جاري توليد الصوت بصوت «سلمى» المصري..."
+            ),
             React.createElement(
               "div",
-              { className: "flex items-center gap-2" },
-              !ttsPlaying ? React.createElement(
+              { className: "w-full bg-white/20 h-2 rounded-full overflow-hidden" },
+              React.createElement("div", {
+                className: "bg-emerald-400 h-full transition-all duration-300 rounded-full",
+                style: { width: Math.max(10, salmaProgressPct) + "%" }
+              })
+            ),
+            React.createElement("p", { className: "text-[11px] text-indigo-200" }, "يتم توليد ملف صوتي بشري فائق النقاء وتجهيزه للتشغيل المباشر...")
+          ) : salmaAudioUrl ? React.createElement(
+            "div",
+            { className: "space-y-3 pt-2 border-t border-white/10 animate-in fade-in" },
+            React.createElement("div", { className: "text-xs font-bold text-emerald-300 flex items-center justify-between" },
+              React.createElement("span", null, "🔊 تم تجهيز الصوت بصوت «سلمى» بنجاح:"),
+              React.createElement(
                 "button",
                 {
                   type: "button",
-                  onClick: function() { playTts(); },
-                  className: "px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 active:scale-95"
+                  onClick: function() { handleGenerateSalmaAudio(); },
+                  className: "text-[11px] text-indigo-200 hover:text-white underline flex items-center gap-1"
                 },
-                React.createElement("span", null, "▶️"),
-                React.createElement("span", null, "بدء الاستماع للملخص الآن")
-              ) : React.createElement(
-                "div",
-                { className: "flex items-center gap-2" },
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: togglePauseTts,
-                    className: "px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5 active:scale-95"
-                  },
-                  React.createElement("span", null, ttsPaused ? "▶️ استئناف" : "⏸️ إيقاف مؤقت")
-                ),
-                React.createElement(
-                  "button",
-                  {
-                    type: "button",
-                    onClick: stopTts,
-                    className: "px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5 active:scale-95"
-                  },
-                  React.createElement("span", null, "⏹️ إنهاء")
-                )
-              ),
-              ttsPlaying && React.createElement(
-                "span",
-                { className: "text-xs text-emerald-300 font-bold animate-pulse flex items-center gap-1 mr-2" },
-                ttsPaused ? "⏸️ متوقف مؤقتاً" : "🔊 جاري النطق بصوت طبيعي..."
+                "🔄 إعادة التوليد"
               )
             ),
-
-            // سرعة القراءة
-            React.createElement(
+            React.createElement("audio", {
+              controls: true,
+              autoPlay: true,
+              className: "w-full rounded-xl mt-1 shadow-md",
+              src: salmaAudioUrl
+            }),
+            currentUser.role === "admin" && React.createElement(
               "div",
-              { className: "flex items-center gap-1 text-xs" },
-              React.createElement("span", { className: "text-indigo-200/80 ml-1 font-bold" }, "السرعة:"),
-              [0.9, 1.0, 1.25, 1.5].map(function(spd) {
-                return React.createElement(
-                  "button",
-                  {
-                    key: spd,
-                    type: "button",
-                    onClick: function() { setTtsSpeed(spd); if (ttsPlaying) playTts(spd, ttsTextMode); },
-                    className: "px-2.5 py-1 rounded-lg font-bold transition-all " + (ttsSpeed === spd ? "bg-white text-slate-950 font-black shadow-xs" : "bg-white/10 text-indigo-200 hover:bg-white/20")
+              { className: "flex justify-end pt-1" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() {
+                    var updated = Object.assign({}, activeLecture, { audioSummaryUrl: salmaAudioUrl });
+                    cloud.saveLecture(updated);
+                    if (onSelectLecture) onSelectLecture(updated);
+                    alert("تم حفظ هذا الصوت كملخص صوتي رسمي للمحاضرة لجميع الطلاب بنجاح!");
                   },
-                  spd + "x"
-                );
-              })
+                  className: "px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white border border-white/20 flex items-center gap-1.5 transition-all shadow-xs"
+                },
+                React.createElement("span", null, "💾"),
+                React.createElement("span", null, "حفظ كملخص صوتي دائم للمحاضرة في السحابة")
+              )
+            )
+          ) : React.createElement(
+            "div",
+            { className: "pt-2 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handleGenerateSalmaAudio(); },
+                className: "w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+              },
+              React.createElement("span", null, "▶️"),
+              React.createElement("span", null, "بدء الاستماع للملخص بصوت «سلمى» المصري")
+            ),
+            React.createElement("span", { className: "text-xs text-indigo-200/80 text-center sm:text-right" },
+              "💡 صوت بشري مصري نقي ومتقن 100% بدون أي حروف مقطوعة."
             )
           )
         ),
