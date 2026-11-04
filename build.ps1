@@ -56,6 +56,7 @@ function Build-App {
         "components/lectures/PresentationSlidesViewer.js",
         "components/lectures/InteractiveMindMapViewer.js",
         "components/lectures/InteractiveQuizViewer.js",
+        "components/lectures/VisualDiagramsViewer.js",
         "components/lectures/LectureViewerModal.js",
         "components/lectures/LectureEditModal.js",
         "components/lectures/AddLectureModal.js",
