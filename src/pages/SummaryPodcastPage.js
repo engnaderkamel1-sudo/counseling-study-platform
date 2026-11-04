@@ -13,6 +13,7 @@ window.SummaryPodcastPage = function() {
   var [isGenerating, setIsGenerating] = React.useState(false);
   var [generatedContent, setGeneratedContent] = React.useState("");
   var [errorMsg, setErrorMsg] = React.useState("");
+  var [isDisclaimerDismissed, setIsDisclaimerDismissed] = React.useState(false);
 
   var selectedLecture = lectures.find(function(l) { return l.id === selectedLectureId; }) || lectures[0] || null;
 
@@ -130,19 +131,55 @@ window.SummaryPodcastPage = function() {
     // عرض المخرجات المولدة
     generatedContent && React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
-      React.createElement(
+      { className: "space-y-4" },
+      !isDisclaimerDismissed && React.createElement(
         "div",
-        { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
-        React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
-          summaryType === "podcast" ? "🎧 سيناريو حوار البودكاست (فادي وسارة)" : "📋 كبسولة مراجعة الامتحان"
+        {
+          className: "flex items-start sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium transition-all shadow-xs animate-fadeIn"
+        },
+        React.createElement(
+          "div",
+          { className: "flex items-start sm:items-center gap-2 sm:gap-2.5 flex-1 leading-relaxed" },
+          React.createElement("span", { className: "text-base sm:text-lg shrink-0 mt-0.5 sm:mt-0" }, "💡"),
+          React.createElement(
+            "p",
+            null,
+            React.createElement("strong", { className: "font-black ml-1 text-amber-800 dark:text-amber-300" }, "تنبيه استرشادي:"),
+            "هذه الملخصات والأدوات الذكية أُنشئت آلياً للمساعدة في المراجعة السريعة وترتيب الأفكار، ولا تغني بأي حال عن الرجوع للمحاضرة الأصلية والمرجع المعتمد."
+          )
         ),
-        React.createElement("span", { className: "text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-lg font-bold" }, "جاهز للاستماع والقراءة")
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setIsDisclaimerDismissed(true); },
+            title: "إخفاء التنبيه لهذه الجلسة",
+            className: "p-1.5 rounded-xl text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 hover:bg-amber-500/20 dark:hover:bg-amber-400/20 transition-all shrink-0 cursor-pointer flex items-center justify-center",
+            "aria-label": "إغلاق التنبيه"
+          },
+          React.createElement(
+            "svg",
+            { className: "w-4 h-4", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: "2.5" },
+            React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" })
+          )
+        )
       ),
       React.createElement(
         "div",
-        { className: "text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl" },
-        generatedContent
+        { className: "bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4" },
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+            summaryType === "podcast" ? "🎧 سيناريو حوار البودكاست (فادي وسارة)" : "📋 كبسولة مراجعة الامتحان"
+          ),
+          React.createElement("span", { className: "text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-lg font-bold" }, "جاهز للاستماع والقراءة")
+        ),
+        React.createElement(
+          "div",
+          { className: "text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl" },
+          generatedContent
+        )
       )
     )
   );

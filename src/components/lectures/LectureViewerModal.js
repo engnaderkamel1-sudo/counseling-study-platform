@@ -16,6 +16,11 @@ window.LectureViewerModal = function(props) {
   var onSelectLecture = props.onSelectLecture;
 
   var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'transcript', 'slides', 'mindmap', 'quiz', 'handout', 'notes'
+  var [isDisclaimerDismissed, setIsDisclaimerDismissed] = React.useState(false);
+
+  React.useEffect(function() {
+    setIsDisclaimerDismissed(false);
+  }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [genSummaryPages, setGenSummaryPages] = React.useState(5);
   var [genSlidesCount, setGenSlidesCount] = React.useState(15);
@@ -625,6 +630,40 @@ window.LectureViewerModal = function(props) {
             tab.label
           );
         })
+      ),
+
+      // شريط التنبيه وإخلاء المسؤولية للحزمة الذكية (الملخص الموسع، شرائح العرض، الخريطة الذهنية، الاختبار التفاعلي)
+      (activeSubTab === "summary" || activeSubTab === "slides" || activeSubTab === "mindmap" || activeSubTab === "quiz") && !isDisclaimerDismissed && React.createElement(
+        "div",
+        {
+          className: "flex items-start sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium transition-all shadow-xs animate-fadeIn"
+        },
+        React.createElement(
+          "div",
+          { className: "flex items-start sm:items-center gap-2 sm:gap-2.5 flex-1 leading-relaxed" },
+          React.createElement("span", { className: "text-base sm:text-lg shrink-0 mt-0.5 sm:mt-0" }, "💡"),
+          React.createElement(
+            "p",
+            null,
+            React.createElement("strong", { className: "font-black ml-1 text-amber-800 dark:text-amber-300" }, "تنبيه استرشادي:"),
+            "هذه الملخصات والأدوات الذكية أُنشئت آلياً للمساعدة في المراجعة السريعة وترتيب الأفكار، ولا تغني بأي حال عن الرجوع للمحاضرة الأصلية والمرجع المعتمد."
+          )
+        ),
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setIsDisclaimerDismissed(true); },
+            title: "إخفاء التنبيه لهذه الجلسة",
+            className: "p-1.5 rounded-xl text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 hover:bg-amber-500/20 dark:hover:bg-amber-400/20 transition-all shrink-0 cursor-pointer flex items-center justify-center",
+            "aria-label": "إغلاق التنبيه"
+          },
+          React.createElement(
+            "svg",
+            { className: "w-4 h-4", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: "2.5" },
+            React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M6 18L18 6M6 6l12 12" })
+          )
+        )
       ),
 
       // 1. تبويب الفيديو والمشغل

@@ -1,0 +1,46 @@
+import json
+import re
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+with open('parsed_drive_items.json', 'r', encoding='utf-8') as f:
+    fwd = json.load(f)
+
+with open('reverse_drive_items.json', 'r', encoding='utf-8') as f:
+    rev = json.load(f)
+
+all_raw = fwd + rev
+by_id = {}
+
+for it in all_raw:
+    fid = it[0][1] if len(it) > 0 and isinstance(it[0], list) and len(it[0]) > 1 else None
+    if not fid: continue
+    if fid in by_id: continue
+    
+    mime = it[4] if len(it) > 4 else "unknown"
+    name = "unknown"
+    if len(it) > 35 and it[35] and isinstance(it[35], list) and len(it[35]) > 0 and it[35][0]:
+        name = it[35][0][0]
+    
+    raw_str = json.dumps(it, ensure_ascii=False)
+    size_m = re.findall(r'(\d+(?:\.\d+)?\s*(?:ميغابايت|ميجابايت|كيلوبايت|بايت|غيغابايت|جيجابايت|MB|KB|GB|B))', raw_str)
+    size = size_m[0] if size_m else "غير محدد"
+    
+    date_m = re.findall(r'(\d+\s*(?:يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر|نوفمبر|ديسمبر))', raw_str)
+    date = date_m[0] if date_m else "غير محدد"
+
+    by_id[fid] = {
+        'id': fid,
+        'name': name,
+        'mime': mime,
+        'size': size,
+        'date': date
+    }
+
+print(f"Total UNIQUE items across both pages: {len(by_id)}")
+for idx, (fid, x) in enumerate(sorted(by_id.items(), key=lambda t: t[1]['name'])):
+    print(f"[{idx:02d}] {x['name']} | الحجم: {x['size']} | التاريخ: {x['date']} | النوع: {x['mime']}")
+
+with open('total_unique_drive_files.json', 'w', encoding='utf-8') as f:
+    json.dump(list(by_id.values()), f, ensure_ascii=False, indent=2)
