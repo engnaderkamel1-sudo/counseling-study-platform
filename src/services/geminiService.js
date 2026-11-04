@@ -5,15 +5,27 @@ window.GeminiAIService = {
 
   // استخراج المفتاح من فايربيز أولاً أو التخزين المحلي الآمن
   getApiKey: async function() {
+    if (window.APP_UTILS) {
+      var local = window.APP_UTILS.getLocal(window.GeminiAIService.storageKey, "");
+      if (local && local.trim()) return local.trim();
+    }
     try {
       if (window.db) {
         var doc = await window.db.collection("settings").doc("ai_config").get();
-        if (doc.exists && doc.data().apiKey) {
+        if (doc.exists && doc.data() && doc.data().apiKey && doc.data().apiKey.trim()) {
           return doc.data().apiKey.trim();
         }
       }
     } catch (e) {}
-    return window.APP_UTILS.getLocal(window.GeminiAIService.storageKey, "");
+    if (window.APP_CONFIG) {
+      if (typeof window.APP_CONFIG.getDefaultApiKey === "function") {
+        var defK2 = window.APP_CONFIG.getDefaultApiKey();
+        if (defK2 && defK2.trim()) return defK2.trim();
+      } else if (window.APP_CONFIG.defaultApiKey && window.APP_CONFIG.defaultApiKey.trim()) {
+        return window.APP_CONFIG.defaultApiKey.trim();
+      }
+    }
+    return "";
   },
 
   // حفظ المفتاح في السحابة ومحلياً

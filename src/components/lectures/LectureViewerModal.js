@@ -285,6 +285,9 @@ window.LectureViewerModal = function(props) {
           quizCount: parseInt(genQuizCount, 10) || 10,
           customInstructions: genCustomPrompt,
           selectedComponents: genSelected
+        },
+        function(percent, msg) {
+          setPackageGenStatus(msg);
         }
       );
 
