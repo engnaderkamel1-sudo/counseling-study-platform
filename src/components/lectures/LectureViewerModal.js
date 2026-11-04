@@ -622,6 +622,7 @@ window.LectureViewerModal = function(props) {
         [
           { id: "media", label: "📺 المشاهدة والاستماع" },
           { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
+          { id: "transcript", label: "📜 تفريغ المحاضرة", isDraft: getIsDraft("transcript") },
           { id: "slides", label: "📊 شرائح العرض", isDraft: getIsDraft("slides") },
           { id: "mindmap", label: "🧠 الخريطة الذهنية", isDraft: getIsDraft("mindMap") },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
@@ -1041,6 +1042,58 @@ window.LectureViewerModal = function(props) {
       ),
 
       // 4. تبويب الملخص الصوتي المسموع
+      
+      // تبويب تفريغ المحاضرة الكامل
+      activeSubTab === "transcript" && React.createElement(
+        "div",
+        { className: "space-y-4 animate-in fade-in duration-200" },
+        (function() {
+          var transcriptText = activeLecture.transcript || activeLecture.transcriptText || "";
+          var wordCount = transcriptText ? transcriptText.split(/\s+/).filter(Boolean).length : 0;
+          return React.createElement(
+            "div",
+            { className: "space-y-3" },
+            React.createElement(
+              "div",
+              { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2" },
+                React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "📜 تفريغ المحاضرة الكامل من واقع الصوت"),
+                wordCount > 0 && React.createElement(
+                  "span",
+                  { className: "px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-black" },
+                  wordCount + " كلمة مسجلة"
+                )
+              ),
+              wordCount > 0 && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() {
+                    navigator.clipboard.writeText(transcriptText);
+                    alert("تم نسخ تفريغ المحاضرة بالكامل إلى الحافظة بنجاح!");
+                  },
+                  className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs"
+                },
+                React.createElement("span", null, "📋"),
+                React.createElement("span", null, "نسخ النص كاملاً")
+              )
+            ),
+            transcriptText ? React.createElement(
+              "div",
+              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
+              transcriptText
+            ) : React.createElement(
+              "div",
+              { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-2" },
+              React.createElement("div", { className: "text-3xl" }, "📜"),
+              React.createElement("p", { className: "font-bold text-slate-600 dark:text-slate-300" }, "لا يوجد تفريغ نصي مسجل لهذه المحاضرة حتى الآن.")
+            )
+          );
+        })()
+      ),
+
       activeSubTab === "audio_summary" && React.createElement(
         "div",
         { className: "space-y-4" },
@@ -1108,7 +1161,7 @@ window.LectureViewerModal = function(props) {
         window.PresentationSlidesViewer ? React.createElement(
           window.PresentationSlidesViewer,
           {
-            slides: activeLecture.presentationSlides,
+            slides: activeLecture.presentationSlides || activeLecture.slidesData || (function() { try { return JSON.parse(activeLecture.slidesDataJson); } catch(e){ return null; } })(),
             isDraft: getIsDraft("slides"),
             isAdmin: currentUser.role === "admin",
             onPublishToggle: handlePublishToggle,
@@ -1124,7 +1177,7 @@ window.LectureViewerModal = function(props) {
         window.InteractiveMindMapViewer ? React.createElement(
           window.InteractiveMindMapViewer,
           {
-            mindMap: activeLecture.mindMapData,
+            mindMap: activeLecture.mindMapData || (function() { try { return JSON.parse(activeLecture.mindMapDataJson); } catch(e){ return null; } })(),
             isDraft: getIsDraft("mindMap"),
             isAdmin: currentUser.role === "admin",
             onPublishToggle: handlePublishToggle,
@@ -1137,6 +1190,16 @@ window.LectureViewerModal = function(props) {
       activeSubTab === "quiz" && React.createElement(
         "div",
         { className: "space-y-4" },
+        window.InteractiveQuizViewer ? React.createElement(
+          window.InteractiveQuizViewer,
+          {
+            quiz: activeLecture.quizQuestions,
+            isDraft: getIsDraft("quiz"),
+            isAdmin: currentUser.role === "admin",
+            onPublishToggle: handlePublishToggle,
+            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+          }
+        ) : 
         currentUser.role === "admin" && React.createElement(
           "div",
           { className: "flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800" },
