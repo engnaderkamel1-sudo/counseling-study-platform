@@ -278,7 +278,7 @@ window.ChapterTextViewerModal = function(props) {
 
   // تنزيل ملف SRT على جهاز المستخدم
   var handleExportSrtFile = function() {
-    var subs = viewingChapterText && viewingChapterText.subtitles;
+    var subs = (asyncSubtitles && asyncSubtitles.length > 0) ? asyncSubtitles : (viewingChapterText && viewingChapterText.subtitles);
     if (!subs || subs.length === 0) {
       var dur = localDuration || (chapterAudioRef && chapterAudioRef.current && chapterAudioRef.current.duration);
       if (dur > 0 && viewingChapterText && viewingChapterText.text) {
@@ -1141,8 +1141,8 @@ window.ChapterTextViewerModal = function(props) {
           React.createElement("div", null,
             React.createElement("div", { className: "flex items-center gap-2 flex-wrap" },
               React.createElement("span", { className: "font-black text-slate-900 dark:text-white text-xs" }, "ملف التزامن الدقيق (SRT):"),
-              ((viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length > 0) || (asyncSubtitles && asyncSubtitles.length > 0))
-                ? React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]" }, "🎯 متزامن بدقة (" + viewingChapterText.subtitles.length + " جملة)")
+              ((viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length > 0) || (asyncSubtitles && asyncSubtitles.length > 0) || (viewingChapterText && viewingChapterText.subtitlesCount > 0))
+                ? React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]" }, "🎯 متزامن بدقة (" + ((asyncSubtitles && asyncSubtitles.length) || (viewingChapterText && viewingChapterText.subtitles && viewingChapterText.subtitles.length) || (viewingChapterText && viewingChapterText.subtitlesCount) || 0) + " جملة)")
                 : React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold text-[10px]" }, "تزامن تقديري (لم يتم حفظ SRT)")
             ),
             React.createElement("span", { className: "text-[10px] text-slate-500 dark:text-slate-400 block" },
