@@ -15,7 +15,7 @@ window.LectureViewerModal = function(props) {
   var filteredLectures = props.filteredLectures || [];
   var onSelectLecture = props.onSelectLecture;
 
-  var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'slides', 'mindmap', 'quiz', 'handout', 'audio_summary'
+  var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'transcript', 'slides', 'mindmap', 'quiz', 'handout', 'notes'
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [genSummaryPages, setGenSummaryPages] = React.useState(5);
   var [genSlidesCount, setGenSlidesCount] = React.useState(15);
@@ -44,140 +44,9 @@ window.LectureViewerModal = function(props) {
   var [isSavingQuickNote, setIsSavingQuickNote] = React.useState(false);
   var [noteSavedToast, setNoteSavedToast] = React.useState(false);
 
-  // وضع الاستماع الصوتي الخفيف وتخزين الأوفلاين
-  var [playMode, setPlayMode] = React.useState("video"); // 'video' أو 'audio'
-  var [offlineAudioBlobUrl, setOfflineAudioBlobUrl] = React.useState(null);
-  var [isSavingOfflineAudio, setIsSavingOfflineAudio] = React.useState(false);
-  var [hasOfflineAudio, setHasOfflineAudio] = React.useState(false);
-
-  // حالة القارئ الصوتي المعتمد بصوت «سلمى» المصري (Edge-TTS)
-  var [salmaAudioUrl, setSalmaAudioUrl] = React.useState(null);
-  var [isGeneratingSalma, setIsGeneratingSalma] = React.useState(false);
-  var [salmaStatusText, setSalmaStatusText] = React.useState("");
-  var [salmaProgressPct, setSalmaProgressPct] = React.useState(0);
-  var [ttsTextMode, setTtsTextMode] = React.useState("summary"); // 'summary' or 'objectives'
-
   // حالة تعديل ولصق التفريغ النصي يدوياً للمسؤول
   var [isEditingTranscript, setIsEditingTranscript] = React.useState(false);
   var [editTranscriptText, setEditTranscriptText] = React.useState("");
-
-  // توليد وتشغيل الملخص بصوت «سلمى» المصري النقي
-  var handleGenerateSalmaAudio = async function(modeOverride) {
-    if (!window.EdgeTtsService) {
-      alert("خدمة الصوت السحابية قيد التهيئة، يرجى الانتظار ثوانٍ قليلة.");
-      return;
-    }
-    var mode = modeOverride || ttsTextMode;
-    var textToRead = "";
-
-    if (mode === "objectives") {
-      var summaryObj = activeLecture.summaryData || (function() { try { return JSON.parse(activeLecture.summaryDataJson); } catch(e){ return null; } })();
-      if (summaryObj && Array.isArray(summaryObj.learningObjectives) && summaryObj.learningObjectives.length > 0) {
-        textToRead = "أهداف التعلم لمحاضرة " + activeLecture.title + ":\n" + summaryObj.learningObjectives.join(". ") + ".\n\n";
-        if (Array.isArray(summaryObj.keyTakeaways) && summaryObj.keyTakeaways.length > 0) {
-          textToRead += "أهم الخلاصات الجوهرية:\n" + summaryObj.keyTakeaways.join(". ");
-        }
-      } else {
-        textToRead = activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
-      }
-    } else {
-      textToRead = activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
-    }
-
-    if (!textToRead || !textToRead.trim()) {
-      alert("لا يوجد نص ملخص مكتوب لتوليد الصوت منه. يرجى التأكد من وجود ملخص للمحاضرة أولاً.");
-      return;
-    }
-
-    setIsGeneratingSalma(true);
-    setSalmaStatusText("جاري الاتصال بمحرك صوت «سلمى» المصري وتوليد الصوت...");
-    setSalmaProgressPct(15);
-
-    try {
-      var res = await window.EdgeTtsService.generateAudioForText(
-        textToRead,
-        "ar-EG-SalmaNeural",
-        function(prog) {
-          if (prog && typeof prog === "object") {
-            if (prog.percent) setSalmaProgressPct(prog.percent);
-            if (prog.statusText) setSalmaStatusText(prog.statusText);
-          } else if (typeof prog === "string") {
-            setSalmaStatusText(prog);
-          }
-        }
-      );
-
-      var url = (res && res.audioUrl) ? res.audioUrl : (res && res.blob ? URL.createObjectURL(res.blob) : res);
-      setSalmaAudioUrl(url);
-      setSalmaProgressPct(100);
-      setSalmaStatusText("تم تجهيز الصوت بصوت «سلمى» بنجاح!");
-    } catch (err) {
-      alert("تعذر توليد صوت سلمى: " + (err && err.message ? err.message : err));
-    } finally {
-      setIsGeneratingSalma(false);
-    }
-  };
-
-  // فحص توفر ملف صوتي أوفلاين في الذاكرة المحلية
-  var checkOfflineAudio = async function(lecId) {
-    if (!lecId || !utils.getOfflineAudio) return;
-    try {
-      var blob = await utils.getOfflineAudio(lecId);
-      if (blob) {
-        setHasOfflineAudio(true);
-        var url = URL.createObjectURL(blob);
-        setOfflineAudioBlobUrl(url);
-      } else {
-        setHasOfflineAudio(false);
-        setOfflineAudioBlobUrl(null);
-      }
-    } catch (e) {
-      setHasOfflineAudio(false);
-      setOfflineAudioBlobUrl(null);
-    }
-  };
-
-  // حفظ الصوت في ذاكرة الجهاز للأوفلاين
-  var handleDownloadOfflineAudio = async function() {
-    if (!activeLecture) return;
-    var rawAudioSrc = activeLecture.audioSummaryUrl || activeLecture.mediaUrl;
-    if (!rawAudioSrc) {
-      alert("لا يوجد رابط صوتي متاح لهذه المحاضرة حالياً لتحميله أوفلاين.");
-      return;
-    }
-    setIsSavingOfflineAudio(true);
-    try {
-      var streamUrl = utils.getAudioStreamUrl(rawAudioSrc);
-      var resp = await fetch(streamUrl);
-      if (!resp.ok) throw new Error("تعذر جلب الملف الصوتي (كود: " + resp.status + ")");
-      var blob = await resp.blob();
-      var ok = await utils.saveOfflineAudio(activeLecture.id, blob);
-      if (ok) {
-        setHasOfflineAudio(true);
-        var u = URL.createObjectURL(blob);
-        setOfflineAudioBlobUrl(u);
-        alert("✅ تم حفظ المحاضرة صوتياً في ذاكرة جهازك بنجاح! يمكنك الآن الاستماع لها في أي وقت بدون إنترنت نهائياً.");
-      } else {
-        throw new Error("تعذر حفظ الملف في ذاكرة التخزين");
-      }
-    } catch (err) {
-      alert("تنبيه: " + (err.message || "تعذر التحميل المباشر. قد يكون الرابط محمي من المصدر أو يحتاج اتصال إنترنت مستقر."));
-    } finally {
-      setIsSavingOfflineAudio(false);
-    }
-  };
-
-  var handleRemoveOfflineAudio = async function() {
-    if (!confirm("هل تريد إزالة هذا التسجيل الصوتي من ذاكرة الهاتف/الجهاز لتوفير المساحة؟")) return;
-    if (activeLecture && utils.removeOfflineAudio) {
-      await utils.removeOfflineAudio(activeLecture.id);
-      setHasOfflineAudio(false);
-      if (offlineAudioBlobUrl) {
-        URL.revokeObjectURL(offlineAudioBlobUrl);
-        setOfflineAudioBlobUrl(null);
-      }
-    }
-  };
 
   // إعادة ضبط إجابات الكويز والهاند آوت وتحميل الملاحظات عند تغيير المحاضرة
   React.useEffect(function() {
@@ -188,9 +57,7 @@ window.LectureViewerModal = function(props) {
     setHandoutRotation(0);
     setHandoutZoom(100);
     setQuickNoteText("");
-    setPlayMode("video");
     if (activeLecture && activeLecture.id) {
-      checkOfflineAudio(activeLecture.id);
       if (utils.getLocal) {
         var saved = utils.getLocal("handout_page_" + activeLecture.id, 1);
         setHandoutCurrentPage(parseInt(saved) || 1);
@@ -733,18 +600,17 @@ window.LectureViewerModal = function(props) {
         "div",
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
-          { id: "media", label: "📺 المشاهدة والاستماع" },
+          { id: "media", label: "📺 مشاهدة المحاضرة" },
           { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
           { id: "transcript", label: "📜 تفريغ المحاضرة", isDraft: getIsDraft("transcript") },
           { id: "slides", label: "📊 شرائح العرض", isDraft: getIsDraft("slides") },
           { id: "mindmap", label: "🧠 الخريطة الذهنية", isDraft: getIsDraft("mindMap") },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
           { id: "handout", label: "📁 المرفقات والملفات" },
-          { id: "audio_summary", label: "🎧 الملخص الصوتي" },
           { id: "notes", label: "✍️ الملاحظات" }
         ].filter(function(tab) {
           if (currentUser.role === "admin") return true;
-          if (tab.id === "media" || tab.id === "handout" || tab.id === "notes" || tab.id === "audio_summary") return true;
+          if (tab.id === "media" || tab.id === "handout" || tab.id === "notes") return true;
           return !tab.isDraft;
         }).map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
@@ -766,110 +632,7 @@ window.LectureViewerModal = function(props) {
         "div",
         { className: "space-y-4" },
 
-        // شريط التبديل السريع بين (مشاهدة فيديو) و (استماع صوتي في الخلفية / أوفلاين)
-        (activeLecture.mediaUrl || activeLecture.audioSummaryUrl || hasOfflineAudio) && React.createElement(
-          "div",
-          { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60" },
-          React.createElement(
-            "div",
-            { className: "flex items-center gap-1.5" },
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { setPlayMode("video"); },
-                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
-                  (playMode === "video"
-                    ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-2xs"
-                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100")
-              },
-              React.createElement("span", null, "📺"),
-              React.createElement("span", null, "مشاهدة الفيديو")
-            ),
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { setPlayMode("audio"); },
-                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 " +
-                  (playMode === "audio"
-                    ? "bg-slate-900 text-white dark:bg-emerald-600 shadow-2xs"
-                    : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100")
-              },
-              React.createElement("span", null, "🎧"),
-              React.createElement("span", null, "صوت في الخلفية (توفير باقة)"),
-              hasOfflineAudio && React.createElement("span", { className: "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" })
-            )
-          ),
-          // زر حفظ المحاضرة أوفلاين بدون نت
-          React.createElement(
-            "div",
-            { className: "flex items-center gap-1.5 shrink-0" },
-            hasOfflineAudio ? React.createElement(
-              "div",
-              { className: "flex items-center gap-1" },
-              React.createElement("span", { className: "text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800" },
-                "✓ محفوظة في الذاكرة (أوفلاين)"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: handleRemoveOfflineAudio,
-                  title: "حذف من الذاكرة لتوفير المساحة",
-                  className: "p-1.5 rounded-xl text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                },
-                "🗑️"
-              )
-            ) : React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: handleDownloadOfflineAudio,
-                disabled: isSavingOfflineAudio || (!activeLecture.mediaUrl && !activeLecture.audioSummaryUrl),
-                className: "px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50"
-              },
-              React.createElement("span", null, "⬇️"),
-              React.createElement("span", null, isSavingOfflineAudio ? "جاري الحفظ..." : "حفظ للاستماع بدون إنترنت")
-            )
-          )
-        ),
-
-        // عرض مشغل الفيديو أو مشغل الصوت حسب الوضع المختار
-        playMode === "audio" ? React.createElement(
-          "div",
-          { className: "p-6 sm:p-8 rounded-3xl bg-slate-900 text-white text-center space-y-4 shadow-xl border border-slate-800 animate-in fade-in zoom-in-98 duration-200" },
-          React.createElement(
-            "div",
-            { className: "w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-2xl flex items-center justify-center mx-auto shadow-inner" },
-            "🎧"
-          ),
-          React.createElement(
-            "div",
-            { className: "space-y-1" },
-            React.createElement("h3", { className: "text-base font-bold text-white" }, activeLecture.title),
-            React.createElement("p", { className: "text-xs text-slate-400" },
-              hasOfflineAudio
-                ? "⚡ يتم التشغيل الآن مباشرة من ذاكرة جهازك بدون استهلاك أي إنترنت."
-                : "💡 يعمل الصوت في الخلفية وعند إغلاق شاشة الهاتف مع توفير 90% من استهلاك الباقة."
-            )
-          ),
-          React.createElement(
-            "audio",
-            {
-              controls: true,
-              autoPlay: true,
-              className: "w-full max-w-lg mx-auto",
-              src: offlineAudioBlobUrl || utils.getAudioStreamUrl(activeLecture.audioSummaryUrl || activeLecture.mediaUrl),
-              onTimeUpdate: function(e) {
-                var sec = Math.floor(e.target.currentTime);
-                if (sec % 10 === 0 && handleSavePosition) {
-                  handleSavePosition(sec);
-                }
-              }
-            }
-          )
-        ) : activeLecture.mediaUrl ? React.createElement(
+        activeLecture.mediaUrl ? React.createElement(
           "div",
           { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
           React.createElement("iframe", {
@@ -1232,194 +995,6 @@ window.LectureViewerModal = function(props) {
             )
           );
         })()
-      ),
-
-      activeSubTab === "audio_summary" && React.createElement(
-        "div",
-        { className: "space-y-5" },
-
-        // 1. بطاقة القارئ الصوتي المعتمد بصوت «سلمى» المصري (Edge-TTS)
-        React.createElement(
-          "div",
-          { className: "p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border border-indigo-700/50 shadow-xl space-y-5" },
-          React.createElement(
-            "div",
-            { className: "flex items-start justify-between gap-4 flex-wrap" },
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-3.5" },
-              React.createElement(
-                "div",
-                { className: "w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-2xl flex items-center justify-center shrink-0 shadow-inner " + (isGeneratingSalma ? "animate-pulse" : "") },
-                "🎙️"
-              ),
-              React.createElement(
-                "div",
-                { className: "space-y-0.5" },
-                React.createElement("h3", { className: "text-base sm:text-lg font-black text-white flex items-center gap-2" },
-                  "القارئ الصوتي لملخص المحاضرة",
-                  React.createElement("span", { className: "px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold" }, "صوت سلمى المصري")
-                ),
-                React.createElement("p", { className: "text-xs text-indigo-200/80" }, "استمع لنطق المحاضرة بصوت «سلمى» الطبيعي الدافئ المعتمد في المنصة")
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-1.5 bg-white/10 p-1 rounded-xl text-xs" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  disabled: isGeneratingSalma,
-                  onClick: function() { setTtsTextMode("summary"); setSalmaAudioUrl(null); },
-                  className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "summary" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
-                },
-                "📄 الملخص الموسع"
-              ),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  disabled: isGeneratingSalma,
-                  onClick: function() { setTtsTextMode("objectives"); setSalmaAudioUrl(null); },
-                  className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "objectives" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
-                },
-                "🎯 الأهداف والخلاصات"
-              )
-            )
-          ),
-
-          // شريط حالة التوليد أو المشغل الصوتي المباشر
-          isGeneratingSalma ? React.createElement(
-            "div",
-            { className: "p-4 rounded-2xl bg-white/10 border border-white/10 space-y-2.5 text-center animate-in fade-in" },
-            React.createElement("div", { className: "text-xs font-bold text-emerald-300 animate-pulse" },
-              salmaStatusText || "جاري توليد الصوت بصوت «سلمى» المصري..."
-            ),
-            React.createElement(
-              "div",
-              { className: "w-full bg-white/20 h-2 rounded-full overflow-hidden" },
-              React.createElement("div", {
-                className: "bg-emerald-400 h-full transition-all duration-300 rounded-full",
-                style: { width: Math.max(10, salmaProgressPct) + "%" }
-              })
-            ),
-            React.createElement("p", { className: "text-[11px] text-indigo-200" }, "يتم توليد ملف صوتي بشري فائق النقاء وتجهيزه للتشغيل المباشر...")
-          ) : salmaAudioUrl ? React.createElement(
-            "div",
-            { className: "space-y-3 pt-2 border-t border-white/10 animate-in fade-in" },
-            React.createElement("div", { className: "text-xs font-bold text-emerald-300 flex items-center justify-between" },
-              React.createElement("span", null, "🔊 تم تجهيز الصوت بصوت «سلمى» بنجاح:"),
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() { handleGenerateSalmaAudio(); },
-                  className: "text-[11px] text-indigo-200 hover:text-white underline flex items-center gap-1"
-                },
-                "🔄 إعادة التوليد"
-              )
-            ),
-            React.createElement("audio", {
-              controls: true,
-              autoPlay: true,
-              className: "w-full rounded-xl mt-1 shadow-md",
-              src: salmaAudioUrl
-            }),
-            currentUser.role === "admin" && React.createElement(
-              "div",
-              { className: "flex justify-end pt-1" },
-              React.createElement(
-                "button",
-                {
-                  type: "button",
-                  onClick: function() {
-                    var updated = Object.assign({}, activeLecture, { audioSummaryUrl: salmaAudioUrl });
-                    cloud.saveLecture(updated);
-                    if (onSelectLecture) onSelectLecture(updated);
-                    alert("تم حفظ هذا الصوت كملخص صوتي رسمي للمحاضرة لجميع الطلاب بنجاح!");
-                  },
-                  className: "px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white border border-white/20 flex items-center gap-1.5 transition-all shadow-xs"
-                },
-                React.createElement("span", null, "💾"),
-                React.createElement("span", null, "حفظ كملخص صوتي دائم للمحاضرة في السحابة")
-              )
-            )
-          ) : React.createElement(
-            "div",
-            { className: "pt-2 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3" },
-            React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { handleGenerateSalmaAudio(); },
-                className: "w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
-              },
-              React.createElement("span", null, "▶️"),
-              React.createElement("span", null, "بدء الاستماع للملخص بصوت «سلمى» المصري")
-            ),
-            React.createElement("span", { className: "text-xs text-indigo-200/80 text-center sm:text-right" },
-              "💡 صوت بشري مصري نقي ومتقن 100% بدون أي حروف مقطوعة."
-            )
-          )
-        ),
-
-        // 2. بطاقة التسجيل الصوتي الخارجي (ملف MP3 الأصلي للمحاضرة)
-        React.createElement(
-          "div",
-          { className: "p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-4" },
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between gap-3 flex-wrap" },
-            React.createElement(
-              "div",
-              null,
-              React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "التسجيل الصوتي الكامل (MP3)"),
-              React.createElement("p", { className: "text-xs text-slate-500" }, "ربط ملف صوتي مسجل بصوت المحاضر الأصلي")
-            ),
-            currentUser.role === "admin" && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { if (openEditModal) openEditModal(activeLecture, "audio"); },
-                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
-              },
-              React.createElement("span", null, "🎙️"),
-              React.createElement("span", null, activeLecture.audioSummaryUrl ? "تعديل رابط الملف الصوتي" : "إضافة رابط ملف صوتي خارجي")
-            )
-          ),
-
-          (activeLecture.audioSummaryUrl && !window.APP_UTILS.isYouTubeUrl(activeLecture.audioSummaryUrl)) ? React.createElement(
-            "div",
-            { className: "p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2 text-center" },
-            React.createElement(
-              "audio",
-              {
-                controls: true,
-                className: "w-full max-w-lg mx-auto",
-                src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl),
-                onError: function(e) {
-                  var dId = utils.extractDriveId ? utils.extractDriveId(activeLecture.audioSummaryUrl) : null;
-                  if (dId) {
-                    var el = e.target;
-                    if (el && el.parentElement && !el.parentElement.querySelector("iframe")) {
-                      var fallbackIframe = document.createElement("iframe");
-                      fallbackIframe.src = "https://drive.google.com/file/d/" + dId + "/preview";
-                      fallbackIframe.className = "w-full h-20 border-0 rounded-xl mt-3";
-                      fallbackIframe.allow = "autoplay";
-                      el.parentElement.appendChild(fallbackIframe);
-                      el.style.display = "none";
-                    }
-                  }
-                }
-              }
-            )
-          ) : React.createElement(
-            "div",
-            { className: "p-4 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs" },
-            "لم يتم ربط ملف صوتي مباشر (MP3) للمحاضر بعد، ويمكنك الاعتماد على القارئ الصوتي الذكي في الأعلى للاستماع للملخص."
-          )
-        )
       ),
 
       // تبويب شرائح العرض التقديمي
