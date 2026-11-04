@@ -20,7 +20,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('./sw.js').then(function(reg) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function(reg) {
           console.log('ServiceWorker registered successfully:', reg.scope);
         }).catch(function(err) {
           console.warn('ServiceWorker registration error:', err);
@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"}];
+window.APP_UPDATES_HISTORY = [{"hash":"fb15794","date":"2026-11-04 15:12","message":"Streamline lecture pillars: remove slides \u0026 mindmap, integrate visual diagrams into package modal"},{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793797961",
-  buildTime: "2026-11-04T13:12:41",
+  version: "1.2.1793799343",
+  buildTime: "2026-11-04T13:35:43",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -3288,23 +3288,37 @@ window.GeminiAIService = {
       return { questions: questions, isPublished: false, targetCount: count };
     },
 
-    // 4.4 توليد المخططات والرسوم البيانية التفاعلية (Visuals / Infographics)
+    // 4.4 توليد المخططات والرسوم البيانية البصرية التفاعلية بأسلوب NotebookLM المعمق
     generateVisualsOnly: async function(lectureTitle, lectureContent, customInstructions) {
-      var prompt = "أنت مصمم معلومات بيانية وبصرية (Infographics Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
-        "المطلوب: تحليل المحاضرة واستخراج 3 إلى 4 مخططات بصرية وتفاعلية تغطي جوانب الدرس بأسلوب احترافي مطابق لـ Google NotebookLM.\n\n" +
+      var prompt = "أنت كبير معماريي ومصممي المعرفة البصرية (Chief Visual Knowledge Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
+        "المهمة: تحليل النص المرجعي للمحاضرة بدقة متناهية وبناء منظومة بصرية تعليمية شاملة ومترابطة تحاكي أعلى معايير Google NotebookLM لتغطية كافة أبعاد المحاضرة بصرياً ومفاهيمياً.\n\n" +
         "عنوان المحاضرة: " + (lectureTitle || "") + "\n\n" +
-        "المحتوى المرجعي للمحاضرة:\n" + (lectureContent || "") + "\n\n" +
-        (customInstructions ? ("توجيهات إضافية من الأستاذ:\n" + customInstructions + "\n\n") : "") +
-        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم:\n" +
-        "1. مخطط هرمي (pyramid) يوضح التدرج المفاهيمي في المحاضرة مع حقول: id, type='pyramid', title, subtitle, badge, levels (مصفوفة كائنات تضم level, title, color, desc, isPeak).\n" +
-        "2. مخطط دائري (pie) يوضح النسب المئوية وتوزيع الأدوار أو الوقت مع حقول: id, type='pie', title, subtitle, badge, slices (مصفوفة كائنات تضم label, percentage, color, desc).\n" +
-        "3. مصفوفة مقارنة بصرية (comparison) تقارن بين مفهومين أساسيين مع حقول: id, type='comparison', title, subtitle, badge, left (كائن يضم title, icon, items: [aspect, value]), right (كائن يضم title, icon, items: [aspect, value]).\n" +
-        "4. بطاقة مؤشرات أو نسب (metric_card) تبرز معادلة أو قاعدة عددية مع حقول: id, type='metric_card', title, subtitle, badge, metrics: [num, label, color, note], takeaway.\n\n" +
-        "الرد الحصري بهيكل JSON النقي المطلوب.";
+        "المحتوى المرجعي الكامل للمحاضرة:\n" + (lectureContent || "") + "\n\n" +
+        (customInstructions ? ("توجيهات إضافية خاصة: " + customInstructions + "\n\n") : "") +
+        "═══════════════════════════════════════════════════════════\n" +
+        "الشروط والمعايير الأكاديمية الصارمة (قواعد حاسمة):\n" +
+        "1. لا يوجد عدد ثابت للمخططات: استخرج ما بين 3 إلى 6 مخططات بصرية متنوعة بحسب تشعب وعمق المحاضرة بحيث يخرج الطالب برؤية بانورامية كاملة للموضوع بمجرد تصفحها.\n" +
+        "2. حظر قطعي لأي بيانات إدارية أو شكلية: يُمنع منعاً باتاً ذكر (تطبيق زووم، مدة الفيديو، عدد ساعات التسجيل، رقم المحاضرة، تاريخ اللقاء، وقت الاستراحة، منصة البث، جودة الصوت).\n" +
+        "3. التركيز الحصري على المعرفة المشورية التخصصية: كل عنصر أو مقارنة أو خطوة يجب أن تكون فكرة نفسية أو لاهوتية أو مهارة مشورية حقيقية وردت في كلام المحاضر.\n" +
+        "4. منع النسب الوهمية: لا تضع أي نسب مئوية أو أرقام إلا إذا كانت قاعدة علمية أو مشورية حقيقية ذكرها المحاضر في سياق الشرح.\n\n" +
+        "أنواع المخططات المتاحة التي يمكنك التوليد منها وتوزيعها بذكاء:\n" +
+        "• comparison: مصفوفة مقارنة بصرية عميقة بين مفهومين أو مسارين متقابلين (مثل: الرؤية الكتابية للجسد مقابل النظرة العالمية، أو المشورة مقابل الاعتراف، أو النضج مقابل التصلب).\n" +
+        "  الحقول: id, type='comparison', title, subtitle, badge, left: { title, icon, items: [{ aspect, value }] }, right: { title, icon, items: [{ aspect, value }] }\n\n" +
+        "• process: مسار تسلسلي أو مراحل تدفق منطقي لديناميكية نفسية أو خطوات جلسة أو رحلة علاجية.\n" +
+        "  الحقول: id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }]\n\n" +
+        "• pillars: شبكة بطاقات الأركان والأبعاد التشريحية للموضوع (تفكيك المفهوم إلى 3 أو 4 أبعاد رئيسية ومحاور مفصلة).\n" +
+        "  الحقول: id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['نقطة 1', 'نقطة 2'] }]\n\n" +
+        "• pyramid: هرم مفاهيمي متدرج من القاعدة إلى الذروة (فقط إذا وجد تدرج حقيقي في المحاضرة كسلّم الاحتياجات أو مستويات النضج).\n" +
+        "  الحقول: id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }]\n\n" +
+        "• metric_card: بطاقة معادلة أو قاعدة مشورية عددية (فقط إذا ذكر المحاضر قاعدة عددية أو نسبة واضحة كقاعدة 1 إلى 9).\n" +
+        "  الحقول: id, type='metric_card', title, subtitle, badge, metrics: [{ num, label, note, color }], takeaway\n\n" +
+        "• pie: مخطط دائري لنسب وتوزيعات حقيقية صريحة.\n" +
+        "  الحقول: id, type='pie', title, subtitle, badge, slices: [{ label, percentage, color, desc }]\n\n" +
+        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم المخططات المستخرجة بجودة أكاديمية تليق بـ NotebookLM.";
 
       var raw = await window.EducationalAIService.callModel(
         prompt,
-        "أنت مصمم معلومات بصرية تعليمية. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
+        "أنت مصمم معماريات معرفية وبصرية تعليمية بأسلوب Google NotebookLM. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
         { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
       );
       return window.EducationalAIService._cleanAndParseJson(raw);
@@ -3447,7 +3461,16 @@ window.NotificationService = {
         vibrate: [250, 100, 250]
       });
       if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
-        var user = (window.currentUser || (window.utils && window.utils.getLocal && window.utils.getLocal("counsel_current_user", null)));
+        var user = window.currentUser;
+        if (!user) {
+          try {
+            var raw = localStorage.getItem("counsel_current_user");
+            if (raw) user = JSON.parse(raw);
+          } catch(eUser) {}
+        }
+        if (!user && window.APP_UTILS && window.APP_UTILS.getLocal) {
+          user = window.APP_UTILS.getLocal("counsel_current_user", null);
+        }
         window.WebPushService.registerServiceWorkerAndSubscribe(user, { sendWelcomePush: true }).catch(function() {});
       }
       return true;
@@ -3715,6 +3738,16 @@ window.NotificationService = {
       } catch (eSet) {}
 
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "admin",
+          tag: "err_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin error report notification:", e);
     }
@@ -3733,6 +3766,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "admin",
+          tag: "feat_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin feature request notification:", e);
     }
@@ -3753,6 +3796,18 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "user",
+          targetUserId: studentId || "",
+          targetUserEmail: (studentEmail || "").toLowerCase().trim(),
+          tag: "reply_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not dispatch student feature reply notification:", e);
     }
@@ -4002,13 +4057,26 @@ window.NotificationService = {
           isNewSubscription = true;
         }
 
+        // التحقق من بيانات المستخدم واشتراكه
+        if (!currentUser) {
+          currentUser = window.currentUser;
+          if (!currentUser) {
+            try {
+              var savedRaw = localStorage.getItem("counsel_current_user");
+              if (savedRaw) currentUser = JSON.parse(savedRaw);
+            } catch(eSaved) {}
+          }
+        }
+
         // حفظ بيانات اشتراك الجهاز في وثيقة المستخدم بقاعدة البيانات
         if (subscription && currentUser && window.db) {
           var subJson = JSON.stringify(subscription);
           var userId = currentUser.id;
 
           if (!userId && currentUser.email) {
-            userId = currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            userId = "user_" + currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+          } else if (userId && !userId.startsWith("user_") && currentUser.email) {
+            userId = "user_" + userId;
           }
 
           if (userId) {
@@ -4936,7 +5004,7 @@ window.EdgeTtsService = {
 
 // Module: utils/helpers.js
 // دوال مساعدة عامة للتعامل مع التخزين المحلي، روابط جوجل درايف، وتنسيق الوقت
-window.APP_UTILS = {
+window.APP_UTILS = window.utils = {
   // استخراج المعرف المباشر من رابط جوجل درايف
   extractDriveId: function(url) {
     if (!url) return "";
@@ -15792,7 +15860,8 @@ window.InteractiveQuizViewer = function(props) {
 
 // Module: components/lectures/VisualDiagramsViewer.js
 // عارض المخططات والرسوم البيانية البصرية التفاعلية للمحاضرات (Visual Diagrams Viewer)
-// يدعم: المخططات الهرمية (Pyramid)، المخططات الدائرية (Pie Chart)، مصفوفات المقارنة (Comparison)، وبطاقات النسب والمؤشرات (Metrics)
+// مبني بأسلوب Google NotebookLM المعمق لدعم الفهم البصري الشامل للمحاضرة
+// يدعم: الهرم المفاهيمي (Pyramid)، المسار التسلسلي (Process Flow)، شبكة الأركان (Pillars)، مصفوفة المقارنة (Comparison)، الرسوم الدائرية (Pie)، وبطاقات القواعد والمؤشرات (Metric Cards)
 
 (function() {
   "use strict";
@@ -15808,6 +15877,7 @@ window.InteractiveQuizViewer = function(props) {
 
     var charts = (visuals && Array.isArray(visuals.charts)) ? visuals.charts : [];
 
+    // شاشة فارغة في حالة عدم وجود مخططات بعد
     if (!charts.length) {
       return React.createElement(
         "div",
@@ -15815,7 +15885,7 @@ window.InteractiveQuizViewer = function(props) {
         React.createElement("div", { className: "text-4xl animate-bounce" }, "📊"),
         React.createElement("h4", { className: "text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200" }, "لا توجد مخططات بصرية مسجلة لهذه المحاضرة بعد"),
         React.createElement("p", { className: "text-xs text-slate-500 max-w-md mx-auto leading-relaxed" },
-          "يمكن توليد مخططات بيانية تفاعلية (رسوم دائرية، أهرامات مفاهيمية، ومصفوفات مقارنة) تلقائياً بالذكاء الاصطناعي من واقع تفريغ المحاضرة."
+          "يمكن استخراج منظومة متكاملة من المخططات البصرية (مسارات مراحل، مقارنات، أهرامات، وتصنيفات مفاهيمية) بأسلوب NotebookLM المعمق من واقع نص المحاضرة."
         ),
         isAdmin && React.createElement(
           "button",
@@ -15823,21 +15893,47 @@ window.InteractiveQuizViewer = function(props) {
             type: "button",
             disabled: isGenerating,
             onClick: onGenerateVisuals,
-            className: "inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50"
+            className: "inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           },
           React.createElement("span", null, isGenerating ? "⏳" : "✨"),
-          React.createElement("span", null, isGenerating ? "جاري بناء المخططات البصرية..." : "توليد المخططات البصرية الذكية الآن")
+          React.createElement("span", null, isGenerating ? "جاري استخراج وبناء المخططات..." : "استخراج المخططات البصرية الشاملة الآن")
         )
       );
     }
 
-    var activeChart = charts[Math.min(selectedChartIndex, charts.length - 1)];
+    var activeChart = charts[Math.min(selectedChartIndex, charts.length - 1)] || charts[0];
+
+    // تحديد أيقونة التبويب حسب نوع المخطط
+    var getChartIcon = function(type) {
+      switch (type) {
+        case "pyramid": return "🔺";
+        case "process": return "🔄";
+        case "pillars": return "🏛️";
+        case "comparison": return "⚖️";
+        case "pie": return "🥧";
+        case "metric_card": return "📊";
+        default: return "📈";
+      }
+    };
 
     return React.createElement(
       "div",
       { className: "space-y-5 animate-in fade-in duration-200" },
 
-      // شريط التنقل العلوي بين المخططات
+      // تنبيه حالة التحميل أثناء التوليد المباشر داخل التبويب
+      isGenerating && React.createElement(
+        "div",
+        { className: "p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3 text-xs font-bold text-indigo-700 dark:text-indigo-300 animate-pulse shadow-xs" },
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2.5" },
+          React.createElement("span", { className: "w-3 h-3 rounded-full bg-indigo-600 animate-ping shrink-0" }),
+          React.createElement("span", null, "جاري استخراج المخططات البصرية المعمقة وتحليل المحاضرة بالذكاء الاصطناعي...")
+        ),
+        React.createElement("span", { className: "text-[11px] text-indigo-500 font-mono hidden sm:inline" }, "NotebookLM Visuals")
+      ),
+
+      // شريط التنقل العلوي بين المخططات المستخرجة
       React.createElement(
         "div",
         { className: "flex items-center justify-between gap-3 flex-wrap border-b border-slate-100 dark:border-slate-800 pb-3" },
@@ -15846,20 +15942,20 @@ window.InteractiveQuizViewer = function(props) {
           { className: "flex items-center gap-1.5 overflow-x-auto scrollbar-thin pb-1 max-w-full" },
           charts.map(function(c, idx) {
             var isCurrent = selectedChartIndex === idx;
-            var icon = c.type === "pyramid" ? "🔺" : (c.type === "pie" ? "🥧" : (c.type === "comparison" ? "⚖️" : "📈"));
+            var icon = getChartIcon(c.type);
             return React.createElement(
               "button",
               {
                 key: c.id || idx,
                 type: "button",
                 onClick: function() { setSelectedChartIndex(idx); setActivePyramidLevel(null); },
-                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap " +
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer " +
                   (isCurrent
                     ? "bg-indigo-600 text-white shadow-xs"
                     : "bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700")
               },
               React.createElement("span", null, icon),
-              React.createElement("span", null, c.title ? (c.title.length > 25 ? c.title.substring(0, 25) + "..." : c.title) : ("مخطط " + (idx + 1)))
+              React.createElement("span", null, c.title ? (c.title.length > 28 ? c.title.substring(0, 28) + "..." : c.title) : ("مخطط " + (idx + 1)))
             );
           })
         ),
@@ -15869,10 +15965,10 @@ window.InteractiveQuizViewer = function(props) {
             type: "button",
             disabled: isGenerating,
             onClick: onGenerateVisuals,
-            className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 disabled:opacity-50"
+            className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 disabled:opacity-50 cursor-pointer shrink-0"
           },
-          React.createElement("span", null, "🔄"),
-          React.createElement("span", null, "إعادة توليد المخططات")
+          React.createElement("span", null, isGenerating ? "⏳" : "🔄"),
+          React.createElement("span", null, isGenerating ? "جاري التوليد..." : "إعادة استخراج المخططات")
         )
       ),
 
@@ -15881,7 +15977,7 @@ window.InteractiveQuizViewer = function(props) {
         "div",
         { className: "p-5 sm:p-7 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6" },
 
-        // رأس المخطط
+        // رأس المخطط النشط
         React.createElement(
           "div",
           { className: "flex items-start justify-between gap-3 flex-wrap border-b border-slate-100 dark:border-slate-800/80 pb-4" },
@@ -15891,12 +15987,10 @@ window.InteractiveQuizViewer = function(props) {
             React.createElement(
               "div",
               { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "text-lg" },
-                activeChart.type === "pyramid" ? "🔺" : (activeChart.type === "pie" ? "🥧" : (activeChart.type === "comparison" ? "⚖️" : "📈"))
-              ),
+              React.createElement("span", { className: "text-xl" }, getChartIcon(activeChart.type)),
               React.createElement("h3", { className: "text-base sm:text-lg font-black text-slate-900 dark:text-white" }, activeChart.title)
             ),
-            activeChart.subtitle && React.createElement("p", { className: "text-xs text-slate-500 max-w-xl leading-relaxed" }, activeChart.subtitle)
+            activeChart.subtitle && React.createElement("p", { className: "text-xs text-slate-500 max-w-2xl leading-relaxed" }, activeChart.subtitle)
           ),
           activeChart.badge && React.createElement(
             "span",
@@ -15905,38 +15999,195 @@ window.InteractiveQuizViewer = function(props) {
           )
         ),
 
-        // 1. عرض المخطط الهرمي (Pyramid Chart)
+        // ══════════════════════════════════════════════════════
+        // 1. المسار التسلسلي / المراحل والتدفق المنطقي (Process Flow)
+        // ══════════════════════════════════════════════════════
+        activeChart.type === "process" && (function() {
+          var steps = activeChart.steps || [];
+          return React.createElement(
+            "div",
+            { className: "space-y-4" },
+            React.createElement(
+              "div",
+              { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-" + Math.min(4, Math.max(1, steps.length)) + " gap-4" },
+              steps.map(function(st, idx) {
+                return React.createElement(
+                  "div",
+                  {
+                    key: idx,
+                    className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 space-y-3 relative flex flex-col justify-between hover:shadow-md transition-all"
+                  },
+                  React.createElement(
+                    "div",
+                    { className: "space-y-2" },
+                    React.createElement(
+                      "div",
+                      { className: "flex items-center justify-between" },
+                      React.createElement("span", { className: "px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-mono font-black text-[11px]" }, "مرحلة " + (st.step || (idx + 1))),
+                      React.createElement("span", { className: "text-2xl" }, st.icon || "➡️")
+                    ),
+                    React.createElement("h4", { className: "text-sm font-black text-slate-900 dark:text-white" }, st.title),
+                    React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, st.desc)
+                  ),
+                  st.outcome && React.createElement(
+                    "div",
+                    { className: "pt-2 border-t border-slate-200/60 dark:border-slate-700/50 text-[11px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5" },
+                    React.createElement("span", null, "🎯"),
+                    React.createElement("span", null, st.outcome)
+                  )
+                );
+              })
+            )
+          );
+        })(),
+
+        // ══════════════════════════════════════════════════════
+        // 2. شبكة الأركان والأبعاد التشريحية للمفهوم (Pillars / Anatomy)
+        // ══════════════════════════════════════════════════════
+        activeChart.type === "pillars" && (function() {
+          var pillars = activeChart.pillars || [];
+          return React.createElement(
+            "div",
+            { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-" + Math.min(4, Math.max(2, pillars.length)) + " gap-4 sm:gap-5" },
+            pillars.map(function(p, idx) {
+              return React.createElement(
+                "div",
+                {
+                  key: idx,
+                  className: "p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 space-y-3.5 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all"
+                },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2.5" },
+                  React.createElement("span", { className: "text-2xl p-2 rounded-2xl bg-white dark:bg-slate-900 shadow-2xs" }, p.icon || "🏛️"),
+                  React.createElement("h4", { className: "text-sm font-black text-slate-900 dark:text-white" }, p.title)
+                ),
+                p.desc && React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, p.desc),
+                Array.isArray(p.keyInsights) && p.keyInsights.length > 0 && React.createElement(
+                  "ul",
+                  { className: "space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/50 text-[11px] text-slate-500 dark:text-slate-400" },
+                  p.keyInsights.map(function(ins, iIdx) {
+                    return React.createElement(
+                      "li",
+                      { key: iIdx, className: "flex items-start gap-1.5" },
+                      React.createElement("span", { className: "text-indigo-500 font-bold shrink-0 mt-0.5" }, "✓"),
+                      React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-snug" }, ins)
+                    );
+                  })
+                )
+              );
+            })
+          );
+        })(),
+
+        // ══════════════════════════════════════════════════════
+        // 3. مصفوفة المقارنة البصرية المنهجية (Comparison Matrix)
+        // ══════════════════════════════════════════════════════
+        activeChart.type === "comparison" && (function() {
+          var left = activeChart.left || {};
+          var right = activeChart.right || {};
+
+          return React.createElement(
+            "div",
+            { className: "grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" },
+            // العمود الأول
+            React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/50 space-y-4" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5 pb-2 border-b border-amber-200/60 dark:border-amber-800/40" },
+                React.createElement("span", { className: "text-2xl" }, left.icon || "✝️"),
+                React.createElement("h4", { className: "text-sm sm:text-base font-black text-amber-950 dark:text-amber-200" }, left.title)
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-2.5 text-xs" },
+                (left.items || []).map(function(item, idx) {
+                  return React.createElement(
+                    "div",
+                    { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/30" },
+                    React.createElement("span", { className: "font-bold text-amber-800 dark:text-amber-400 block mb-0.5" }, item.aspect + ":"),
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, item.value)
+                  );
+                })
+              )
+            ),
+            // العمود الثاني
+            React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/50 space-y-4" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5 pb-2 border-b border-indigo-200/60 dark:border-indigo-800/40" },
+                React.createElement("span", { className: "text-2xl" }, right.icon || "🧠"),
+                React.createElement("h4", { className: "text-sm sm:text-base font-black text-indigo-950 dark:text-indigo-200" }, right.title)
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-2.5 text-xs" },
+                (right.items || []).map(function(item, idx) {
+                  return React.createElement(
+                    "div",
+                    { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/30" },
+                    React.createElement("span", { className: "font-bold text-indigo-800 dark:text-indigo-400 block mb-0.5" }, item.aspect + ":"),
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, item.value)
+                  );
+                })
+              )
+            )
+          );
+        })(),
+
+        // ══════════════════════════════════════════════════════
+        // 4. المخطط الهرمي المفاهيمي التفاعلي (Conceptual Pyramid)
+        // ══════════════════════════════════════════════════════
         activeChart.type === "pyramid" && (function() {
           var levels = activeChart.levels || [];
-          var sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
+          if (!levels.length) return null;
+
+          // التحقق من اتجاه القمة: هل القمة في المستوى 1 أم المستوى الأعلى؟
+          var peakIsFirst = levels[0] && (levels[0].isPeak || levels[0].level === 1);
+          var sorted = levels.slice().sort(function(a, b) {
+            return peakIsFirst ? (a.level - b.level) : (b.level - a.level);
+          });
+
+          // تفعيل شرح القمة تلقائياً إذا لم يكن هناك تحديد مسبق
+          var currentActive = (activePyramidLevel !== null) ? activePyramidLevel : (sorted[0] ? sorted[0].level : null);
 
           return React.createElement(
             "div",
             { className: "space-y-6" },
-            // الهرم التفاعلي المتدرج
+            // الهرم المتدرج
             React.createElement(
               "div",
               { className: "flex flex-col items-center gap-2 max-w-xl mx-auto py-2" },
               sorted.map(function(lvl, i) {
-                var widthPct = 40 + (i * 12); // starts narrow at top, widens downward
-                var isSelected = activePyramidLevel === lvl.level;
-                var isPeak = lvl.isPeak || lvl.level === 6;
+                var widthPct = 40 + (i * (60 / Math.max(1, sorted.length - 1)));
+                var isSelected = currentActive === lvl.level;
+                var isPeak = lvl.isPeak || i === 0;
+
+                // لون الشريحة بخاصية النمط المباشر لتجنب أخطاء Tailwind
+                var bgStyle = isPeak
+                  ? "linear-gradient(135deg, #d97706, #f59e0b, #d97706)"
+                  : (lvl.color && lvl.color.startsWith("#") ? lvl.color : "#4f46e5");
 
                 return React.createElement(
                   "div",
                   {
                     key: lvl.level,
-                    onClick: function() { setActivePyramidLevel(isSelected ? null : lvl.level); },
-                    style: { width: Math.min(100, widthPct) + "%" },
+                    onClick: function() { setActivePyramidLevel(lvl.level); },
+                    style: {
+                      width: Math.min(100, Math.max(35, widthPct)) + "%",
+                      background: bgStyle
+                    },
                     className: "cursor-pointer transition-all duration-200 transform hover:scale-102 rounded-2xl p-3 text-center text-white shadow-md relative overflow-hidden " +
-                      (isPeak ? "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 ring-2 ring-amber-300 dark:ring-amber-500" :
-                        (lvl.color ? ("bg-gradient-to-r " + lvl.color) : "bg-gradient-to-r from-indigo-600 to-indigo-500")) +
-                      (isSelected ? " ring-4 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 shadow-xl" : "")
+                      (isSelected ? " ring-4 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 shadow-xl scale-102" : "")
                   },
                   React.createElement(
                     "div",
-                    { className: "flex items-center justify-between px-2 text-xs sm:text-sm font-bold" },
-                    React.createElement("span", { className: "w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] shrink-0" }, lvl.level),
+                    { className: "flex items-center justify-between px-2 text-xs sm:text-sm font-bold drop-shadow-sm" },
+                    React.createElement("span", { className: "w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] shrink-0 font-mono" }, lvl.level),
                     React.createElement("span", { className: "truncate px-1" }, lvl.title),
                     React.createElement("span", { className: "text-[11px] opacity-80" }, isSelected ? "▲" : "▼")
                   )
@@ -15944,30 +16195,56 @@ window.InteractiveQuizViewer = function(props) {
               })
             ),
 
-            // صندوق شرح الطبقة المحددة في الهرم
-            activePyramidLevel !== null && (function() {
-              var found = levels.find(function(l) { return l.level === activePyramidLevel; });
+            // صندوق شرح المستوى المختار
+            (function() {
+              var found = levels.find(function(l) { return l.level === currentActive; }) || sorted[0];
               if (!found) return null;
               return React.createElement(
                 "div",
-                { className: "p-4 sm:p-5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1.5 animate-in fade-in zoom-in-98 duration-150" },
-                React.createElement("div", { className: "font-black text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5" },
+                { className: "p-4 sm:p-5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1.5 animate-in fade-in duration-150" },
+                React.createElement(
+                  "div",
+                  { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5" },
                   React.createElement("span", null, "💡 المستوى " + found.level + ":"),
                   React.createElement("span", null, found.title)
                 ),
                 React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, found.desc)
               );
-            })()
+            })(),
+
+            // ملخص سريع لكافة مستويات الهرم
+            React.createElement(
+              "div",
+              { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/80" },
+              sorted.map(function(lvl) {
+                return React.createElement(
+                  "div",
+                  {
+                    key: lvl.level,
+                    onClick: function() { setActivePyramidLevel(lvl.level); },
+                    className: "p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/50 text-xs cursor-pointer hover:bg-indigo-50/50 transition-all flex items-start gap-2"
+                  },
+                  React.createElement("span", { className: "font-mono font-bold text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" }, "#" + lvl.level),
+                  React.createElement(
+                    "div",
+                    { className: "space-y-0.5" },
+                    React.createElement("span", { className: "font-bold text-slate-800 dark:text-slate-200 block" }, lvl.title),
+                    React.createElement("p", { className: "text-[11px] text-slate-500 line-clamp-1" }, lvl.desc)
+                  )
+                );
+              })
+            )
           );
         })(),
 
-        // 2. عرض المخطط الدائري (Pie Chart SVG)
+        // ══════════════════════════════════════════════════════
+        // 5. المخطط الدائري الحقيقي للنسب الصريحة (Pie Chart)
+        // ══════════════════════════════════════════════════════
         activeChart.type === "pie" && (function() {
           var slices = activeChart.slices || [];
           var total = slices.reduce(function(acc, s) { return acc + (Number(s.percentage) || 0); }, 0) || 100;
           var cumulative = 0;
 
-          // Build SVG pie paths
           var paths = slices.map(function(s, idx) {
             var pct = Number(s.percentage) || 0;
             var startAngle = (cumulative / total) * 360;
@@ -15997,7 +16274,6 @@ window.InteractiveQuizViewer = function(props) {
           return React.createElement(
             "div",
             { className: "grid grid-cols-1 md:grid-cols-2 gap-6 items-center" },
-            // الرسم الدائري
             React.createElement(
               "div",
               { className: "flex justify-center py-2" },
@@ -16005,7 +16281,6 @@ window.InteractiveQuizViewer = function(props) {
                 "svg",
                 { viewBox: "0 0 200 200", className: "w-52 h-52 sm:w-60 sm:h-60 filter drop-shadow-md" },
                 paths,
-                // دائرة مفرغة بالوسط (Donut hole)
                 React.createElement("circle", { cx: 100, cy: 100, r: 45, className: "fill-white dark:fill-slate-900" }),
                 React.createElement("text", {
                   x: 100,
@@ -16015,7 +16290,6 @@ window.InteractiveQuizViewer = function(props) {
                 }, "100%")
               )
             ),
-            // مفاتيح وتفاصيل النسب
             React.createElement(
               "div",
               { className: "space-y-3" },
@@ -16054,64 +16328,9 @@ window.InteractiveQuizViewer = function(props) {
           );
         })(),
 
-        // 3. عرض مصفوفة المقارنة البصرية (Comparison Cards)
-        activeChart.type === "comparison" && (function() {
-          var left = activeChart.left || {};
-          var right = activeChart.right || {};
-
-          return React.createElement(
-            "div",
-            { className: "grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6" },
-            // العمود الأول
-            React.createElement(
-              "div",
-              { className: "p-5 rounded-3xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/50 space-y-4" },
-              React.createElement(
-                "div",
-                { className: "flex items-center gap-2.5 pb-2 border-b border-amber-200/60 dark:border-amber-800/40" },
-                React.createElement("span", { className: "text-2xl" }, left.icon || "✝️"),
-                React.createElement("h4", { className: "text-sm sm:text-base font-black text-amber-950 dark:text-amber-200" }, left.title)
-              ),
-              React.createElement(
-                "div",
-                { className: "space-y-2.5 text-xs" },
-                (left.items || []).map(function(item, idx) {
-                  return React.createElement(
-                    "div",
-                    { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/30" },
-                    React.createElement("span", { className: "font-bold text-amber-800 dark:text-amber-400 block mb-0.5" }, item.aspect + ":"),
-                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300" }, item.value)
-                  );
-                })
-              )
-            ),
-            // العمود الثاني
-            React.createElement(
-              "div",
-              { className: "p-5 rounded-3xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/50 space-y-4" },
-              React.createElement(
-                "div",
-                { className: "flex items-center gap-2.5 pb-2 border-b border-indigo-200/60 dark:border-indigo-800/40" },
-                React.createElement("span", { className: "text-2xl" }, right.icon || "🧠"),
-                React.createElement("h4", { className: "text-sm sm:text-base font-black text-indigo-950 dark:text-indigo-200" }, right.title)
-              ),
-              React.createElement(
-                "div",
-                { className: "space-y-2.5 text-xs" },
-                (right.items || []).map(function(item, idx) {
-                  return React.createElement(
-                    "div",
-                    { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/30" },
-                    React.createElement("span", { className: "font-bold text-indigo-800 dark:text-indigo-400 block mb-0.5" }, item.aspect + ":"),
-                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300" }, item.value)
-                  );
-                })
-              )
-            )
-          );
-        })(),
-
-        // 4. عرض بطاقات المؤشرات والنسب (Metric Card)
+        // ══════════════════════════════════════════════════════
+        // 6. بطاقات القواعد والمعادلات المشورية (Metric Cards)
+        // ══════════════════════════════════════════════════════
         activeChart.type === "metric_card" && (function() {
           var metrics = activeChart.metrics || [];
 
@@ -16120,16 +16339,21 @@ window.InteractiveQuizViewer = function(props) {
             { className: "space-y-5" },
             React.createElement(
               "div",
-              { className: "grid grid-cols-1 sm:grid-cols-2 gap-4" },
+              { className: "grid grid-cols-1 sm:grid-cols-" + Math.min(3, Math.max(1, metrics.length)) + " gap-4" },
               metrics.map(function(m, idx) {
+                var numColor = (m.color && m.color.startsWith("#")) ? m.color : "#4f46e5";
                 return React.createElement(
                   "div",
                   {
                     key: idx,
-                    className: "p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center space-y-2" },
-                  React.createElement("div", { className: "text-4xl sm:text-5xl font-black " + (m.color || "text-indigo-600") }, m.num),
+                    className: "p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center space-y-2"
+                  },
+                  React.createElement("div", {
+                    className: "text-4xl sm:text-5xl font-black",
+                    style: { color: numColor }
+                  }, m.num),
                   React.createElement("div", { className: "text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200" }, m.label),
-                  m.note && React.createElement("p", { className: "text-[11px] text-slate-500" }, m.note)
+                  m.note && React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed" }, m.note)
                 );
               })
             ),
@@ -16392,38 +16616,48 @@ window.LectureViewerModal = function(props) {
     }
   };
 
-  // توليد المخططات البصرية التفاعلية بالذكاء الاصطناعي
+  // توليد المخططات البصرية التفاعلية بالذكاء الاصطناعي بأسلوب NotebookLM
   var handleGenerateVisualsDirectly = async function() {
     if (!window.EducationalAIService || currentUser.role !== "admin") return;
     setIsAiGenerating(true);
-    setPackageGenStatus("جاري استخراج وتحليل المخططات البصرية والرسوم التفاعلية للمحاضرة...");
+    setPackageGenStatus("جاري استخراج المخططات البصرية المعمقة بأسلوب NotebookLM وتحليل المحاضرة...");
     try {
       var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
-      var prompt = "أنت مصمم معلومات بيانية وبصرية (Infographics Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
-        "المطلوب: تحليل المحاضرة واستخراج 3 إلى 4 مخططات بصرية وتفاعلية تغطي جوانب الدرس بأسلوب احترافي مطابق لـ Google NotebookLM.\n\n" +
-        "المحتوى المرجعي للمحاضرة:\n" + sourceContent + "\n\n" +
-        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم:\n" +
-        "1. مخطط هرمي (pyramid) يوضح التدرج المفاهيمي في المحاضرة مع حقول: id, type='pyramid', title, subtitle, badge, levels (مصفوفة كائنات تضم level, title, color, desc, isPeak).\n" +
-        "2. مخطط دائري (pie) يوضح النسب المئوية وتوزيع الأدوار أو الوقت مع حقول: id, type='pie', title, subtitle, badge, slices (مصفوفة كائنات تضم label, percentage, color, desc).\n" +
-        "3. مصفوفة مقارنة بصرية (comparison) تقارن بين مفهومين أساسيين مع حقول: id, type='comparison', title, subtitle, badge, left (كائن يضم title, icon, items: [aspect, value]), right (كائن يضم title, icon, items: [aspect, value]).\n" +
-        "4. بطاقة مؤشرات أو نسب (metric_card) تبرز معادلة أو قاعدة عددية مع حقول: id, type='metric_card', title, subtitle, badge, metrics: [num, label, color, note], takeaway.\n\n" +
-        "الرد الحصري بهيكل JSON النقي المطلوب.";
 
-      var raw = await window.EducationalAIService.callModel(
-        prompt,
-        "أنت مصمم معلومات بصرية تعليمية. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
-        { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
+      // محاولة استخراج تفريغ اليوتيوب تلقائياً إن لم يكن موجوداً
+      if (!activeLecture.transcript && activeLecture.mediaUrl) {
+        try {
+          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
+          if (transResp.ok) {
+            var transData = await transResp.json();
+            if (transData.success && transData.transcript) {
+              activeLecture.transcript = transData.transcript;
+              activeLecture.transcriptText = transData.transcript;
+              sourceContent = transData.transcript;
+            }
+          }
+        } catch(tErr) {
+          console.warn("Transcript auto-fetch skipped:", tErr);
+        }
+      }
+
+      var parsed = await window.EducationalAIService.generateVisualsOnly(
+        activeLecture.title,
+        sourceContent,
+        genCustomPrompt || ""
       );
-      var parsed = window.EducationalAIService._cleanAndParseJson(raw);
+
       var updated = Object.assign({}, activeLecture, {
         visualsData: parsed,
         visualsDataJson: JSON.stringify(parsed)
       });
-      cloud.saveLecture(updated);
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
       if (onSelectLecture) onSelectLecture(updated);
-      alert("✅ تم توليد وتحديث المخططات البصرية بنجاح!");
+      alert("✅ تم استخراج وتحديث المخططات البصرية الشاملة بنجاح!");
     } catch(err) {
-      alert("خطأ أثناء توليد المخططات البصرية: " + (err && err.message ? err.message : err));
+      alert("خطأ أثناء استخراج المخططات: " + (err && err.message ? err.message : err));
     } finally {
       setIsAiGenerating(false);
       setPackageGenStatus("");
@@ -30145,6 +30379,11 @@ function App() {
     }
     return null;
   });
+
+  // مزامنة المستخدم الحالي في النطاق العام للخدمات السحابية
+  React.useEffect(function() {
+    window.currentUser = currentUser;
+  }, [currentUser]);
 
   // عدد طلبات الانضمام المعلقة في انتظار المشرف
   var [pendingUsersCount, setPendingUsersCount] = React.useState(0);

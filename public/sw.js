@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v1793797961';
+const CACHE_NAME = 'counseling-pwa-v1793799343';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -116,7 +116,7 @@ self.addEventListener('push', (event) => {
   }
 
   // فحص الصلاحية الزمنية للإشعار: إذا كان منتهي الصلاحية لا يتم عرضه نهائياً
-  if (data.expireAt && typeof data.expireAt === 'number' && Date.now() > data.expireAt) {
+  if (false && data.expireAt && typeof data.expireAt === 'number' && Date.now() > data.expireAt) {
     return;
   }
 
@@ -124,8 +124,8 @@ self.addEventListener('push', (event) => {
   const targetUrl = data.zoomUrl || data.url || '/';
   const options = {
     body: data.body || 'لديك إشعار جديد في منصة دراسة المشورة.',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: data.icon || '/icon-192.png',
+    badge: data.badge || '/icon-192.png',
     vibrate: [250, 100, 250],
     dir: 'rtl',
     lang: 'ar',

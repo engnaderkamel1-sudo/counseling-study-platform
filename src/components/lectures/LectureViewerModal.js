@@ -243,38 +243,48 @@ window.LectureViewerModal = function(props) {
     }
   };
 
-  // توليد المخططات البصرية التفاعلية بالذكاء الاصطناعي
+  // توليد المخططات البصرية التفاعلية بالذكاء الاصطناعي بأسلوب NotebookLM
   var handleGenerateVisualsDirectly = async function() {
     if (!window.EducationalAIService || currentUser.role !== "admin") return;
     setIsAiGenerating(true);
-    setPackageGenStatus("جاري استخراج وتحليل المخططات البصرية والرسوم التفاعلية للمحاضرة...");
+    setPackageGenStatus("جاري استخراج المخططات البصرية المعمقة بأسلوب NotebookLM وتحليل المحاضرة...");
     try {
       var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
-      var prompt = "أنت مصمم معلومات بيانية وبصرية (Infographics Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
-        "المطلوب: تحليل المحاضرة واستخراج 3 إلى 4 مخططات بصرية وتفاعلية تغطي جوانب الدرس بأسلوب احترافي مطابق لـ Google NotebookLM.\n\n" +
-        "المحتوى المرجعي للمحاضرة:\n" + sourceContent + "\n\n" +
-        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم:\n" +
-        "1. مخطط هرمي (pyramid) يوضح التدرج المفاهيمي في المحاضرة مع حقول: id, type='pyramid', title, subtitle, badge, levels (مصفوفة كائنات تضم level, title, color, desc, isPeak).\n" +
-        "2. مخطط دائري (pie) يوضح النسب المئوية وتوزيع الأدوار أو الوقت مع حقول: id, type='pie', title, subtitle, badge, slices (مصفوفة كائنات تضم label, percentage, color, desc).\n" +
-        "3. مصفوفة مقارنة بصرية (comparison) تقارن بين مفهومين أساسيين مع حقول: id, type='comparison', title, subtitle, badge, left (كائن يضم title, icon, items: [aspect, value]), right (كائن يضم title, icon, items: [aspect, value]).\n" +
-        "4. بطاقة مؤشرات أو نسب (metric_card) تبرز معادلة أو قاعدة عددية مع حقول: id, type='metric_card', title, subtitle, badge, metrics: [num, label, color, note], takeaway.\n\n" +
-        "الرد الحصري بهيكل JSON النقي المطلوب.";
 
-      var raw = await window.EducationalAIService.callModel(
-        prompt,
-        "أنت مصمم معلومات بصرية تعليمية. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
-        { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
+      // محاولة استخراج تفريغ اليوتيوب تلقائياً إن لم يكن موجوداً
+      if (!activeLecture.transcript && activeLecture.mediaUrl) {
+        try {
+          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
+          if (transResp.ok) {
+            var transData = await transResp.json();
+            if (transData.success && transData.transcript) {
+              activeLecture.transcript = transData.transcript;
+              activeLecture.transcriptText = transData.transcript;
+              sourceContent = transData.transcript;
+            }
+          }
+        } catch(tErr) {
+          console.warn("Transcript auto-fetch skipped:", tErr);
+        }
+      }
+
+      var parsed = await window.EducationalAIService.generateVisualsOnly(
+        activeLecture.title,
+        sourceContent,
+        genCustomPrompt || ""
       );
-      var parsed = window.EducationalAIService._cleanAndParseJson(raw);
+
       var updated = Object.assign({}, activeLecture, {
         visualsData: parsed,
         visualsDataJson: JSON.stringify(parsed)
       });
-      cloud.saveLecture(updated);
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
       if (onSelectLecture) onSelectLecture(updated);
-      alert("✅ تم توليد وتحديث المخططات البصرية بنجاح!");
+      alert("✅ تم استخراج وتحديث المخططات البصرية الشاملة بنجاح!");
     } catch(err) {
-      alert("خطأ أثناء توليد المخططات البصرية: " + (err && err.message ? err.message : err));
+      alert("خطأ أثناء استخراج المخططات: " + (err && err.message ? err.message : err));
     } finally {
       setIsAiGenerating(false);
       setPackageGenStatus("");

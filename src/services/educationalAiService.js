@@ -336,23 +336,37 @@
       return { questions: questions, isPublished: false, targetCount: count };
     },
 
-    // 4.4 توليد المخططات والرسوم البيانية التفاعلية (Visuals / Infographics)
+    // 4.4 توليد المخططات والرسوم البيانية البصرية التفاعلية بأسلوب NotebookLM المعمق
     generateVisualsOnly: async function(lectureTitle, lectureContent, customInstructions) {
-      var prompt = "أنت مصمم معلومات بيانية وبصرية (Infographics Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
-        "المطلوب: تحليل المحاضرة واستخراج 3 إلى 4 مخططات بصرية وتفاعلية تغطي جوانب الدرس بأسلوب احترافي مطابق لـ Google NotebookLM.\n\n" +
+      var prompt = "أنت كبير معماريي ومصممي المعرفة البصرية (Chief Visual Knowledge Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
+        "المهمة: تحليل النص المرجعي للمحاضرة بدقة متناهية وبناء منظومة بصرية تعليمية شاملة ومترابطة تحاكي أعلى معايير Google NotebookLM لتغطية كافة أبعاد المحاضرة بصرياً ومفاهيمياً.\n\n" +
         "عنوان المحاضرة: " + (lectureTitle || "") + "\n\n" +
-        "المحتوى المرجعي للمحاضرة:\n" + (lectureContent || "") + "\n\n" +
-        (customInstructions ? ("توجيهات إضافية من الأستاذ:\n" + customInstructions + "\n\n") : "") +
-        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم:\n" +
-        "1. مخطط هرمي (pyramid) يوضح التدرج المفاهيمي في المحاضرة مع حقول: id, type='pyramid', title, subtitle, badge, levels (مصفوفة كائنات تضم level, title, color, desc, isPeak).\n" +
-        "2. مخطط دائري (pie) يوضح النسب المئوية وتوزيع الأدوار أو الوقت مع حقول: id, type='pie', title, subtitle, badge, slices (مصفوفة كائنات تضم label, percentage, color, desc).\n" +
-        "3. مصفوفة مقارنة بصرية (comparison) تقارن بين مفهومين أساسيين مع حقول: id, type='comparison', title, subtitle, badge, left (كائن يضم title, icon, items: [aspect, value]), right (كائن يضم title, icon, items: [aspect, value]).\n" +
-        "4. بطاقة مؤشرات أو نسب (metric_card) تبرز معادلة أو قاعدة عددية مع حقول: id, type='metric_card', title, subtitle, badge, metrics: [num, label, color, note], takeaway.\n\n" +
-        "الرد الحصري بهيكل JSON النقي المطلوب.";
+        "المحتوى المرجعي الكامل للمحاضرة:\n" + (lectureContent || "") + "\n\n" +
+        (customInstructions ? ("توجيهات إضافية خاصة: " + customInstructions + "\n\n") : "") +
+        "═══════════════════════════════════════════════════════════\n" +
+        "الشروط والمعايير الأكاديمية الصارمة (قواعد حاسمة):\n" +
+        "1. لا يوجد عدد ثابت للمخططات: استخرج ما بين 3 إلى 6 مخططات بصرية متنوعة بحسب تشعب وعمق المحاضرة بحيث يخرج الطالب برؤية بانورامية كاملة للموضوع بمجرد تصفحها.\n" +
+        "2. حظر قطعي لأي بيانات إدارية أو شكلية: يُمنع منعاً باتاً ذكر (تطبيق زووم، مدة الفيديو، عدد ساعات التسجيل، رقم المحاضرة، تاريخ اللقاء، وقت الاستراحة، منصة البث، جودة الصوت).\n" +
+        "3. التركيز الحصري على المعرفة المشورية التخصصية: كل عنصر أو مقارنة أو خطوة يجب أن تكون فكرة نفسية أو لاهوتية أو مهارة مشورية حقيقية وردت في كلام المحاضر.\n" +
+        "4. منع النسب الوهمية: لا تضع أي نسب مئوية أو أرقام إلا إذا كانت قاعدة علمية أو مشورية حقيقية ذكرها المحاضر في سياق الشرح.\n\n" +
+        "أنواع المخططات المتاحة التي يمكنك التوليد منها وتوزيعها بذكاء:\n" +
+        "• comparison: مصفوفة مقارنة بصرية عميقة بين مفهومين أو مسارين متقابلين (مثل: الرؤية الكتابية للجسد مقابل النظرة العالمية، أو المشورة مقابل الاعتراف، أو النضج مقابل التصلب).\n" +
+        "  الحقول: id, type='comparison', title, subtitle, badge, left: { title, icon, items: [{ aspect, value }] }, right: { title, icon, items: [{ aspect, value }] }\n\n" +
+        "• process: مسار تسلسلي أو مراحل تدفق منطقي لديناميكية نفسية أو خطوات جلسة أو رحلة علاجية.\n" +
+        "  الحقول: id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }]\n\n" +
+        "• pillars: شبكة بطاقات الأركان والأبعاد التشريحية للموضوع (تفكيك المفهوم إلى 3 أو 4 أبعاد رئيسية ومحاور مفصلة).\n" +
+        "  الحقول: id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['نقطة 1', 'نقطة 2'] }]\n\n" +
+        "• pyramid: هرم مفاهيمي متدرج من القاعدة إلى الذروة (فقط إذا وجد تدرج حقيقي في المحاضرة كسلّم الاحتياجات أو مستويات النضج).\n" +
+        "  الحقول: id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }]\n\n" +
+        "• metric_card: بطاقة معادلة أو قاعدة مشورية عددية (فقط إذا ذكر المحاضر قاعدة عددية أو نسبة واضحة كقاعدة 1 إلى 9).\n" +
+        "  الحقول: id, type='metric_card', title, subtitle, badge, metrics: [{ num, label, note, color }], takeaway\n\n" +
+        "• pie: مخطط دائري لنسب وتوزيعات حقيقية صريحة.\n" +
+        "  الحقول: id, type='pie', title, subtitle, badge, slices: [{ label, percentage, color, desc }]\n\n" +
+        "المطلوب إخراج كائن JSON نقي 100% يحتوي على مصفوفة 'charts' تضم المخططات المستخرجة بجودة أكاديمية تليق بـ NotebookLM.";
 
       var raw = await window.EducationalAIService.callModel(
         prompt,
-        "أنت مصمم معلومات بصرية تعليمية. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
+        "أنت مصمم معماريات معرفية وبصرية تعليمية بأسلوب Google NotebookLM. أخرج كائن JSON النقي فقط بدون أي نصوص خارجية.",
         { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
       );
       return window.EducationalAIService._cleanAndParseJson(raw);
