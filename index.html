@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"},{"hash":"c925170","date":"2026-10-15 08:47","message":"Support audio chapters and notes in Recycle Bin with full restore capability"}];
+window.APP_UPDATES_HISTORY = [{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"},{"hash":"a825adf","date":"2026-10-19 13:47","message":"fix(tts): correct _synthesizeWithServerless function name reference"},{"hash":"d85168d","date":"2026-10-19 13:44","message":"perf(tts): optimize chunk size to 900 chars for rapid sub-10s synthesis"},{"hash":"8d0ddff","date":"2026-10-19 13:37","message":"fix(tts): route Edge-TTS through reliable /api/synthesize endpoint and enforce Google Drive permanent auto-upload"},{"hash":"0411ce3","date":"2026-10-19 13:13","message":"fix: harden direct Edge-TTS with clean socket teardown, remove serverless fallback loop, and add 800ms inter-chunk delay"},{"hash":"393f8a7","date":"2026-10-19 12:42","message":"fix: restore direct browser Salma engine with live ETA, permanent batch resume button, clean empty audio tracks, and crystal clear badges"},{"hash":"703a6cb","date":"2026-10-19 11:26","message":"perf: 3x faster parallel TTS synthesis with larger 2600-char chunks, auto-retry resilience, and removed broken browser fallback"},{"hash":"7ec4eb8","date":"2026-10-19 10:47","message":"feat: in-app Edge-TTS Salma engine, chapter audio clear button, live progress bars with time estimate, and unambiguous SRT badges"},{"hash":"f1c44a7","date":"2026-10-19 09:51","message":"fix(tts): fix WebSocket binary audio packet parsing and add accurate batch error reporting"},{"hash":"aa45743","date":"2026-10-19 09:31","message":"fix(tts): restore Salma Edge-TTS and Azure Speech, remove Gemini quota limit, fix settings"},{"hash":"c5be714","date":"2026-10-19 08:12","message":"feat: add live progress bar with chunk counter for single chapter audio, persistent batch button, and robust cache sync"},{"hash":"4c4f0f7","date":"2026-10-19 07:49","message":"feat(tts): restore intelligent text chunking and seamless WAV blob merging for Gemini TTS"},{"hash":"12813fc","date":"2026-10-18 12:48","message":"fix: enforce Google Drive audio proxy streaming and prioritize Drive URLs over stale cache"},{"hash":"9d70097","date":"2026-10-18 10:23","message":"fix: restore genuine HTML5 audio playback, eliminate autoplay on launch, and fix slider seeking"},{"hash":"4f5321b","date":"2026-10-18 09:32","message":"fix: guaranteed audio playback via smart speech synthesis engine and robust chapter resume"},{"hash":"da11a02","date":"2026-10-18 08:57","message":"fix: instant audio playback on resume using persistent audio element and gesture capture"},{"hash":"e44ab53","date":"2026-10-18 08:07","message":"fix: resolve audio resume playback and single header button; fix zoom reminder timing and background sync"},{"hash":"4d95e2d","date":"2026-10-16 18:30","message":"Fix cloud reference in App.js and safeguard subscribeLectures"},{"hash":"51bcf9a","date":"2026-10-16 18:24","message":"Fix Zoom reminders: add 1-day advance and short-time reminders, robust Arabic time parsing, emergency banner, and native calendar sync"},{"hash":"ed4c1af","date":"2026-10-15 08:53","message":"test: remove badge \u0027╪¼╪»┘è╪»\u0027 from updates item in sidebar to verify user consent update flow"},{"hash":"7ca567b","date":"2026-10-15 08:50","message":"fix: ensure resume sub-header displays on all tabs and adjust mobile spacing"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793787156",
-  buildTime: "2026-11-04T10:12:36",
+  version: "1.2.1793789172",
+  buildTime: "2026-11-04T10:46:12",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -15153,7 +15153,7 @@ window.LectureRow = function(props) {
 
 // Module: components/lectures/PresentationSlidesViewer.js
 // مكون عارض شرائح العرض التقديمي التفاعلي (Responsive Presentation Slides Viewer)
-// مصمم ليعمل بسلاسة فائقة على شاشات الموبايل والمتصفحات المكتبية (Touch + Keyboard + Fullscreen)
+// مصمم ليعمل بسلاسة فائقة على شاشات الموبايل والمتصفحات المكتبية مع إمكانية التعديل والحذف والإضافة للمشرف
 window.PresentationSlidesViewer = function(props) {
   var slidesData = props.slides || [];
   var items = Array.isArray(slidesData) ? slidesData : (slidesData.items || []);
@@ -15161,17 +15161,236 @@ window.PresentationSlidesViewer = function(props) {
   var isAdmin = props.isAdmin;
   var onPublishToggle = props.onPublishToggle;
   var onRequestEdit = props.onRequestEdit;
+  var onUpdateSlides = props.onUpdateSlides;
 
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [showNotes, setShowNotes] = React.useState(false);
   var [isFullscreen, setIsFullscreen] = React.useState(false);
 
+  // حالة نافذة إضافة وتعديل الشريحة
+  var [isSlideModalOpen, setIsSlideModalOpen] = React.useState(false);
+  var [editingSlideIndex, setEditingSlideIndex] = React.useState(-1); // -1 = إضافة شريحة جديدة
+  var [formSlideTitle, setFormSlideTitle] = React.useState("");
+  var [formSlideIcon, setFormSlideIcon] = React.useState("💡");
+  var [formSlideBullets, setFormSlideBullets] = React.useState("");
+  var [formSlideNotes, setFormSlideNotes] = React.useState("");
+
   var total = items.length;
 
-  // التنقل عبر لوحة المفاتيح على متصفحات الكمبيوتر (الأسهم يمين ويسار)
+  // فتح نافذة تعديل شريحة
+  var handleOpenEditSlide = function(idx) {
+    var sl = items[idx];
+    if (!sl) return;
+    setEditingSlideIndex(idx);
+    setFormSlideTitle(sl.title || "");
+    setFormSlideIcon(sl.icon || "💡");
+    setFormSlideBullets(Array.isArray(sl.bullets) ? sl.bullets.join("\n") : "");
+    setFormSlideNotes(sl.presenterNotes || "");
+    setIsSlideModalOpen(true);
+  };
+
+  // فتح نافذة إضافة شريحة جديدة
+  var handleOpenAddSlide = function() {
+    setEditingSlideIndex(-1);
+    setFormSlideTitle("");
+    setFormSlideIcon("💡");
+    setFormSlideBullets("");
+    setFormSlideNotes("");
+    setIsSlideModalOpen(true);
+  };
+
+  // حفظ الشريحة
+  var handleSaveSlide = function() {
+    if (!formSlideTitle.trim()) {
+      alert("يرجى إدخال عنوان الشريحة.");
+      return;
+    }
+
+    var bulletsList = formSlideBullets
+      .split("\n")
+      .map(function(b) { return b.trim(); })
+      .filter(Boolean);
+
+    if (bulletsList.length === 0) {
+      alert("يرجى إدخال نقطة واحدة على الأقل في الشريحة (سطر واحد على الأقل).");
+      return;
+    }
+
+    var newSlideObj = {
+      slideNumber: editingSlideIndex >= 0 ? (editingSlideIndex + 1) : (items.length + 1),
+      title: formSlideTitle.trim(),
+      icon: formSlideIcon.trim() || "💡",
+      bullets: bulletsList,
+      presenterNotes: formSlideNotes.trim()
+    };
+
+    var updatedList = items.slice();
+    if (editingSlideIndex >= 0) {
+      updatedList[editingSlideIndex] = newSlideObj;
+    } else {
+      updatedList.push(newSlideObj);
+    }
+
+    // إعادة ترقيم الشرائح بالتسلسل
+    updatedList.forEach(function(s, i) { s.slideNumber = i + 1; });
+
+    if (onUpdateSlides) {
+      onUpdateSlides(updatedList);
+    }
+
+    setIsSlideModalOpen(false);
+    if (editingSlideIndex === -1) {
+      setCurrentIndex(updatedList.length - 1);
+    }
+  };
+
+  // حذف الشريحة مع التأكيد
+  var handleDeleteSlide = function(idx) {
+    var sNum = idx + 1;
+    if (!window.confirm("هل أنت متأكد من حذف الشريحة رقم " + sNum + " نهائياً؟")) {
+      return;
+    }
+    var updatedList = items.filter(function(_, i) { return i !== idx; });
+    updatedList.forEach(function(s, i) { s.slideNumber = i + 1; });
+
+    if (onUpdateSlides) {
+      onUpdateSlides(updatedList);
+    }
+    setCurrentIndex(Math.max(0, Math.min(idx, updatedList.length - 1)));
+  };
+
+  // نافذة محرر الشريحة المنبثقة
+  var renderSlideEditorModal = function() {
+    if (!isSlideModalOpen) return null;
+    return React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget) setIsSlideModalOpen(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto" },
+
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-2xl" }, editingSlideIndex >= 0 ? "✏️" : "➕"),
+            React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+              editingSlideIndex >= 0 ? ("تعديل الشريحة رقم " + (editingSlideIndex + 1)) : "إضافة شريحة عرض جديدة"
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsSlideModalOpen(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold"
+            },
+            "✕"
+          )
+        ),
+
+        // جسم النافذة: حقول التعديل
+        React.createElement(
+          "div",
+          { className: "space-y-3.5" },
+
+          // أيقونة الشريحة وعنوانها
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-4 gap-2" },
+            React.createElement(
+              "div",
+              { className: "col-span-1" },
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "الأيقونة:"),
+              React.createElement("input", {
+                type: "text",
+                value: formSlideIcon,
+                onChange: function(e) { setFormSlideIcon(e.target.value); },
+                placeholder: "💡",
+                className: "w-full text-center py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              })
+            ),
+            React.createElement(
+              "div",
+              { className: "col-span-3" },
+              React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "عنوان الشريحة:"),
+              React.createElement("input", {
+                type: "text",
+                value: formSlideTitle,
+                onChange: function(e) { setFormSlideTitle(e.target.value); },
+                placeholder: "اكتب عنواناً جذاباً وموجزاً للشريحة...",
+                className: "w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold"
+              })
+            )
+          ),
+
+          // نقاط الشريحة
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "نقاط ومحاور الشريحة (اكتب كل نقطة في سطر مستقل):"),
+            React.createElement("textarea", {
+              rows: 5,
+              value: formSlideBullets,
+              onChange: function(e) { setFormSlideBullets(e.target.value); },
+              placeholder: "النقطة الأولى...\nالنقطة الثانية...\nالنقطة الثالثة...",
+              className: "w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          ),
+
+          // إضاءة وملاحظات المحاضر
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "💡 إضاءة وملاحظات الشرح للمحاضر (اختياري):"),
+            React.createElement("textarea", {
+              rows: 3,
+              value: formSlideNotes,
+              onChange: function(e) { setFormSlideNotes(e.target.value); },
+              placeholder: "ملاحظات إرشادية للمشير أو الخادم أثناء عرض هذه الشريحة...",
+              className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          )
+        ),
+
+        // أزرار الحفظ والإلغاء
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsSlideModalOpen(false); },
+              className: "px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleSaveSlide,
+              className: "px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
+            },
+            React.createElement("span", null, "💾"),
+            React.createElement("span", null, "حفظ الشريحة")
+          )
+        )
+      )
+    );
+  };
+
+  // التنقل عبر لوحة المفاتيح
   React.useEffect(function() {
     var handleKeyDown = function(e) {
-      if (total <= 1) return;
+      if (total <= 1 || isSlideModalOpen) return;
       if (e.key === "ArrowLeft") {
         setCurrentIndex(function(prev) { return Math.min(prev + 1, total - 1); });
       } else if (e.key === "ArrowRight") {
@@ -15180,7 +15399,7 @@ window.PresentationSlidesViewer = function(props) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return function() { window.removeEventListener("keydown", handleKeyDown); };
-  }, [total]);
+  }, [total, isSlideModalOpen]);
 
   if (!items || items.length === 0) {
     return React.createElement(
@@ -15189,8 +15408,19 @@ window.PresentationSlidesViewer = function(props) {
       React.createElement("div", { className: "text-4xl" }, "📊"),
       React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لا توجد شرائح عرض لهذه المحاضرة بعد"),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-        "يمكن لمسؤول المنصة توليد شرائح العرض التقديمي بالذكاء الاصطناعي بضغطة زر واحدة."
-      )
+        "يمكن لمسؤول المنصة توليد شرائح العرض التقديمي بالذكاء الاصطناعي، أو إضافة شرائح يدوياً الآن."
+      ),
+      isAdmin && React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleOpenAddSlide,
+          className: "mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
+        },
+        React.createElement("span", null, "➕"),
+        React.createElement("span", null, "إضافة أول شريحة يدوياً")
+      ),
+      renderSlideEditorModal()
     );
   }
 
@@ -15205,7 +15435,7 @@ window.PresentationSlidesViewer = function(props) {
     "div",
     { className: containerClasses },
 
-    // شريط علوي للتحكم والحالة (يظهر للمسؤول حالة النشر والتحرير)
+    // شريط علوي للتحكم والحالة
     React.createElement(
       "div",
       { className: "flex flex-wrap items-center justify-between gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60" },
@@ -15228,7 +15458,7 @@ window.PresentationSlidesViewer = function(props) {
       React.createElement(
         "div",
         { className: "flex items-center gap-1.5 flex-wrap" },
-        // زر ملء الشاشة للكمبيوتر والموبايل
+        // زر ملء الشاشة
         React.createElement(
           "button",
           {
@@ -15240,10 +15470,10 @@ window.PresentationSlidesViewer = function(props) {
           React.createElement("span", { className: "hidden sm:inline" }, isFullscreen ? "إغلاق ملء الشاشة" : "عرض ملء الشاشة")
         ),
 
-        // أزرار المسؤول: النشر وإعادة التعديل
+        // أزرار المسؤول: النشر والإضافة والتعديل
         isAdmin && React.createElement(
           "div",
-          { className: "flex items-center gap-1.5" },
+          { className: "flex items-center gap-1.5 flex-wrap" },
           onPublishToggle && React.createElement(
             "button",
             {
@@ -15256,12 +15486,22 @@ window.PresentationSlidesViewer = function(props) {
             },
             React.createElement("span", null, isDraft ? "🚀 نشر للطلاب" : "🔒 تحويل لمسودة")
           ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleOpenAddSlide,
+              className: "px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 flex items-center gap-1 transition-all"
+            },
+            React.createElement("span", null, "➕"),
+            React.createElement("span", null, "إضافة شريحة جديدة")
+          ),
           onRequestEdit && React.createElement(
             "button",
             {
               type: "button",
               onClick: function() { onRequestEdit("slides"); },
-              className: "px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 flex items-center gap-1"
+              className: "px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 flex items-center gap-1"
             },
             React.createElement("span", null, "✨"),
             React.createElement("span", { className: "hidden sm:inline" }, "تعديل بالذكاء الاصطناعي")
@@ -15280,7 +15520,7 @@ window.PresentationSlidesViewer = function(props) {
       })
     ),
 
-    // بطاقة الشريحة الرئيسية الكبرى (Responsive Card)
+    // بطاقة الشريحة الرئيسية الكبرى
     React.createElement(
       "div",
       {
@@ -15290,13 +15530,13 @@ window.PresentationSlidesViewer = function(props) {
             : "bg-gradient-to-br from-white via-slate-50 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/20 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100")
       },
 
-      // رأس الشريحة: الأيقونة والعنوان ورقم الشريحة
+      // رأس الشريحة: الأيقونة والعنوان ورقم الشريحة وأزرار المسؤول
       React.createElement(
         "div",
         { className: "space-y-4" },
         React.createElement(
           "div",
-          { className: "flex items-start justify-between gap-3" },
+          { className: "flex items-start justify-between gap-3 flex-wrap" },
           React.createElement(
             "div",
             { className: "flex items-center gap-3" },
@@ -15314,6 +15554,30 @@ window.PresentationSlidesViewer = function(props) {
               React.createElement("h3", { className: "text-lg sm:text-2xl font-extrabold leading-snug" },
                 currentSlide.title || "عنوان الشريحة"
               )
+            )
+          ),
+          isAdmin && React.createElement(
+            "div",
+            { className: "flex items-center gap-1.5" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handleOpenEditSlide(currentIndex); },
+                className: "px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-2xs"
+              },
+              React.createElement("span", null, "✏️"),
+              React.createElement("span", null, "تعديل الشريحة")
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handleDeleteSlide(currentIndex); },
+                className: "px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 text-xs font-bold flex items-center gap-1 transition-all shadow-2xs"
+              },
+              React.createElement("span", null, "🗑️"),
+              React.createElement("span", null, "حذف الشريحة")
             )
           )
         ),
@@ -15347,7 +15611,7 @@ window.PresentationSlidesViewer = function(props) {
         )
       ),
 
-      // قسم إضاءة المحاضر / الملاحظات الإضافية (قابلة للفتح والإغلاق)
+      // قسم إضاءة المحاضر / الملاحظات الإضافية
       currentSlide.presenterNotes && React.createElement(
         "div",
         { className: "mt-6 pt-4 border-t border-slate-200/60 dark:border-slate-800" },
@@ -15368,7 +15632,7 @@ window.PresentationSlidesViewer = function(props) {
       )
     ),
 
-    // شريط أزرار التنقل (كبير ومريح للأصابع على الموبايل وللماوس على الكمبيوتر)
+    // شريط أزرار التنقل
     React.createElement(
       "div",
       { className: "flex items-center justify-between gap-3 pt-2" },
@@ -15417,7 +15681,10 @@ window.PresentationSlidesViewer = function(props) {
         React.createElement("span", null, "الشريحة التالية"),
         React.createElement("span", null, "⬅️")
       )
-    )
+    ),
+
+    // نافذة محرر الشريحة المنبثقة
+    renderSlideEditorModal()
   );
 };
 
@@ -15733,7 +16000,7 @@ window.InteractiveMindMapViewer = function(props) {
 
 // Module: components/lectures/InteractiveQuizViewer.js
 // مكون مشغل الكويز والاختبار التفاعلي الشامل (Responsive Interactive Quiz Viewer)
-// متجاوب بالكامل مع شاشات الموبايل والمتصفحات مع تصحيح فوري وتفسير تعليمي وعداد نقاط
+// متجاوب بالكامل مع شاشات الموبايل والمتصفحات مع تصحيح فوري وتفسير تعليمي وإمكانية التحرير والحذف والإضافة للمشرف
 window.InteractiveQuizViewer = function(props) {
   var quizData = props.quiz || [];
   var questions = Array.isArray(quizData) ? quizData : (quizData.questions || []);
@@ -15741,12 +16008,238 @@ window.InteractiveQuizViewer = function(props) {
   var isAdmin = props.isAdmin;
   var onPublishToggle = props.onPublishToggle;
   var onRequestEdit = props.onRequestEdit;
+  var onUpdateQuiz = props.onUpdateQuiz;
 
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [userAnswers, setUserAnswers] = React.useState({});
   var [showFinalScore, setShowFinalScore] = React.useState(false);
 
+  // حالة نافذة إضافة وتعديل السؤال يدوياً للمشرف
+  var [isModalOpen, setIsModalOpen] = React.useState(false);
+  var [editingIndex, setEditingIndex] = React.useState(-1); // -1 تعني إضافة سؤال جديد
+  var [formQuestion, setFormQuestion] = React.useState("");
+  var [formOptions, setFormOptions] = React.useState(["", "", "", ""]);
+  var [formCorrectIdx, setFormCorrectIdx] = React.useState(0);
+  var [formExplanation, setFormExplanation] = React.useState("");
+
   var total = questions.length;
+
+  // فتح نافذة التعديل لسؤال محدد
+  var handleOpenEditQuestion = function(idx) {
+    var q = questions[idx];
+    if (!q) return;
+    setEditingIndex(idx);
+    setFormQuestion(q.question || "");
+    var opts = Array.isArray(q.options) ? q.options.slice() : [];
+    while (opts.length < 4) opts.push("");
+    setFormOptions(opts.slice(0, 4));
+    setFormCorrectIdx(typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0);
+    setFormExplanation(q.explanation || "");
+    setIsModalOpen(true);
+  };
+
+  // فتح نافذة إضافة سؤال جديد
+  var handleOpenAddQuestion = function() {
+    setEditingIndex(-1);
+    setFormQuestion("");
+    setFormOptions(["", "", "", ""]);
+    setFormCorrectIdx(0);
+    setFormExplanation("");
+    setIsModalOpen(true);
+  };
+
+  // حفظ السؤال (إضافة أو تعديل)
+  var handleSaveQuestion = function() {
+    if (!formQuestion.trim()) {
+      alert("يرجى كتابة نص السؤال أولاً.");
+      return;
+    }
+    if (formOptions.some(function(opt) { return !opt.trim(); })) {
+      alert("يرجى كتابة جميع خيارات الإجابة الأربعة.");
+      return;
+    }
+
+    var newQuestionObj = {
+      id: (editingIndex >= 0 && questions[editingIndex] && questions[editingIndex].id)
+        ? questions[editingIndex].id
+        : ("q_" + Date.now()),
+      question: formQuestion.trim(),
+      options: formOptions.map(function(o) { return o.trim(); }),
+      correctAnswerIndex: formCorrectIdx,
+      explanation: formExplanation.trim()
+    };
+
+    var updatedList = questions.slice();
+    if (editingIndex >= 0) {
+      updatedList[editingIndex] = newQuestionObj;
+    } else {
+      updatedList.push(newQuestionObj);
+    }
+
+    if (onUpdateQuiz) {
+      onUpdateQuiz(updatedList);
+    }
+
+    setIsModalOpen(false);
+    if (editingIndex === -1) {
+      setCurrentIndex(updatedList.length - 1);
+    }
+    setUserAnswers({});
+  };
+
+  // حذف السؤال مع التأكيد
+  var handleDeleteQuestion = function(idx) {
+    var qNum = idx + 1;
+    if (!window.confirm("هل أنت متأكد من حذف السؤال رقم " + qNum + " نهائياً من هذا الاختبار؟")) {
+      return;
+    }
+    var updatedList = questions.filter(function(_, i) { return i !== idx; });
+    if (onUpdateQuiz) {
+      onUpdateQuiz(updatedList);
+    }
+    setCurrentIndex(Math.max(0, Math.min(idx, updatedList.length - 1)));
+    setUserAnswers({});
+  };
+
+  // نافذة محرر السؤال المنبثقة
+  var renderEditorModal = function() {
+    if (!isModalOpen) return null;
+    return React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget) setIsModalOpen(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto" },
+
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "text-2xl" }, editingIndex >= 0 ? "✏️" : "➕"),
+            React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" },
+              editingIndex >= 0 ? ("تعديل السؤال رقم " + (editingIndex + 1)) : "إضافة سؤال جديد للاختبار"
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsModalOpen(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold"
+            },
+            "✕"
+          )
+        ),
+
+        // جسم النافذة: حقول التعديل
+        React.createElement(
+          "div",
+          { className: "space-y-3" },
+
+          // نص السؤال
+          React.createElement(
+            "div",
+            null,
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "نص السؤال:"),
+            React.createElement("textarea", {
+              rows: 3,
+              value: formQuestion,
+              onChange: function(e) { setFormQuestion(e.target.value); },
+              placeholder: "اكتب نص السؤال هنا بدقة...",
+              className: "w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          ),
+
+          // خيارات الإجابة الأربعة
+          React.createElement(
+            "div",
+            { className: "space-y-2 pt-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300" }, "خيارات الإجابة (حدد الدائرة للإجابة الصحيحة):"),
+            [0, 1, 2, 3].map(function(optIdx) {
+              var isCorrect = formCorrectIdx === optIdx;
+              return React.createElement(
+                "div",
+                {
+                  key: optIdx,
+                  className: "flex items-center gap-2 p-2 rounded-xl border transition-all " +
+                    (isCorrect
+                      ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500/80"
+                      : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700")
+                },
+                React.createElement("input", {
+                  type: "radio",
+                  name: "correctOptionRadio",
+                  checked: isCorrect,
+                  onChange: function() { setFormCorrectIdx(optIdx); },
+                  className: "w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                }),
+                React.createElement("span", { className: "text-xs font-bold text-slate-500 shrink-0 w-5 text-center" }, String.fromCharCode(65 + optIdx)),
+                React.createElement("input", {
+                  type: "text",
+                  value: formOptions[optIdx] || "",
+                  onChange: function(e) {
+                    var val = e.target.value;
+                    setFormOptions(function(prev) {
+                      var next = prev.slice();
+                      next[optIdx] = val;
+                      return next;
+                    });
+                  },
+                  placeholder: "نص الخيار " + String.fromCharCode(65 + optIdx),
+                  className: "flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                })
+              );
+            })
+          ),
+
+          // التفسير والشرح العلمي
+          React.createElement(
+            "div",
+            { className: "pt-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "💡 التفسير والشرح لسبب صحة الإجابة:"),
+            React.createElement("textarea", {
+              rows: 2,
+              value: formExplanation,
+              onChange: function(e) { setFormExplanation(e.target.value); },
+              placeholder: "اشرح لماذا هذه الإجابة صحيحة وما الدليل من المحاضرة...",
+              className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            })
+          )
+        ),
+
+        // أزرار الحفظ والإلغاء
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setIsModalOpen(false); },
+              className: "px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleSaveQuestion,
+              className: "px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
+            },
+            React.createElement("span", null, "💾"),
+            React.createElement("span", null, "حفظ السؤال")
+          )
+        )
+      )
+    );
+  };
 
   if (!questions || total === 0) {
     return React.createElement(
@@ -15755,8 +16248,19 @@ window.InteractiveQuizViewer = function(props) {
       React.createElement("div", { className: "text-4xl" }, "📝"),
       React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لا يوجد اختبار تفاعلي لهذه المحاضرة بعد"),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-        "يمكن لمسؤول المنصة توليد أسئلة الكويز بالذكاء الاصطناعي بالعدد المطلوب بضغطة زر واحدة."
-      )
+        "يمكن لمسؤول المنصة توليد أسئلة الكويز بالذكاء الاصطناعي، أو كتابة وإضافة أسئلة يدوياً الآن."
+      ),
+      isAdmin && React.createElement(
+        "button",
+        {
+          type: "button",
+          onClick: handleOpenAddQuestion,
+          className: "mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
+        },
+        React.createElement("span", null, "➕"),
+        React.createElement("span", null, "إضافة أول سؤال يدوياً")
+      ),
+      renderEditorModal()
     );
   }
 
@@ -15772,7 +16276,6 @@ window.InteractiveQuizViewer = function(props) {
   };
 
   var handleSelectOption = function(optIndex) {
-    // إذا تمت الإجابة بالفعل على هذا السؤال، لا نغيرها
     if (userAnswers[currentIndex] !== undefined) return;
     setUserAnswers(function(prev) {
       var next = Object.assign({}, prev);
@@ -15884,7 +16387,7 @@ window.InteractiveQuizViewer = function(props) {
         // أزرار المسؤول
         isAdmin && React.createElement(
           "div",
-          { className: "flex items-center gap-1.5" },
+          { className: "flex items-center gap-1.5 flex-wrap" },
           onPublishToggle && React.createElement(
             "button",
             {
@@ -15897,14 +16400,25 @@ window.InteractiveQuizViewer = function(props) {
             },
             isDraft ? "🚀 نشر للطلاب" : "🔒 تحويل لمسودة"
           ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleOpenAddQuestion,
+              className: "px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 flex items-center gap-1 transition-all"
+            },
+            React.createElement("span", null, "➕"),
+            React.createElement("span", null, "إضافة سؤال جديد")
+          ),
           onRequestEdit && React.createElement(
             "button",
             {
               type: "button",
               onClick: function() { onRequestEdit("quiz"); },
-              className: "px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100"
+              className: "px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 flex items-center gap-1"
             },
-            "✨ تعديل بالذكاء الاصطناعي"
+            React.createElement("span", null, "✨"),
+            React.createElement("span", { className: "hidden sm:inline" }, "تعديل بالذكاء الاصطناعي")
           )
         )
       )
@@ -15958,15 +16472,45 @@ window.InteractiveQuizViewer = function(props) {
     // بطاقة السؤال الحالية
     React.createElement(
       "div",
-      { className: "p-5 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg space-y-5" },
+      { className: "p-5 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg space-y-5 relative" },
+
+      // شريط عنوان السؤال وأزرار تعديل وحذف السؤال للمسؤول
+      React.createElement(
+        "div",
+        { className: "flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 dark:border-slate-800 pb-3" },
+        React.createElement("span", { className: "text-xs font-bold text-indigo-600 dark:text-indigo-400 block" },
+          "السؤال رقم " + (currentIndex + 1) + " من " + total
+        ),
+        isAdmin && React.createElement(
+          "div",
+          { className: "flex items-center gap-1.5" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { handleOpenEditQuestion(currentIndex); },
+              className: "px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-2xs"
+            },
+            React.createElement("span", null, "✏️"),
+            React.createElement("span", null, "تعديل هذا السؤال")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { handleDeleteQuestion(currentIndex); },
+              className: "px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 text-xs font-bold flex items-center gap-1 transition-all shadow-2xs"
+            },
+            React.createElement("span", null, "🗑️"),
+            React.createElement("span", null, "حذف السؤال")
+          )
+        )
+      ),
 
       // نص السؤال
       React.createElement(
         "div",
-        { className: "space-y-2" },
-        React.createElement("span", { className: "text-xs font-bold text-indigo-600 dark:text-indigo-400 block" },
-          "السؤال رقم " + (currentIndex + 1) + " من " + total
-        ),
+        { className: "space-y-1" },
         React.createElement("h3", { className: "text-base sm:text-xl font-extrabold text-slate-900 dark:text-slate-100 leading-snug" },
           currentQuestion.question || "نص السؤال"
         )
@@ -15975,7 +16519,7 @@ window.InteractiveQuizViewer = function(props) {
       // قائمة الخيارات الأربعة (Responsive Tap Cards)
       React.createElement(
         "div",
-        { className: "space-y-2.5 pt-2" },
+        { className: "space-y-2.5 pt-1" },
         Array.isArray(currentQuestion.options) && currentQuestion.options.map(function(optText, optIdx) {
           var isChosen = currentSelectedOpt === optIdx;
           var isCorrectAnswer = optIdx === currentQuestion.correctAnswerIndex;
@@ -16073,7 +16617,10 @@ window.InteractiveQuizViewer = function(props) {
         },
         "التالي ⬅️"
       )
-    )
+    ),
+
+    // نافذة محرر السؤال المنبثقة
+    renderEditorModal()
   );
 };
 
@@ -16129,6 +16676,97 @@ window.LectureViewerModal = function(props) {
   var [offlineAudioBlobUrl, setOfflineAudioBlobUrl] = React.useState(null);
   var [isSavingOfflineAudio, setIsSavingOfflineAudio] = React.useState(false);
   var [hasOfflineAudio, setHasOfflineAudio] = React.useState(false);
+
+  // حالة القارئ الصوتي المدمج لنطق الملخص
+  var [ttsPlaying, setTtsPlaying] = React.useState(false);
+  var [ttsPaused, setTtsPaused] = React.useState(false);
+  var [ttsSpeed, setTtsSpeed] = React.useState(1.0);
+  var [ttsTextMode, setTtsTextMode] = React.useState("summary"); // 'summary' or 'objectives'
+
+  var stopTts = function() {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setTtsPlaying(false);
+    setTtsPaused(false);
+  };
+
+  var playTts = function(overrideSpeed, overrideMode) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      alert("متصفحك لا يدعم خاصية القارئ الصوتي المباشر.");
+      return;
+    }
+    var speedToUse = overrideSpeed !== undefined ? overrideSpeed : ttsSpeed;
+    var modeToUse = overrideMode !== undefined ? overrideMode : ttsTextMode;
+    var textToRead = "";
+
+    if (modeToUse === "objectives") {
+      var summaryObj = activeLecture.summaryData || (function() { try { return JSON.parse(activeLecture.summaryDataJson); } catch(e){ return null; } })();
+      if (summaryObj && Array.isArray(summaryObj.learningObjectives) && summaryObj.learningObjectives.length > 0) {
+        textToRead = "أهداف التعلم للمحاضرة: " + summaryObj.learningObjectives.join(". ") + ". ";
+        if (Array.isArray(summaryObj.keyTakeaways) && summaryObj.keyTakeaways.length > 0) {
+          textToRead += "أهم الخلاصات: " + summaryObj.keyTakeaways.join(". ");
+        }
+      } else {
+        textToRead = activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+      }
+    } else {
+      textToRead = activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+    }
+
+    if (!textToRead || !textToRead.trim()) {
+      alert("لا يوجد ملخص مكتوب للقراءة حتى الآن لهذه المحاضرة.");
+      return;
+    }
+
+    var cleanText = textToRead
+      .replace(/[•#*_\-–—]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    window.speechSynthesis.cancel();
+    var utter = new SpeechSynthesisUtterance(cleanText);
+    utter.lang = "ar-EG";
+    utter.rate = speedToUse;
+
+    var voices = window.speechSynthesis.getVoices();
+    var arVoice = voices.find(function(v) { return v.lang && v.lang.toLowerCase().indexOf("ar") !== -1; });
+    if (arVoice) utter.voice = arVoice;
+
+    utter.onstart = function() {
+      setTtsPlaying(true);
+      setTtsPaused(false);
+    };
+    utter.onend = function() {
+      setTtsPlaying(false);
+      setTtsPaused(false);
+    };
+    utter.onerror = function() {
+      setTtsPlaying(false);
+      setTtsPaused(false);
+    };
+
+    window.speechSynthesis.speak(utter);
+  };
+
+  var togglePauseTts = function() {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setTtsPaused(false);
+    } else {
+      window.speechSynthesis.pause();
+      setTtsPaused(true);
+    }
+  };
+
+  React.useEffect(function() {
+    return function() {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // فحص توفر ملف صوتي أوفلاين في الذاكرة المحلية
   var checkOfflineAudio = async function(lecId) {
@@ -17221,60 +17859,174 @@ window.LectureViewerModal = function(props) {
 
       activeSubTab === "audio_summary" && React.createElement(
         "div",
-        { className: "space-y-4" },
-        currentUser.role === "admin" && React.createElement(
+        { className: "space-y-5" },
+
+        // 1. بطاقة القارئ الصوتي المدمج لملخص المحاضرة
+        React.createElement(
           "div",
-          { className: "flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800" },
-          React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300" }, "إدارة الملف الصوتي"),
+          { className: "p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border border-indigo-700/50 shadow-xl space-y-5" },
           React.createElement(
-            "button",
-            {
-              onClick: function() { if (openEditModal) openEditModal(activeLecture, "audio"); },
-              className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold hover:bg-slate-100 flex items-center gap-1"
-            },
-            React.createElement("span", null, (activeLecture.audioSummaryUrl || activeLecture.mediaUrl) ? "تعديل رابط الصوت" : "إضافة رابط الصوت")
+            "div",
+            { className: "flex items-start justify-between gap-4 flex-wrap" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-3.5" },
+              React.createElement(
+                "div",
+                { className: "w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-2xl flex items-center justify-center shrink-0 shadow-inner " + (ttsPlaying && !ttsPaused ? "animate-pulse" : "") },
+                "🎙️"
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-0.5" },
+                React.createElement("h3", { className: "text-base sm:text-lg font-black text-white" }, "القارئ الصوتي الذكي لملخص المحاضرة"),
+                React.createElement("p", { className: "text-xs text-indigo-200/80" }, "استمع لنطق الملخص الأكاديمي الشامل للمحاضرة بصوت نقي ومريح")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 bg-white/10 p-1 rounded-xl text-xs" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setTtsTextMode("summary"); if (ttsPlaying) playTts(ttsSpeed, "summary"); },
+                  className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "summary" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
+                },
+                "📄 الملخص الموسع"
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setTtsTextMode("objectives"); if (ttsPlaying) playTts(ttsSpeed, "objectives"); },
+                  className: "px-3 py-1.5 rounded-lg font-bold transition-all " + (ttsTextMode === "objectives" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-200 hover:text-white")
+                },
+                "🎯 الأهداف والخلاصات"
+              )
+            )
+          ),
+
+          // شريط أزرار التحكم في القراءة الصوتية
+          React.createElement(
+            "div",
+            { className: "flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/10" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              !ttsPlaying ? React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { playTts(); },
+                  className: "px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-2 active:scale-95"
+                },
+                React.createElement("span", null, "▶️"),
+                React.createElement("span", null, "بدء الاستماع للملخص الآن")
+              ) : React.createElement(
+                "div",
+                { className: "flex items-center gap-2" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: togglePauseTts,
+                    className: "px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+                  },
+                  React.createElement("span", null, ttsPaused ? "▶️ استئناف" : "⏸️ إيقاف مؤقت")
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: stopTts,
+                    className: "px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+                  },
+                  React.createElement("span", null, "⏹️ إنهاء")
+                )
+              ),
+              ttsPlaying && React.createElement(
+                "span",
+                { className: "text-xs text-emerald-300 font-bold animate-pulse flex items-center gap-1 mr-2" },
+                ttsPaused ? "⏸️ متوقف مؤقتاً" : "🔊 جاري النطق بصوت طبيعي..."
+              )
+            ),
+
+            // سرعة القراءة
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1 text-xs" },
+              React.createElement("span", { className: "text-indigo-200/80 ml-1 font-bold" }, "السرعة:"),
+              [0.9, 1.0, 1.25, 1.5].map(function(spd) {
+                return React.createElement(
+                  "button",
+                  {
+                    key: spd,
+                    type: "button",
+                    onClick: function() { setTtsSpeed(spd); if (ttsPlaying) playTts(spd, ttsTextMode); },
+                    className: "px-2.5 py-1 rounded-lg font-bold transition-all " + (ttsSpeed === spd ? "bg-white text-slate-950 font-black shadow-xs" : "bg-white/10 text-indigo-200 hover:bg-white/20")
+                  },
+                  spd + "x"
+                );
+              })
+            )
           )
         ),
-        (activeLecture.audioSummaryUrl || activeLecture.mediaUrl) ? React.createElement(
+
+        // 2. بطاقة التسجيل الصوتي الخارجي (ملف MP3 الأصلي للمحاضرة)
+        React.createElement(
           "div",
-          { className: "p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3 text-center" },
-          React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "الاستماع للملخص الصوتي"),
-          React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto" }, "يتم حفظ موضع التوقف تلقائياً للرجوع إليه لاحقاً."),
+          { className: "p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-4" },
           React.createElement(
-            "audio",
-            {
-              controls: true,
-              className: "w-full max-w-lg mx-auto mt-2",
-              src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl || activeLecture.mediaUrl),
-              onError: function(e) {
-                console.warn("Direct audio tag error, showing embedded fallback if Google Drive", e);
-                var dId = utils.extractDriveId ? utils.extractDriveId(activeLecture.audioSummaryUrl || activeLecture.mediaUrl) : null;
-                if (dId) {
-                  var el = e.target;
-                  if (el && el.parentElement && !el.parentElement.querySelector("iframe")) {
-                    var fallbackIframe = document.createElement("iframe");
-                    fallbackIframe.src = "https://drive.google.com/file/d/" + dId + "/preview";
-                    fallbackIframe.className = "w-full h-20 border-0 rounded-xl mt-3";
-                    fallbackIframe.allow = "autoplay";
-                    el.parentElement.appendChild(fallbackIframe);
-                    el.style.display = "none";
+            "div",
+            { className: "flex items-center justify-between gap-3 flex-wrap" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h4", { className: "text-sm font-bold text-slate-900 dark:text-white" }, "التسجيل الصوتي الكامل (MP3)"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, "ربط ملف صوتي مسجل بصوت المحاضر الأصلي")
+            ),
+            currentUser.role === "admin" && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { if (openEditModal) openEditModal(activeLecture, "audio"); },
+                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
+              },
+              React.createElement("span", null, "🎙️"),
+              React.createElement("span", null, activeLecture.audioSummaryUrl ? "تعديل رابط الملف الصوتي" : "إضافة رابط ملف صوتي خارجي")
+            )
+          ),
+
+          (activeLecture.audioSummaryUrl && !window.APP_UTILS.isYouTubeUrl(activeLecture.audioSummaryUrl)) ? React.createElement(
+            "div",
+            { className: "p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2 text-center" },
+            React.createElement(
+              "audio",
+              {
+                controls: true,
+                className: "w-full max-w-lg mx-auto",
+                src: utils.getAudioStreamUrl(activeLecture.audioSummaryUrl),
+                onError: function(e) {
+                  var dId = utils.extractDriveId ? utils.extractDriveId(activeLecture.audioSummaryUrl) : null;
+                  if (dId) {
+                    var el = e.target;
+                    if (el && el.parentElement && !el.parentElement.querySelector("iframe")) {
+                      var fallbackIframe = document.createElement("iframe");
+                      fallbackIframe.src = "https://drive.google.com/file/d/" + dId + "/preview";
+                      fallbackIframe.className = "w-full h-20 border-0 rounded-xl mt-3";
+                      fallbackIframe.allow = "autoplay";
+                      el.parentElement.appendChild(fallbackIframe);
+                      el.style.display = "none";
+                    }
                   }
                 }
               }
-            }
-          )
-        ) : React.createElement(
-          "div",
-          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs space-y-2" },
-          React.createElement("p", null, "لم يتم رفع ملف صوتي مباشر (MP3) لهذه المحاضرة بعد."),
-          currentUser.role === "admin" && React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: function() { if (openEditModal) openEditModal(activeLecture, "audio"); },
-              className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white text-xs font-bold shadow-sm"
-            },
-            "🎙️ إضافة رابط ملف صوتي الآن"
+            )
+          ) : React.createElement(
+            "div",
+            { className: "p-4 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs" },
+            "لم يتم ربط ملف صوتي مباشر (MP3) للمحاضر بعد، ويمكنك الاعتماد على القارئ الصوتي الذكي في الأعلى للاستماع للملخص."
           )
         )
       ),
@@ -17290,7 +18042,19 @@ window.LectureViewerModal = function(props) {
             isDraft: getIsDraft("slides"),
             isAdmin: currentUser.role === "admin",
             onPublishToggle: handlePublishToggle,
-            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+            onRequestEdit: function(comp) { setAiEditTarget(comp); },
+            onUpdateSlides: function(newSlides) {
+              var updated = Object.assign({}, activeLecture);
+              if (updated.presentationSlides && typeof updated.presentationSlides === "object" && !Array.isArray(updated.presentationSlides)) {
+                updated.presentationSlides = Object.assign({}, updated.presentationSlides, { items: newSlides });
+              } else {
+                updated.presentationSlides = newSlides;
+              }
+              updated.slidesData = newSlides;
+              updated.slidesDataJson = JSON.stringify(newSlides);
+              cloud.saveLecture(updated);
+              if (onSelectLecture) onSelectLecture(updated);
+            }
           }
         ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الشرائح...")
       ),
@@ -17306,7 +18070,12 @@ window.LectureViewerModal = function(props) {
             isDraft: getIsDraft("mindMap"),
             isAdmin: currentUser.role === "admin",
             onPublishToggle: handlePublishToggle,
-            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+            onRequestEdit: function(comp) { setAiEditTarget(comp); },
+            onUpdateQuiz: function(newQuestions) {
+              var updated = Object.assign({}, activeLecture, { quizQuestions: newQuestions });
+              cloud.saveLecture(updated);
+              if (onSelectLecture) onSelectLecture(updated);
+            }
           }
         ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض الخريطة...")
       ),
@@ -17322,7 +18091,12 @@ window.LectureViewerModal = function(props) {
             isDraft: getIsDraft("quiz"),
             isAdmin: currentUser.role === "admin",
             onPublishToggle: handlePublishToggle,
-            onRequestEdit: function(comp) { setAiEditTarget(comp); }
+            onRequestEdit: function(comp) { setAiEditTarget(comp); },
+            onUpdateQuiz: function(newQuestions) {
+              var updated = Object.assign({}, activeLecture, { quizQuestions: newQuestions });
+              cloud.saveLecture(updated);
+              if (onSelectLecture) onSelectLecture(updated);
+            }
           }
         ) : 
         currentUser.role === "admin" && React.createElement(
