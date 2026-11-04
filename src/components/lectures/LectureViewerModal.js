@@ -251,7 +251,7 @@ window.LectureViewerModal = function(props) {
     setIsAiGenerating(true);
     setPackageGenStatus("جاري استماع النموذج وتحليل المحاضرة وتوليد الأركان المحددة بالذكاء الاصطناعي...");
     try {
-      var sourceContent = activeLecture.notes || activeLecture.writtenSummary || activeLecture.title;
+      var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
       var result = await window.EducationalAIService.generateCompletePackage(
         activeLecture.title,
         sourceContent,
@@ -290,7 +290,14 @@ window.LectureViewerModal = function(props) {
         if (Array.isArray(result.summary.keyTakeaways) && result.summary.keyTakeaways.length > 0) {
           fullSummaryText += "🌟 خلاصات ونقاط جوهرية:\n" + result.summary.keyTakeaways.map(function(kt) { return "• " + kt; }).join("\n") + "\n\n";
         }
+        if (Array.isArray(result.summary.glossary) && result.summary.glossary.length > 0) {
+          fullSummaryText += "📖 معجم المصطلحات والمفاهيم المفتاحية:\n" + result.summary.glossary.map(function(g) { return "• " + (g.term || "") + ": " + (g.definition || ""); }).join("\n") + "\n\n";
+        }
+        if (Array.isArray(result.summary.reflectionQuestions) && result.summary.reflectionQuestions.length > 0) {
+          fullSummaryText += "❓ أسئلة للتأمل والتقييم الذاتي:\n" + result.summary.reflectionQuestions.map(function(q) { return "• " + q; }).join("\n") + "\n\n";
+        }
         updated.writtenSummary = fullSummaryText.trim();
+        updated.summaryDataJson = JSON.stringify(result.summary);
         updated.publishStatus.summary = false;
       }
 
