@@ -219,7 +219,13 @@ window.LectureViewerModal = function(props) {
     var confirmMsg = "هل تريد إعادة بناء الدليل الدراسي المصور (الملخص والمخططات التفاعلية المدمجة - " + pages + " صفحات) بدقة من صلب تفريغ المحاضرة؟";
     if (!window.confirm(confirmMsg)) return;
 
-    var content = activeLecture.transcript || activeLecture.notes || activeLecture.writtenSummary || "";
+    var content = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || "";
+    if (typeof content === "string") {
+      content = content
+        .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+        .replace(/عبر\s+زووم/gi, "")
+        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+    }
     if (!content.trim()) {
       alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً.");
       return;
@@ -257,7 +263,13 @@ window.LectureViewerModal = function(props) {
     var confirmMsg = "هل تريد إعادة استخراج وتوليد أسئلة الكويز (" + currentQCount + " سؤال) بالمعايير الصارمة الجديدة مع المقتطفات المرجعية من صلب تفريغ المحاضرة؟";
     if (!window.confirm(confirmMsg)) return;
 
-    var content = activeLecture.transcript || activeLecture.notes || activeLecture.writtenSummary || "";
+    var content = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || "";
+    if (typeof content === "string") {
+      content = content
+        .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+        .replace(/عبر\s+زووم/gi, "")
+        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+    }
     if (!content.trim()) {
       alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً لتوليد الأسئلة بدقة منه.");
       return;
@@ -398,6 +410,12 @@ window.LectureViewerModal = function(props) {
     setPackageGenStatus("جاري استخراج المخططات البصرية المعمقة بأسلوب NotebookLM وتحليل المحاضرة...");
     try {
       var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+    if (typeof sourceContent === "string") {
+      sourceContent = sourceContent
+        .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+        .replace(/عبر\s+زووم/gi, "")
+        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+    }
 
       // محاولة استخراج تفريغ اليوتيوب تلقائياً إن لم يكن موجوداً
       if (!activeLecture.transcript && activeLecture.mediaUrl) {
@@ -448,6 +466,12 @@ window.LectureViewerModal = function(props) {
     setPackageGenStatus("جاري استماع النموذج وتحليل المحاضرة وتوليد الأركان المحددة بالذكاء الاصطناعي...");
     try {
       var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+      if (typeof sourceContent === "string") {
+        sourceContent = sourceContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+      }
       var currentWorkingLecture = Object.assign({}, activeLecture);
 
       var result = await window.EducationalAIService.generateCompletePackage(

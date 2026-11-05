@@ -26,6 +26,22 @@
     var chart = props.chart;
     if (!chart || !chart.type) return null;
 
+    // حماية وقائية فورية: حجب أي بطاقة تحتوي على بيانات إدارية (زووم، ساعات التدريس، مدة اللقاء، أرقام السلسلة)
+    try {
+      var chartStr = JSON.stringify(chart);
+      var adminKeywords = [
+        "زووم", "zoom", "ساعات التدريس", "ساعات التسجيل", "مدة اللقاء", 
+        "مدة التسجيل", "منصة البث", "وقت الاستراحة", "المحاضرة الأولى", 
+        "الجزء الأول", "الجزء الثاني", "الجزء الثالث", "الجزء الرابع",
+        "مؤشرات وأرقام المحاضرة", "حقائق وأرقام المحاضرة", "ملخص زمني وتفاعلي"
+      ];
+      for (var k = 0; k < adminKeywords.length; k++) {
+        if (chartStr.indexOf(adminKeywords[k]) !== -1) {
+          return null;
+        }
+      }
+    } catch (eFilter) {}
+
     var [activePyramidLevel, setActivePyramidLevel] = React.useState(null);
     var icon = window.getVisualChartIcon(chart.type);
 
