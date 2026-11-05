@@ -12,6 +12,8 @@ window.InteractiveQuizViewer = function(props) {
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [userAnswers, setUserAnswers] = React.useState({});
   var [showFinalScore, setShowFinalScore] = React.useState(false);
+  var [showHelp, setShowHelp] = React.useState(false);
+  var [showAllQuestionsView, setShowAllQuestionsView] = React.useState(false);
 
   // حالة نافذة إضافة وتعديل السؤال يدوياً للمشرف
   var [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -20,6 +22,13 @@ window.InteractiveQuizViewer = function(props) {
   var [formOptions, setFormOptions] = React.useState(["", "", "", ""]);
   var [formCorrectIdx, setFormCorrectIdx] = React.useState(0);
   var [formExplanation, setFormExplanation] = React.useState("");
+  var [formSourceQuote, setFormSourceQuote] = React.useState("");
+  var [formHint, setFormHint] = React.useState("");
+
+  // إخفاء كارت المساعدة عند الانتقال بين الأسئلة
+  React.useEffect(function() {
+    setShowHelp(false);
+  }, [currentIndex]);
 
   var total = questions.length;
 
@@ -34,6 +43,8 @@ window.InteractiveQuizViewer = function(props) {
     setFormOptions(opts.slice(0, 4));
     setFormCorrectIdx(typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0);
     setFormExplanation(q.explanation || "");
+    setFormSourceQuote(q.sourceQuote || "");
+    setFormHint(q.hint || "");
     setIsModalOpen(true);
   };
 
@@ -44,6 +55,8 @@ window.InteractiveQuizViewer = function(props) {
     setFormOptions(["", "", "", ""]);
     setFormCorrectIdx(0);
     setFormExplanation("");
+    setFormSourceQuote("");
+    setFormHint("");
     setIsModalOpen(true);
   };
 
@@ -65,7 +78,9 @@ window.InteractiveQuizViewer = function(props) {
       question: formQuestion.trim(),
       options: formOptions.map(function(o) { return o.trim(); }),
       correctAnswerIndex: formCorrectIdx,
-      explanation: formExplanation.trim()
+      explanation: formExplanation.trim(),
+      sourceQuote: formSourceQuote.trim(),
+      hint: formHint.trim()
     };
 
     var updatedList = questions.slice();
@@ -194,6 +209,34 @@ window.InteractiveQuizViewer = function(props) {
                   className: "flex-1 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 })
               );
+            })
+          ),
+
+          // المقتطف المرجعي من المحاضرة (sourceQuote)
+          React.createElement(
+            "div",
+            { className: "pt-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "📖 المقتطف النصي من صلب المحاضرة (موضع الإجابة):"),
+            React.createElement("textarea", {
+              rows: 2,
+              value: formSourceQuote,
+              onChange: function(e) { setFormSourceQuote(e.target.value); },
+              placeholder: "اقتبس الفقرة من كلام المحاضر التي تتضمن إجابة السؤال وموضعه...",
+              className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-serif"
+            })
+          ),
+
+          // التلميح الإرشادي (hint)
+          React.createElement(
+            "div",
+            { className: "pt-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "💡 تلميح للمساعدة (يوجه الدارس دون كشف الحل):"),
+            React.createElement("input", {
+              type: "text",
+              value: formHint,
+              onChange: function(e) { setFormHint(e.target.value); },
+              placeholder: "مثال: راجع حديث المحاضر حول الحاجة إلى الأمان...",
+              className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             })
           ),
 
@@ -399,7 +442,16 @@ window.InteractiveQuizViewer = function(props) {
             },
             isDraft ? "🚀 نشر للطلاب" : "🔒 تحويل لمسودة"
           ),
-          React.createElement(
+          isAdmin && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowAllQuestionsView(function(v) { return !v; }); },
+              className: "px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-100/90 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-200 text-xs font-bold hover:bg-indigo-200 flex items-center gap-1.5 shadow-2xs"
+            },
+            React.createElement("span", null, showAllQuestionsView ? "🎯 وضع الاختبار الفردي" : "📋 إدارة ومراجعة كافة الأسئلة")
+          ),
+          isAdmin && React.createElement(
             "button",
             {
               type: "button",
@@ -407,7 +459,7 @@ window.InteractiveQuizViewer = function(props) {
               className: "px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 flex items-center gap-1 transition-all"
             },
             React.createElement("span", null, "➕"),
-            React.createElement("span", null, "إضافة سؤال جديد")
+            React.createElement("span", null, "إضافة سؤال")
           ),
           onRequestEdit && React.createElement(
             "button",
@@ -468,8 +520,133 @@ window.InteractiveQuizViewer = function(props) {
       })
     ),
 
-    // بطاقة السؤال الحالية
-    React.createElement(
+    // التحويل بين: قائمة إدارة كافة الأسئلة دفعة واحدة / أو بطاقة السؤال الفردي
+    showAllQuestionsView ? React.createElement(
+      "div",
+      { className: "space-y-4 animate-in fade-in duration-200" },
+      // رأس شاشة الإدارة المجمعة
+      React.createElement(
+        "div",
+        { className: "p-4 sm:p-5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between flex-wrap gap-3" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h4", { className: "text-sm sm:text-base font-black text-indigo-950 dark:text-indigo-100 flex items-center gap-2" },
+            React.createElement("span", null, "📋"),
+            React.createElement("span", null, "إدارة ومراجعة كافة الأسئلة المسرودة (" + total + " سؤال)")
+          ),
+          React.createElement("p", { className: "text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5" },
+            "يمكنك هنا تصفح ومراجعة كل الأسئلة دفعة واحدة، وحذف أي سؤال تافه أو تعديله بضغطة واحدة دون الحاجة للتنقل."
+          )
+        ),
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleOpenAddQuestion,
+              className: "px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 shadow-xs flex items-center gap-1"
+            },
+            React.createElement("span", null, "➕"),
+            React.createElement("span", null, "إضافة سؤال جديد")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowAllQuestionsView(false); },
+              className: "px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 flex items-center gap-1"
+            },
+            React.createElement("span", null, "🎯"),
+            React.createElement("span", null, "العودة لوضع الاختبار")
+          )
+        )
+      ),
+
+      // قائمة الأسئلة المسرودة
+      questions.map(function(q, qIdx) {
+        return React.createElement(
+          "div",
+          {
+            key: q.id || qIdx,
+            className: "p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 relative hover:border-indigo-300 transition-all"
+          },
+          // رأس بطاقة السؤال
+          React.createElement(
+            "div",
+            { className: "flex items-start justify-between gap-3 flex-wrap border-b border-slate-100 dark:border-slate-800 pb-2.5" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2 flex-1" },
+              React.createElement("span", { className: "w-6 h-6 rounded-lg bg-indigo-600 text-white text-xs font-bold flex items-center justify-center font-mono shrink-0" }, qIdx + 1),
+              React.createElement("h5", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white" }, q.question)
+            ),
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 shrink-0" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { handleOpenEditQuestion(qIdx); },
+                  className: "px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 flex items-center gap-1 shadow-2xs"
+                },
+                React.createElement("span", null, "✏️"),
+                React.createElement("span", null, "تعديل")
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { handleDeleteQuestion(qIdx); },
+                  className: "px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 flex items-center gap-1 shadow-2xs"
+                },
+                React.createElement("span", null, "🗑️"),
+                React.createElement("span", null, "حذف")
+              )
+            )
+          ),
+
+          // خيارات السؤال مع تلوين الإجابة الصحيحة بالأخضر
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" },
+            (q.options || []).map(function(opt, optI) {
+              var isCorrect = optI === q.correctAnswerIndex;
+              return React.createElement(
+                "div",
+                {
+                  key: optI,
+                  className: "p-2.5 rounded-xl border flex items-center justify-between " +
+                    (isCorrect
+                      ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 font-bold"
+                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300")
+                },
+                React.createElement("span", null, String.fromCharCode(65 + optI) + ". " + opt),
+                isCorrect && React.createElement("span", { className: "text-emerald-600 font-bold text-[11px]" }, "✓ الصحيحة")
+              );
+            })
+          ),
+
+          // المقتطف المرجعي إن وجد
+          q.sourceQuote && React.createElement(
+            "div",
+            { className: "p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed" },
+            React.createElement("span", { className: "font-bold" }, "📖 المقتطف من صلب المحاضرة: "),
+            React.createElement("span", { className: "italic" }, q.sourceQuote)
+          ),
+
+          // التفسير
+          q.explanation && React.createElement(
+            "p",
+            { className: "text-xs text-slate-500 dark:text-slate-400 leading-relaxed" },
+            "💡 " + q.explanation
+          )
+        );
+      })
+    ) : React.createElement(
       "div",
       { className: "p-5 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg space-y-5 relative" },
 
@@ -568,6 +745,42 @@ window.InteractiveQuizViewer = function(props) {
             )
           );
         })
+      ),
+
+      // زر المساعدة وإظهار موضع الإجابة من صلب المحاضرة
+      React.createElement(
+        "div",
+        { className: "pt-1 flex items-center gap-2 flex-wrap" },
+        React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowHelp(function(v) { return !v; }); },
+            className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold transition-all shadow-2xs"
+          },
+          React.createElement("span", null, "💡"),
+          React.createElement("span", null, showHelp ? "إخفاء المساعدة" : "مساعدة: أين وردت هذه النقطة في المحاضرة؟")
+        )
+      ),
+
+      // بطاقة المساعدة المنبثقة
+      showHelp && React.createElement(
+        "div",
+        { className: "p-4 rounded-2xl bg-amber-50/95 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-2 animate-in fade-in duration-200" },
+        React.createElement(
+          "div",
+          { className: "font-black flex items-center gap-1.5 text-amber-900 dark:text-amber-300" },
+          React.createElement("span", null, "📖"),
+          React.createElement("span", null, "مقتطف صريح من كلام المحاضر:")
+        ),
+        React.createElement("p", { className: "leading-relaxed italic bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-200/60 dark:border-amber-900/40" },
+          currentQuestion.sourceQuote || currentQuestion.hint || currentQuestion.explanation || "يرجى مراجعة الشرح الوارد في تفريغ هذه المحاضرة."
+        ),
+        (currentQuestion.hint && currentQuestion.sourceQuote) && React.createElement(
+          "p",
+          { className: "text-[11px] text-amber-800 dark:text-amber-300 font-medium" },
+          "💡 إرشاد: " + currentQuestion.hint
+        )
       ),
 
       // بطاقة التفسير والشرح التعليمي (تظهر تلقائياً بعد الإجابة)
