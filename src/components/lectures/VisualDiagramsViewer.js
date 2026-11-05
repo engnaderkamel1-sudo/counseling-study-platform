@@ -208,18 +208,34 @@
 
         var currentActive = (activePyramidLevel !== null) ? activePyramidLevel : (sorted[0] ? sorted[0].level : null);
 
+        var N = Math.max(1, sorted.length);
+        var apexPct = 32; // نسبة عرض قمة الهرم التأسيسية لضمان شكل هرمي حقيقي ومريح على الموبايل
+
         return React.createElement(
           "div",
           { className: "space-y-4" },
           React.createElement(
             "div",
-            { className: "flex flex-col items-center gap-2.5 max-w-xl mx-auto py-1" },
+            { className: "flex flex-col items-center gap-1.5 max-w-xl mx-auto py-2 w-full" },
+            // مؤشر رأس وقمة الهرم البصري
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1.5 text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 shadow-2xs mb-0.5" },
+              React.createElement("span", null, "🔺"),
+              React.createElement("span", null, "قمة الهرم والغاية العليا")
+            ),
             sorted.map(function(lvl, i) {
-              // حساب العرض التدريجي: القمة في الأعلى تأخذ 50% كحد أدنى وتتسع نزولاً حتى 100% في القاعدة
-              var widthPct = 50 + (i * (50 / Math.max(1, sorted.length - 1)));
               var isSelected = currentActive === lvl.level;
               var isPeak = (i === 0);
               var isBase = (i === sorted.length - 1);
+
+              // حساب العرض التدريجي والقص الهندسي المائل لكل مستوى ليكون هرماً حقيقياً متصلاً
+              var topW = apexPct + i * ((100 - apexPct) / N);
+              var botW = apexPct + (i + 1) * ((100 - apexPct) / N);
+              var insetRatio = ((1 - (topW / botW)) / 2) * 100;
+              var leftInset = insetRatio.toFixed(1);
+              var rightInset = (100 - insetRatio).toFixed(1);
+              var clipPathVal = "polygon(" + leftInset + "% 0%, " + rightInset + "% 0%, 100% 100%, 0% 100%)";
 
               var bgStyle = isPeak
                 ? "linear-gradient(135deg, #d97706, #f59e0b, #d97706)"
@@ -231,23 +247,29 @@
                   key: lvl.level,
                   onClick: function() { setActivePyramidLevel(lvl.level); },
                   style: {
-                    width: Math.min(100, Math.max(48, widthPct)) + "%",
-                    minWidth: "min(100%, 260px)",
-                    background: bgStyle
+                    width: Math.min(100, Math.max(34, botW)) + "%",
+                    clipPath: clipPathVal,
+                    background: bgStyle,
+                    filter: isSelected ? "brightness(1.15) drop-shadow(0 4px 6px rgba(0,0,0,0.3))" : "drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
                   },
-                  className: "cursor-pointer transition-all duration-200 transform hover:scale-101 rounded-2xl p-2.5 sm:p-3 text-center text-white shadow-md relative overflow-hidden " +
-                    (isSelected ? " ring-4 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 shadow-lg scale-101" : "")
+                  className: "cursor-pointer transition-all duration-200 transform hover:scale-[1.02] text-center text-white py-2.5 sm:py-3 px-3 relative select-none active:scale-95 " +
+                    (isSelected ? " scale-[1.02] font-black z-10" : " opacity-95 hover:opacity-100")
                 },
                 React.createElement(
                   "div",
-                  { className: "flex items-center justify-between gap-2 px-2 text-xs sm:text-sm font-bold drop-shadow-sm" },
-                  React.createElement("span", { className: "w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] shrink-0 font-mono" }, lvl.level),
-                  // إزالة truncate والسماح بالالتفاف السلس لكامل الكلمات
-                  React.createElement("span", { className: "px-1 flex-1 text-center leading-snug break-words whitespace-normal" }, lvl.title),
-                  React.createElement("span", { className: "text-[11px] opacity-80 shrink-0" }, isSelected ? "▲" : "▼")
+                  { className: "flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold drop-shadow-sm px-3" },
+                  React.createElement("span", { className: "w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] shrink-0 font-mono" }, lvl.level),
+                  React.createElement("span", { className: "text-center leading-snug break-words whitespace-normal font-sans" }, lvl.title)
                 )
               );
-            })
+            }),
+            // مؤشر قاعدة الهرم التأسيسية
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-2xs mt-0.5" },
+              React.createElement("span", null, "🔻"),
+              React.createElement("span", null, "القاعدة التأسيسية العريضة")
+            )
           ),
           (function() {
             var found = levels.find(function(l) { return l.level === currentActive; }) || sorted[0];
