@@ -55,80 +55,14 @@ window.LectureViewerModal = function(props) {
     return parseInt(saved) || 1;
   });
 
-  // حالة تدوير الشاشة وملء الشاشة في نافذة المحاضرة
-  var [isLandscapeActive, setIsLandscapeActive] = React.useState(false);
-  var modalRef = React.useRef(null);
+  // حالة وحجم خط القراءة في الدليل الدراسي والمحاضرة
+  var [readingFontSize, setReadingFontSize] = React.useState(function() {
+    return (utils.getLocal ? utils.getLocal("counsel_reader_font_size", "md") : "md");
+  });
 
-  var handleToggleLandscape = async function() {
-    var targetEl = modalRef.current || document.documentElement;
-
-    if (!isLandscapeActive) {
-      try {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-          if (targetEl.requestFullscreen) {
-            await targetEl.requestFullscreen().catch(function() {});
-          } else if (targetEl.webkitRequestFullscreen) {
-            targetEl.webkitRequestFullscreen();
-          }
-        }
-      } catch(eFs) {}
-
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock("landscape").catch(function() {});
-        }
-      } catch(eLock) {}
-
-      setIsLandscapeActive(true);
-    } else {
-      try {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-      } catch(eUn) {}
-
-      try {
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
-          if (document.exitFullscreen) {
-            await document.exitFullscreen().catch(function() {});
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-          }
-        }
-      } catch(eEx) {}
-
-      setIsLandscapeActive(false);
-    }
-  };
-
-  React.useEffect(function() {
-    var handleFs = function() {
-      var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (!isFs) {
-        setIsLandscapeActive(false);
-        try {
-          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
-        } catch(e) {}
-      }
-    };
-    document.addEventListener("fullscreenchange", handleFs);
-    document.addEventListener("webkitfullscreenchange", handleFs);
-    return function() {
-      document.removeEventListener("fullscreenchange", handleFs);
-      document.removeEventListener("webkitfullscreenchange", handleFs);
-    };
-  }, []);
-
-  var handleModalClose = function() {
-    if (isLandscapeActive) {
-      try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch(e) {}
-      try {
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
-          if (document.exitFullscreen) document.exitFullscreen().catch(function() {});
-        }
-      } catch(e) {}
-    }
-    if (onClose) onClose();
+  var handleSetFontSize = function(sz) {
+    setReadingFontSize(sz);
+    if (utils.setLocal) utils.setLocal("counsel_reader_font_size", sz);
   };
 
   // حالة تدوين الملاحظات السريعة من داخل المحاضرة
@@ -690,9 +624,7 @@ window.LectureViewerModal = function(props) {
     React.createElement(
       "div",
       {
-        ref: modalRef,
-        className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[96vh] sm:max-h-[92vh] overflow-y-auto my-auto transition-all duration-200" +
-          (isLandscapeActive ? " !max-h-screen !h-screen !w-screen !max-w-none !rounded-none !border-0 !p-4 sm:!p-6" : "")
+        className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[95vh] sm:max-h-[92vh] overflow-y-auto my-auto"
       },
 
       // رأس المحاضرة داخل النافذة
@@ -720,25 +652,14 @@ window.LectureViewerModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2 flex-wrap" },
-          React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: handleToggleLandscape,
-              title: isLandscapeActive ? "العودة للوضع الرأسي الطبيعي" : "تدوير الشاشة بالعرض وملء الشاشة",
-              className: "px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all cursor-pointer"
-            },
-            React.createElement("span", null, isLandscapeActive ? "📱" : "🔄"),
-            React.createElement("span", null, isLandscapeActive ? "وضع رأسي" : "تدوير بالعرض")
-          ),
+          { className: "flex items-center gap-2" },
           currentUser.role === "admin" && React.createElement(
             "button",
             {
               type: "button",
               onClick: function() { if (openEditModal) openEditModal(activeLecture); },
               title: "تعديل المادة أو بيانات المحاضرة",
-              className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs"
+              className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 flex items-center gap-1 shadow-2xs cursor-pointer"
             },
             React.createElement("span", null, "✏️"),
             React.createElement("span", null, "تعديل")
@@ -748,7 +669,7 @@ window.LectureViewerModal = function(props) {
             "button",
             {
               type: "button",
-              onClick: handleModalClose,
+              onClick: function() { if (onClose) onClose(); },
               className: "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
             },
             React.createElement("span", null, "✕"),
@@ -1321,27 +1242,61 @@ window.LectureViewerModal = function(props) {
               } catch(e) { return []; }
             })();
 
+        // فئة حجم الخط الديناميكية بناءً على اختيار الدارس
+        var fontTextClass = (readingFontSize === "sm") ? "text-xs sm:text-sm" : (readingFontSize === "lg") ? "text-base sm:text-lg" : (readingFontSize === "xl") ? "text-lg sm:text-xl" : "text-sm sm:text-base";
+
         return React.createElement(
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // شريط أدوات المسؤول للملخص المصور
-          currentUser.role === "admin" && React.createElement(
+          // شريط أدوات القراءة وتكبير الخط وخيارات المسؤول
+          React.createElement(
             "div",
-            { className: "flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
+            { className: "flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2.5 flex-wrap" },
+            // شريط تحكم حجم الخط المباشر لجميع الدارسين
             React.createElement(
               "div",
-              { className: "flex items-center gap-2" },
-              React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "خيارات الدليل الدراسي المصور:"),
+              { className: "flex items-center gap-1.5" },
+              React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1" },
+                React.createElement("span", null, "🔍"),
+                React.createElement("span", null, "حجم الخط:")
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs" },
+                [
+                  { id: "sm", label: "A-", title: "خط مدمج (13 بكسل)" },
+                  { id: "md", label: "عادي", title: "خط عادي قياسي (15 بكسل)" },
+                  { id: "lg", label: "A+", title: "خط كبير ومريح (17 بكسل)" },
+                  { id: "xl", label: "A++", title: "خط كبير جداً (19 بكسل)" }
+                ].map(function(fBtn) {
+                  var isAct = readingFontSize === fBtn.id;
+                  return React.createElement(
+                    "button",
+                    {
+                      key: fBtn.id,
+                      type: "button",
+                      onClick: function() { handleSetFontSize(fBtn.id); },
+                      title: fBtn.title,
+                      className: "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer " +
+                        (isAct
+                          ? "bg-indigo-600 text-white shadow-2xs scale-102"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")
+                    },
+                    fBtn.label
+                  );
+                })
+              )
+            ),
+            // أدوات المسؤول (نشر، تعديل، إعادة توليد)
+            currentUser.role === "admin" && React.createElement(
+              "div",
+              { className: "flex items-center gap-2 flex-wrap" },
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
-                "🔒 مسودة (محجوبة عن الطلاب)"
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-2 flex-wrap" },
+                "🔒 مسودة"
+              ),
               (activeLecture.writtenSummary || summaryData) && React.createElement(
                 "button",
                 {
@@ -1352,7 +1307,7 @@ window.LectureViewerModal = function(props) {
                       ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                       : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
                 },
-                React.createElement("span", null, getIsDraft("summary") ? "🚀 نشر للطلاب" : "🔒 حجب (مسودة)")
+                React.createElement("span", null, getIsDraft("summary") ? "🚀 نشر" : "🔒 حجب")
               ),
               React.createElement(
                 "button",
@@ -1360,7 +1315,7 @@ window.LectureViewerModal = function(props) {
                   onClick: function() { if (openEditModal) openEditModal(activeLecture, "summary"); },
                   className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
                 },
-                React.createElement("span", null, activeLecture.writtenSummary ? "✏️ تعديل النص" : "✍️ كتابة ملخص")
+                React.createElement("span", null, activeLecture.writtenSummary ? "✏️ تعديل" : "✍️ ملخص")
               ),
               React.createElement(
                 "button",
@@ -1368,10 +1323,10 @@ window.LectureViewerModal = function(props) {
                   type: "button",
                   onClick: handleRegenerateSummaryOnly,
                   disabled: isAiGenerating,
-                  className: "px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50 transition-all active:scale-95"
+                  className: "px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
                 },
-                React.createElement("span", null, isAiGenerating ? "⏳" : "🔄"),
-                React.createElement("span", null, isAiGenerating ? "جاري البناء..." : "إعادة استخراج وتوليد الملخص المصور")
+                React.createElement("span", null, "🔄"),
+                React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "إعادة التوليد")
               )
             )
           ),
@@ -1391,7 +1346,7 @@ window.LectureViewerModal = function(props) {
                 React.createElement("span", { className: "text-lg" }, "📌"),
                 React.createElement("span", null, "الملخص التنفيذي وسياق المحاضرة")
               ),
-              React.createElement("p", { className: "text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, summaryData.overview)
+              React.createElement("p", { className: fontTextClass + " text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, summaryData.overview)
             ),
 
             // 2. أهداف التعلم
@@ -1439,10 +1394,10 @@ window.LectureViewerModal = function(props) {
                     React.createElement("span", { className: "w-7 h-7 rounded-xl bg-indigo-600 text-white font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-2xs" }, sIdx + 1),
                     React.createElement("h4", { className: "text-sm sm:text-base font-black text-slate-900 dark:text-white" }, sec.title)
                   ),
-                  // نص الشرح الأكاديمي
+                  // نص الشرح الأكاديمي بحجم الخط المختار
                   React.createElement(
                     "div",
-                    { className: "text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text" },
+                    { className: fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text" },
                     sec.content
                   ),
                   // النقاط الجوهرية للمحور
@@ -1551,7 +1506,7 @@ window.LectureViewerModal = function(props) {
             { className: "space-y-6" },
             React.createElement(
               "div",
-              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
+              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 " + fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
               activeLecture.writtenSummary
             ),
             // عرض المخططات السابقة تحت النص إن وجدت لضمان عدم ضياعها
