@@ -55,15 +55,6 @@ window.LectureViewerModal = function(props) {
     return parseInt(saved) || 1;
   });
 
-  // حالة وحجم خط القراءة في الدليل الدراسي والمحاضرة
-  var [readingFontSize, setReadingFontSize] = React.useState(function() {
-    return (utils.getLocal ? utils.getLocal("counsel_reader_font_size", "md") : "md");
-  });
-
-  var handleSetFontSize = function(sz) {
-    setReadingFontSize(sz);
-    if (utils.setLocal) utils.setLocal("counsel_reader_font_size", sz);
-  };
 
   // حالة تدوين الملاحظات السريعة من داخل المحاضرة
   var [quickNoteText, setQuickNoteText] = React.useState("");
@@ -1243,55 +1234,16 @@ window.LectureViewerModal = function(props) {
             })();
 
         // فئة حجم الخط الديناميكية بناءً على اختيار الدارس
-        var fontTextClass = (readingFontSize === "sm") ? "text-xs sm:text-sm" : (readingFontSize === "lg") ? "text-base sm:text-lg" : (readingFontSize === "xl") ? "text-lg sm:text-xl" : "text-sm sm:text-base";
+        var fontTextClass = "text-sm sm:text-base";
 
         return React.createElement(
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // شريط أدوات القراءة وتكبير الخط وخيارات المسؤول
-          React.createElement(
+          // خيارات المسؤول (نشر، تعديل، إعادة توليد)
+          currentUser.role === "admin" && React.createElement(
             "div",
-            { className: "flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2.5 flex-wrap" },
-            // شريط تحكم حجم الخط المباشر لجميع الدارسين
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-1.5" },
-              React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1" },
-                React.createElement("span", null, "🔍"),
-                React.createElement("span", null, "حجم الخط:")
-              ),
-              React.createElement(
-                "div",
-                { className: "flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs" },
-                [
-                  { id: "sm", label: "A-", title: "خط مدمج (13 بكسل)" },
-                  { id: "md", label: "عادي", title: "خط عادي قياسي (15 بكسل)" },
-                  { id: "lg", label: "A+", title: "خط كبير ومريح (17 بكسل)" },
-                  { id: "xl", label: "A++", title: "خط كبير جداً (19 بكسل)" }
-                ].map(function(fBtn) {
-                  var isAct = readingFontSize === fBtn.id;
-                  return React.createElement(
-                    "button",
-                    {
-                      key: fBtn.id,
-                      type: "button",
-                      onClick: function() { handleSetFontSize(fBtn.id); },
-                      title: fBtn.title,
-                      className: "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer " +
-                        (isAct
-                          ? "bg-indigo-600 text-white shadow-2xs scale-102"
-                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")
-                    },
-                    fBtn.label
-                  );
-                })
-              )
-            ),
-            // أدوات المسؤول (نشر، تعديل، إعادة توليد)
-            currentUser.role === "admin" && React.createElement(
-              "div",
-              { className: "flex items-center gap-2 flex-wrap" },
+            { className: "flex items-center justify-end p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
@@ -1328,8 +1280,7 @@ window.LectureViewerModal = function(props) {
                 React.createElement("span", null, "🔄"),
                 React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "إعادة التوليد")
               )
-            )
-          ),
+            ),
 
           // عرض الدليل الدراسي المنظم والمصور بأسلوب NotebookLM
           summaryData ? React.createElement(
