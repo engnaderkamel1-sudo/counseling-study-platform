@@ -56,6 +56,89 @@ window.LectureViewerModal = function(props) {
   });
 
 
+  // حالة التدوير التلقائي الذكي بمستشعر حركة الهاتف (بدون أزرار أو إعادة تحميل)
+  var [sensorLandscape, setSensorLandscape] = React.useState(false);
+  var [sensorAngle, setSensorAngle] = React.useState(90);
+  var modalScrollRef = React.useRef(null);
+  var touchPosRef = React.useRef({ x: 0, y: 0 });
+
+  React.useEffect(function() {
+    var checkIsNativeLandscape = function() {
+      return window.innerWidth > window.innerHeight;
+    };
+
+    var handleOrientation = function(e) {
+      if (checkIsNativeLandscape()) {
+        if (sensorLandscape) setSensorLandscape(false);
+        return;
+      }
+      var gamma = e.gamma;
+      var beta = e.beta;
+      if (typeof gamma !== "number" || typeof beta !== "number") return;
+
+      var absG = Math.abs(gamma);
+      var absB = Math.abs(beta);
+
+      if (absG > 52 && absB < 65) {
+        var ang = gamma < 0 ? 90 : -90;
+        setSensorAngle(ang);
+        setSensorLandscape(true);
+      } else if (absG < 32) {
+        setSensorLandscape(false);
+      }
+    };
+
+    var handleMotion = function(e) {
+      if (checkIsNativeLandscape()) {
+        if (sensorLandscape) setSensorLandscape(false);
+        return;
+      }
+      var acc = e.accelerationIncludingGravity;
+      if (!acc) return;
+      var ax = acc.x || 0;
+      var ay = acc.y || 0;
+      var absX = Math.abs(ax);
+      var absY = Math.abs(ay);
+
+      if (absX > 6.2 && absY < 5.0) {
+        var ang = ax > 0 ? 90 : -90;
+        setSensorAngle(ang);
+        setSensorLandscape(true);
+      } else if (absX < 3.5 && absY > 5.5) {
+        setSensorLandscape(false);
+      }
+    };
+
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    window.addEventListener("devicemotion", handleMotion, true);
+
+    return function() {
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+      window.removeEventListener("devicemotion", handleMotion, true);
+    };
+  }, [sensorLandscape]);
+
+  var handleSensorTouchStart = function(e) {
+    if (e.touches && e.touches[0]) {
+      touchPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+
+  var handleSensorTouchMove = function(e) {
+    if (!sensorLandscape || !modalScrollRef.current) return;
+    if (e.touches && e.touches[0]) {
+      var curX = e.touches[0].clientX;
+      var deltaX = curX - touchPosRef.current.x;
+      touchPosRef.current = { x: curX, y: e.touches[0].clientY };
+
+      if (sensorAngle === 90) {
+        modalScrollRef.current.scrollTop -= deltaX * 1.2;
+      } else {
+        modalScrollRef.current.scrollTop += deltaX * 1.2;
+      }
+    }
+  };
+
   // حالة تدوين الملاحظات السريعة من داخل المحاضرة
   var [quickNoteText, setQuickNoteText] = React.useState("");
   var [lectureNotesList, setLectureNotesList] = React.useState([]);
@@ -606,15 +689,47 @@ window.LectureViewerModal = function(props) {
     }
   };
 
+  var outerLandscapeStyle = sensorLandscape ? {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vh",
+    height: "100vw",
+    transform: sensorAngle === -90 ? "rotate(-90deg) translateX(-100%)" : "rotate(90deg) translateY(-100%)",
+    transformOrigin: "top left",
+    zIndex: 99999,
+    padding: "8px",
+    display: "flex",
+    alignItems: "stretch",
+    justifyContent: "center",
+    transition: "transform 0.25s ease-out"
+  } : {
+    transition: "transform 0.25s ease-out"
+  };
+
+  var innerLandscapeStyle = sensorLandscape ? {
+    width: "100%",
+    maxWidth: "100%",
+    height: "100%",
+    maxHeight: "100%",
+    borderRadius: "16px",
+    margin: 0
+  } : {};
+
   return React.createElement(
     "div",
     {
       className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 overflow-y-auto",
+      style: outerLandscapeStyle,
       onClick: function(e) { if (e.target === e.currentTarget && onClose) onClose(); }
     },
     React.createElement(
       "div",
       {
+        ref: modalScrollRef,
+        style: innerLandscapeStyle,
+        onTouchStart: handleSensorTouchStart,
+        onTouchMove: handleSensorTouchMove,
         className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[95vh] sm:max-h-[92vh] overflow-y-auto my-auto"
       },
 
