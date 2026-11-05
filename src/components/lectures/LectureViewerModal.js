@@ -211,12 +211,28 @@ window.LectureViewerModal = function(props) {
         currentQCount
       );
       var questions = Array.isArray(quizRes.questions) ? quizRes.questions : (Array.isArray(quizRes) ? quizRes : []);
+      
+      // التخيير الصريح للمستخدم في حال كان العدد المستخرج أقل من المطلوب
+      if (questions.length < currentQCount) {
+        var keepIncomplete = window.confirm(
+          "تنبيه حول عدد أسئلة الكويز:\n\n" +
+          "تم استخراج وتوثيق " + questions.length + " سؤالاً بنجاح من أصل " + currentQCount + " سؤالاً طُلبت.\n\n" +
+          "• اضغط (موافق / OK) لاعتماد وحفظ هذه الأسئلة (" + questions.length + " سؤال).\n" +
+          "• اضغط (إلغاء / Cancel) لعدم الحفظ وإعادة المحاولة لتوليد العدد كاملاً (" + currentQCount + " سؤال)."
+        );
+        if (!keepIncomplete) {
+          setIsAiGenerating(false);
+          setPackageGenStatus("");
+          return;
+        }
+      }
+
       var updated = Object.assign({}, activeLecture, {
         quizQuestions: questions
       });
       await cloud.saveLecture(updated);
       if (onSelectLecture) onSelectLecture(updated);
-      alert("تمت إعادة توليد أسئلة الكويز بنجاح (" + questions.length + " سؤال) مع المقتطفات المرجعية وزر المساعدة!");
+      alert("تم اعتماد أسئلة الكويز بنجاح (" + questions.length + " سؤال) مع المقتطفات المرجعية وزر المساعدة!");
     } catch (err) {
       alert("خطأ أثناء إعادة توليد الكويز: " + err.message);
     } finally {
@@ -426,8 +442,22 @@ window.LectureViewerModal = function(props) {
       }
 
       if (result.quiz && Array.isArray(result.quiz.questions)) {
-        updated.quizQuestions = result.quiz.questions;
-        updated.publishStatus.quiz = false;
+        var requestedQuizCount = parseInt(genQuizCount, 10) || 10;
+        if (result.quiz.questions.length < requestedQuizCount) {
+          var keepIncompletePkg = window.confirm(
+            "تنبيه حول عدد أسئلة الكويز في الحزمة الشاملة:\n\n" +
+            "تم استخراج " + result.quiz.questions.length + " سؤالاً من أصل " + requestedQuizCount + " سؤالاً طُلبت.\n\n" +
+            "• اضغط (موافق / OK) لاعتماد وحفظ هذه الأسئلة ضمن الحزمة.\n" +
+            "• اضغط (إلغاء / Cancel) للاحتفاظ بالأسئلة الحالية وعدم استبدالها بعدد ناقص."
+          );
+          if (keepIncompletePkg) {
+            updated.quizQuestions = result.quiz.questions;
+            updated.publishStatus.quiz = false;
+          }
+        } else {
+          updated.quizQuestions = result.quiz.questions;
+          updated.publishStatus.quiz = false;
+        }
       }
 
       // 5. جلب تفريغ المحاضرة من فيديو اليوتيوب إذا كان الخيار محدداً
