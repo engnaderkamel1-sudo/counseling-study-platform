@@ -49,7 +49,7 @@
       return "";
     },
 
-    // 2. محرك تنظيف وترميم JSON التلقائي فائق الصلابة (يعالج القفزات السطرية والانقطاعات المفاجئة)
+    // 2. محرك تنظيف وترميم JSON التلقائي فائق الصلابة (يعالج علامات التنصيص والقفزات السطرية والانقطاعات)
     _cleanAndParseJson: function(rawText) {
       if (!rawText || typeof rawText !== "string") {
         throw new Error("لم يتم استلام أي نص من النموذج لتحليله.");
@@ -65,7 +65,63 @@
       }
       cleaned = cleaned.trim();
 
-      // 1. تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
+      // 1. مرشح ذكي لتحويل أي علامات تنصيص إنجليزية داخل قيم النصوص إلى أقواس عربية « » لمنع تلف صيغة JSON
+      var sanitizeInternalQuotes = function(str) {
+        var lines = str.split("\n");
+        var kvPattern = /^(\s*"[a-zA-Z0-9_\-]+重?\s*:\s*")(.*)("[,]?\s*)$/;
+        var arrPattern = /^(\s*")(.*)("[,]?\s*)$/;
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          var m = line.match(kvPattern);
+          if (m) {
+            var startPart = m[1];
+            var content = m[2];
+            var endPart = m[3];
+            var fixed = "";
+            var qOpen = true;
+            for (var j = 0; j < content.length; j++) {
+              var c = content[j];
+              if (c === '\\' && j + 1 < content.length && content[j+1] === '"') {
+                fixed += qOpen ? "«" : "»";
+                qOpen = !qOpen;
+                j++;
+              } else if (c === '"') {
+                fixed += qOpen ? "«" : "»";
+                qOpen = !qOpen;
+              } else {
+                fixed += c;
+              }
+            }
+            lines[i] = startPart + fixed + endPart;
+          } else if (!/^\s*"[a-zA-Z0-9_\-]+重?\s*:/.test(line)) {
+            var mArr = line.match(arrPattern);
+            if (mArr) {
+              var aStart = mArr[1];
+              var aContent = mArr[2];
+              var aEnd = mArr[3];
+              var aFixed = "";
+              var aOpen = true;
+              for (var k = 0; k < aContent.length; k++) {
+                var ac = aContent[k];
+                if (ac === '\\' && k + 1 < aContent.length && aContent[k+1] === '"') {
+                  aFixed += aOpen ? "«" : "»";
+                  aOpen = !aOpen;
+                  k++;
+                } else if (ac === '"') {
+                  aFixed += aOpen ? "«" : "»";
+                  aOpen = !aOpen;
+                } else {
+                  aFixed += ac;
+                }
+              }
+              lines[i] = aStart + aFixed + aEnd;
+            }
+          }
+        }
+        return lines.join("\n");
+      };
+
+      // 2. تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
       var escapeNewlinesInsideStrings = function(str) {
         var inStr = false;
         var escape = false;
@@ -91,36 +147,6 @@
         return out;
       };
 
-      // 2. دالة تعقيم علامات التنصيص المزدوجة غير المعالجة داخل قيم النصوص
-      var sanitizeQuotes = function(str) {
-        var lines = str.split("\n");
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i];
-          var m = line.match(/^(\s*"[a-zA-Z0-9_\-]+重?\s*:\s*")(.*)("[,]?\s*)$/);
-          if (m) {
-            var startPart = m[1];
-            var contentPart = m[2];
-            var endPart = m[3];
-            if (/(?<!\\)"/.test(contentPart)) {
-              var fixed = contentPart.replace(/(?<!\\)"/g, '\\"');
-              lines[i] = startPart + fixed + endPart;
-            }
-          } else {
-            var mArr = line.match(/^(\s*")(.*)("[,]?\s*)$/);
-            if (mArr && !/^\s*"[a-zA-Z0-9_\-]+重?\s*:/.test(line)) {
-              var aStart = mArr[1];
-              var aContent = mArr[2];
-              var aEnd = mArr[3];
-              if (/(?<!\\)"/.test(aContent)) {
-                var aFixed = aContent.replace(/(?<!\\)"/g, '\\"');
-                lines[i] = aStart + aFixed + aEnd;
-              }
-            }
-          }
-        }
-        return lines.join("\n");
-      };
-
       // 3. دالة إنقاذ وترميم JSON المقطوع عند حد التوكنز
       var repairTruncatedJson = function(str) {
         var lastBrace = str.lastIndexOf("}");
@@ -134,8 +160,11 @@
         return trimmed;
       };
 
-      // خطوة تحضيرية: تعقيم القفزات السطرية العشوائية داخل قيم النصوص
-      var safeText = escapeNewlinesInsideStrings(cleaned);
+      // خطوة 1: تنظيف وتعريب أي علامات تنصيص إنجليزية داخل قيم النصوص إلى أقواس « »
+      var sanitizedQuotesText = sanitizeInternalQuotes(cleaned);
+
+      // خطوة 2: تعقيم القفزات السطرية العشوائية داخل قيم النصوص
+      var safeText = escapeNewlinesInsideStrings(sanitizedQuotesText);
 
       // محاولة 1: التحليل المباشر للنص المعقم
       try {
@@ -157,25 +186,18 @@
           return JSON.parse(noTrailing);
         } catch (eTrailing) {}
 
-        // محاولة 4: تعقيم علامات التنصيص الداخلية غير المعالجة
-        try {
-          var sanitized = sanitizeQuotes(safeText);
-          sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
-          return JSON.parse(sanitized);
-        } catch (eSanitize) {}
-
-        // محاولة 5: إنقاذ وترميم JSON المقطوع عند حد التوكنز
+        // محاولة 4: إنقاذ وترميم JSON المقطوع عند حد التوكنز
         try {
           var repaired = repairTruncatedJson(safeText);
           if (repaired) {
-            repaired = sanitizeQuotes(repaired).replace(/,(\s*[\]}])/g, "$1");
+            repaired = sanitizeInternalQuotes(repaired).replace(/,(\s*[\]}])/g, "$1");
             return JSON.parse(repaired);
           }
         } catch (repairErr) {}
 
-        // محاولة 6: محاولة الترميم اليدوي للرموز المتبقية كملجأ أخير
+        // محاولة 5: ترميم بديل للرموز المتبقية كملجأ أخير
         try {
-          var fallbackRepaired = sanitizeQuotes(safeText);
+          var fallbackRepaired = sanitizeInternalQuotes(safeText);
           var quoteCount = (fallbackRepaired.match(/(?<!\\)"/g) || []).length;
           if (quoteCount % 2 !== 0) fallbackRepaired += '"';
           var openB = (fallbackRepaired.match(/\[/g) || []).length - (fallbackRepaired.match(/\]/g) || []).length;
@@ -531,13 +553,25 @@
               output.visuals = { charts: extractedCharts };
             }
           }
+
+          // حفظ فوري للركن الأول بمجرد اكتماله لضمان عدم ضياع المجهود
+          if (typeof options.onStepSuccess === "function") {
+            try {
+              await options.onStepSuccess("summary", {
+                summary: output.summary,
+                visuals: output.visuals
+              });
+            } catch (stepSaveErr) {
+              console.warn("Auto-save for summary step encountered warning:", stepSaveErr);
+            }
+          }
         } catch (sumErr) {
           console.error("Summary step error:", sumErr);
           throw new Error("فشل إعداد الدليل الدراسي: " + sumErr.message);
         }
       }
 
-      // الخطوة 2: الكويز التفاعلي
+      // الخطوة 2: الكويز التفاعلي مع عزل الأخطاء لضمان بقاء الأركان السابقة
       if (selected.quiz !== false) {
         if (onProgress) onProgress(80, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [2/2]");
         try {
@@ -547,9 +581,18 @@
             quizCount,
             customInstructions
           );
+
+          if (typeof options.onStepSuccess === "function") {
+            try {
+              await options.onStepSuccess("quiz", { quiz: output.quiz });
+            } catch (stepQuizSaveErr) {
+              console.warn("Auto-save for quiz step encountered warning:", stepQuizSaveErr);
+            }
+          }
         } catch (quizErr) {
           console.error("Quiz step error:", quizErr);
-          throw new Error("فشل صياغة الكويز: " + quizErr.message);
+          // عزل الخطأ وتسجيله دون إيقاف الحزمة حتى تظل الأركان السابقة محفوظة بنجاح
+          output.quizError = quizErr.message;
         }
       }
 

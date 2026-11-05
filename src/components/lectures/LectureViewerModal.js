@@ -387,6 +387,8 @@ window.LectureViewerModal = function(props) {
     setPackageGenStatus("جاري استماع النموذج وتحليل المحاضرة وتوليد الأركان المحددة بالذكاء الاصطناعي...");
     try {
       var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+      var currentWorkingLecture = Object.assign({}, activeLecture);
+
       var result = await window.EducationalAIService.generateCompletePackage(
         activeLecture.title,
         sourceContent,
@@ -395,48 +397,66 @@ window.LectureViewerModal = function(props) {
           slidesCount: parseInt(genSlidesCount, 10) || 15,
           quizCount: parseInt(genQuizCount, 10) || 10,
           customInstructions: genCustomPrompt,
-          selectedComponents: genSelected
+          selectedComponents: genSelected,
+          // حفظ مرحلي فوري أولاً بأول لضمان عدم ضياع أي مجهود مهما حدث
+          onStepSuccess: async function(step, data) {
+            if (step === "summary" && data.summary) {
+              setPackageGenStatus("جاري حفظ الدليل الدراسي والمخططات البصرية سحابياً...");
+              if (!currentWorkingLecture.publishStatus) {
+                currentWorkingLecture.publishStatus = { summary: false, slides: false, mindMap: false, quiz: false };
+              }
+              currentWorkingLecture.summaryData = data.summary;
+              currentWorkingLecture.summaryDataJson = JSON.stringify(data.summary);
+              if (data.visuals) {
+                currentWorkingLecture.visualsData = data.visuals;
+                currentWorkingLecture.visualsDataJson = JSON.stringify(data.visuals);
+              }
+              var fullSummaryText = (data.summary.overview ? (data.summary.overview + "\n\n") : "");
+              if (Array.isArray(data.summary.learningObjectives) && data.summary.learningObjectives.length > 0) {
+                fullSummaryText += "🎯 أهداف التعلم:\n" + data.summary.learningObjectives.map(function(o) { return "• " + o; }).join("\n") + "\n\n";
+              }
+              if (Array.isArray(data.summary.sections)) {
+                data.summary.sections.forEach(function(sec) {
+                  fullSummaryText += "📌 " + sec.title + ":\n" + sec.content + "\n";
+                  if (Array.isArray(sec.keyPoints) && sec.keyPoints.length > 0) {
+                    fullSummaryText += sec.keyPoints.map(function(kp) { return "  - " + kp; }).join("\n") + "\n";
+                  }
+                  fullSummaryText += "\n";
+                });
+              }
+              if (Array.isArray(data.summary.keyTakeaways) && data.summary.keyTakeaways.length > 0) {
+                fullSummaryText += "🌟 خلاصات ونقاط جوهرية:\n" + data.summary.keyTakeaways.map(function(kt) { return "• " + kt; }).join("\n") + "\n\n";
+              }
+              if (Array.isArray(data.summary.glossary) && data.summary.glossary.length > 0) {
+                fullSummaryText += "📖 معجم المصطلحات والمفاهيم المفتاحية:\n" + data.summary.glossary.map(function(g) { return "• " + (g.term || "") + ": " + (g.definition || ""); }).join("\n") + "\n\n";
+              }
+              if (Array.isArray(data.summary.reflectionQuestions) && data.summary.reflectionQuestions.length > 0) {
+                fullSummaryText += "❓ أسئلة للتأمل والتقييم الذاتي:\n" + data.summary.reflectionQuestions.map(function(q) { return "• " + q; }).join("\n") + "\n\n";
+              }
+              currentWorkingLecture.writtenSummary = fullSummaryText.trim();
+              currentWorkingLecture.publishStatus.summary = false;
+              if (cloud && cloud.saveLecture) {
+                await cloud.saveLecture(currentWorkingLecture);
+              }
+              if (onSelectLecture) onSelectLecture(currentWorkingLecture);
+            }
+          }
         },
         function(percent, msg) {
           setPackageGenStatus(msg);
         }
       );
 
-      var updated = Object.assign({}, activeLecture);
+      var updated = Object.assign({}, currentWorkingLecture);
       if (!updated.publishStatus) {
         updated.publishStatus = { summary: false, slides: false, mindMap: false, quiz: false };
       }
 
-      if (result.summary) {
+      if (result.summary && !updated.summaryData) {
         updated.summaryData = result.summary;
-        var fullSummaryText = (result.summary.overview ? (result.summary.overview + "\n\n") : "");
-        if (Array.isArray(result.summary.learningObjectives) && result.summary.learningObjectives.length > 0) {
-          fullSummaryText += "🎯 أهداف التعلم:\n" + result.summary.learningObjectives.map(function(o) { return "• " + o; }).join("\n") + "\n\n";
-        }
-        if (Array.isArray(result.summary.sections)) {
-          result.summary.sections.forEach(function(sec) {
-            fullSummaryText += "📌 " + sec.title + ":\n" + sec.content + "\n";
-            if (Array.isArray(sec.keyPoints) && sec.keyPoints.length > 0) {
-              fullSummaryText += sec.keyPoints.map(function(kp) { return "  - " + kp; }).join("\n") + "\n";
-            }
-            fullSummaryText += "\n";
-          });
-        }
-        if (Array.isArray(result.summary.keyTakeaways) && result.summary.keyTakeaways.length > 0) {
-          fullSummaryText += "🌟 خلاصات ونقاط جوهرية:\n" + result.summary.keyTakeaways.map(function(kt) { return "• " + kt; }).join("\n") + "\n\n";
-        }
-        if (Array.isArray(result.summary.glossary) && result.summary.glossary.length > 0) {
-          fullSummaryText += "📖 معجم المصطلحات والمفاهيم المفتاحية:\n" + result.summary.glossary.map(function(g) { return "• " + (g.term || "") + ": " + (g.definition || ""); }).join("\n") + "\n\n";
-        }
-        if (Array.isArray(result.summary.reflectionQuestions) && result.summary.reflectionQuestions.length > 0) {
-          fullSummaryText += "❓ أسئلة للتأمل والتقييم الذاتي:\n" + result.summary.reflectionQuestions.map(function(q) { return "• " + q; }).join("\n") + "\n\n";
-        }
-        updated.writtenSummary = fullSummaryText.trim();
         updated.summaryDataJson = JSON.stringify(result.summary);
-        updated.publishStatus.summary = false;
       }
-
-      if (result.visuals) {
+      if (result.visuals && !updated.visualsData) {
         updated.visualsData = result.visuals;
         updated.visualsDataJson = JSON.stringify(result.visuals);
       }
@@ -480,10 +500,21 @@ window.LectureViewerModal = function(props) {
         }
       }
 
-      cloud.saveLecture(updated);
+      if (cloud && cloud.saveLecture) {
+        await cloud.saveLecture(updated);
+      }
       if (onSelectLecture) onSelectLecture(updated);
       setShowPackageModal(false);
-      alert("تم توليد الحزمة التعليمية الشاملة بنجاح! تم حفظ كافة الأركان كمسودة للمراجعة والاعتماد.");
+
+      if (result.quizError) {
+        alert(
+          "✅ تم بنجاح توليد وحفظ الدليل الدراسي المصور والمخططات البصرية سحابياً دون أي نقص!\n\n" +
+          "⚠️ تعذر استخراج أسئلة الكويز مؤقتاً (" + result.quizError + ").\n\n" +
+          "💡 كافة بياناتك السابقة والجديدة محفوظة بالكامل. يمكنك الدخول لتبويب [الاختبار التفاعلي] والضغط على [إعادة استخراج وتوليد الكويز] لتوليده بمفرده في ثوانٍ دون إعادة الحزمة بأكملها."
+        );
+      } else {
+        alert("✅ تم توليد وحفظ الحزمة التعليمية الشاملة بنجاح 100%! تم حفظ كافة الأركان كمسودة للمراجعة والاعتماد.");
+      }
     } catch (err) {
       alert("خطأ أثناء توليد الحزمة: " + err.message);
     } finally {
