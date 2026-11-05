@@ -65,11 +65,41 @@
       }
       cleaned = cleaned.trim();
 
-      // محاولة التحليل المباشر
+      // دالة تعقيم علامات التنصيص المزدوجة غير المعالجة داخل قيم النصوص
+      var sanitizeQuotes = function(str) {
+        var lines = str.split("\n");
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          var m = line.match(/^(\s*"[a-zA-Z0-9_\-]+"\s*:\s*")(.*)("[,]?\s*)$/);
+          if (m) {
+            var startPart = m[1];
+            var contentPart = m[2];
+            var endPart = m[3];
+            if (/(?<!\\)"/.test(contentPart)) {
+              var fixed = contentPart.replace(/(?<!\\)"/g, '\\"');
+              lines[i] = startPart + fixed + endPart;
+            }
+          } else {
+            var mArr = line.match(/^(\s*")(.*)("[,]?\s*)$/);
+            if (mArr && !/^\s*"[a-zA-Z0-9_\-]+"\s*:/.test(line)) {
+              var aStart = mArr[1];
+              var aContent = mArr[2];
+              var aEnd = mArr[3];
+              if (/(?<!\\)"/.test(aContent)) {
+                var aFixed = aContent.replace(/(?<!\\)"/g, '\\"');
+                lines[i] = aStart + aFixed + aEnd;
+              }
+            }
+          }
+        }
+        return lines.join("\n");
+      };
+
+      // محاولة 1: التحليل المباشر
       try {
         return JSON.parse(cleaned);
       } catch (firstErr) {
-        // محاولة استخراج كائن JSON من بين نصوص الشرح
+        // محاولة 2: استخراج كائن JSON من بين نصوص الشرح
         var firstBrace = cleaned.indexOf("{");
         var lastBrace = cleaned.lastIndexOf("}");
         if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -79,9 +109,22 @@
           } catch (e) {}
         }
 
-        // محرك الترميم الذكي في حالة انقطاع الرد عند حد التوكنز:
+        // محاولة 3: إزالة الفواصل الزائدة قبل إغلاق الأقواس
         try {
-          var repaired = cleaned;
+          var noTrailing = cleaned.replace(/,(\s*[\]}])/g, "$1");
+          return JSON.parse(noTrailing);
+        } catch (eTrailing) {}
+
+        // محاولة 4: تعقيم علامات التنصيص الداخلية غير المعالجة
+        try {
+          var sanitized = sanitizeQuotes(cleaned);
+          sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
+          return JSON.parse(sanitized);
+        } catch (eSanitize) {}
+
+        // محاولة 5: محرك الترميم الذكي في حالة انقطاع الرد عند حد التوكنز
+        try {
+          var repaired = sanitizeQuotes(cleaned);
           var quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
           if (quoteCount % 2 !== 0) {
             repaired += '"';
@@ -91,6 +134,7 @@
           var openBraces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
           for (var c = 0; c < openBraces; c++) repaired += "}";
 
+          repaired = repaired.replace(/,(\s*[\]}])/g, "$1");
           return JSON.parse(repaired);
         } catch (repairErr) {
           console.error("JSON Repair failed:", repairErr);
@@ -337,7 +381,8 @@
         "3. التغطية الشاملة والمتوازنة: وزع الأسئلة بتسلسل طبيعي يغطي كافة محاور ومفاصل المحاضرة من بدايتها وحتى ختامها دون تكدسها في أول ربع ساعة فقط.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +
         "5. يجب توليد بالضبط " + count + " سؤال دون أي نقصان.\n" +
-        (customInstructions ? ("6. ملاحظات خاصة: " + customInstructions + "\n") : "") +
+        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (\") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
+        (customInstructions ? ("7. ملاحظات خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق للنموذج التالي:\n" +
         JSON.stringify({
           questions: [

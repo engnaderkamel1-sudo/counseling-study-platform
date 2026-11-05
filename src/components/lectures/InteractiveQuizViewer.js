@@ -11,6 +11,8 @@ window.InteractiveQuizViewer = function(props) {
   var onRegenerateQuiz = props.onRegenerateQuiz;
   var mediaUrl = props.mediaUrl;
   var onJumpToTimestamp = props.onJumpToTimestamp;
+  var isGenerating = props.isGenerating;
+  var generatingStatus = props.generatingStatus;
 
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [userAnswers, setUserAnswers] = React.useState({});
@@ -308,20 +310,43 @@ window.InteractiveQuizViewer = function(props) {
     return React.createElement(
       "div",
       { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
-      React.createElement("div", { className: "text-4xl" }, "📝"),
-      React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لا يوجد اختبار تفاعلي لهذه المحاضرة بعد"),
-      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-        "يمكن لمسؤول المنصة توليد أسئلة الكويز بالذكاء الاصطناعي، أو كتابة وإضافة أسئلة يدوياً الآن."
+      React.createElement("div", { className: "text-4xl" }, isGenerating ? "⏳" : "📝"),
+      React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" },
+        isGenerating ? "جاري استخراج وتوليد أسئلة الكويز..." : "لا يوجد اختبار تفاعلي لهذه المحاضرة بعد"
       ),
-      isAdmin && React.createElement(
-        "button",
-        {
-          type: "button",
-          onClick: handleOpenAddQuestion,
-          className: "mt-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
-        },
-        React.createElement("span", null, "➕"),
-        React.createElement("span", null, "إضافة أول سؤال يدوياً")
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
+        isGenerating
+          ? (generatingStatus || "يقوم الذكاء الاصطناعي الآن بقراءة وتحليل نص وتفريغ المحاضرة واستخراج أسئلة دقيقة...")
+          : "يمكن لمسؤول المنصة توليد أسئلة الكويز بالذكاء الاصطناعي، أو كتابة وإضافة أسئلة يدوياً الآن."
+      ),
+      isGenerating ? React.createElement(
+        "div",
+        { className: "pt-2 flex items-center justify-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse" },
+        React.createElement("span", { className: "w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin inline-block" }),
+        React.createElement("span", null, "يرجى الانتظار بضع ثوانٍ حتى اكتمال المعالجة...")
+      ) : React.createElement(
+        "div",
+        { className: "flex items-center justify-center gap-2 flex-wrap pt-2" },
+        isAdmin && onRegenerateQuiz && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onRegenerateQuiz,
+            className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          },
+          React.createElement("span", null, "🔄"),
+          React.createElement("span", null, "توليد الكويز بالذكاء الاصطناعي")
+        ),
+        isAdmin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleOpenAddQuestion,
+            className: "px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
+          },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", null, "إضافة أول سؤال يدوياً")
+        )
       ),
       renderEditorModal()
     );
@@ -419,6 +444,19 @@ window.InteractiveQuizViewer = function(props) {
     "div",
     { className: "space-y-4" },
 
+    // مؤشر حالة التوليد الجاري في الواجهة
+    isGenerating && React.createElement(
+      "div",
+      { className: "p-3.5 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 flex items-center gap-3 text-xs font-bold text-indigo-700 dark:text-indigo-300 animate-pulse shadow-xs" },
+      React.createElement("div", { className: "w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin shrink-0" }),
+      React.createElement(
+        "div",
+        { className: "flex-1" },
+        React.createElement("div", { className: "text-indigo-900 dark:text-indigo-100 font-extrabold text-xs" }, "جاري إعداد وتوليد أسئلة الكويز بالذكاء الاصطناعي..."),
+        React.createElement("div", { className: "text-[11px] text-indigo-600/80 dark:text-indigo-400 font-normal mt-0.5" }, generatingStatus || "يقوم النموذج بتحليل تفريغ المحاضرة واستخراج أسئلة دقيقة مع الاقتباسات والتوقيتات الزمنية.")
+      )
+    ),
+
     // شريط علوي للمسؤول والتحكم والحالة
     React.createElement(
       "div",
@@ -467,11 +505,16 @@ window.InteractiveQuizViewer = function(props) {
             "button",
             {
               type: "button",
+              disabled: isGenerating,
               onClick: onRegenerateQuiz,
-              className: "px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+              className: "px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 " +
+                (isGenerating
+                  ? "bg-indigo-400 dark:bg-indigo-800 cursor-not-allowed opacity-80"
+                  : "bg-indigo-600 hover:bg-indigo-700 cursor-pointer active:scale-95") +
+                " text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all"
             },
-            React.createElement("span", null, "🔄"),
-            React.createElement("span", null, "إعادة استخراج وتوليد الكويز")
+            React.createElement("span", { className: isGenerating ? "animate-spin inline-block" : "" }, isGenerating ? "⏳" : "🔄"),
+            React.createElement("span", null, isGenerating ? "جاري استخراج وتوليد الكويز..." : "إعادة استخراج وتوليد الكويز")
           ),
           isAdmin && React.createElement(
             "button",

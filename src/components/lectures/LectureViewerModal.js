@@ -1539,6 +1539,8 @@ window.LectureViewerModal = function(props) {
             quiz: activeLecture.quizQuestions,
             isDraft: getIsDraft("quiz"),
             isAdmin: currentUser.role === "admin",
+            isGenerating: isAiGenerating,
+            generatingStatus: packageGenStatus,
             onPublishToggle: handlePublishToggle,
             onRequestEdit: function(comp) { setAiEditTarget(comp); },
             onUpdateQuiz: function(newQuestions) {
