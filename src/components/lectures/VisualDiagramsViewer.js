@@ -208,17 +208,33 @@
 
         var N = sorted.length;
         var apexX = 250;
-        var apexY = 16;
-        var W = 224; // نصف عرض قاعدة الهرم عند الأساس
+        var apexY = 12;
+        var W = 230; // نصف عرض قاعدة الهرم عند الأساس لضمان اتساع كافٍ
 
-        // الارتفاع المخصص: القمة تأخذ 72px لتتسع للرأس والرقم، وباقي الطبقات تأخذ 48px
-        var peakH = 72;
-        var tierH = 48;
+        // إعطاء قمة الهرم ارتفاعاً وافياً (90px) لضمان احتواء الرقم والنص ببراح تام دون أي خروج عن حدود المثلث
+        var peakH = 90;
+        var tierH = 46;
         var H = peakH + (Math.max(0, N - 1) * tierH);
         var totalH = apexY + H + 18;
 
         var yCursor = apexY;
         var tiersData = [];
+
+        // دالة تعقيم ذكية لإزالة الأقواس واللغات الأجنبية من داخل الرسم البياني الهرمي فقط (مع إبقائها في كرت الشرح)
+        var cleanTierTitle = function(raw) {
+          if (!raw) return "";
+          return raw.replace(/\s*\([^)]*\)\s*/g, "").trim();
+        };
+
+        // دالة استخلاص المفهوم المركز لقمة الهرم ليتسع في مساحة المثلث المحدودة
+        var getPeakTitle = function(raw) {
+          var clean = cleanTierTitle(raw);
+          if (/الاحتياج.*(الله|اللانهائي)/.test(clean)) return "الاحتياج لله";
+          if (/تحقيق الذات/.test(clean)) return "تحقيق الذات";
+          var words = clean.split(/\s+/);
+          if (words.length > 2) return words.slice(0, 2).join(" ");
+          return clean;
+        };
 
         for (var i = 0; i < N; i++) {
           var h = (i === 0) ? peakH : tierH;
@@ -236,13 +252,13 @@
           }
 
           var rawTitle = sorted[i].title || "";
-          var cleanTitle = rawTitle.replace(/\s*\([a-zA-Z\s\-&]+\)\s*/g, "").trim();
+          var displayTitle = (i === 0) ? getPeakTitle(rawTitle) : cleanTierTitle(rawTitle);
 
           tiersData.push({
             lvl: sorted[i],
             points: pts,
             yMid: yMid,
-            cleanTitle: cleanTitle
+            displayTitle: displayTitle
           });
 
           yCursor = yBot;
@@ -301,30 +317,43 @@
                     React.createElement(
                       "text",
                       {
+                        key: "peak-crown",
+                        x: 250,
+                        y: apexY + 34,
+                        textAnchor: "middle",
+                        fill: "#ffffff",
+                        fontSize: "15",
+                        className: "pointer-events-none drop-shadow-sm"
+                      },
+                      "👑"
+                    ),
+                    React.createElement(
+                      "text",
+                      {
                         key: "peak-badge",
                         x: 250,
-                        y: apexY + 28,
+                        y: apexY + 54,
                         textAnchor: "middle",
                         fill: "#ffffff",
                         fontSize: "12",
                         fontWeight: "900",
                         className: "pointer-events-none drop-shadow-sm font-sans"
                       },
-                      "👑 المستوى " + lvl.level
+                      "المستوى " + lvl.level
                     ),
                     React.createElement(
                       "text",
                       {
                         key: "peak-title",
                         x: 250,
-                        y: apexY + 50,
+                        y: apexY + 76,
                         textAnchor: "middle",
                         fill: "#ffffff",
-                        fontSize: "11",
+                        fontSize: "12",
                         fontWeight: "bold",
                         className: "pointer-events-none drop-shadow-sm font-sans"
                       },
-                      item.cleanTitle
+                      item.displayTitle
                     )
                   ] : React.createElement(
                     "text",
@@ -337,7 +366,7 @@
                       fontWeight: "bold",
                       className: "pointer-events-none drop-shadow-sm font-sans"
                     },
-                    lvl.level + ". " + item.cleanTitle
+                    lvl.level + ". " + item.displayTitle
                   )
                 );
               })
