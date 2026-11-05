@@ -608,12 +608,12 @@ window.LectureViewerModal = function(props) {
   return React.createElement(
     "div",
     {
-      className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto",
+      className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 overflow-y-auto",
       onClick: function(e) { if (e.target === e.currentTarget && onClose) onClose(); }
     },
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto my-auto" },
+      { className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[96vh] sm:max-h-[92vh] overflow-y-auto my-auto" },
 
       // رأس المحاضرة داخل النافذة
       React.createElement(
