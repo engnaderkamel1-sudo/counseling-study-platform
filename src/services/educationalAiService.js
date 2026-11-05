@@ -326,7 +326,11 @@
         lectureContent = lectureContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
           .replace(/عبر\s+زووم/gi, "")
-          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن توليد الدليل الدراسي: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
       }
       var prompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية والبصرية (Chief Educational & Visual Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
         "المطلوب: صياغة دليل دراسي مصور فائق الجودة والعمق بأسلوب Google NotebookLM المعمق لمحاضرة: '" + lectureTitle + "'.\n\n" +
@@ -472,6 +476,16 @@
     // 4.4 توليد خطوة أسئلة الكويز التفاعلي بشكل مستقل مع القطعة المرجعية وزر المساعدة
     generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions) {
       var count = parseInt(quizCount, 10) || 10;
+      if (typeof lectureContent === "string") {
+        lectureContent = lectureContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
+      }
       var prompt = "المطلوب: إعداد وتوليد بالضبط " + count + " سؤال كويز تفاعلي استيعابي وتطبيقي لمحاضرة المشورة: '" + lectureTitle + "'.\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
@@ -515,7 +529,11 @@
         lectureContent = lectureContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
           .replace(/عبر\s+زووم/gi, "")
-          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن استخراج المخططات البصرية: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
       }
       var prompt = "أنت كبير معماريي ومصممي المعرفة البصرية (Chief Visual Knowledge Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
         "المهمة: تحليل النص المرجعي للمحاضرة بدقة متناهية وبناء منظومة بصرية تعليمية شاملة ومترابطة تحاكي أعلى معايير Google NotebookLM لتغطية كافة أبعاد المحاضرة بصرياً ومفاهيمياً.\n\n" +
@@ -565,6 +583,16 @@
     // 4.5 المحرك المتسلسل الكامل (Sequential Step-by-Step Chained Generation)
     generateCompletePackage: async function(lectureTitle, lectureContent, options, onProgress) {
       options = options || {};
+      if (typeof lectureContent === "string") {
+        lectureContent = lectureContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن توليد الحزمة التعليمية: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
+      }
 
       var summaryPages = parseInt(options.summaryPages, 10) || 5;
       var quizCount = parseInt(options.quizCount, 10) || 10;

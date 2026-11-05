@@ -219,15 +219,16 @@ window.LectureViewerModal = function(props) {
     var confirmMsg = "هل تريد إعادة بناء الدليل الدراسي المصور (الملخص والمخططات التفاعلية المدمجة - " + pages + " صفحات) بدقة من صلب تفريغ المحاضرة؟";
     if (!window.confirm(confirmMsg)) return;
 
-    var content = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || "";
+    var content = (activeLecture.transcript || activeLecture.transcriptText || "").trim();
     if (typeof content === "string") {
       content = content
         .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
         .replace(/عبر\s+زووم/gi, "")
-        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+        .trim();
     }
-    if (!content.trim()) {
-      alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً.");
+    if (!content || content.length < 100) {
+      alert("⚠️ تنبيه أمانة علمية:\n\nلا يمكن بناء الدليل الدراسي المصور لعدم توفر تفريغ نصي مسجل للمحاضرة.\n\nيرجى فتح تبويب (📜 تفريغ المحاضرة من الفيديو) وتوفير التفريغ أولاً عبر جلبه من يوتيوب أو لصقه يدوياً.");
       return;
     }
 
@@ -263,15 +264,16 @@ window.LectureViewerModal = function(props) {
     var confirmMsg = "هل تريد إعادة استخراج وتوليد أسئلة الكويز (" + currentQCount + " سؤال) بالمعايير الصارمة الجديدة مع المقتطفات المرجعية من صلب تفريغ المحاضرة؟";
     if (!window.confirm(confirmMsg)) return;
 
-    var content = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || "";
+    var content = (activeLecture.transcript || activeLecture.transcriptText || "").trim();
     if (typeof content === "string") {
       content = content
         .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
         .replace(/عبر\s+زووم/gi, "")
-        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+        .trim();
     }
-    if (!content.trim()) {
-      alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً لتوليد الأسئلة بدقة منه.");
+    if (!content || content.length < 100) {
+      alert("⚠️ تنبيه أمانة علمية:\n\nلا يمكن استخراج وتوليد أسئلة الكويز لعدم توفر تفريغ نصي مسجل للمحاضرة.\n\nيرجى فتح تبويب (📜 تفريغ المحاضرة من الفيديو) وتوفير التفريغ أولاً عبر جلبه من يوتيوب أو لصقه يدوياً.");
       return;
     }
 
@@ -409,29 +411,39 @@ window.LectureViewerModal = function(props) {
     setIsAiGenerating(true);
     setPackageGenStatus("جاري استخراج المخططات البصرية المعمقة بأسلوب NotebookLM وتحليل المحاضرة...");
     try {
-      var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
-    if (typeof sourceContent === "string") {
-      sourceContent = sourceContent
-        .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
-        .replace(/عبر\s+زووم/gi, "")
-        .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
-    }
+      var sourceContent = (activeLecture.transcript || activeLecture.transcriptText || "").trim();
 
       // محاولة استخراج تفريغ اليوتيوب تلقائياً إن لم يكن موجوداً
-      if (!activeLecture.transcript && activeLecture.mediaUrl) {
+      if (!sourceContent && activeLecture.mediaUrl) {
         try {
+          setPackageGenStatus("جاري فحص وجلب تفريغ فيديو اليوتيوب للمحاضرة...");
           var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
           if (transResp.ok) {
             var transData = await transResp.json();
             if (transData.success && transData.transcript) {
               activeLecture.transcript = transData.transcript;
               activeLecture.transcriptText = transData.transcript;
-              sourceContent = transData.transcript;
+              sourceContent = transData.transcript.trim();
             }
           }
         } catch(tErr) {
           console.warn("Transcript auto-fetch skipped:", tErr);
+        } finally {
+          setPackageGenStatus("");
         }
+      }
+
+      if (typeof sourceContent === "string") {
+        sourceContent = sourceContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+
+      if (!sourceContent || sourceContent.length < 100) {
+        alert("⚠️ تنبيه أمانة علمية:\n\nلا يمكن استخراج المخططات البصرية لعدم توفر تفريغ نصي مسجل للمحاضرة.\n\nيرجى توفير تفريغ المحاضرة أولاً.");
+        return;
       }
 
       var parsed = await window.EducationalAIService.generateVisualsOnly(
@@ -465,12 +477,39 @@ window.LectureViewerModal = function(props) {
     setIsAiGenerating(true);
     setPackageGenStatus("جاري استماع النموذج وتحليل المحاضرة وتوليد الأركان المحددة بالذكاء الاصطناعي...");
     try {
-      var sourceContent = activeLecture.transcript || activeLecture.transcriptText || activeLecture.writtenSummary || activeLecture.notes || activeLecture.title;
+      var sourceContent = (activeLecture.transcript || activeLecture.transcriptText || "").trim();
+
+      // محاولة استخراج تفريغ اليوتيوب تلقائياً إن لم يكن موجوداً
+      if (!sourceContent && activeLecture.mediaUrl) {
+        try {
+          setPackageGenStatus("جاري فحص وجلب تفريغ فيديو اليوتيوب للمحاضرة...");
+          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
+          if (transResp.ok) {
+            var transData = await transResp.json();
+            if (transData.success && transData.transcript) {
+              activeLecture.transcript = transData.transcript;
+              activeLecture.transcriptText = transData.transcript;
+              sourceContent = transData.transcript.trim();
+            }
+          }
+        } catch(tErr) {
+          console.warn("Transcript auto-fetch in full package skipped:", tErr);
+        } finally {
+          setPackageGenStatus("");
+        }
+      }
+
       if (typeof sourceContent === "string") {
         sourceContent = sourceContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
           .replace(/عبر\s+زووم/gi, "")
-          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "");
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+
+      if (!sourceContent || sourceContent.length < 100) {
+        alert("⚠️ تنبيه أمانة علمية صارم:\n\nلا يمكن توليد الحزمة التعليمية (الدليل الدراسي، المخططات، الكويز) لعدم توفر تفريغ نصي مسجل للمحاضرة.\n\nيرجى فتح تبويب (📜 تفريغ المحاضرة من الفيديو) ثم استخدام زر (كتابة أو لصق تفريغ يدوي) أو جلب التفريغ من يوتيوب أولاً لضمان عدم تأليف معلومات وهمية من خارج المحاضرة.");
+        return;
       }
       var currentWorkingLecture = Object.assign({}, activeLecture);
 
