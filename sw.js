@@ -1,5 +1,5 @@
 // Service Worker for Counseling Study Platform PWA
-const CACHE_NAME = 'counseling-pwa-v1793907152';
+const CACHE_NAME = 'counseling-pwa-v1793908083';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -50,10 +50,10 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           // في حال انقطاع الإنترنت التام: نفتح النسخة المحفوظة أوفلاين
           try {
-            const cachedResponse = await caches.match(req);
+            const cachedResponse = await caches.match(req, { ignoreSearch: true });
             if (cachedResponse) return cachedResponse;
             if (req.mode === 'navigate') {
-              const fallback = await caches.match('./index.html') || await caches.match('/index.html');
+              const fallback = await caches.match('./index.html', { ignoreSearch: true }) || await caches.match('/index.html', { ignoreSearch: true });
               if (fallback) return fallback;
             }
           } catch (matchErr) {}
