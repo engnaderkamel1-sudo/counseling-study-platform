@@ -8,6 +8,7 @@ window.InteractiveQuizViewer = function(props) {
   var onPublishToggle = props.onPublishToggle;
   var onRequestEdit = props.onRequestEdit;
   var onUpdateQuiz = props.onUpdateQuiz;
+  var onRegenerateQuiz = props.onRegenerateQuiz;
 
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [userAnswers, setUserAnswers] = React.useState({});
@@ -441,6 +442,16 @@ window.InteractiveQuizViewer = function(props) {
                   : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200")
             },
             isDraft ? "🚀 نشر للطلاب" : "🔒 تحويل لمسودة"
+          ),
+          isAdmin && onRegenerateQuiz && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: onRegenerateQuiz,
+              className: "px-3 py-1.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            },
+            React.createElement("span", null, "🔄"),
+            React.createElement("span", null, "إعادة استخراج وتوليد الكويز")
           ),
           isAdmin && React.createElement(
             "button",

@@ -147,24 +147,81 @@ window.LectureViewerModal = function(props) {
   var st = getLectureStatus ? getLectureStatus(activeLecture) : {};
   var actSeq = itemSeqInfo[activeLecture.id] || { isExam: isItemExam && isItemExam(activeLecture), num: 1, titleBadge: "#1", fullLabel: "المحاضرة" };
 
-  var handleGenerateSummary = async function() {
+  // إعادة توليد الدليل الدراسي المصور بأسلوب NotebookLM المعمق والمخططات المدمجة
+  var handleRegenerateSummaryOnly = async function() {
     if (!activeLecture || currentUser.role !== "admin") return;
+    var pages = parseInt(genSummaryPages, 10) || 5;
+    var confirmMsg = "هل تريد إعادة بناء الدليل الدراسي المصور (الملخص والمخططات التفاعلية المدمجة - " + pages + " صفحات) بدقة من صلب تفريغ المحاضرة؟";
+    if (!window.confirm(confirmMsg)) return;
+
+    var content = activeLecture.transcript || activeLecture.notes || activeLecture.writtenSummary || "";
+    if (!content.trim()) {
+      alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً.");
+      return;
+    }
+
     setIsAiGenerating(true);
+    setPackageGenStatus("جاري صياغة الدليل الدراسي المصور وبناء المخططات البصرية سياقياً...");
     try {
-      var prompt = "قم بإعداد تلخيص شامل ودقيق وواضح لمحاضرة المشورة: '" + activeLecture.title + "'.\n" +
-        "المحاضر: " + activeLecture.speaker + "\n" +
-        "الملاحظات الأساسية:\n" + (activeLecture.notes || "مفاهيم الشفاء والنمو النفسي") + "\n\n" +
-        "المطلوب: استخراج الأفكار الرئيسية، المفاهيم المحورية، وتطبيقات عملية للدارس بلغة عربية رصينة.";
-      var summaryText = await ai.callGemini(prompt);
-      var updated = Object.assign({}, activeLecture, { writtenSummary: summaryText });
-      cloud.saveLecture(updated);
+      var summaryRes = await window.EducationalAIService.generateSummaryOnly(
+        activeLecture.title,
+        content,
+        pages
+      );
+      var updated = Object.assign({}, activeLecture, {
+        summaryData: summaryRes,
+        summaryDataJson: JSON.stringify(summaryRes)
+      });
+      await cloud.saveLecture(updated);
       if (onSelectLecture) onSelectLecture(updated);
+      alert("تمت إعادة بناء الدليل الدراسي المصور بنجاح مع المخططات البصرية المدمجة!");
     } catch (err) {
-      alert("خطأ أثناء التوليد: " + err.message);
+      alert("خطأ أثناء إعادة بناء الدليل المصور: " + err.message);
     } finally {
       setIsAiGenerating(false);
+      setPackageGenStatus("");
     }
   };
+
+  // إعادة توليد الكويز فقط بالمعايير الصارمة الجديدة والاقتباسات المرجعية
+  var handleRegenerateQuizOnly = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    var currentQCount = (Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0)
+      ? activeLecture.quizQuestions.length
+      : (parseInt(genQuizCount, 10) || 10);
+    var confirmMsg = "هل تريد إعادة استخراج وتوليد أسئلة الكويز (" + currentQCount + " سؤال) بالمعايير الصارمة الجديدة مع المقتطفات المرجعية من صلب تفريغ المحاضرة؟";
+    if (!window.confirm(confirmMsg)) return;
+
+    var content = activeLecture.transcript || activeLecture.notes || activeLecture.writtenSummary || "";
+    if (!content.trim()) {
+      alert("يرجى التأكد من توفر تفريغ أو نص للمحاضرة أولاً لتوليد الأسئلة بدقة منه.");
+      return;
+    }
+
+    setIsAiGenerating(true);
+    setPackageGenStatus("جاري استخراج أسئلة الكويز المقتبسة بدقة...");
+    try {
+      var quizRes = await window.EducationalAIService.generateQuizOnly(
+        activeLecture.title,
+        content,
+        currentQCount
+      );
+      var questions = Array.isArray(quizRes.questions) ? quizRes.questions : (Array.isArray(quizRes) ? quizRes : []);
+      var updated = Object.assign({}, activeLecture, {
+        quizQuestions: questions
+      });
+      await cloud.saveLecture(updated);
+      if (onSelectLecture) onSelectLecture(updated);
+      alert("تمت إعادة توليد أسئلة الكويز بنجاح (" + questions.length + " سؤال) مع المقتطفات المرجعية وزر المساعدة!");
+    } catch (err) {
+      alert("خطأ أثناء إعادة توليد الكويز: " + err.message);
+    } finally {
+      setIsAiGenerating(false);
+      setPackageGenStatus("");
+    }
+  };
+
+  var handleGenerateSummary = handleRegenerateSummaryOnly;
 
   // فحص حالة المسودة لكل ركن
   var getIsDraft = function(comp) {
@@ -1118,12 +1175,13 @@ window.LectureViewerModal = function(props) {
               React.createElement(
                 "button",
                 {
-                  onClick: handleGenerateSummary,
+                  type: "button",
+                  onClick: handleRegenerateSummaryOnly,
                   disabled: isAiGenerating,
-                  className: "px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                  className: "px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50 transition-all active:scale-95"
                 },
-                React.createElement("span", null, isAiGenerating ? "⏳" : "✨"),
-                React.createElement("span", null, isAiGenerating ? "جاري البناء..." : "إعادة بناء الدليل المصور")
+                React.createElement("span", null, isAiGenerating ? "⏳" : "🔄"),
+                React.createElement("span", null, isAiGenerating ? "جاري البناء..." : "إعادة استخراج وتوليد الملخص المصور")
               )
             )
           ),
@@ -1492,7 +1550,8 @@ window.LectureViewerModal = function(props) {
               var updated = Object.assign({}, activeLecture, { quizQuestions: newQuestions });
               cloud.saveLecture(updated);
               if (onSelectLecture) onSelectLecture(updated);
-            }
+            },
+            onRegenerateQuiz: handleRegenerateQuizOnly
           }
         ) : 
         currentUser.role === "admin" && React.createElement(
