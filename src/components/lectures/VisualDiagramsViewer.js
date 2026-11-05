@@ -14,6 +14,9 @@
       case "comparison": return "⚖️";
       case "pie": return "🥧";
       case "metric_card": return "📊";
+      case "dual_system":
+      case "anatomy": return "🧠";
+      case "cycle": return "🔁";
       default: return "📈";
     }
   };
@@ -191,10 +194,23 @@
         var levels = chart.levels || [];
         if (!levels.length) return null;
 
-        var peakIsFirst = levels[0] && (levels[0].isPeak || levels[0].level === 1);
-        var sorted = levels.slice().sort(function(a, b) {
-          return peakIsFirst ? (a.level - b.level) : (b.level - a.level);
-        });
+        // تحديد ذروة وقمة الهرم بدقة متناهية:
+        // القمة دائماً هي العنصر الموسوم بـ isPeak أو صاحب المستوى الأعلى رقمياً
+        var peakItem = levels.find(function(l) { return l.isPeak === true; });
+        var sorted;
+        if (peakItem) {
+          var maxLevel = Math.max.apply(null, levels.map(function(l) { return l.level; }));
+          // إذا كان الموديل وضع رقم المستوى الأعلى على القمة، نرتب تنازلياً (القمة أولاً في الأعلى)
+          if (peakItem.level === maxLevel) {
+            sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
+          } else {
+            // إذا كان الموديل وضع المستوى 1 على القمة، نرتب تصاعدياً
+            sorted = levels.slice().sort(function(a, b) { return a.level - b.level; });
+          }
+        } else {
+          // افتراضياً: المستوى الأعلى هو القمة في الأعلى والمستوى 1 هو القاعدة المستقرة في الأسفل
+          sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
+        }
 
         var currentActive = (activePyramidLevel !== null) ? activePyramidLevel : (sorted[0] ? sorted[0].level : null);
 
@@ -203,9 +219,10 @@
           { className: "space-y-4" },
           React.createElement(
             "div",
-            { className: "flex flex-col items-center gap-2 max-w-xl mx-auto py-1" },
+            { className: "flex flex-col items-center gap-2.5 max-w-xl mx-auto py-1" },
             sorted.map(function(lvl, i) {
-              var widthPct = 40 + (i * (60 / Math.max(1, sorted.length - 1)));
+              // حساب العرض التدريجي: القمة في الأعلى تأخذ 50% كحد أدنى وتتسع نزولاً حتى 100% في القاعدة
+              var widthPct = 50 + (i * (50 / Math.max(1, sorted.length - 1)));
               var isSelected = currentActive === lvl.level;
               var isPeak = lvl.isPeak || i === 0;
 
@@ -219,18 +236,20 @@
                   key: lvl.level,
                   onClick: function() { setActivePyramidLevel(lvl.level); },
                   style: {
-                    width: Math.min(100, Math.max(35, widthPct)) + "%",
+                    width: Math.min(100, Math.max(48, widthPct)) + "%",
+                    minWidth: "min(100%, 260px)",
                     background: bgStyle
                   },
-                  className: "cursor-pointer transition-all duration-200 transform hover:scale-102 rounded-2xl p-2.5 sm:p-3 text-center text-white shadow-md relative overflow-hidden " +
-                    (isSelected ? " ring-4 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 shadow-lg scale-102" : "")
+                  className: "cursor-pointer transition-all duration-200 transform hover:scale-101 rounded-2xl p-2.5 sm:p-3 text-center text-white shadow-md relative overflow-hidden " +
+                    (isSelected ? " ring-4 ring-indigo-400 ring-offset-2 dark:ring-offset-slate-900 shadow-lg scale-101" : "")
                 },
                 React.createElement(
                   "div",
-                  { className: "flex items-center justify-between px-2 text-xs sm:text-sm font-bold drop-shadow-sm" },
+                  { className: "flex items-center justify-between gap-2 px-2 text-xs sm:text-sm font-bold drop-shadow-sm" },
                   React.createElement("span", { className: "w-5 h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] shrink-0 font-mono" }, lvl.level),
-                  React.createElement("span", { className: "truncate px-1" }, lvl.title),
-                  React.createElement("span", { className: "text-[11px] opacity-80" }, isSelected ? "▲" : "▼")
+                  // إزالة truncate والسماح بالالتفاف السلس لكامل الكلمات
+                  React.createElement("span", { className: "px-1 flex-1 text-center leading-snug break-words whitespace-normal" }, lvl.title),
+                  React.createElement("span", { className: "text-[11px] opacity-80 shrink-0" }, isSelected ? "▲" : "▼")
                 )
               );
             })
@@ -243,11 +262,11 @@
               { className: "p-3.5 sm:p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1 animate-in fade-in duration-150" },
               React.createElement(
                 "div",
-                { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5" },
+                { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 flex-wrap" },
                 React.createElement("span", null, "💡 المستوى " + found.level + ":"),
                 React.createElement("span", null, found.title)
               ),
-              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, found.desc)
+              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed break-words" }, found.desc)
             );
           })()
         );
@@ -374,6 +393,153 @@
             { className: "p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 font-medium leading-relaxed flex items-center gap-2" },
             React.createElement("span", { className: "text-base shrink-0" }, "💡"),
             React.createElement("span", null, chart.takeaway)
+          )
+        );
+      })(),
+
+      // 7. المخطط التشريحي للأنظمة المزدوجة والمتقابلة (Dual System / Brain Anatomy)
+      (chart.type === "dual_system" || chart.type === "anatomy") && (function() {
+        var left = chart.leftWing || chart.left || {};
+        var right = chart.rightWing || chart.right || {};
+
+        return React.createElement(
+          "div",
+          { className: "space-y-4" },
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+            // الجناح الأيسر / المنطقي / التحليلي
+            React.createElement(
+              "div",
+              { className: "p-4 sm:p-5 rounded-3xl bg-blue-50/60 dark:bg-blue-950/25 border-2 border-blue-200/90 dark:border-blue-800/60 space-y-3.5 relative overflow-hidden" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5 pb-2.5 border-b border-blue-200/70 dark:border-blue-800/50" },
+                React.createElement("span", { className: "text-2xl p-2 rounded-2xl bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 shadow-2xs" }, left.icon || "🔬"),
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-blue-950 dark:text-blue-100" }, left.title || "الجانب الأيسر"),
+                  left.subtitle && React.createElement("p", { className: "text-[11px] text-blue-600 dark:text-blue-400 font-medium" }, left.subtitle)
+                )
+              ),
+              Array.isArray(left.traits) && left.traits.length > 0 && React.createElement(
+                "ul",
+                { className: "space-y-1.5 text-xs text-slate-700 dark:text-slate-300" },
+                left.traits.map(function(t, idx) {
+                  return React.createElement(
+                    "li",
+                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-blue-100 dark:border-blue-900/30" },
+                    React.createElement("span", { className: "text-blue-600 font-bold shrink-0" }, "•"),
+                    React.createElement("span", { className: "leading-snug break-words" }, t)
+                  );
+                })
+              ),
+              left.counselingRole && React.createElement(
+                "div",
+                { className: "pt-2 text-[11px] text-blue-900 dark:text-blue-200 font-bold flex items-start gap-1.5 bg-blue-100/60 dark:bg-blue-900/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40" },
+                React.createElement("span", { className: "shrink-0" }, "🎯"),
+                React.createElement("span", { className: "leading-relaxed" }, left.counselingRole)
+              )
+            ),
+
+            // الجناح الأيمن / الوجداني / الشمولي
+            React.createElement(
+              "div",
+              { className: "p-4 sm:p-5 rounded-3xl bg-purple-50/60 dark:bg-purple-950/25 border-2 border-purple-200/90 dark:border-purple-800/60 space-y-3.5 relative overflow-hidden" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2.5 pb-2.5 border-b border-purple-200/70 dark:border-purple-800/50" },
+                React.createElement("span", { className: "text-2xl p-2 rounded-2xl bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 shadow-2xs" }, right.icon || "🎨"),
+                React.createElement(
+                  "div",
+                  null,
+                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-purple-950 dark:text-purple-100" }, right.title || "الجانب الأيمن"),
+                  right.subtitle && React.createElement("p", { className: "text-[11px] text-purple-600 dark:text-purple-400 font-medium" }, right.subtitle)
+                )
+              ),
+              Array.isArray(right.traits) && right.traits.length > 0 && React.createElement(
+                "ul",
+                { className: "space-y-1.5 text-xs text-slate-700 dark:text-slate-300" },
+                right.traits.map(function(t, idx) {
+                  return React.createElement(
+                    "li",
+                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-purple-100 dark:border-purple-900/30" },
+                    React.createElement("span", { className: "text-purple-600 font-bold shrink-0" }, "•"),
+                    React.createElement("span", { className: "leading-snug break-words" }, t)
+                  );
+                })
+              ),
+              right.counselingRole && React.createElement(
+                "div",
+                { className: "pt-2 text-[11px] text-purple-900 dark:text-purple-200 font-bold flex items-start gap-1.5 bg-purple-100/60 dark:bg-purple-900/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40" },
+                React.createElement("span", { className: "shrink-0" }, "🎯"),
+                React.createElement("span", { className: "leading-relaxed" }, right.counselingRole)
+              )
+            )
+          ),
+
+          // جسر التكامل والتنسيق المشوري
+          chart.integration && React.createElement(
+            "div",
+            { className: "p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/40 dark:via-indigo-950/40 dark:to-purple-950/40 border border-indigo-200 dark:border-indigo-800/70 text-xs sm:text-sm text-indigo-950 dark:text-indigo-200 space-y-1.5" },
+            React.createElement(
+              "div",
+              { className: "font-black flex items-center gap-2 text-indigo-900 dark:text-indigo-300" },
+              React.createElement("span", { className: "text-base" }, "🌉"),
+              React.createElement("span", null, "جسر التكامل المشوري بين الجانبين:")
+            ),
+            React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed break-words pr-5" }, chart.integration)
+          )
+        );
+      })(),
+
+      // 8. المخطط الحلقي الديناميكي والدورات المشورية المغلقة (Cycles & Loops)
+      chart.type === "cycle" && (function() {
+        var stages = chart.stages || [];
+        return React.createElement(
+          "div",
+          { className: "space-y-4" },
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-" + Math.min(4, Math.max(2, stages.length)) + " gap-3.5" },
+            stages.map(function(st, idx) {
+              return React.createElement(
+                "div",
+                {
+                  key: idx,
+                  className: "p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2 relative flex flex-col justify-between hover:border-amber-400 dark:hover:border-amber-600 transition-all shadow-2xs"
+                },
+                React.createElement(
+                  "div",
+                  { className: "space-y-1.5" },
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center justify-between" },
+                    React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-amber-500 text-white font-mono font-black text-[10px]" }, "محطة " + (st.step || (idx + 1))),
+                    React.createElement("span", { className: "text-lg" }, st.icon || "🔄")
+                  ),
+                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-snug break-words" }, st.title),
+                  React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed break-words" }, st.desc)
+                ),
+                React.createElement(
+                  "div",
+                  { className: "pt-1 text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center justify-end gap-1" },
+                  React.createElement("span", null, idx < stages.length - 1 ? "تؤدي إلى ⬅️" : "تعود وتكتمل الدورة 🔁")
+                )
+              );
+            })
+          ),
+          chart.breakthrough && React.createElement(
+            "div",
+            { className: "p-3.5 sm:p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs sm:text-sm space-y-1" },
+            React.createElement(
+              "div",
+              { className: "font-black text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5" },
+              React.createElement("span", { className: "text-base" }, "🔓"),
+              React.createElement("span", null, "نقطة كسر الحلقة المشورية ومسار التعافي:")
+            ),
+            React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed break-words pr-5" }, chart.breakthrough)
           )
         );
       })()
