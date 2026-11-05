@@ -79,7 +79,63 @@
           } catch (eSub) {}
         }
 
-        // المحاولة 3: تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
+        // المحاولة 3: مرشح تعريب علامات التنصيص الداخلية الذكي والآمن مع حماية أسماء الخصائص
+        var sanitizeQuotesSafely = function(str) {
+          var lines = str.split("\n");
+          var kvPattern = /^(\s*"[a-zA-Z0-9_\-]+"\s*:\s*")(.*)("[,]?\s*)$/;
+          var arrPattern = /^(\s*")(.*)("[,]?\s*)$/;
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var m = line.match(kvPattern);
+            if (m) {
+              var startPart = m[1];
+              var content = m[2];
+              var endPart = m[3];
+              if (content.indexOf('":') === -1) {
+                var fixed = "";
+                var qOpen = true;
+                for (var j = 0; j < content.length; j++) {
+                  var ch = content[j];
+                  if (ch === '"') {
+                    fixed += qOpen ? "«" : "»";
+                    qOpen = !qOpen;
+                  } else {
+                    fixed += ch;
+                  }
+                }
+                lines[i] = startPart + fixed + endPart;
+              }
+            } else if (!/^\s*"[a-zA-Z0-9_\-]+"\s*:/.test(line)) {
+              var mArr = line.match(arrPattern);
+              if (mArr) {
+                var aStart = mArr[1];
+                var aContent = mArr[2];
+                var aEnd = mArr[3];
+                var aFixed = "";
+                var aOpen = true;
+                for (var k = 0; k < aContent.length; k++) {
+                  var ach = aContent[k];
+                  if (ach === '"') {
+                    aFixed += aOpen ? "«" : "»";
+                    aOpen = !aOpen;
+                  } else {
+                    aFixed += ach;
+                  }
+                }
+                lines[i] = aStart + aFixed + aEnd;
+              }
+            }
+          }
+          return lines.join("\n");
+        };
+
+        var sanitized = sanitizeQuotesSafely(cleaned);
+        sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
+        try {
+          return JSON.parse(sanitized);
+        } catch (eSanitized) {}
+
+        // المحاولة 4: تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
         var escapeNewlinesInsideStrings = function(str) {
           var inStr = false;
           var escape = false;
@@ -105,47 +161,10 @@
           return out;
         };
 
-        var safeNewlinesText = escapeNewlinesInsideStrings(cleaned);
+        var safeNewlinesText = escapeNewlinesInsideStrings(sanitized);
         try {
           return JSON.parse(safeNewlinesText);
         } catch (eNewlines) {}
-
-        // المحاولة 4: مرشح تعريب علامات التنصيص الداخلية الذكي والآمن مع حماية أسماء الخصائص
-        var sanitizeQuotesSafely = function(str) {
-          var lines = str.split("\n");
-          var kvPattern = /^(\s*"[a-zA-Z0-9_\-]+\s*:\s*")(.*)("[,]?\s*)$/;
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            var m = line.match(kvPattern);
-            if (m) {
-              var startPart = m[1];
-              var content = m[2];
-              var endPart = m[3];
-              // شرط أمان قاطع: لا نلمس السطر إذا كان يحتوي على خاصية برمجية أخرى لمنع إفساد الأسماء
-              if (content.indexOf('":') === -1) {
-                var fixed = "";
-                var qOpen = true;
-                for (var j = 0; j < content.length; j++) {
-                  var ch = content[j];
-                  if (ch === '"') {
-                    fixed += qOpen ? "«" : "»";
-                    qOpen = !qOpen;
-                  } else {
-                    fixed += ch;
-                  }
-                }
-                lines[i] = startPart + fixed + endPart;
-              }
-            }
-          }
-          return lines.join("\n");
-        };
-
-        var sanitized = sanitizeQuotesSafely(safeNewlinesText);
-        sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
-        try {
-          return JSON.parse(sanitized);
-        } catch (eSanitized) {}
 
         // المحاولة 5: دالة إنقاذ وترميم JSON المقطوع عند حد التوكنز
         var repairTruncatedJson = function(str) {
@@ -161,7 +180,7 @@
         };
 
         try {
-          var repaired = repairTruncatedJson(sanitized);
+          var repaired = repairTruncatedJson(safeNewlinesText);
           if (repaired) {
             return JSON.parse(repaired);
           }
