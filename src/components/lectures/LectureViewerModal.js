@@ -1407,7 +1407,7 @@ window.LectureViewerModal = function(props) {
                   // نص الشرح الأكاديمي بحجم الخط المختار
                   React.createElement(
                     "div",
-                    { className: fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text" },
+                    { className: fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text", style: { fontSize: fontPixelSize } },
                     sec.content
                   ),
                   // النقاط الجوهرية للمحور
@@ -1648,7 +1648,7 @@ window.LectureViewerModal = function(props) {
             ),
             transcriptText ? React.createElement(
               "div",
-              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
+              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 " + fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs", style: { fontSize: fontPixelSize } },
               transcriptText
             ) : React.createElement(
               "div",
