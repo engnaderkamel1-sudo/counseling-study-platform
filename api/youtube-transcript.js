@@ -1,7 +1,4 @@
-// Vercel Serverless Function: Resilient YouTube Transcript Extractor
-// Employs the official Android InnerTube protocol without exp=xpe restrictions
-// to reliably retrieve verbatim spoken captions
-
+// Vercel Serverless Function: Resilient YouTube Transcript Extractor with Debugging
 function extractYouTubeId(url) {
   if (!url) return null;
   const str = String(url).trim();
@@ -63,7 +60,6 @@ function groupIntoParagraphs(chunks) {
     const wordCount = currentWords.join(" ").split(/\s+/).length;
     const timeDeltaMs = c.startMs - currentStartMs;
 
-    // Split paragraph every ~70 words or after a pause > 45 seconds
     if (wordCount >= 70 || timeDeltaMs >= 45000) {
       paragraphs.push(`⏱️ [${formatTime(currentStartMs)}]\n${currentWords.join(" ")}`);
       currentWords = [];
@@ -134,6 +130,8 @@ module.exports = async function handler(req, res) {
     return res.end();
   }
 
+  const debug = {};
+
   try {
     const rawUrl = req.query.url || req.query.id || req.body?.url || req.body?.id;
     const videoId = extractYouTubeId(rawUrl);
@@ -150,7 +148,7 @@ module.exports = async function handler(req, res) {
     let captionTracks = [];
     let apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 
-    // Step 1: Query YouTube Android InnerTube directly (cleanest timedtext URLs without exp=xpe restriction)
+    // Step 1: Query YouTube Android InnerTube directly
     try {
       const innertubeResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
         method: "POST",
@@ -170,15 +168,19 @@ module.exports = async function handler(req, res) {
         })
       });
 
+      debug.android_status = innertubeResp.status;
       if (innertubeResp.ok) {
         const pData = await innertubeResp.json();
+        debug.android_playability = pData?.playabilityStatus?.status;
+        debug.android_reason = pData?.playabilityStatus?.reason;
         captionTracks = pData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+        debug.android_tracks_count = captionTracks.length;
       }
     } catch (eInner) {
-      console.warn("InnerTube Android error:", eInner.message);
+      debug.android_err = eInner.message;
     }
 
-    // Step 2: Fallback to iOS InnerTube client if Android client yielded nothing
+    // Step 2: Fallback to iOS InnerTube client
     if (!captionTracks || !captionTracks.length) {
       try {
         const iosResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
@@ -201,12 +203,15 @@ module.exports = async function handler(req, res) {
           })
         });
 
+        debug.ios_status = iosResp.status;
         if (iosResp.ok) {
           const iosData = await iosResp.json();
+          debug.ios_playability = iosData?.playabilityStatus?.status;
           captionTracks = iosData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+          debug.ios_tracks_count = captionTracks.length;
         }
       } catch (eIos) {
-        console.warn("InnerTube iOS error:", eIos.message);
+        debug.ios_err = eIos.message;
       }
     }
 
@@ -219,12 +224,14 @@ module.exports = async function handler(req, res) {
             "Accept-Language": "en-US"
           }
         });
+        debug.watch_status = watchResp.status;
         if (watchResp.ok) {
           const html = await watchResp.text();
           captionTracks = extractCaptionTracksFromHtml(html);
+          debug.watch_tracks_count = captionTracks.length;
         }
       } catch (eWatch) {
-        console.warn("Watch page scrape note:", eWatch.message);
+        debug.watch_err = eWatch.message;
       }
     }
 
@@ -233,11 +240,11 @@ module.exports = async function handler(req, res) {
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify({
         success: false,
-        error: "لم يتم العثور على مسارات تفريغ صوتي مسجل لهذا الفيديو على يوتيوب."
+        error: "لم يتم العثور على مسارات تفريغ صوتي مسجل لهذا الفيديو على يوتيوب.",
+        debug: debug
       }));
     }
 
-    // Prefer Arabic transcript, then any track containing 'ar', then first available
     let chosen = captionTracks.find(t => t.languageCode === "ar" || (t.vssId && t.vssId.includes(".ar")));
     if (!chosen) {
       chosen = captionTracks.find(t => {
@@ -251,18 +258,14 @@ module.exports = async function handler(req, res) {
     }
 
     let subBaseUrl = chosen.baseUrl;
-    // Strip &exp=xpe if present to avoid empty response from timedtext server
-    if (subBaseUrl.includes("&exp=xpe")) {
-      subBaseUrl = subBaseUrl.replace("&exp=xpe", "").replace("exp=xpe&", "");
-    }
+    debug.chosen_lang = chosen.languageCode;
+    debug.sub_url_has_xpe = subBaseUrl.includes("exp=xpe");
 
     let chunks = [];
 
     const parseBodyToChunks = (bodyText) => {
       const parsed = [];
       if (!bodyText) return parsed;
-
-      // 1. Try parsing Format 3 XML (<p t="123" d="456">...text...<s>...</s></p>)
       if (bodyText.includes("<p t=")) {
         const pRegex = /<p\s+t="(\d+)"(?:[^>]*?d="(\d+)")?[^>]*>([\s\S]*?)<\/p>/g;
         let pm;
@@ -275,8 +278,6 @@ module.exports = async function handler(req, res) {
           }
         }
       }
-
-      // 2. Try parsing Format 1 XML (<text start="1.23" dur="4.56">text</text>)
       if (!parsed.length && bodyText.includes("<text start=")) {
         const textRegex = /<text\s+start="([\d\.]+)"(?:[^>]*?dur="([\d\.]+)")?[^>]*>([\s\S]*?)<\/text>/g;
         let tm;
@@ -289,30 +290,9 @@ module.exports = async function handler(req, res) {
           }
         }
       }
-
-      // 3. Try parsing JSON format
-      if (!parsed.length && bodyText.trim().startsWith("{")) {
-        try {
-          const subData = JSON.parse(bodyText);
-          const events = subData.events || [];
-          for (const ev of events) {
-            if (!ev.segs) continue;
-            const text = ev.segs.map(s => s.utf8 || "").join("");
-            if (text.trim()) {
-              parsed.push({
-                startMs: ev.tStartMs || 0,
-                durMs: ev.dDurationMs || 0,
-                text: cleanSubText(text)
-              });
-            }
-          }
-        } catch (eJson) {}
-      }
-
       return parsed;
     };
 
-    // Attempt 1: Fetch subBaseUrl directly
     try {
       const subResp = await fetch(subBaseUrl, {
         headers: {
@@ -320,33 +300,15 @@ module.exports = async function handler(req, res) {
           "Accept-Language": "en-US"
         }
       });
+      debug.sub_fetch_status = subResp.status;
       if (subResp.ok) {
         const bodyText = await subResp.text();
+        debug.sub_body_length = bodyText.length;
         chunks = parseBodyToChunks(bodyText);
+        debug.chunks_count = chunks.length;
       }
     } catch (eFetchSub) {
-      console.warn("Subtitle body fetch error:", eFetchSub.message);
-    }
-
-    // Attempt 2: If chunks empty, fetch with fmt=json3
-    if (!chunks.length) {
-      try {
-        const jsonUrl = subBaseUrl.includes("?")
-          ? subBaseUrl + "&fmt=json3"
-          : subBaseUrl + "?fmt=json3";
-        const jsonResp = await fetch(jsonUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US"
-          }
-        });
-        if (jsonResp.ok) {
-          const jsonBody = await jsonResp.text();
-          chunks = parseBodyToChunks(jsonBody);
-        }
-      } catch (eJsonFetch) {
-        console.warn("Subtitle json fetch error:", eJsonFetch.message);
-      }
+      debug.sub_fetch_err = eFetchSub.message;
     }
 
     if (!chunks.length) {
@@ -354,7 +316,8 @@ module.exports = async function handler(req, res) {
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify({
         success: false,
-        error: "تعذر قراءة وتفكيك نصوص مسار التفريغ الصوتي لهذا الفيديو."
+        error: "تعذر قراءة وتفكيك نصوص مسار التفريغ الصوتي لهذا الفيديو.",
+        debug: debug
       }));
     }
 
@@ -372,12 +335,12 @@ module.exports = async function handler(req, res) {
     }));
 
   } catch (err) {
-    console.error("Unhandled transcript extractor error:", err);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
     return res.end(JSON.stringify({
       success: false,
-      error: "حدث خطأ غير متوقع أثناء معالجة تفريغ الفيديو: " + err.message
+      error: "حدث خطأ غير متوقع أثناء معالجة تفريغ الفيديو: " + err.message,
+      debug: debug
     }));
   }
 };
