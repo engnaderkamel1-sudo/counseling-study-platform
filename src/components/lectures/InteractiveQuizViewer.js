@@ -9,6 +9,8 @@ window.InteractiveQuizViewer = function(props) {
   var onRequestEdit = props.onRequestEdit;
   var onUpdateQuiz = props.onUpdateQuiz;
   var onRegenerateQuiz = props.onRegenerateQuiz;
+  var mediaUrl = props.mediaUrl;
+  var onJumpToTimestamp = props.onJumpToTimestamp;
 
   var [currentIndex, setCurrentIndex] = React.useState(0);
   var [userAnswers, setUserAnswers] = React.useState({});
@@ -24,6 +26,7 @@ window.InteractiveQuizViewer = function(props) {
   var [formCorrectIdx, setFormCorrectIdx] = React.useState(0);
   var [formExplanation, setFormExplanation] = React.useState("");
   var [formSourceQuote, setFormSourceQuote] = React.useState("");
+  var [formTimestamp, setFormTimestamp] = React.useState("");
   var [formHint, setFormHint] = React.useState("");
 
   // إخفاء كارت المساعدة عند الانتقال بين الأسئلة
@@ -45,6 +48,7 @@ window.InteractiveQuizViewer = function(props) {
     setFormCorrectIdx(typeof q.correctAnswerIndex === "number" ? q.correctAnswerIndex : 0);
     setFormExplanation(q.explanation || "");
     setFormSourceQuote(q.sourceQuote || "");
+    setFormTimestamp(q.timestamp || "");
     setFormHint(q.hint || "");
     setIsModalOpen(true);
   };
@@ -57,6 +61,7 @@ window.InteractiveQuizViewer = function(props) {
     setFormCorrectIdx(0);
     setFormExplanation("");
     setFormSourceQuote("");
+    setFormTimestamp("");
     setFormHint("");
     setIsModalOpen(true);
   };
@@ -81,6 +86,7 @@ window.InteractiveQuizViewer = function(props) {
       correctAnswerIndex: formCorrectIdx,
       explanation: formExplanation.trim(),
       sourceQuote: formSourceQuote.trim(),
+      timestamp: formTimestamp.trim(),
       hint: formHint.trim()
     };
 
@@ -224,6 +230,20 @@ window.InteractiveQuizViewer = function(props) {
               onChange: function(e) { setFormSourceQuote(e.target.value); },
               placeholder: "اقتبس الفقرة من كلام المحاضر التي تتضمن إجابة السؤال وموضعه...",
               className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-serif"
+            })
+          ),
+
+          // التوقيت الزمني في الفيديو (timestamp)
+          React.createElement(
+            "div",
+            { className: "pt-1" },
+            React.createElement("label", { className: "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" }, "⏱️ التوقيت في الفيديو (مثال: 14:25):"),
+            React.createElement("input", {
+              type: "text",
+              value: formTimestamp,
+              onChange: function(e) { setFormTimestamp(e.target.value); },
+              placeholder: "مثال: 14:25 أو 01:05:20",
+              className: "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
             })
           ),
 
@@ -641,12 +661,17 @@ window.InteractiveQuizViewer = function(props) {
             })
           ),
 
-          // المقتطف المرجعي إن وجد
-          q.sourceQuote && React.createElement(
+          // المقتطف المرجعي والتوقيت في الفيديو
+          (q.sourceQuote || q.timestamp) && React.createElement(
             "div",
-            { className: "p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed" },
-            React.createElement("span", { className: "font-bold" }, "📖 المقتطف من صلب المحاضرة: "),
-            React.createElement("span", { className: "italic" }, q.sourceQuote)
+            { className: "p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed space-y-1" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between flex-wrap gap-2" },
+              React.createElement("span", { className: "font-bold" }, "📖 المقتطف من صلب المحاضرة:"),
+              q.timestamp && React.createElement("span", { className: "font-mono font-black text-amber-800 dark:text-amber-300" }, "⏱️ " + q.timestamp)
+            ),
+            q.sourceQuote && React.createElement("p", { className: "italic text-slate-800 dark:text-slate-200" }, q.sourceQuote)
           ),
 
           // التفسير
@@ -774,15 +799,42 @@ window.InteractiveQuizViewer = function(props) {
         )
       ),
 
-      // بطاقة المساعدة المنبثقة
+      // بطاقة المساعدة المنبثقة الموثقة بالتوقيت الدقيق في الفيديو
       showHelp && React.createElement(
         "div",
-        { className: "p-4 rounded-2xl bg-amber-50/95 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-2 animate-in fade-in duration-200" },
+        { className: "p-4 sm:p-5 rounded-2xl bg-amber-50/95 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 text-xs sm:text-sm text-amber-950 dark:text-amber-200 space-y-2.5 animate-in fade-in duration-200" },
         React.createElement(
           "div",
-          { className: "font-black flex items-center gap-1.5 text-amber-900 dark:text-amber-300" },
-          React.createElement("span", null, "📖"),
-          React.createElement("span", null, "مقتطف صريح من كلام المحاضر:")
+          { className: "flex items-center justify-between flex-wrap gap-2 border-b border-amber-200/60 dark:border-amber-900/40 pb-2" },
+          React.createElement(
+            "div",
+            { className: "font-black flex items-center gap-1.5 text-amber-900 dark:text-amber-300" },
+            React.createElement("span", null, "📖"),
+            React.createElement("span", null, "مقتطف صريح من كلام المحاضر:")
+          ),
+          currentQuestion.timestamp && React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement("span", { className: "font-mono font-black px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/80 text-amber-950 dark:text-amber-100 text-xs" }, "⏱️ " + currentQuestion.timestamp),
+            (onJumpToTimestamp || mediaUrl) && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  if (onJumpToTimestamp) onJumpToTimestamp(currentQuestion.timestamp);
+                  else if (mediaUrl) {
+                    var clean = currentQuestion.timestamp.replace(/[^0-9:]/g, "");
+                    var p = clean.split(":").map(function(n) { return parseInt(n, 10) || 0; });
+                    var sec = p.length === 2 ? (p[0] * 60 + p[1]) : (p.length === 3 ? (p[0] * 3600 + p[1] * 60 + p[2]) : parseInt(clean, 10) || 0);
+                    window.open(mediaUrl + (mediaUrl.indexOf("?") >= 0 ? "&" : "?") + "t=" + sec + "s", "_blank");
+                  }
+                },
+                className: "px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+              },
+              React.createElement("span", null, "🎬"),
+              React.createElement("span", null, "استمع للمحاضر في الفيديو")
+            )
+          )
         ),
         React.createElement("p", { className: "leading-relaxed italic bg-white/70 dark:bg-slate-900/60 p-3 rounded-xl border border-amber-200/60 dark:border-amber-900/40" },
           currentQuestion.sourceQuote || currentQuestion.hint || currentQuestion.explanation || "يرجى مراجعة الشرح الوارد في تفريغ هذه المحاضرة."

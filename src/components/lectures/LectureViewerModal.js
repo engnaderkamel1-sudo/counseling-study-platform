@@ -587,12 +587,7 @@ window.LectureViewerModal = function(props) {
             React.createElement("span", null, "✏️"),
             React.createElement("span", null, "تعديل")
           ),
-          React.createElement(
-            "div",
-            { className: "text-left sm:text-right hidden sm:block" },
-            React.createElement("span", { className: "text-[11px] text-slate-400 block" }, "التوقف المحفوظ"),
-            React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400" }, utils.formatDuration(activeLecture.lastPosition || 0))
-          ),
+
           React.createElement(
             "button",
             {
@@ -1551,7 +1546,25 @@ window.LectureViewerModal = function(props) {
               cloud.saveLecture(updated);
               if (onSelectLecture) onSelectLecture(updated);
             },
-            onRegenerateQuiz: handleRegenerateQuizOnly
+            onRegenerateQuiz: handleRegenerateQuizOnly,
+            mediaUrl: activeLecture.mediaUrl,
+            onJumpToTimestamp: function(timeStr) {
+              if (!timeStr) return;
+              var clean = timeStr.toString().replace(/[^0-9:]/g, "");
+              var parts = clean.split(":").map(function(p) { return parseInt(p, 10) || 0; });
+              var sec = 0;
+              if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+              else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
+              else sec = parseInt(clean, 10) || 0;
+
+              setActiveSubTab("media");
+              if (activeLecture.mediaUrl) {
+                var ytId = utils.getYouTubeVideoId ? utils.getYouTubeVideoId(activeLecture.mediaUrl) : "";
+                if (ytId) {
+                  window.open("https://www.youtube.com/watch?v=" + ytId + "&t=" + sec + "s", "_blank");
+                }
+              }
+            }
           }
         ) : 
         currentUser.role === "admin" && React.createElement(
