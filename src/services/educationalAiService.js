@@ -49,7 +49,7 @@
       return "";
     },
 
-    // 2. محرك تنظيف وترميم JSON التلقائي (يصلح أي نصوص مقطوعة أو أقواس ناقصة تلقائياً)
+    // 2. محرك تنظيف وترميم JSON التلقائي فائق الصلابة (يعالج القفزات السطرية والانقطاعات المفاجئة)
     _cleanAndParseJson: function(rawText) {
       if (!rawText || typeof rawText !== "string") {
         throw new Error("لم يتم استلام أي نص من النموذج لتحليله.");
@@ -65,12 +65,38 @@
       }
       cleaned = cleaned.trim();
 
-      // دالة تعقيم علامات التنصيص المزدوجة غير المعالجة داخل قيم النصوص
+      // 1. تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
+      var escapeNewlinesInsideStrings = function(str) {
+        var inStr = false;
+        var escape = false;
+        var out = "";
+        for (var i = 0; i < str.length; i++) {
+          var c = str[i];
+          if (c === '"' && !escape) {
+            inStr = !inStr;
+            out += c;
+          } else if (c === '\\' && !escape) {
+            escape = true;
+            out += c;
+          } else if (c === '\n' && inStr) {
+            out += '\\n';
+            escape = false;
+          } else if (c === '\r' && inStr) {
+            escape = false;
+          } else {
+            escape = false;
+            out += c;
+          }
+        }
+        return out;
+      };
+
+      // 2. دالة تعقيم علامات التنصيص المزدوجة غير المعالجة داخل قيم النصوص
       var sanitizeQuotes = function(str) {
         var lines = str.split("\n");
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i];
-          var m = line.match(/^(\s*"[a-zA-Z0-9_\-]+"\s*:\s*")(.*)("[,]?\s*)$/);
+          var m = line.match(/^(\s*"[a-zA-Z0-9_\-]+重?\s*:\s*")(.*)("[,]?\s*)$/);
           if (m) {
             var startPart = m[1];
             var contentPart = m[2];
@@ -81,7 +107,7 @@
             }
           } else {
             var mArr = line.match(/^(\s*")(.*)("[,]?\s*)$/);
-            if (mArr && !/^\s*"[a-zA-Z0-9_\-]+"\s*:/.test(line)) {
+            if (mArr && !/^\s*"[a-zA-Z0-9_\-]+重?\s*:/.test(line)) {
               var aStart = mArr[1];
               var aContent = mArr[2];
               var aEnd = mArr[3];
@@ -95,52 +121,73 @@
         return lines.join("\n");
       };
 
-      // محاولة 1: التحليل المباشر
+      // 3. دالة إنقاذ وترميم JSON المقطوع عند حد التوكنز
+      var repairTruncatedJson = function(str) {
+        var lastBrace = str.lastIndexOf("}");
+        if (lastBrace === -1) return null;
+        var trimmed = str.substring(0, lastBrace + 1).trim();
+        trimmed = trimmed.replace(/,\s*$/, "");
+        var openBrackets = (trimmed.match(/\[/g) || []).length - (trimmed.match(/\]/g) || []).length;
+        for (var b = 0; b < openBrackets; b++) trimmed += "]";
+        var openBraces = (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
+        for (var c = 0; c < openBraces; c++) trimmed += "}";
+        return trimmed;
+      };
+
+      // خطوة تحضيرية: تعقيم القفزات السطرية العشوائية داخل قيم النصوص
+      var safeText = escapeNewlinesInsideStrings(cleaned);
+
+      // محاولة 1: التحليل المباشر للنص المعقم
       try {
-        return JSON.parse(cleaned);
+        return JSON.parse(safeText);
       } catch (firstErr) {
         // محاولة 2: استخراج كائن JSON من بين نصوص الشرح
-        var firstBrace = cleaned.indexOf("{");
-        var lastBrace = cleaned.lastIndexOf("}");
+        var firstBrace = safeText.indexOf("{");
+        var lastBrace = safeText.lastIndexOf("}");
         if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-          var subJson = cleaned.substring(firstBrace, lastBrace + 1);
+          var subJson = safeText.substring(firstBrace, lastBrace + 1);
           try {
             return JSON.parse(subJson);
           } catch (e) {}
         }
 
-        // محاولة 3: إزالة الفواصل الزائدة قبل إغلاق الأقواس
+        // محاولة 3: إزالة الفواصل المعلقة قبل إغلاق الأقواس
         try {
-          var noTrailing = cleaned.replace(/,(\s*[\]}])/g, "$1");
+          var noTrailing = safeText.replace(/,(\s*[\]}])/g, "$1");
           return JSON.parse(noTrailing);
         } catch (eTrailing) {}
 
         // محاولة 4: تعقيم علامات التنصيص الداخلية غير المعالجة
         try {
-          var sanitized = sanitizeQuotes(cleaned);
+          var sanitized = sanitizeQuotes(safeText);
           sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
           return JSON.parse(sanitized);
         } catch (eSanitize) {}
 
-        // محاولة 5: محرك الترميم الذكي في حالة انقطاع الرد عند حد التوكنز
+        // محاولة 5: إنقاذ وترميم JSON المقطوع عند حد التوكنز
         try {
-          var repaired = sanitizeQuotes(cleaned);
-          var quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
-          if (quoteCount % 2 !== 0) {
-            repaired += '"';
+          var repaired = repairTruncatedJson(safeText);
+          if (repaired) {
+            repaired = sanitizeQuotes(repaired).replace(/,(\s*[\]}])/g, "$1");
+            return JSON.parse(repaired);
           }
-          var openBrackets = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
-          for (var b = 0; b < openBrackets; b++) repaired += "]";
-          var openBraces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
-          for (var c = 0; c < openBraces; c++) repaired += "}";
+        } catch (repairErr) {}
 
-          repaired = repaired.replace(/,(\s*[\]}])/g, "$1");
-          return JSON.parse(repaired);
-        } catch (repairErr) {
-          console.error("JSON Repair failed:", repairErr);
+        // محاولة 6: محاولة الترميم اليدوي للرموز المتبقية كملجأ أخير
+        try {
+          var fallbackRepaired = sanitizeQuotes(safeText);
+          var quoteCount = (fallbackRepaired.match(/(?<!\\)"/g) || []).length;
+          if (quoteCount % 2 !== 0) fallbackRepaired += '"';
+          var openB = (fallbackRepaired.match(/\[/g) || []).length - (fallbackRepaired.match(/\]/g) || []).length;
+          for (var iB = 0; iB < openB; iB++) fallbackRepaired += "]";
+          var openC = (fallbackRepaired.match(/\{/g) || []).length - (fallbackRepaired.match(/\}/g) || []).length;
+          for (var iC = 0; iC < openC; iC++) fallbackRepaired += "}";
+          fallbackRepaired = fallbackRepaired.replace(/,(\s*[\]}])/g, "$1");
+          return JSON.parse(fallbackRepaired);
+        } catch (finalErr) {
+          console.error("JSON Parse & Repair failed completely:", finalErr, safeText.substring(safeText.length - 200));
+          throw new Error("تعذر استخراج بيانات بصيغة صالحة: " + (firstErr ? firstErr.message : "تنسيق غير سليم"));
         }
-
-        throw new Error("تعذر استخراج بيانات بصيغة صالحة: " + firstErr.message);
       }
     },
 
@@ -376,7 +423,7 @@
       var prompt = "المطلوب: إعداد وتوليد بالضبط " + count + " سؤال كويز تفاعلي استيعابي وتطبيقي لمحاضرة المشورة: '" + lectureTitle + "'.\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
-        "1. شرط الاقتباس المرجعي وتوثيق التوقيت الزمني (sourceQuote & timestamp): لكل سؤال يُصاغ، يجب استخراج واقتباس الفقرة النصية الصريحة من كلام المحاضر في حقل 'sourceQuote'، وتحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
+        "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (سطر إلى سطرين كحد أقصى دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
         "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
         "3. التغطية الشاملة والمتوازنة: وزع الأسئلة بتسلسل طبيعي يغطي كافة محاور ومفاصل المحاضرة من بدايتها وحتى ختامها دون تكدسها في أول ربع ساعة فقط.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +

@@ -194,22 +194,16 @@
         var levels = chart.levels || [];
         if (!levels.length) return null;
 
-        // تحديد ذروة وقمة الهرم بدقة متناهية:
-        // القمة دائماً هي العنصر الموسوم بـ isPeak أو صاحب المستوى الأعلى رقمياً
-        var peakItem = levels.find(function(l) { return l.isPeak === true; });
-        var sorted;
-        if (peakItem) {
-          var maxLevel = Math.max.apply(null, levels.map(function(l) { return l.level; }));
-          // إذا كان الموديل وضع رقم المستوى الأعلى على القمة، نرتب تنازلياً (القمة أولاً في الأعلى)
-          if (peakItem.level === maxLevel) {
-            sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
-          } else {
-            // إذا كان الموديل وضع المستوى 1 على القمة، نرتب تصاعدياً
-            sorted = levels.slice().sort(function(a, b) { return a.level - b.level; });
-          }
-        } else {
-          // افتراضياً: المستوى الأعلى هو القمة في الأعلى والمستوى 1 هو القاعدة المستقرة في الأسفل
-          sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
+        // ترتيب مستويات الهرم بدقة هندسية ومفاهيمية سليمة:
+        // في هرم ماسلو ونظريات المشورة: المستوى 1 هو دائماً القاعدة التأسيسية العريضة في الأسفل (مثل الحاجات الفسيولوجية).
+        // والمستوى الأعلى رقمياً (مثل المستوى 5 أو 6) هو دائماً ذروة وقمة الهرم الضيقة في الأعلى (مثل الاحتياجات الروحية أو تحقيق الذات).
+        var sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
+
+        // التحقق الذكي في حال كان الترقيم معكوساً تماماً بصراحة في نص العناوين (المستوى 1 صراحة هو القمة والمستوى الأخير هو القاعدة)
+        var levelOne = levels.find(function(l) { return l.level === 1; });
+        var maxLvl = levels.reduce(function(m, l) { return (l.level > m.level) ? l : m; }, levels[0]);
+        if (levelOne && /^(القمة|الذروة|الغاية)/.test(levelOne.title) && maxLvl && /^(القاعدة|الأساس)/.test(maxLvl.title)) {
+          sorted = levels.slice().sort(function(a, b) { return a.level - b.level; });
         }
 
         var currentActive = (activePyramidLevel !== null) ? activePyramidLevel : (sorted[0] ? sorted[0].level : null);
@@ -224,11 +218,12 @@
               // حساب العرض التدريجي: القمة في الأعلى تأخذ 50% كحد أدنى وتتسع نزولاً حتى 100% في القاعدة
               var widthPct = 50 + (i * (50 / Math.max(1, sorted.length - 1)));
               var isSelected = currentActive === lvl.level;
-              var isPeak = lvl.isPeak || i === 0;
+              var isPeak = (i === 0);
+              var isBase = (i === sorted.length - 1);
 
               var bgStyle = isPeak
                 ? "linear-gradient(135deg, #d97706, #f59e0b, #d97706)"
-                : (lvl.color && lvl.color.startsWith("#") ? lvl.color : "#4f46e5");
+                : (lvl.color && lvl.color.startsWith("#") ? lvl.color : (isBase ? "#059669" : "#4f46e5"));
 
               return React.createElement(
                 "div",
