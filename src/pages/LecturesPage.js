@@ -8,22 +8,11 @@ window.LecturesPage = function(props) {
 
   var [lectures, setLectures] = React.useState(function() {
     var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (typeof window.mergeWithDefaultLectures === "function") {
+      return window.mergeWithDefaultLectures(local);
+    }
     var defaults = (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) ? window.DEFAULT_TERM1_LECTURES : [];
-    if (!Array.isArray(local) || local.length === 0) return defaults;
-    return local.map(function(item) {
-      var def = defaults.find(function(d) { return d.id === item.id; });
-      if (def && def.summaryData && Array.isArray(def.summaryData.sections)) {
-        var localSectionsCount = (item.summaryData && Array.isArray(item.summaryData.sections)) ? item.summaryData.sections.length : 0;
-        if (def.summaryData.sections.length > localSectionsCount) {
-          return Object.assign({}, item, {
-            summaryData: def.summaryData,
-            summaryDataJson: def.summaryDataJson || JSON.stringify(def.summaryData),
-            writtenSummary: def.writtenSummary || item.writtenSummary
-          });
-        }
-      }
-      return item;
-    });
+    return (Array.isArray(local) && local.length > 0) ? local : defaults;
   });
   var [isLoadingLectures, setIsLoadingLectures] = React.useState(function() {
     var cached = utils.getLocal(cfg.storageKeys.lectures, []);
@@ -163,26 +152,19 @@ window.LecturesPage = function(props) {
     return function() { window.removeEventListener("keydown", handleKeyDown); };
   }, [showFilterModal, editingLecture, showAddModal, activeLecture]);
 
-  // الاشتراك الحي في المحاضرات عبر Firebase
+  // الاشتراك الحي في المحاضرات عبر Firebase مع دمج محكم يحمي كافة المحاضرات من الاختفاء
   React.useEffect(function() {
     var unsubscribe = cloud.subscribeLectures(function(cloudList) {
       setIsLoadingLectures(false);
-      // حماية: لا نستبدل قائمة محاضرات موجودة بقائمة فارغة من السحابة
-      // يحدث هذا أثناء إعادة الاتصال عبر WebSocket قبل تحميل البيانات الفعلية
-      if (!cloudList || cloudList.length === 0) {
-        return; // احتفظ بالمحاضرات الحالية ولا تمسحها
-      }
-      cloudList.sort(function(a, b) {
-        var dateA = new Date(a.date).getTime() || 0;
-        var dateB = new Date(b.date).getTime() || 0;
-        if (dateA !== dateB) return dateA - dateB;
-        return (a.sessionOrder || 1) - (b.sessionOrder || 1);
-      });
+      var mergedList = (typeof window.mergeWithDefaultLectures === "function")
+        ? window.mergeWithDefaultLectures(cloudList)
+        : (cloudList || []);
+      if (!mergedList || mergedList.length === 0) return;
 
-      setLectures(cloudList);
-      utils.setLocal(cfg.storageKeys.lectures, cloudList);
+      setLectures(mergedList);
+      utils.setLocal(cfg.storageKeys.lectures, mergedList);
       setActiveLecture(function(prev) {
-        return prev ? (cloudList.find(function(l) { return l.id === prev.id; }) || null) : null;
+        return prev ? (mergedList.find(function(l) { return l.id === prev.id; }) || null) : null;
       });
     });
     return function() {

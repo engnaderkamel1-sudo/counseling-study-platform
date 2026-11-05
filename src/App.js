@@ -185,22 +185,11 @@ function App() {
 
   var [appLectures, setAppLectures] = React.useState(function() {
     var local = utils.getLocal(cfg.storageKeys.lectures, []);
+    if (typeof window.mergeWithDefaultLectures === "function") {
+      return window.mergeWithDefaultLectures(local);
+    }
     var defaults = (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) ? window.DEFAULT_TERM1_LECTURES : [];
-    if (!Array.isArray(local) || local.length === 0) return defaults;
-    return local.map(function(item) {
-      var def = defaults.find(function(d) { return d.id === item.id; });
-      if (def && def.summaryData && Array.isArray(def.summaryData.sections)) {
-        var localSectionsCount = (item.summaryData && Array.isArray(item.summaryData.sections)) ? item.summaryData.sections.length : 0;
-        if (def.summaryData.sections.length > localSectionsCount) {
-          return Object.assign({}, item, {
-            summaryData: def.summaryData,
-            summaryDataJson: def.summaryDataJson || JSON.stringify(def.summaryData),
-            writtenSummary: def.writtenSummary || item.writtenSummary
-          });
-        }
-      }
-      return item;
-    });
+    return (Array.isArray(local) && local.length > 0) ? local : defaults;
   });
   var [isTopZoomDismissed, setIsTopZoomDismissed] = React.useState(false);
 
@@ -210,8 +199,11 @@ function App() {
     if (cloudService && typeof cloudService.subscribeLectures === "function") {
       var unsubscribe = cloudService.subscribeLectures(function(cloudList) {
         if (cloudList && Array.isArray(cloudList)) {
-          setAppLectures(cloudList);
-          utils.setLocal(cfg.storageKeys.lectures, cloudList);
+          var mergedList = (typeof window.mergeWithDefaultLectures === "function")
+            ? window.mergeWithDefaultLectures(cloudList)
+            : cloudList;
+          setAppLectures(mergedList);
+          utils.setLocal(cfg.storageKeys.lectures, mergedList);
         }
       });
       return function() {

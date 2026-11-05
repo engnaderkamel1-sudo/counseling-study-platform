@@ -13344,3 +13344,48 @@ window.DEFAULT_TERM1_LECTURES = [
     }
   }
 ];
+
+
+// دالة دمج محكمة تضمن عدم اختفاء أي محاضرة افتراضية حتى لو كان السحاب يحتوي على جزء منها
+window.mergeWithDefaultLectures = function(incomingList) {
+  var defaults = (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0)
+    ? window.DEFAULT_TERM1_LECTURES : [];
+  if (!incomingList || !Array.isArray(incomingList) || incomingList.length === 0) {
+    return defaults.slice();
+  }
+  // دمج كل محاضرة افتراضية مع نسختها من القائمة الواردة إن وُجدت
+  var merged = defaults.map(function(defItem) {
+    var match = incomingList.find(function(item) { return item && item.id === defItem.id; });
+    if (!match) return defItem;
+    var res = Object.assign({}, defItem, match);
+    // إذا كان التلخيص الأكاديمي الشامل في الكود أحدث أو يحوي تفاصيل أكثر، نحافظ عليه
+    if (defItem.summaryData && Array.isArray(defItem.summaryData.sections)) {
+      var matchSecCount = (match.summaryData && Array.isArray(match.summaryData.sections)) ? match.summaryData.sections.length : 0;
+      if (defItem.summaryData.sections.length > matchSecCount) {
+        res.summaryData = defItem.summaryData;
+        res.summaryDataJson = defItem.summaryDataJson || JSON.stringify(defItem.summaryData);
+        res.writtenSummary = defItem.writtenSummary || match.writtenSummary;
+      }
+    }
+    // إذا كان التفريغ النصي موجوداً في الكود وغير موجود في العنصر القادم، نحافظ عليه
+    if (defItem.transcriptText && !match.transcriptText && !match.transcript) {
+      res.transcriptText = defItem.transcriptText;
+      res.transcript = defItem.transcript || defItem.transcriptText;
+    }
+    return res;
+  });
+  // إضافة المحاضرات الإضافية المخصصة التي لا تنتمي إلى الافتراضيات
+  incomingList.forEach(function(item) {
+    if (item && item.id && !merged.some(function(m) { return m.id === item.id; })) {
+      merged.push(item);
+    }
+  });
+  // الترتيب الزمني
+  merged.sort(function(a, b) {
+    var dateA = new Date(a.date).getTime() || 0;
+    var dateB = new Date(b.date).getTime() || 0;
+    if (dateA !== dateB) return dateA - dateB;
+    return (a.sessionOrder || 1) - (b.sessionOrder || 1);
+  });
+  return merged;
+};
