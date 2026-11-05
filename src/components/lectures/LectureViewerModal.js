@@ -54,7 +54,7 @@ window.LectureViewerModal = function(props) {
     var saved = utils.getLocal ? utils.getLocal("handout_page_" + (activeLecture ? activeLecture.id : ""), 1) : 1;
     return parseInt(saved) || 1;
   });
-  // حالة وحجم خط القراءة في الدليل الدراسي والمحاضرة
+  // حالة وحجم خط القراءة لجميع أركان المحاضرة
   var [readingFontSize, setReadingFontSize] = React.useState(function() {
     return (utils.getLocal ? utils.getLocal("counsel_reader_font_size", "md") : "md");
   });
@@ -63,6 +63,14 @@ window.LectureViewerModal = function(props) {
     setReadingFontSize(sz);
     if (utils.setLocal) utils.setLocal("counsel_reader_font_size", sz);
   };
+
+  var fontPixelSize = (readingFontSize === "sm")
+    ? "14px"
+    : (readingFontSize === "lg")
+      ? "18px"
+      : (readingFontSize === "xl")
+        ? "21px"
+        : "16px";
 
   var fontTextClass = (readingFontSize === "sm")
     ? "text-xs sm:text-sm"
@@ -694,7 +702,8 @@ window.LectureViewerModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2" },
+          { className: "flex items-center gap-2 flex-wrap" },
+          renderFontSizeBar(),
           currentUser.role === "admin" && React.createElement(
             "button",
             {
@@ -1284,21 +1293,16 @@ window.LectureViewerModal = function(props) {
               } catch(e) { return []; }
             })();
 
-        // فئة حجم الخط الديناميكية بناءً على اختيار الدارس
-        var fontTextClass = "text-sm sm:text-base";
+
 
         return React.createElement(
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // شريط أدوات القراءة وتكبير الخط وخيارات المسؤول
-          React.createElement(
+          // خيارات المسؤول (نشر، تعديل، إعادة توليد)
+          currentUser.role === "admin" && React.createElement(
             "div",
-            { className: "flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2.5 flex-wrap" },
-            renderFontSizeBar(),
-            currentUser.role === "admin" && React.createElement(
-              "div",
-              { className: "flex items-center gap-2 flex-wrap" },
+            { className: "flex items-center justify-end p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
@@ -1335,8 +1339,7 @@ window.LectureViewerModal = function(props) {
                 React.createElement("span", null, "🔄"),
                 React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "إعادة التوليد")
               )
-            )
-          ),
+            ),
 
           // عرض الدليل الدراسي المنظم والمصور بأسلوب NotebookLM
           summaryData ? React.createElement(
@@ -1353,7 +1356,7 @@ window.LectureViewerModal = function(props) {
                 React.createElement("span", { className: "text-lg" }, "📌"),
                 React.createElement("span", null, "الملخص التنفيذي وسياق المحاضرة")
               ),
-              React.createElement("p", { className: fontTextClass + " text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, summaryData.overview)
+              React.createElement("p", { className: fontTextClass + " text-slate-700 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontPixelSize } }, summaryData.overview)
             ),
 
             // 2. أهداف التعلم
@@ -1513,7 +1516,7 @@ window.LectureViewerModal = function(props) {
             { className: "space-y-6" },
             React.createElement(
               "div",
-              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 " + fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
+              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 " + fontTextClass + " text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs", style: { fontSize: fontPixelSize } },
               activeLecture.writtenSummary
             ),
             // عرض المخططات السابقة تحت النص إن وجدت لضمان عدم ضياعها
