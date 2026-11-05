@@ -1207,8 +1207,18 @@ window.LectureViewerModal = function(props) {
 
       // 3. تبويب الدليل الدراسي المصور (الملخص الأكاديمي مع المخططات البصرية المدمجة سياقياً)
       activeSubTab === "summary" && (function() {
-        var summaryData = activeLecture.summaryData || (function() {
-          try { return JSON.parse(activeLecture.summaryDataJson); } catch(e) { return null; }
+        var summaryData = (function() {
+          var fromJson = null;
+          if (activeLecture.summaryDataJson) {
+            try { fromJson = JSON.parse(activeLecture.summaryDataJson); } catch(e) {}
+          }
+          var fromObj = activeLecture.summaryData;
+          if (fromJson && Array.isArray(fromJson.sections)) {
+            if (!fromObj || !Array.isArray(fromObj.sections) || fromJson.sections.length >= fromObj.sections.length) {
+              return fromJson;
+            }
+          }
+          return fromObj || fromJson || null;
         })();
 
         var legacyCharts = (activeLecture.visualsData && Array.isArray(activeLecture.visualsData.charts))

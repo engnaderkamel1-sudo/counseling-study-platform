@@ -185,11 +185,22 @@ function App() {
 
   var [appLectures, setAppLectures] = React.useState(function() {
     var local = utils.getLocal(cfg.storageKeys.lectures, []);
-    if (Array.isArray(local) && local.length > 0) return local;
-    if (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) {
-      return window.DEFAULT_TERM1_LECTURES;
-    }
-    return [];
+    var defaults = (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0) ? window.DEFAULT_TERM1_LECTURES : [];
+    if (!Array.isArray(local) || local.length === 0) return defaults;
+    return local.map(function(item) {
+      var def = defaults.find(function(d) { return d.id === item.id; });
+      if (def && def.summaryData && Array.isArray(def.summaryData.sections)) {
+        var localSectionsCount = (item.summaryData && Array.isArray(item.summaryData.sections)) ? item.summaryData.sections.length : 0;
+        if (def.summaryData.sections.length > localSectionsCount) {
+          return Object.assign({}, item, {
+            summaryData: def.summaryData,
+            summaryDataJson: def.summaryDataJson || JSON.stringify(def.summaryData),
+            writtenSummary: def.writtenSummary || item.writtenSummary
+          });
+        }
+      }
+      return item;
+    });
   });
   var [isTopZoomDismissed, setIsTopZoomDismissed] = React.useState(false);
 
