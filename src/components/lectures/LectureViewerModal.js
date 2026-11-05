@@ -22,6 +22,7 @@ window.LectureViewerModal = function(props) {
     setIsDisclaimerDismissed(false);
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
+  var [showPublishModal, setShowPublishModal] = React.useState(false);
   var [genSummaryPages, setGenSummaryPages] = React.useState(function() {
     return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_summary_pages", 5), 10) || 5) : 5;
   });
@@ -170,47 +171,56 @@ window.LectureViewerModal = function(props) {
     if (!activeLecture) return false;
     var ps = activeLecture.publishStatus || {};
     if (ps[comp] !== undefined) return !ps[comp];
-    if (comp === "slides" && activeLecture.presentationSlides && activeLecture.presentationSlides.isPublished !== undefined) {
-      return !activeLecture.presentationSlides.isPublished;
-    }
-    if (comp === "mindMap" && activeLecture.mindMapData && activeLecture.mindMapData.isPublished !== undefined) {
-      return !activeLecture.mindMapData.isPublished;
-    }
     if (comp === "quiz" && activeLecture.quizQuestions && activeLecture.quizQuestions.isPublished !== undefined) {
       return !activeLecture.quizQuestions.isPublished;
     }
     if (comp === "summary" && activeLecture.summaryData && activeLecture.summaryData.isPublished !== undefined) {
       return !activeLecture.summaryData.isPublished;
     }
+    if (comp === "visuals" && activeLecture.visualsData && activeLecture.visualsData.isPublished !== undefined) {
+      return !activeLecture.visualsData.isPublished;
+    }
     return false;
   };
 
-  // تبديل حالة النشر لركن محدد
+  // تبديل حالة النشر لركن محدد (نشر أو حجب كمسودة)
   var handlePublishToggle = function(comp, shouldPublish) {
     if (!activeLecture || currentUser.role !== "admin") return;
     var ps = Object.assign({}, activeLecture.publishStatus || {});
     ps[comp] = shouldPublish;
     var updated = Object.assign({}, activeLecture, { publishStatus: ps });
-    if (comp === "slides" && updated.presentationSlides) updated.presentationSlides.isPublished = shouldPublish;
-    if (comp === "mindMap" && updated.mindMapData) updated.mindMapData.isPublished = shouldPublish;
     if (comp === "quiz" && updated.quizQuestions) updated.quizQuestions.isPublished = shouldPublish;
     if (comp === "summary" && updated.summaryData) updated.summaryData.isPublished = shouldPublish;
-    cloud.saveLecture(updated);
+    if (comp === "visuals" && updated.visualsData) updated.visualsData.isPublished = shouldPublish;
+    if (cloud && cloud.saveLecture) cloud.saveLecture(updated);
     if (onSelectLecture) onSelectLecture(updated);
   };
 
   // نشر الحزمة كاملة لجميع الطلاب بنقرة واحدة
   var handlePublishAll = function() {
     if (!activeLecture || currentUser.role !== "admin") return;
-    var ps = { summary: true, slides: true, mindMap: true, quiz: true };
+    var ps = { transcript: true, summary: true, visuals: true, quiz: true };
     var updated = Object.assign({}, activeLecture, { publishStatus: ps });
-    if (updated.presentationSlides) updated.presentationSlides.isPublished = true;
-    if (updated.mindMapData) updated.mindMapData.isPublished = true;
     if (updated.quizQuestions) updated.quizQuestions.isPublished = true;
     if (updated.summaryData) updated.summaryData.isPublished = true;
-    cloud.saveLecture(updated);
+    if (updated.visualsData) updated.visualsData.isPublished = true;
+    if (cloud && cloud.saveLecture) cloud.saveLecture(updated);
     if (onSelectLecture) onSelectLecture(updated);
     alert("تم اعتماد ونشر الحزمة التعليمية كاملة لجميع الطلاب بنجاح! 🚀");
+  };
+
+  // حجب الحزمة بالكامل عن الطلاب وتحويلها لمسودة للمراجعة بنقرة واحدة
+  var handleUnpublishAll = function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+    if (!window.confirm("هل تريد حجب الحزمة التعليمية بالكامل عن الطلاب وتحويل كافة الأركان إلى مسودة خاصة للمراجعة؟\n\n(سيبقى المحتوى محفوظاً بالكامل للمسؤولين ولن يظهر للطلاب حتى تعيد نشره).")) return;
+    var ps = { transcript: false, summary: false, visuals: false, quiz: false };
+    var updated = Object.assign({}, activeLecture, { publishStatus: ps });
+    if (updated.quizQuestions) updated.quizQuestions.isPublished = false;
+    if (updated.summaryData) updated.summaryData.isPublished = false;
+    if (updated.visualsData) updated.visualsData.isPublished = false;
+    if (cloud && cloud.saveLecture) cloud.saveLecture(updated);
+    if (onSelectLecture) onSelectLecture(updated);
+    alert("تم حجب الحزمة التعليمية عن الطلاب بنجاح وتحويل كافة الأركان إلى مسودة خاصة للمراجعة والتدقيق! 🔒");
   };
 
   // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
@@ -575,14 +585,41 @@ window.LectureViewerModal = function(props) {
           React.createElement("span", null, "توليد الحزمة التعليمية الشاملة")
         ),
         currentUser.role === "admin" && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handlePublishAll,
-            className: "px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-all flex items-center gap-1.5"
-          },
-          React.createElement("span", null, "🚀"),
-          React.createElement("span", null, "نشر الحزمة كاملة للطلاب")
+          "div",
+          { className: "flex items-center gap-1.5 flex-wrap" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handlePublishAll,
+              title: "اعتماد ونشر كافة أركان الحزمة لجميع الطلاب دفعة واحدة",
+              className: "px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+            },
+            React.createElement("span", null, "🚀"),
+            React.createElement("span", null, "نشر الحزمة كاملة")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleUnpublishAll,
+              title: "حجب كافة أركان الحزمة عن الطلاب وتحويلها إلى مسودة خاصة للمراجعة والتدقيق",
+              className: "px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+            },
+            React.createElement("span", null, "🔒"),
+            React.createElement("span", null, "حجب الحزمة (مسودة)")
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowPublishModal(true); },
+              title: "تخصيص حالة كل ركن على حدة (نشر أو حجب ركن معين للمراجعة)",
+              className: "px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
+            },
+            React.createElement("span", null, "⚙️"),
+            React.createElement("span", null, "تخصيص نشر الأركان")
+          )
         ),
         currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript || activeLecture.summaryData) && React.createElement(
           "button",
@@ -716,13 +753,13 @@ window.LectureViewerModal = function(props) {
           { id: "media", label: "📺 مشاهدة المحاضرة" },
           { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript") },
           { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
-          { id: "visuals", label: "📊 المخططات البصرية (Visuals)" },
+          { id: "visuals", label: "📊 المخططات البصرية (Visuals)", isDraft: getIsDraft("visuals") },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
           { id: "handout", label: "📁 المرفقات والملفات" },
           { id: "notes", label: "✍️ الملاحظات" }
         ].filter(function(tab) {
           if (currentUser.role === "admin") return true;
-          if (tab.id === "media" || tab.id === "handout" || tab.id === "notes" || tab.id === "visuals") return true;
+          if (tab.id === "media" || tab.id === "handout" || tab.id === "notes") return true;
           return !tab.isDraft;
         }).map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
@@ -731,10 +768,20 @@ window.LectureViewerModal = function(props) {
             {
               key: tab.id,
               onClick: function() { setActiveSubTab(tab.id); },
-              className: "pb-2.5 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap " +
+              className: "pb-2.5 text-xs sm:text-sm font-bold transition-all border-b-2 whitespace-nowrap flex items-center gap-1.5 cursor-pointer " +
                 (isCurrent ? "border-emerald-600 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")
             },
-            tab.label
+            React.createElement("span", null, tab.label),
+            currentUser.role === "admin" && tab.isDraft !== undefined && React.createElement(
+              "span",
+              {
+                className: "px-1.5 py-0.2 rounded-md text-[10px] font-black transition-all " +
+                  (tab.isDraft
+                    ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/60"
+                    : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60")
+              },
+              tab.isDraft ? "🔒 مسودة" : "✓ منشور"
+            )
           );
         })
       ),
@@ -1023,7 +1070,19 @@ window.LectureViewerModal = function(props) {
           React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300" }, "خيارات الملخص"),
           React.createElement(
             "div",
-            { className: "flex items-center gap-2" },
+            { className: "flex items-center gap-2 flex-wrap" },
+            currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.summaryData) && React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { handlePublishToggle("summary", getIsDraft("summary")); },
+                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                  (getIsDraft("summary")
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+              },
+              React.createElement("span", null, getIsDraft("summary") ? "🚀 نشر الملخص للطلاب" : "🔒 حجب الملخص (مسودة)")
+            ),
             React.createElement(
               "button",
               {
@@ -1080,7 +1139,19 @@ window.LectureViewerModal = function(props) {
               { className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60" },
               React.createElement(
                 "div",
-                { className: "flex items-center gap-2" },
+                { className: "flex items-center gap-2 flex-wrap" },
+                currentUser.role === "admin" && (activeLecture.transcript || activeLecture.transcriptText) && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { handlePublishToggle("transcript", getIsDraft("transcript")); },
+                    className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                      (getIsDraft("transcript")
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+                  },
+                  React.createElement("span", null, getIsDraft("transcript") ? "🚀 نشر التفريغ للطلاب" : "🔒 حجب التفريغ (مسودة)")
+                ),
                 React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "📜 تفريغ المحاضرة الكامل من واقع الصوت"),
                 wordCount > 0 && React.createElement(
                   "span",
@@ -1090,7 +1161,19 @@ window.LectureViewerModal = function(props) {
               ),
               React.createElement(
                 "div",
-                { className: "flex items-center gap-2" },
+                { className: "flex items-center gap-2 flex-wrap" },
+                currentUser.role === "admin" && (activeLecture.transcript || activeLecture.transcriptText) && React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { handlePublishToggle("transcript", getIsDraft("transcript")); },
+                    className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                      (getIsDraft("transcript")
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+                  },
+                  React.createElement("span", null, getIsDraft("transcript") ? "🚀 نشر التفريغ للطلاب" : "🔒 حجب التفريغ (مسودة)")
+                ),
                 currentUser.role === "admin" && activeLecture.mediaUrl && React.createElement(
                   "button",
                   {
@@ -1176,6 +1259,8 @@ window.LectureViewerModal = function(props) {
           {
             visuals: activeLecture.visualsData || (function() { try { return JSON.parse(activeLecture.visualsDataJson); } catch(e) { return null; } })(),
             isAdmin: currentUser.role === "admin",
+            isDraft: getIsDraft("visuals"),
+            onPublishToggle: handlePublishToggle,
             isGenerating: isAiGenerating,
             onGenerateVisuals: handleGenerateVisualsDirectly
           }
@@ -1577,6 +1662,137 @@ window.LectureViewerModal = function(props) {
     })(),
 
     // نافذة توليد الحزمة التعليمية الشاملة بالأرقام المرنة
+    // نافذة إدارة وتخصيص نشر أركان المحاضرة للطلاب
+    showPublishModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn",
+        onClick: function(e) { if (e.target === e.currentTarget) setShowPublishModal(false); }
+      },
+      React.createElement(
+        "div",
+        {
+          className: "relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-7 space-y-5 animate-scaleUp"
+        },
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-2xl" }, "⚙️"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-sm sm:text-base font-black text-slate-900 dark:text-white" }, "تخصيص وإدارة نشر أركان المحاضرة للطلاب"),
+              React.createElement("p", { className: "text-[11px] text-slate-500" }, "تحكم في كل ركن على حدة: انشر الجاهز واحجب ما زال قيد المراجعة")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowPublishModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center text-sm font-bold cursor-pointer"
+            },
+            "✕"
+          )
+        ),
+
+        // قائمة الأركان الذكية الأربعة
+        React.createElement(
+          "div",
+          { className: "space-y-3" },
+          [
+            { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", desc: "النص الحرفي الكامل لكلام المحاضر مع التوقيتات الدقيقة", hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText) },
+            { id: "summary", label: "📄 الملخص الموسع", desc: "الدليل الدراسي الشامل والأكاديمي للمحاضرة", hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData) },
+            { id: "visuals", label: "📊 المخططات البصرية (Visuals)", desc: "المقارنات والمسارات والأركان البصرية التفاعلية", hasData: Boolean(activeLecture.visualsData || activeLecture.visualsDataJson) },
+            { id: "quiz", label: "📝 الاختبار التفاعلي", desc: "أسئلة الكويز الذاتي والتفسيرات التعليمية", hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) }
+          ].map(function(item) {
+            var isDraft = getIsDraft(item.id);
+            var isPublished = !isDraft;
+            return React.createElement(
+              "div",
+              {
+                key: item.id,
+                className: "p-3.5 sm:p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 " +
+                  (isPublished
+                    ? "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60"
+                    : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60")
+              },
+              React.createElement(
+                "div",
+                { className: "space-y-1 flex-1 pr-1" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2" },
+                  React.createElement("h4", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white" }, item.label),
+                  !item.hasData && React.createElement("span", { className: "text-[10px] text-slate-400 font-normal" }, "(لا يوجد محتوى بعد)")
+                ),
+                React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed" }, item.desc)
+              ),
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 shrink-0" },
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() { handlePublishToggle(item.id, isDraft); },
+                    className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                      (isPublished
+                        ? "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                        : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm")
+                  },
+                  React.createElement("span", null, isPublished ? "🔒 حجب (مسودة)" : "🚀 نشر للطلاب")
+                )
+              )
+            );
+          })
+        ),
+
+        // أزرار التحكم السريعة في الأسفل
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 flex-wrap" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handlePublishAll,
+                className: "px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs cursor-pointer flex items-center gap-1"
+              },
+              React.createElement("span", null, "🚀"),
+              React.createElement("span", null, "نشر الكل")
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleUnpublishAll,
+                className: "px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-bold cursor-pointer flex items-center gap-1"
+              },
+              React.createElement("span", null, "🔒"),
+              React.createElement("span", null, "حجب الكل")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowPublishModal(false); },
+              className: "px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold cursor-pointer"
+            },
+            "إغلاق"
+          )
+        )
+      )
+    ),
+
     showPackageModal && React.createElement(
       "div",
       {

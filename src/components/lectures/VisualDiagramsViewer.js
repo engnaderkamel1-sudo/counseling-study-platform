@@ -10,6 +10,8 @@
     var isAdmin = props.isAdmin || false;
     var onGenerateVisuals = props.onGenerateVisuals;
     var isGenerating = props.isGenerating || false;
+    var isDraft = props.isDraft !== undefined ? props.isDraft : false;
+    var onPublishToggle = props.onPublishToggle;
 
     var [selectedChartIndex, setSelectedChartIndex] = React.useState(0);
     var [activePyramidLevel, setActivePyramidLevel] = React.useState(null);
@@ -98,16 +100,37 @@
             );
           })
         ),
-        isAdmin && onGenerateVisuals && React.createElement(
-          "button",
-          {
-            type: "button",
-            disabled: isGenerating,
-            onClick: onGenerateVisuals,
-            className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 disabled:opacity-50 cursor-pointer shrink-0"
-          },
-          React.createElement("span", null, isGenerating ? "⏳" : "🔄"),
-          React.createElement("span", null, isGenerating ? "جاري التوليد..." : "إعادة استخراج المخططات")
+        isAdmin && React.createElement(
+          "div",
+          { className: "flex items-center gap-2 flex-wrap shrink-0" },
+          isDraft && React.createElement(
+            "span",
+            { className: "px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
+            "🔒 مسودة خاصة (محجوبة عن الطلاب)"
+          ),
+          onPublishToggle && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { onPublishToggle("visuals", isDraft); },
+              className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                (isDraft
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+            },
+            React.createElement("span", null, isDraft ? "🚀 نشر المخططات للطلاب" : "🔒 حجب المخططات (مسودة)")
+          ),
+          onGenerateVisuals && React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isGenerating,
+              onClick: onGenerateVisuals,
+              className: "text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+            },
+            React.createElement("span", null, isGenerating ? "⏳" : "🔄"),
+            React.createElement("span", null, isGenerating ? "جاري التوليد..." : "إعادة استخراج المخططات")
+          )
         )
       ),
 
