@@ -1,4 +1,4 @@
-// خدمة الإشعارات السحابية وإشعارات المتصفح
+﻿// خدمة الإشعارات السحابية وإشعارات المتصفح
 window.NotificationService = {
   // تشغيل نغمة تنبيهية لطيفة وهزة بالجهاز عند وصول الإشعار
   playNotificationChime: function() {
@@ -51,7 +51,16 @@ window.NotificationService = {
         vibrate: [250, 100, 250]
       });
       if (window.WebPushService && typeof window.WebPushService.registerServiceWorkerAndSubscribe === "function") {
-        var user = (window.currentUser || (window.utils && window.utils.getLocal && window.utils.getLocal("counsel_current_user", null)));
+        var user = window.currentUser;
+        if (!user) {
+          try {
+            var raw = localStorage.getItem("counsel_current_user");
+            if (raw) user = JSON.parse(raw);
+          } catch(eUser) {}
+        }
+        if (!user && window.APP_UTILS && window.APP_UTILS.getLocal) {
+          user = window.APP_UTILS.getLocal("counsel_current_user", null);
+        }
         window.WebPushService.registerServiceWorkerAndSubscribe(user, { sendWelcomePush: true }).catch(function() {});
       }
       return true;
@@ -319,6 +328,16 @@ window.NotificationService = {
       } catch (eSet) {}
 
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "admin",
+          tag: "err_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin error report notification:", e);
     }
@@ -337,6 +356,16 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "admin",
+          tag: "feat_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not send admin feature request notification:", e);
     }
@@ -357,6 +386,18 @@ window.NotificationService = {
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
       await window.db.collection("notifications").add(notifData);
+      if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
+        window.WebPushService.triggerServerPush({
+          title: notifData.title,
+          body: notifData.body,
+          url: "/#errors",
+          target: "user",
+          targetUserId: studentId || "",
+          targetUserEmail: (studentEmail || "").toLowerCase().trim(),
+          tag: "reply_" + Date.now(),
+          ttl: 86400
+        }).catch(function() {});
+      }
     } catch (e) {
       console.warn("Could not dispatch student feature reply notification:", e);
     }

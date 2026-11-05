@@ -55,13 +55,26 @@
           isNewSubscription = true;
         }
 
+        // التحقق من بيانات المستخدم واشتراكه
+        if (!currentUser) {
+          currentUser = window.currentUser;
+          if (!currentUser) {
+            try {
+              var savedRaw = localStorage.getItem("counsel_current_user");
+              if (savedRaw) currentUser = JSON.parse(savedRaw);
+            } catch(eSaved) {}
+          }
+        }
+
         // حفظ بيانات اشتراك الجهاز في وثيقة المستخدم بقاعدة البيانات
         if (subscription && currentUser && window.db) {
           var subJson = JSON.stringify(subscription);
           var userId = currentUser.id;
 
           if (!userId && currentUser.email) {
-            userId = currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+            userId = "user_" + currentUser.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+          } else if (userId && !userId.startsWith("user_") && currentUser.email) {
+            userId = "user_" + userId;
           }
 
           if (userId) {

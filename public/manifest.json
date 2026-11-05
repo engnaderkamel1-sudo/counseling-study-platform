@@ -3,6 +3,7 @@
   "short_name": "رفيق المشورة",
   "description": "الرفيق الدراسي الذكي لدارسي دبلومة ومناهج معهد المشورة",
   "start_url": "/",
+  "gcm_sender_id": "103953800507",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

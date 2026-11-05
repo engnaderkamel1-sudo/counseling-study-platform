@@ -655,6 +655,11 @@ function App() {
     return null;
   });
 
+  // مزامنة المستخدم الحالي في النطاق العام للخدمات السحابية
+  React.useEffect(function() {
+    window.currentUser = currentUser;
+  }, [currentUser]);
+
   // عدد طلبات الانضمام المعلقة في انتظار المشرف
   var [pendingUsersCount, setPendingUsersCount] = React.useState(0);
 

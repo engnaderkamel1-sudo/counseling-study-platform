@@ -1,5 +1,5 @@
 // دوال مساعدة عامة للتعامل مع التخزين المحلي، روابط جوجل درايف، وتنسيق الوقت
-window.APP_UTILS = {
+window.APP_UTILS = window.utils = {
   // استخراج المعرف المباشر من رابط جوجل درايف
   extractDriveId: function(url) {
     if (!url) return "";
