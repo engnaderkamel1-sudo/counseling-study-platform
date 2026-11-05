@@ -195,11 +195,9 @@
         if (!levels.length) return null;
 
         // ترتيب مستويات الهرم بدقة هندسية ومفاهيمية سليمة:
-        // في هرم ماسلو ونظريات المشورة: المستوى 1 هو دائماً القاعدة التأسيسية العريضة في الأسفل (مثل الحاجات الفسيولوجية).
-        // والمستوى الأعلى رقمياً (مثل المستوى 5 أو 6) هو دائماً ذروة وقمة الهرم الضيقة في الأعلى (مثل الاحتياجات الروحية أو تحقيق الذات).
+        // المستوى 1 هو دائماً القاعدة التأسيسية العريضة في الأسفل، والمستوى الأعلى هو الذروة والقمة في الأعلى.
         var sorted = levels.slice().sort(function(a, b) { return b.level - a.level; });
 
-        // التحقق الذكي في حال كان الترقيم معكوساً تماماً بصراحة في نص العناوين (المستوى 1 صراحة هو القمة والمستوى الأخير هو القاعدة)
         var levelOne = levels.find(function(l) { return l.level === 1; });
         var maxLvl = levels.reduce(function(m, l) { return (l.level > m.level) ? l : m; }, levels[0]);
         if (levelOne && /^(القمة|الذروة|الغاية)/.test(levelOne.title) && maxLvl && /^(القاعدة|الأساس)/.test(maxLvl.title)) {
@@ -208,67 +206,141 @@
 
         var currentActive = (activePyramidLevel !== null) ? activePyramidLevel : (sorted[0] ? sorted[0].level : null);
 
-        var N = Math.max(1, sorted.length);
-        var apexPct = 32; // نسبة عرض قمة الهرم التأسيسية لضمان شكل هرمي حقيقي ومريح على الموبايل
+        var N = sorted.length;
+        var apexX = 250;
+        var apexY = 16;
+        var W = 224; // نصف عرض قاعدة الهرم عند الأساس
+
+        // الارتفاع المخصص: القمة تأخذ 72px لتتسع للرأس والرقم، وباقي الطبقات تأخذ 48px
+        var peakH = 72;
+        var tierH = 48;
+        var H = peakH + (Math.max(0, N - 1) * tierH);
+        var totalH = apexY + H + 18;
+
+        var yCursor = apexY;
+        var tiersData = [];
+
+        for (var i = 0; i < N; i++) {
+          var h = (i === 0) ? peakH : tierH;
+          var yTop = yCursor;
+          var yBot = yCursor + h;
+          var wTop = (H > 0) ? (W * (yTop - apexY) / H) : 0;
+          var wBot = (H > 0) ? (W * (yBot - apexY) / H) : W;
+          var yMid = (yTop + yBot) / 2;
+
+          var pts = "";
+          if (i === 0) {
+            pts = apexX + "," + yTop.toFixed(1) + " " + (apexX + wBot).toFixed(1) + "," + yBot.toFixed(1) + " " + (apexX - wBot).toFixed(1) + "," + yBot.toFixed(1);
+          } else {
+            pts = (apexX - wTop).toFixed(1) + "," + yTop.toFixed(1) + " " + (apexX + wTop).toFixed(1) + "," + yTop.toFixed(1) + " " + (apexX + wBot).toFixed(1) + "," + yBot.toFixed(1) + " " + (apexX - wBot).toFixed(1) + "," + yBot.toFixed(1);
+          }
+
+          var rawTitle = sorted[i].title || "";
+          var cleanTitle = rawTitle.replace(/\s*\([a-zA-Z\s\-&]+\)\s*/g, "").trim();
+
+          tiersData.push({
+            lvl: sorted[i],
+            points: pts,
+            yMid: yMid,
+            cleanTitle: cleanTitle
+          });
+
+          yCursor = yBot;
+        }
 
         return React.createElement(
           "div",
           { className: "space-y-4" },
           React.createElement(
             "div",
-            { className: "flex flex-col items-center gap-1.5 max-w-xl mx-auto py-2 w-full" },
-            // مؤشر رأس وقمة الهرم البصري
+            { className: "w-full max-w-lg mx-auto py-2 flex flex-col items-center" },
             React.createElement(
-              "div",
-              { className: "flex items-center gap-1.5 text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 shadow-2xs mb-0.5" },
-              React.createElement("span", null, "🔺"),
-              React.createElement("span", null, "قمة الهرم والغاية العليا")
-            ),
-            sorted.map(function(lvl, i) {
-              var isSelected = currentActive === lvl.level;
-              var isPeak = (i === 0);
-              var isBase = (i === sorted.length - 1);
-
-              // حساب العرض التدريجي والقص الهندسي المائل لكل مستوى ليكون هرماً حقيقياً متصلاً
-              var topW = apexPct + i * ((100 - apexPct) / N);
-              var botW = apexPct + (i + 1) * ((100 - apexPct) / N);
-              var insetRatio = ((1 - (topW / botW)) / 2) * 100;
-              var leftInset = insetRatio.toFixed(1);
-              var rightInset = (100 - insetRatio).toFixed(1);
-              var clipPathVal = "polygon(" + leftInset + "% 0%, " + rightInset + "% 0%, 100% 100%, 0% 100%)";
-
-              var bgStyle = isPeak
-                ? "linear-gradient(135deg, #d97706, #f59e0b, #d97706)"
-                : (lvl.color && lvl.color.startsWith("#") ? lvl.color : (isBase ? "#059669" : "#4f46e5"));
-
-              return React.createElement(
-                "div",
-                {
-                  key: lvl.level,
-                  onClick: function() { setActivePyramidLevel(lvl.level); },
-                  style: {
-                    width: Math.min(100, Math.max(34, botW)) + "%",
-                    clipPath: clipPathVal,
-                    background: bgStyle,
-                    filter: isSelected ? "brightness(1.15) drop-shadow(0 4px 6px rgba(0,0,0,0.3))" : "drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
-                  },
-                  className: "cursor-pointer transition-all duration-200 transform hover:scale-[1.02] text-center text-white py-2.5 sm:py-3 px-3 relative select-none active:scale-95 " +
-                    (isSelected ? " scale-[1.02] font-black z-10" : " opacity-95 hover:opacity-100")
-                },
+              "svg",
+              {
+                viewBox: "0 0 500 " + totalH,
+                className: "w-full overflow-visible select-none drop-shadow-md",
+                style: { maxHeight: "400px" }
+              },
+              React.createElement(
+                "defs",
+                null,
                 React.createElement(
-                  "div",
-                  { className: "flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold drop-shadow-sm px-3" },
-                  React.createElement("span", { className: "w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/25 flex items-center justify-center text-[10px] shrink-0 font-mono" }, lvl.level),
-                  React.createElement("span", { className: "text-center leading-snug break-words whitespace-normal font-sans" }, lvl.title)
+                  "linearGradient",
+                  { id: "grad-pyramid-peak", x1: "0%", y1: "0%", x2: "100%", y2: "100%" },
+                  React.createElement("stop", { offset: "0%", stopColor: "#b45309" }),
+                  React.createElement("stop", { offset: "50%", stopColor: "#f59e0b" }),
+                  React.createElement("stop", { offset: "100%", stopColor: "#d97706" })
                 )
-              );
-            }),
-            // مؤشر قاعدة الهرم التأسيسية
-            React.createElement(
-              "div",
-              { className: "flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 shadow-2xs mt-0.5" },
-              React.createElement("span", null, "🔻"),
-              React.createElement("span", null, "القاعدة التأسيسية العريضة")
+              ),
+              tiersData.map(function(item, idx) {
+                var lvl = item.lvl;
+                var isSelected = currentActive === lvl.level;
+                var isPeak = (idx === 0);
+                var isBase = (idx === N - 1);
+
+                var bgFill = isPeak
+                  ? "url(#grad-pyramid-peak)"
+                  : (lvl.color && lvl.color.startsWith("#") ? lvl.color : (isBase ? "#059669" : "#4f46e5"));
+
+                return React.createElement(
+                  "g",
+                  {
+                    key: lvl.level,
+                    onClick: function() { setActivePyramidLevel(lvl.level); },
+                    className: "cursor-pointer group transition-all duration-200"
+                  },
+                  React.createElement("polygon", {
+                    points: item.points,
+                    fill: bgFill,
+                    stroke: isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.75)",
+                    strokeWidth: isSelected ? 3.5 : 1.5,
+                    strokeLinejoin: "round",
+                    className: "transition-all duration-200" + (isSelected ? " filter drop-shadow(0 0 8px rgba(255,255,255,0.75))" : " group-hover:brightness-110")
+                  }),
+                  isPeak ? [
+                    React.createElement(
+                      "text",
+                      {
+                        key: "peak-badge",
+                        x: 250,
+                        y: apexY + 28,
+                        textAnchor: "middle",
+                        fill: "#ffffff",
+                        fontSize: "12",
+                        fontWeight: "900",
+                        className: "pointer-events-none drop-shadow-sm font-sans"
+                      },
+                      "👑 المستوى " + lvl.level
+                    ),
+                    React.createElement(
+                      "text",
+                      {
+                        key: "peak-title",
+                        x: 250,
+                        y: apexY + 50,
+                        textAnchor: "middle",
+                        fill: "#ffffff",
+                        fontSize: "11",
+                        fontWeight: "bold",
+                        className: "pointer-events-none drop-shadow-sm font-sans"
+                      },
+                      item.cleanTitle
+                    )
+                  ] : React.createElement(
+                    "text",
+                    {
+                      x: 250,
+                      y: item.yMid + 5,
+                      textAnchor: "middle",
+                      fill: "#ffffff",
+                      fontSize: (N > 6 ? "12" : "13"),
+                      fontWeight: "bold",
+                      className: "pointer-events-none drop-shadow-sm font-sans"
+                    },
+                    lvl.level + ". " + item.cleanTitle
+                  )
+                );
+              })
             )
           ),
           (function() {
@@ -276,14 +348,14 @@
             if (!found) return null;
             return React.createElement(
               "div",
-              { className: "p-3.5 sm:p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1 animate-in fade-in duration-150" },
+              { className: "p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1.5 animate-in fade-in duration-150 shadow-2xs" },
               React.createElement(
                 "div",
-                { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 flex-wrap" },
-                React.createElement("span", null, "💡 المستوى " + found.level + ":"),
-                React.createElement("span", null, found.title)
+                { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-2 flex-wrap" },
+                React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-mono text-xs" }, "المستوى " + found.level),
+                React.createElement("span", { className: "text-sm sm:text-base" }, found.title)
               ),
-              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed break-words" }, found.desc)
+              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, found.desc)
             );
           })()
         );
