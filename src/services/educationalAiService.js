@@ -301,7 +301,7 @@
         "     • comparison: مصفوفة مقارنة بصرية عميقة { id, type='comparison', title, subtitle, badge, left: { title, icon, items: [{ aspect, value }] }, right: { title, icon, items: [{ aspect, value }] } }\n" +
         "     • process: مسار تسلسلي ومراحل ديناميكية { id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }] }\n" +
         "     • pillars: أركان وأبعاد تشريحية { id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['نقطة 1', 'نقطة 2'] }] }\n" +
-        "     • pyramid: هرم متدرج هندسياً [قاعدة إلزامية: المستوى 1 دائماً يمثل القاعدة العريضة التأسيسية في الأسفل كالاحتياجات الفسيولوجية، والمستوى الأخير يمثل قمة الهرم الضيقة في الأعلى كالاتصال بالله أو النضج مع وسم isPeak: true حصراً على القمة] { id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }] }\n" +
+        "     • pyramid: هرم متدرج هندسياً [قاعدة إلزامية: المستوى 1 دائماً يمثل القاعدة العريضة التأسيسية في الأسفل كالاحتياجات الفسيولوجية، والمستوى الأخير يمثل قمة الهرم الضيقة في الأعلى كالاتصال بالله أو النضج مع وسم isPeak: true حصراً على القمة. شرط التناسق البصري: عنوان كل مستوى 'title' يجب أن يكون عبارة عربية نقية وموجزة جداً من كلمتين إلى 4 كلمات كحد أقصى دون أي أقواس أو ترجمات إنجليزية، وتوضع الشروحات والمصطلحات الإنجليزية بالكامل داخل حقل الوصف 'desc'] { id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }] }\n" +
         "     • metric_card: معادلة أو قاعدة مشورية عددية حقيقية { id, type='metric_card', title, subtitle, badge, metrics: [{ num, label, note, color }], takeaway }\n" +
         "4. المرجعية الأكاديمية الشاملة ومعيار صفر فقدان للمعلومات الجوهرية (Comprehensive Textbook Standard):\n" +
         "   - الهدف الأساسي ليس التلخيص السطحي أو الاختزال المخل، بل إعادة صياغة المحاضرة كـ 'مرجع دراسي وفصل كتاب أكاديمي وافٍ' يغطي 100% من الأفكار والشروحات والنظريات والأمثلة والشواهد التي طرحها المحاضر.\n" +
@@ -487,7 +487,7 @@
         "  الحقول: id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }]\n\n" +
         "• pillars: شبكة بطاقات الأركان والأبعاد التشريحية للموضوع (تفكيك المفهوم إلى 3 أو 4 أبعاد رئيسية ومحاور مفصلة).\n" +
         "  الحقول: id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['نقطة 1', 'نقطة 2'] }]\n\n" +
-        "• pyramid: هرم مفاهيمي متدرج هندسياً [قاعدة إلزامية: المستوى 1 دائماً يمثل القاعدة العريضة التأسيسية في الأسفل كالاحتياجات الفسيولوجية، والمستوى الأخير يمثل قمة الهرم الضيقة في الأعلى كالاتصال بالله أو النضج مع وضع isPeak: true حصراً على القمة].\n" +
+        "• pyramid: هرم مفاهيمي متدرج هندسياً [قاعدة إلزامية: المستوى 1 دائماً يمثل القاعدة العريضة التأسيسية في الأسفل كالاحتياجات الفسيولوجية، والمستوى الأخير يمثل قمة الهرم الضيقة في الأعلى كالاتصال بالله أو النضج مع وضع isPeak: true حصراً على القمة. شرط التناسق البصري: عنوان كل مستوى 'title' يجب أن يكون عبارة عربية نقية وموجزة جداً من كلمتين إلى 4 كلمات كحد أقصى دون أي أقواس أو ترجمات إنجليزية، وتوضع الشروحات والمصطلحات بالكامل داخل حقل 'desc'].\n" +
         "  الحقول: id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }]\n\n" +
         "• metric_card: بطاقة معادلة أو قاعدة مشورية عددية (فقط إذا ذكر المحاضر قاعدة عددية أو نسبة واضحة كقاعدة 1 إلى 9).\n" +
         "  الحقول: id, type='metric_card', title, subtitle, badge, metrics: [{ num, label, note, color }], takeaway\n\n" +

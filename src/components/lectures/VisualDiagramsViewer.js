@@ -319,10 +319,10 @@
                       {
                         key: "peak-crown",
                         x: 250,
-                        y: apexY + 34,
+                        y: apexY + 38,
                         textAnchor: "middle",
                         fill: "#ffffff",
-                        fontSize: "15",
+                        fontSize: "17",
                         className: "pointer-events-none drop-shadow-sm"
                       },
                       "👑"
@@ -330,30 +330,16 @@
                     React.createElement(
                       "text",
                       {
-                        key: "peak-badge",
+                        key: "peak-title",
                         x: 250,
-                        y: apexY + 54,
+                        y: apexY + 68,
                         textAnchor: "middle",
                         fill: "#ffffff",
-                        fontSize: "12",
+                        fontSize: "13",
                         fontWeight: "900",
                         className: "pointer-events-none drop-shadow-sm font-sans"
                       },
-                      "المستوى " + lvl.level
-                    ),
-                    React.createElement(
-                      "text",
-                      {
-                        key: "peak-title",
-                        x: 250,
-                        y: apexY + 76,
-                        textAnchor: "middle",
-                        fill: "#ffffff",
-                        fontSize: "12",
-                        fontWeight: "bold",
-                        className: "pointer-events-none drop-shadow-sm font-sans"
-                      },
-                      item.displayTitle
+                      lvl.level + ". " + item.displayTitle
                     )
                   ] : React.createElement(
                     "text",
