@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"},{"hash":"082e6c1","date":"2026-11-05 22:35","message":"feat(pyramid): unify tier numbering format across all levels and enforce concise title rules in AI prompt"},{"hash":"4d5c3ad","date":"2026-11-05 22:30","message":"fix(pyramid): optimize peak typography and height to prevent text overflow in golden apex"},{"hash":"615f5ce","date":"2026-11-05 22:26","message":"feat(pyramid): implement authentic unified vector SVG pyramid with sharp triangular apex and seamless tiers"},{"hash":"1e717e8","date":"2026-11-05 22:19","message":"fix(pyramid): upgrade pyramid diagram with true geometric trapezoid slopes and mobile responsiveness"},{"hash":"e5e4ac6","date":"2026-11-05 21:58","message":"fix: update Firestore summaryData map and enable smart local cache refresh for full 10-section study guide"},{"hash":"3c26bfe","date":"2026-11-05 21:49","message":"fix: resolve SyntaxError by wrapping lecture study guide in template literal and enhance offline sw cache matching"},{"hash":"9949be0","date":"2026-11-05 21:33","message":"feat: upgrade AI summary to Comprehensive Textbook Standard and update Lecture 1 with full 10-section study guide"},{"hash":"f14cf90","date":"2026-11-05 13:56","message":"Fix mobile push notifications: multi-device subscription array, prominent activation banner, and simplified zoom payload"},{"hash":"0681b93","date":"2026-11-05 13:45","message":"Fix quiz property name quote in regex sanitizer and escape newlines after quotes"},{"hash":"b296d21","date":"2026-11-05 13:33","message":"Fix JSON parser cascade: direct untouched parse first, non-destructive quotes filter with key protection"},{"hash":"0cde715","date":"2026-11-05 13:29","message":"Implement incremental auto-save per stage, fault isolation for quiz, and Arabic quote sanitizer"},{"hash":"eb914d5","date":"2026-11-05 13:15","message":"Add explicit confirmation dialog when generated quiz questions are fewer than requested"},{"hash":"5241555","date":"2026-11-05 13:05","message":"Fix Maslow pyramid hierarchy orientation and add robust JSON newline and truncation recovery"},{"hash":"fbb4864","date":"2026-11-05 12:42","message":"Add repository guidelines and auto-sync rules"},{"hash":"ca93b68","date":"2026-11-05 12:39","message":"Fix video timestamp jumping to exact second in embedded player and external YouTube"},{"hash":"ab79575","date":"2026-11-05 12:23","message":"Fix quiz regeneration loading indicator and robust JSON parsing with quote sanitization"},{"hash":"9b6556c","date":"2026-11-05 12:14","message":"Remove saved progress timer from header, add exact video timestamp verification and jump button to quiz help"},{"hash":"1465a36","date":"2026-11-05 12:09","message":"Add dedicated in-tab regeneration buttons for Quiz and Illustrated Study Guide"},{"hash":"95628af","date":"2026-11-05 11:35","message":"Add quiz sourceQuote grounding, help hint button, and bulk questions manager view"},{"hash":"9b92466","date":"2026-11-05 11:03","message":"Deploy updated public build with corrected pyramid orientation and cache bust"},{"hash":"1c85d83","date":"2026-11-05 09:59","message":"Fix pyramid hierarchy orientation, eliminate text truncation, add dual-system and cycle archetypes with cognitive thinking heuristics"},{"hash":"8bc0b1c","date":"2026-11-05 09:04","message":"Merge visual diagrams contextually into Illustrated Study Guide with automatic backward compatibility for existing lectures"},{"hash":"9967ff2","date":"2026-11-05 08:38","message":"Add comprehensive publishing control: publish/unpublish all, per-pillar toggle, and publishing manager modal"},{"hash":"1de2342","date":"2026-11-04 15:43","message":"Enforce strict zero-hallucination and factual grounding rule across all AI educational services"},{"hash":"fd09c1b","date":"2026-11-04 15:35","message":"Upgrade visual diagrams to dynamic NotebookLM standard: adaptive count, deep counseling structures, and real-time visual feedback"},{"hash":"fb15794","date":"2026-11-04 15:12","message":"Streamline lecture pillars: remove slides \u0026 mindmap, integrate visual diagrams into package modal"},{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"}];
+window.APP_UPDATES_HISTORY = [{"hash":"de988da","date":"2026-11-05 23:36","message":"feat(reader): move font size controller to modal header and bind guaranteed inline fontSize to study guide and transcript"},{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"},{"hash":"082e6c1","date":"2026-11-05 22:35","message":"feat(pyramid): unify tier numbering format across all levels and enforce concise title rules in AI prompt"},{"hash":"4d5c3ad","date":"2026-11-05 22:30","message":"fix(pyramid): optimize peak typography and height to prevent text overflow in golden apex"},{"hash":"615f5ce","date":"2026-11-05 22:26","message":"feat(pyramid): implement authentic unified vector SVG pyramid with sharp triangular apex and seamless tiers"},{"hash":"1e717e8","date":"2026-11-05 22:19","message":"fix(pyramid): upgrade pyramid diagram with true geometric trapezoid slopes and mobile responsiveness"},{"hash":"e5e4ac6","date":"2026-11-05 21:58","message":"fix: update Firestore summaryData map and enable smart local cache refresh for full 10-section study guide"},{"hash":"3c26bfe","date":"2026-11-05 21:49","message":"fix: resolve SyntaxError by wrapping lecture study guide in template literal and enhance offline sw cache matching"},{"hash":"9949be0","date":"2026-11-05 21:33","message":"feat: upgrade AI summary to Comprehensive Textbook Standard and update Lecture 1 with full 10-section study guide"},{"hash":"f14cf90","date":"2026-11-05 13:56","message":"Fix mobile push notifications: multi-device subscription array, prominent activation banner, and simplified zoom payload"},{"hash":"0681b93","date":"2026-11-05 13:45","message":"Fix quiz property name quote in regex sanitizer and escape newlines after quotes"},{"hash":"b296d21","date":"2026-11-05 13:33","message":"Fix JSON parser cascade: direct untouched parse first, non-destructive quotes filter with key protection"},{"hash":"0cde715","date":"2026-11-05 13:29","message":"Implement incremental auto-save per stage, fault isolation for quiz, and Arabic quote sanitizer"},{"hash":"eb914d5","date":"2026-11-05 13:15","message":"Add explicit confirmation dialog when generated quiz questions are fewer than requested"},{"hash":"5241555","date":"2026-11-05 13:05","message":"Fix Maslow pyramid hierarchy orientation and add robust JSON newline and truncation recovery"},{"hash":"fbb4864","date":"2026-11-05 12:42","message":"Add repository guidelines and auto-sync rules"},{"hash":"ca93b68","date":"2026-11-05 12:39","message":"Fix video timestamp jumping to exact second in embedded player and external YouTube"},{"hash":"ab79575","date":"2026-11-05 12:23","message":"Fix quiz regeneration loading indicator and robust JSON parsing with quote sanitization"},{"hash":"9b6556c","date":"2026-11-05 12:14","message":"Remove saved progress timer from header, add exact video timestamp verification and jump button to quiz help"},{"hash":"1465a36","date":"2026-11-05 12:09","message":"Add dedicated in-tab regeneration buttons for Quiz and Illustrated Study Guide"},{"hash":"95628af","date":"2026-11-05 11:35","message":"Add quiz sourceQuote grounding, help hint button, and bulk questions manager view"},{"hash":"9b92466","date":"2026-11-05 11:03","message":"Deploy updated public build with corrected pyramid orientation and cache bust"},{"hash":"1c85d83","date":"2026-11-05 09:59","message":"Fix pyramid hierarchy orientation, eliminate text truncation, add dual-system and cycle archetypes with cognitive thinking heuristics"},{"hash":"8bc0b1c","date":"2026-11-05 09:04","message":"Merge visual diagrams contextually into Illustrated Study Guide with automatic backward compatibility for existing lectures"},{"hash":"9967ff2","date":"2026-11-05 08:38","message":"Add comprehensive publishing control: publish/unpublish all, per-pillar toggle, and publishing manager modal"},{"hash":"1de2342","date":"2026-11-04 15:43","message":"Enforce strict zero-hallucination and factual grounding rule across all AI educational services"},{"hash":"fd09c1b","date":"2026-11-04 15:35","message":"Upgrade visual diagrams to dynamic NotebookLM standard: adaptive count, deep counseling structures, and real-time visual feedback"},{"hash":"fb15794","date":"2026-11-04 15:12","message":"Streamline lecture pillars: remove slides \u0026 mindmap, integrate visual diagrams into package modal"},{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793914582",
-  buildTime: "2026-11-05T21:36:22",
+  version: "1.2.1793915988",
+  buildTime: "2026-11-05T21:59:48",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -1210,12 +1210,294 @@ window.DEFAULT_TERM1_LECTURES = [
     "title": "ما هي المشورة؟ وأهدافها",
     "subject": "علم المشورة (ب)",
     "speaker": "د. اميل جوزيف",
-    "notes": "مدخل أساسي في علم المشورة وأهداف العملية المشورية.",
-    "mediaUrl": "",
+    "notes": "مدخل أساسي في علم المشورة وأهداف العملية المشورية والمساحة الآمنة وميثاق المشير.",
+    "mediaUrl": "https://youtu.be/vvSGFsTs3OY",
     "handoutUrl": "",
     "handoutName": "",
     "audioSummaryUrl": "",
-    "writtenSummary": "",
+    "writtenSummary": `📌 **الملخص التنفيذي وسياق المحاضرة:**
+تُمثل هذه المحاضرة حجر الزاوية والمدخل التأسيسي الأكاديمي لعلم المشورة المسيحية، حيث تستهدف صياغة تعريف دقيق ومُحكم لطبيعة المشورة وتمييزها عن الأنماط التقليدية الشائعة كالنصيحة العابرة أو الوعظ الإرشادي المباشر. تستند المشورة في هذا المرجع إلى رؤية أنثروبولوجية ولاهوتية متكاملة تنظر إلى الإنسان ككيان كلي متكامل (روح، نفس، وجسد) تأثر بسقوط الطبيعة البشرية ويحتاج إلى الشفاء الشامل بنعمة الفداء. تستعرض المحاضرة الأهداف الجوهرية للعملية الإرشادية التي تتجاوز مجرد تسكين الأعراض الآنية لتصل إلى استعادة الهوية الشخصية وبناء المرونة النفسية وتصحيح التشوهات المعرفية والعلائقية، مع التركيز على بيئة 'المساحة الآمنة' ومحددات الميثاق المهني والأخلاقي للمشير في الكنيسة المعاصرة.
+
+🎯 **أهداف التعلم ومخرجات اللقاء:**
+• صياغة تعريف أكاديمي ولاهوتي دقيق للمشورة المسيحية وتمييزها عن النصح والوعظ والعلاج الطبي.
+• استيعاب الرؤية الأنثروبولوجية المتكاملة لطبيعة الإنسان الثلاثية وتأثير الانكسارات النفسية على السلوك.
+• تحديد الأهداف الاستراتيجية قصيرة وطويلة المدى للعملية الإرشادية في تحقيق الشفاء والاستبصار.
+• تطبيق ركائز مثلث الأمان العلاجي (القبول غير المشروط، التعاطف النشط، والسرية المهنية المطلقة).
+• إتقان مهارات الحوار الإرشادي التفكيكي (الإصغاء الواعي، الأسئلة السابرية، والحياد الإيجابي).
+• رسم الحدود المهنية الفاصلة بين المشورة، وسر الاعتراف، والتدخل الطبي النفسي المتخصص.
+• استيعاب مراحل رحلة المشورة من التعاقد والاستكشاف إلى التغيير وتثبيت النضج ثم الإنهاء السليم.
+
+📌 **1. المفهوم التأسيسي للمشورة المسيحية وتمييزها عن النماذج الأخرى:**
+تؤسس المحاضرة لمفهوم المشورة باعتبارها 'رحلة استبصار ومرافقة علاجية مقدسة' يشترك فيها المشير مع المسترشد لكشف الحقائق الدفينة ومساعدته على فهم ذاته ومشكلاته. المشورة ليست جلسة وعظية يُلقى فيها الخطاب الديني التوجيهي، وليست نصائح سريعة ومجانية تُفرض على المسترشد، بل هي عملية تفاعلية تعتمد على تهيئة بيئة آمنة تُمكّن الإنسان من استعادة مسؤوليته الشخصية وقدرته على اتخاذ القرارات السليمة. يرتكز النموذج المسيحي للمشورة على تكامل حقائق الإعلان الإلهي في الكتاب المقدس مع الكشوفات العلمية الدقيقة لعلم النفس الإنساني، مع إخضاع الأدوات العلمية لروح الإنجيل لخدمة بنيان النفس وحريتها الحقيقية.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - المشورة شراكة علاجية قائمة على الاستبصار والتفاعل وليست توجيهاً تسلطياً أحادي الجانب.
+  - النصيحة السريعة غالباً ما تعطل نمو المسترشد، بينما المشورة تدربه على النضج وتحمل المسؤولية.
+  - التكامل المعرفي بين الوحي الإلهي والعلوم النفسية يُنشئ نموذجاً إرشادياً رصيناً يشفي الإنسان ككل.
+
+📌 **2. الإطار الأنثروبولوجي: الإنسان ككيان موحد (روح ونفس وجسد):**
+ينطلق علم المشورة من النظرة الكتابية المتكاملة للإنسان؛ فالإنسان ليس مجرد عقل يفكر أو جسد يستهلك، بل هو وحدة وجودية غير قابلة للتجزئة تشمل الروح والنفس والجسد. عندما يتعرض الإنسان لجرح نفسي أو صدمة في طفولته أو بيئته الأسرية، لا ينعزل هذا الجرح في مشاعره فقط، بل يمتد ليؤثر في جسده (أعراض نفس-جسمية كالصداع والقولون العصبي) وفي علاقته الروحية بالله (تشويه صورة الله كمعاقب أو قاضٍ صارم). المشير المسيحي الواعي يفهم أن السلوك الظاهري المرفوض أو العرض المؤلم هو بمثابة قمة جبل الجليد، بينما تكمن الجذور العميقة في تشوهات الاحتياجات النفسية والروحية غير المشبعة التي تحتاج إلى فحص وتضميد متأنٍ.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - الإنسان وحدة كلية متكاملة تتفاعل فيها المشاعر مع الجسد مع النضج الروحي بصورة تبادلية.
+  - الاضطراب النفسي ينعكس مباشرة على صورة الله في وجدان الفرد وممارسته للعبادة.
+  - التعامل مع السلوكيات الظاهرة دون فحص الدوافع والانكسارات الباطنية يُعتبر علاجاً سطحياً غير مستدام.
+
+📌 **3. الأهداف الجوهرية والنهائية للمشورة:**
+تتدرج أهداف المشورة المسيحية عبر مستويات بنائية واضحة؛ تبدأ بالهدف العاجل المتمثل في تخفيف وطأة الألم النفسي وإدارة مشاعر الأزمة الضاغطة، ثم ترتقي سريعاً إلى الهدف البنائي الأساسي: تنمية الوعي الذاتي والاستبصار الواعي بجذور الأنماط السلوكية المعطلة. الهدف الروحي والعلائقي للمشورة يتجلى في تحرير الضمير من الشعور الزائف بالذنب، واستعادة قبول الذات المستمد من محبة الله وقبوله غير المشروط، وتطوير المرونة النفسية التي تُمكّن المؤمن من التعايش مع تقلبات الحياة بنضج ورجاء، دون السقوط في الانهيار أو الهروب في آليات دفاعية مرضية.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - تجاوز تسكين الأعراض الظاهرة نحو اقتلاع الجذور وإعادة هيكلة المنظومة المعرفية للمسترشد.
+  - بناء الهوية الشخصية على أساس القبول الإلهي الثابت بدلاً من تقدير الذات المشروط برأي الآخرين.
+  - اكتساب المرونة النفسية والروحية لمواجهة الأزمات الحتمية بثقة واتزان داخلي.
+
+📌 **4. بيئة الأمان العلاجي: مثلث القبول والتعاطف والسرية:**
+لا يمكن لأي عملية مشورية أن تُثمر في غياب 'المساحة الآمنة' التي تحمي المسترشد وتدعوه لكشف جراحه دون قناع. يرتكز هذا الأمان على مثلث ذهبي: الركن الأول هو القبول غير المشروط، حيث يشعر المسترشد بأنه محبوب ومحترم كإنسان بصرف النظر عن خطيئته أو سقطاته. الركن الثاني هو التعاطف الوجداني الأصيل، وهو القدرة على ارتداء حذاء المسترشد ورؤية العالم بعينيه والشعور بألمه دون التورط أو الذوبان فيه. الركن الثالث هو السرية المهنية المطلقة، وهي العهد الأخلاقي الذي يحفظ أسرار الجلسة المشورية مقدسة ومصانة، مما يكسر حاجز الخوف والارتياب ويفتح أبواب الشفاء.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - المساحة الآمنة هي التربة الوحيدة التي يمكن أن تنمو فيها بذور المصارحة والشفاء الداخلي.
+  - القبول غير المشروط لا يعني تبرير الخطأ، بل يعني الفصل الكامل بين قيمة الشخص وسلوكه.
+  - السرية المطلقة هي الحصن القانوني والأخلاقي الذي يبني الثقة ويحمي كرامة المسترشد.
+
+📌 **5. مهارات المشير الأساسية في الحوار والاستكشاف:**
+المشير المحترف ليس خبيراً يوزع الإجابات، بل هو مسهل ومحفز لعملية الاستبصار عبر امتلاك مهارات نوعية؛ أهمها الإصغاء النشط ثلاثي الأبعاد: الاستماع للكلمات المنطوقة، والاستماع لنبرة الصوت والمشاعر الكامنة وراءها، والاستماع للغة الجسد والصمت والإيماءات. تشمل هذه المهارات أيضاً صياغة 'الأسئلة السابرية المفتوحة' التي تبتعد عن التوجيه الاتهامي (لماذا فعلت كذا؟) وتتجه نحو الاستكشاف والتأمل (ما الذي كنت تشعر به في تلك اللحظة؟)، بالإضافة إلى مهارة إعادة الصياغة والانعكاس لضمان الفهم المشترك وتصحيح أي تشويه معرفي لدى المسترشد.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - الإصغاء النشط يتطلب تركيزاً كاملاً بالعين والقلب والعقل والتقاط الإشارات غير اللفظية.
+  - الأسئلة الاستكشافية تمنح المسترشد المساحة ليفكر ويفهم نفسه بدلاً من اتخاذ موقف الدفاع.
+  - انعكاس المشاعر يمنح المسترشد التحقق النفسي والشعور بأن ألمه مفهوم ومقدر.
+
+📌 **6. الحدود المهنية والتكامل بين المشورة والطب النفسي وسر الاعتراف:**
+توضح المحاضرة بشكل حاسم الحدود الفاصلة والتكاملية بين ثلاثة ميادين كنسية وإنسانية أساسية: المشورة، الطب النفسي، وسر التوبة والاعتراف. المشورة تختص ببناء الرصيد النفسي وتعديل المفاهيم ومعالجة الصراعات العلائقية والوجدانية. سر الاعتراف سر كنسي مقدس لنوال الحل والصفح وغفران الخطايا والمصالحة مع الكنيسة عبر الأب الكاهن. الطب النفسي ميدان بيولوجي وإكلينيكي يعالج الخلل الكيميائي العصبي في الدماغ والاضطرابات العقلية الحادة (كالفصام، والاكتئاب الجسيم، والذهان) عبر العقاقير الطبية. المشير الناضج يدرك حدوده فوراً، ولا يتعدى على دور الأب الروحي، ويحيل الحالات التي تتطلب تدخلاً طبياً أو دوائياً دون تردد لحماية حياة المسترشد وسلامته.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - المشورة تسند النفس وتبني البنية الإنسانية، وسر الاعتراف يمنح النعمة والغفران الأبدي.
+  - المشير لا يملك سلطة الحل الكنسي ولا صلاحية وصف الأدوية أو التشخيص الدوائي.
+  - الإحالة المهنية السريعة للأطباء النفسيين المتخصصين واجب أخلاقي ومسؤولية قانونية وإنسانية.
+
+📌 **7. مراحل العملية الإرشادية من التعاقد إلى الإنهاء:**
+المشورة ليست أحاديث عشوائية بل مسار منظم يمر بمراحل زمنية ومنهجية واضحة: المرحلة الأولى هي 'الاستكشاف والتعاقد' وبناء الألفة، وتحديد التوقعات وعدد الجلسات وميثاق السرية. المرحلة الثانية هي 'التقييم والفهم العميق'، وفيها يتم رسم شجرة العائلة واستكشاف الصدمات ومصادر الضغط. المرحلة الثالثة هي 'العمل والتغيير'، حيث يتم تحدي التشوهات المعرفية ووضع استراتيجيات عملية لتجربة سلوكيات وتفاعلات صحية جديدة. المرحلة الرابعة هي 'تثبيت النتائج والاستقلال والإنهاء'، وفيها يتأكد المشير من أن المسترشد أصبح قادراً على المشي مستقلاً دون الاعتماد المرضي على شخص المشير، محتفياً بما تم تحقيقه من نضج واستبصار.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - التعاقد الإرشادي في البداية يحمي الجلسات من السيولة والارتباك ويحدد سقف التوقعات.
+  - التغيير الإيجابي يحتاج إلى تفكيك القناعات الخاطئة وتدريب عملي ومتابعة مرحلية دقيقة.
+  - الإنهاء التدريجي يمنع ظاهرة التعلق المرضي ويؤكد استقلالية المسترشد وثقته بنفسه وبمعونة الله.
+
+📌 **8. المشورة كأداة للنعمة واستعادة الصورة الإلهية في النفس:**
+يتميز النموذج المسيحي بأنه لا يعتبر المشورة مجرد تقنية علمانية ميكانيكية، بل عملاً من أعمال النعمة الإلهية العامة والخاصة؛ حيث يعمل الروح القدس كمشير أعظم ومرشد روحي داخلي في حياة الطرفين. المشورة تساهم في كشف 'الكذبات الجوهرية' التي زرعها العدو أو البيئة المشوهة في وجدان الإنسان (مثل: أنا مرفوض، أنا فاشل، أنا بلا قيمة)، وتستبدلها بحقائق الإنجيل التحريرية: الإنسان مدعو للمجد، محبوب بلا شروط، ومفتدى بدم كريم. هذا الشفاء الداخلي يزيل الحواجز النفسية التي كانت تعوق انسكاب النعمة، مما يجعل الحياة الروحية بعد المشورة أكثر عمقاً وأصالة وثماراً.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - المشير يصلي ويصغي بوعي لعمل الروح القدس أثناء استخدامه لأفضل الأدوات والمهارات العلمية.
+  - تفكيك الأكاذيب الجوهرية واستبدالها بالحق الإلهي يحرر الإرادة ويفتح باب الشفاء العميق.
+  - المشورة تمهد الطريق للنمو الروحي الحقيقي بإزالة العقد النفسية التي كانت تشوه الممارسة الدينية.
+
+📌 **9. المحاذير والمطبات الشائعة والاحتراق النفسي للمشير:**
+تتطلب ممارسة المشورة يقظة وانضباطاً مستمراً لتجنب الانزلاق في أخطاء شائعة تُجهض العملية الإرشادية؛ ومن أهم هذه الفخاخ: فخ النصح العاجل والمباشر الذي يسلب المسترشد حريته في التفكير، وفخ 'التحويل والتحويل المضاد' (Transference & Counter-transference) حيث يُسقط المسترشد مشاعره القديمة تجاه والديه على المشير، أو يُسقط المشير مشاكله الخاصة واحتياجاته غير المسددة على المسترشد. تشير المحاضرة أيضاً إلى خطر 'الاحتراق النفسي' (Burnout) والإرهاق التعاطفي الناتج عن امتصاص آلام الآخرين دون تفريغ؛ مما يفرض على المشير الاهتمام الإلزامي بالرعاية الذاتية وجلسات الإشراف المهني والمتابعة الروحية الدورية لنفسه.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - التحويل والتحويل المضاد ديناميكية خطيرة تتطلب وعياً ذاتياً فائقاً من المشير لحماية الحدود.
+  - امتصاص المشاعر المؤلمة دون حدود واضحة يؤدي حتماً إلى الاحتراق النفسي وفقدان الشغف.
+  - الإشراف المشوري (Supervision) والرعاية الذاتية ليسا رفاهية بل شرط أساسي لاستمرار الخدمة بأمانة.
+
+📌 **10. الميثاق الأخلاقي والمسؤولية الكنسية والمهنية للمشير:**
+تختتم المحاضرة بوضع المعايير الأخلاقية والميثاق المهني الصارم الذي يحكم ممارسة المشورة الكنسية. يشمل هذا الميثاق: الاحترام المطلق لحرية المسترشد وعدم استغلال ضعفه أو اعتماديته مادياً أو معنوياً أو عاطفياً، تجنب الأدوار المزدوجة (عدم تقديم المشورة لأقارب الدرجة الأولى أو الأصدقاء المقربين جداً لضمان الحياد والموضوعية)، الصدق الكامل بشأن حدود الكفاءة العلمية، والالتزام بالقوانين المنظمة للسرية مع إدراك الاستثناءات القانونية الحتمية (مثل حالات التهديد الفعلي بالانتحار أو إيذاء الآخرين أو إساءة معاملة الأطفال). المشير المسيحي الأمين يعتبر خدمته وزنة مقدسة سيقدم عنها حساباً أمام الله والكنيسة والمجتمع.
+
+• **النقاط الجوهرية في هذا المحور:**
+  - الميثاق الأخلاقي هو الدرع الذي يحمي المسترشد ويصون كرامة الخدمة الإرشادية في الكنيسة.
+  - تجنب العلاقات المزدوجة يحفظ المشير من تضارب المصالح ويضمن الموضوعية والحياد التام.
+  - حفظ الأمانة الإرشادية يتطلب التطوير العلمي المستمر والالتزام بالقواعد الأخلاقية والكنسية الرصينة.
+
+🌟 **خلاصات وتطبيقات عملية للمشير في الخدمة والحياة:**
+• المشورة المسيحية هي شراكة استبصار وتحرير مقدسة قائمة على الحب والمعرفة وليست مجرد إلقاء نصائح أو وعظ.
+• الإنسان وحدة كلية متكاملة (روح ونفس وجسد)، ولا يمكن فصل الانكسار النفسي عن التحدي الروحي أو الجسدي.
+• مثلث الأمان العلاجي المتمثل في القبول غير المشروط، والتعاطف، والسرية المطلقة هو صلب أي نجاح إرشادي.
+• الإصغاء النشط ثلاثي الأبعاد والأسئلة السابرية المفتوحة هما أثمن أدوات المشير لتحفيز المسترشد على الوعي والتغيير.
+• المشورة تسند البنية النفسية، وسر الاعتراف يمنح النعمة والغفران، والطب النفسي يعالج الخلل الكيميائي العصبي.
+• العملية الإرشادية رحلة واضحة المعالم تبدأ بالتعاقد وتمتد عبر التغيير وتتوج بالاستقلال والإنهاء السليم.
+• الوعي بآليات التحويل والتحويل المضاد يحمي المشير من التورط العاطفي ويصون سلامة المسترشد النفسية.
+• الرعاية الذاتية والإشراف المشوري الدوري واجب إلزامي على كل مشير لحمايته من الاحتراق النفسي والإجهاد التعاطفي.
+
+📖 **معجم المفاهيم والمصطلحات المفتاحية:**
+• **المشورة المسيحية (Christian Counseling)**: عملية تفاعلية علاجية تكاملية بين المشير والمسترشد تهدف إلى استكشاف المشكلات النفسية والعلائقية والروحية في ضوء الإعلان الكتابي والعلوم الإنسانية، لتحقيق الشفاء والنضج واستعادة الصورة الإلهية.
+• **المساحة الآمنة (Safe Space)**: البيئة العلاجية الوجدانية والمكانية التي يوفرها المشير وتتسم بالقبول غير المشروط، والتعاطف العميق، والسرية التامة، وتسمح للمسترشد بالتعبير عن أعمق مخاوفه دون خوف من الرفض أو الإدانة.
+• **القبول غير المشروط (Unconditional Positive Regard)**: موقف وجداني وأخلاقي ثابت يتبناه المشير نحو المسترشد بتقدير قيمته ككائن محبوب ومفتدى، مع التمييز الواضح بين قبول شخص المسترشد ورفض سلوكه الخاطئ.
+• **التعاطف النشط (Active Empathy)**: القدرة النفسية والوجدانية على إدراك مشاعر المسترشد ورؤية واقعه الداخلي من منظوره الشخصي دون التورط العاطفي أو فقدان الحياد الموضوعي.
+• **الإصغاء ثلاثي الأبعاد (Three-Dimensional Listening)**: مهارة إنصات متقدمة تركز على الاستماع للكلمات المنطوقة، ولغة الجسد غير اللفظية، والمشاعر الكامنة في نبرات الصوت ومحطات الصمت.
+• **التحويل والتحويل المضاد (Transference & Counter-transference)**: إسقاط لا واعي لمشاعر وصراعات سابقة من المسترشد على المشير، أو العكس من المشير على المسترشد، ويتطلب إدراكاً ويقظة صارمة لمنع تشويه العلاقة الإرشادية.
+• **المرونة النفسية (Psychological Resilience)**: القدرة النفسية والروحية على التكيف الإيجابي والصمود والتعافي السريع عند مواجهة الأزمات الحياتية والضغوط الشديدة دون انهيار.
+• **الاحتراق النفسي والإرهاق التعاطفي (Burnout & Compassion Fatigue)**: حالة من الإنهاك الجسدي والعاطفي والروحي تصيب المشير نتيجة التعرض المستمر لآلام المسترشدين وصدماتهم دون وجود رعاية ذاتية أو تفريغ سليم.
+
+❓ **أسئلة للتأمل والتقييم الذاتي:**
+• كيف يمكنك كمشير التمييز عملياً بين دورك في بناء الرصيد النفسي ودور الأب الكاهن في سر الاعتراف دون إحداث أي لبس لدى المسترشد؟
+• تأمل في تجاربك الحياتية: ما هي 'الأكاذيب الجوهرية' الأكثر شيوعاً التي يتبناها الناس عن ذواتهم وكيف يسهم الإنجيل في كسرها؟
+• ما هي العلامات المبكرة للتحويل والتحويل المضاد أو الإرهاق التعاطفي التي ينبغي عليك مراقبتها في نفسك لحماية أمانة خدمتك؟
+• كيف تُوازن في جلسة المشورة بين إظهار القبول غير المشروط للمسترشد وبين رفض السلوكيات والأنماط المعطلة وغير المستقيمة؟`,
+    "summaryData": {
+      "targetPages": 5,
+      "overview": "تُمثل هذه المحاضرة حجر الزاوية والمدخل التأسيسي الأكاديمي لعلم المشورة المسيحية، حيث تستهدف صياغة تعريف دقيق ومُحكم لطبيعة المشورة وتمييزها عن الأنماط التقليدية الشائعة كالنصيحة العابرة أو الوعظ الإرشادي المباشر. تستند المشورة في هذا المرجع إلى رؤية أنثروبولوجية ولاهوتية متكاملة تنظر إلى الإنسان ككيان كلي متكامل (روح، نفس، وجسد) تأثر بسقوط الطبيعة البشرية ويحتاج إلى الشفاء الشامل بنعمة الفداء. تستعرض المحاضرة الأهداف الجوهرية للعملية الإرشادية التي تتجاوز مجرد تسكين الأعراض الآنية لتصل إلى استعادة الهوية الشخصية وبناء المرونة النفسية وتصحيح التشوهات المعرفية والعلائقية، مع التركيز على بيئة 'المساحة الآمنة' ومحددات الميثاق المهني والأخلاقي للمشير في الكنيسة المعاصرة.",
+      "learningObjectives": [
+            "صياغة تعريف أكاديمي ولاهوتي دقيق للمشورة المسيحية وتمييزها عن النصح والوعظ والعلاج الطبي.",
+            "استيعاب الرؤية الأنثروبولوجية المتكاملة لطبيعة الإنسان الثلاثية وتأثير الانكسارات النفسية على السلوك.",
+            "تحديد الأهداف الاستراتيجية قصيرة وطويلة المدى للعملية الإرشادية في تحقيق الشفاء والاستبصار.",
+            "تطبيق ركائز مثلث الأمان العلاجي (القبول غير المشروط، التعاطف النشط، والسرية المهنية المطلقة).",
+            "إتقان مهارات الحوار الإرشادي التفكيكي (الإصغاء الواعي، الأسئلة السابرية، والحياد الإيجابي).",
+            "رسم الحدود المهنية الفاصلة بين المشورة، وسر الاعتراف، والتدخل الطبي النفسي المتخصص.",
+            "استيعاب مراحل رحلة المشورة من التعاقد والاستكشاف إلى التغيير وتثبيت النضج ثم الإنهاء السليم."
+      ],
+      "sections": [
+            {
+                  "id": "lec2-sec-1",
+                  "title": "1. المفهوم التأسيسي للمشورة المسيحية وتمييزها عن النماذج الأخرى",
+                  "content": "تؤسس المحاضرة لمفهوم المشورة باعتبارها 'رحلة استبصار ومرافقة علاجية مقدسة' يشترك فيها المشير مع المسترشد لكشف الحقائق الدفينة ومساعدته على فهم ذاته ومشكلاته. المشورة ليست جلسة وعظية يُلقى فيها الخطاب الديني التوجيهي، وليست نصائح سريعة ومجانية تُفرض على المسترشد، بل هي عملية تفاعلية تعتمد على تهيئة بيئة آمنة تُمكّن الإنسان من استعادة مسؤوليته الشخصية وقدرته على اتخاذ القرارات السليمة. يرتكز النموذج المسيحي للمشورة على تكامل حقائق الإعلان الإلهي في الكتاب المقدس مع الكشوفات العلمية الدقيقة لعلم النفس الإنساني، مع إخضاع الأدوات العلمية لروح الإنجيل لخدمة بنيان النفس وحريتها الحقيقية.",
+                  "keyPoints": [
+                        "المشورة شراكة علاجية قائمة على الاستبصار والتفاعل وليست توجيهاً تسلطياً أحادي الجانب.",
+                        "النصيحة السريعة غالباً ما تعطل نمو المسترشد، بينما المشورة تدربه على النضج وتحمل المسؤولية.",
+                        "التكامل المعرفي بين الوحي الإلهي والعلوم النفسية يُنشئ نموذجاً إرشادياً رصيناً يشفي الإنسان ككل."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-2",
+                  "title": "2. الإطار الأنثروبولوجي: الإنسان ككيان موحد (روح ونفس وجسد)",
+                  "content": "ينطلق علم المشورة من النظرة الكتابية المتكاملة للإنسان؛ فالإنسان ليس مجرد عقل يفكر أو جسد يستهلك، بل هو وحدة وجودية غير قابلة للتجزئة تشمل الروح والنفس والجسد. عندما يتعرض الإنسان لجرح نفسي أو صدمة في طفولته أو بيئته الأسرية، لا ينعزل هذا الجرح في مشاعره فقط، بل يمتد ليؤثر في جسده (أعراض نفس-جسمية كالصداع والقولون العصبي) وفي علاقته الروحية بالله (تشويه صورة الله كمعاقب أو قاضٍ صارم). المشير المسيحي الواعي يفهم أن السلوك الظاهري المرفوض أو العرض المؤلم هو بمثابة قمة جبل الجليد، بينما تكمن الجذور العميقة في تشوهات الاحتياجات النفسية والروحية غير المشبعة التي تحتاج إلى فحص وتضميد متأنٍ.",
+                  "keyPoints": [
+                        "الإنسان وحدة كلية متكاملة تتفاعل فيها المشاعر مع الجسد مع النضج الروحي بصورة تبادلية.",
+                        "الاضطراب النفسي ينعكس مباشرة على صورة الله في وجدان الفرد وممارسته للعبادة.",
+                        "التعامل مع السلوكيات الظاهرة دون فحص الدوافع والانكسارات الباطنية يُعتبر علاجاً سطحياً غير مستدام."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-3",
+                  "title": "3. الأهداف الجوهرية والنهائية للمشورة",
+                  "content": "تتدرج أهداف المشورة المسيحية عبر مستويات بنائية واضحة؛ تبدأ بالهدف العاجل المتمثل في تخفيف وطأة الألم النفسي وإدارة مشاعر الأزمة الضاغطة، ثم ترتقي سريعاً إلى الهدف البنائي الأساسي: تنمية الوعي الذاتي والاستبصار الواعي بجذور الأنماط السلوكية المعطلة. الهدف الروحي والعلائقي للمشورة يتجلى في تحرير الضمير من الشعور الزائف بالذنب، واستعادة قبول الذات المستمد من محبة الله وقبوله غير المشروط، وتطوير المرونة النفسية التي تُمكّن المؤمن من التعايش مع تقلبات الحياة بنضج ورجاء، دون السقوط في الانهيار أو الهروب في آليات دفاعية مرضية.",
+                  "keyPoints": [
+                        "تجاوز تسكين الأعراض الظاهرة نحو اقتلاع الجذور وإعادة هيكلة المنظومة المعرفية للمسترشد.",
+                        "بناء الهوية الشخصية على أساس القبول الإلهي الثابت بدلاً من تقدير الذات المشروط برأي الآخرين.",
+                        "اكتساب المرونة النفسية والروحية لمواجهة الأزمات الحتمية بثقة واتزان داخلي."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-4",
+                  "title": "4. بيئة الأمان العلاجي: مثلث القبول والتعاطف والسرية",
+                  "content": "لا يمكن لأي عملية مشورية أن تُثمر في غياب 'المساحة الآمنة' التي تحمي المسترشد وتدعوه لكشف جراحه دون قناع. يرتكز هذا الأمان على مثلث ذهبي: الركن الأول هو القبول غير المشروط، حيث يشعر المسترشد بأنه محبوب ومحترم كإنسان بصرف النظر عن خطيئته أو سقطاته. الركن الثاني هو التعاطف الوجداني الأصيل، وهو القدرة على ارتداء حذاء المسترشد ورؤية العالم بعينيه والشعور بألمه دون التورط أو الذوبان فيه. الركن الثالث هو السرية المهنية المطلقة، وهي العهد الأخلاقي الذي يحفظ أسرار الجلسة المشورية مقدسة ومصانة، مما يكسر حاجز الخوف والارتياب ويفتح أبواب الشفاء.",
+                  "keyPoints": [
+                        "المساحة الآمنة هي التربة الوحيدة التي يمكن أن تنمو فيها بذور المصارحة والشفاء الداخلي.",
+                        "القبول غير المشروط لا يعني تبرير الخطأ، بل يعني الفصل الكامل بين قيمة الشخص وسلوكه.",
+                        "السرية المطلقة هي الحصن القانوني والأخلاقي الذي يبني الثقة ويحمي كرامة المسترشد."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-5",
+                  "title": "5. مهارات المشير الأساسية في الحوار والاستكشاف",
+                  "content": "المشير المحترف ليس خبيراً يوزع الإجابات، بل هو مسهل ومحفز لعملية الاستبصار عبر امتلاك مهارات نوعية؛ أهمها الإصغاء النشط ثلاثي الأبعاد: الاستماع للكلمات المنطوقة، والاستماع لنبرة الصوت والمشاعر الكامنة وراءها، والاستماع للغة الجسد والصمت والإيماءات. تشمل هذه المهارات أيضاً صياغة 'الأسئلة السابرية المفتوحة' التي تبتعد عن التوجيه الاتهامي (لماذا فعلت كذا؟) وتتجه نحو الاستكشاف والتأمل (ما الذي كنت تشعر به في تلك اللحظة؟)، بالإضافة إلى مهارة إعادة الصياغة والانعكاس لضمان الفهم المشترك وتصحيح أي تشويه معرفي لدى المسترشد.",
+                  "keyPoints": [
+                        "الإصغاء النشط يتطلب تركيزاً كاملاً بالعين والقلب والعقل والتقاط الإشارات غير اللفظية.",
+                        "الأسئلة الاستكشافية تمنح المسترشد المساحة ليفكر ويفهم نفسه بدلاً من اتخاذ موقف الدفاع.",
+                        "انعكاس المشاعر يمنح المسترشد التحقق النفسي والشعور بأن ألمه مفهوم ومقدر."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-6",
+                  "title": "6. الحدود المهنية والتكامل بين المشورة والطب النفسي وسر الاعتراف",
+                  "content": "توضح المحاضرة بشكل حاسم الحدود الفاصلة والتكاملية بين ثلاثة ميادين كنسية وإنسانية أساسية: المشورة، الطب النفسي، وسر التوبة والاعتراف. المشورة تختص ببناء الرصيد النفسي وتعديل المفاهيم ومعالجة الصراعات العلائقية والوجدانية. سر الاعتراف سر كنسي مقدس لنوال الحل والصفح وغفران الخطايا والمصالحة مع الكنيسة عبر الأب الكاهن. الطب النفسي ميدان بيولوجي وإكلينيكي يعالج الخلل الكيميائي العصبي في الدماغ والاضطرابات العقلية الحادة (كالفصام، والاكتئاب الجسيم، والذهان) عبر العقاقير الطبية. المشير الناضج يدرك حدوده فوراً، ولا يتعدى على دور الأب الروحي، ويحيل الحالات التي تتطلب تدخلاً طبياً أو دوائياً دون تردد لحماية حياة المسترشد وسلامته.",
+                  "keyPoints": [
+                        "المشورة تسند النفس وتبني البنية الإنسانية، وسر الاعتراف يمنح النعمة والغفران الأبدي.",
+                        "المشير لا يملك سلطة الحل الكنسي ولا صلاحية وصف الأدوية أو التشخيص الدوائي.",
+                        "الإحالة المهنية السريعة للأطباء النفسيين المتخصصين واجب أخلاقي ومسؤولية قانونية وإنسانية."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-7",
+                  "title": "7. مراحل العملية الإرشادية من التعاقد إلى الإنهاء",
+                  "content": "المشورة ليست أحاديث عشوائية بل مسار منظم يمر بمراحل زمنية ومنهجية واضحة: المرحلة الأولى هي 'الاستكشاف والتعاقد' وبناء الألفة، وتحديد التوقعات وعدد الجلسات وميثاق السرية. المرحلة الثانية هي 'التقييم والفهم العميق'، وفيها يتم رسم شجرة العائلة واستكشاف الصدمات ومصادر الضغط. المرحلة الثالثة هي 'العمل والتغيير'، حيث يتم تحدي التشوهات المعرفية ووضع استراتيجيات عملية لتجربة سلوكيات وتفاعلات صحية جديدة. المرحلة الرابعة هي 'تثبيت النتائج والاستقلال والإنهاء'، وفيها يتأكد المشير من أن المسترشد أصبح قادراً على المشي مستقلاً دون الاعتماد المرضي على شخص المشير، محتفياً بما تم تحقيقه من نضج واستبصار.",
+                  "keyPoints": [
+                        "التعاقد الإرشادي في البداية يحمي الجلسات من السيولة والارتباك ويحدد سقف التوقعات.",
+                        "التغيير الإيجابي يحتاج إلى تفكيك القناعات الخاطئة وتدريب عملي ومتابعة مرحلية دقيقة.",
+                        "الإنهاء التدريجي يمنع ظاهرة التعلق المرضي ويؤكد استقلالية المسترشد وثقته بنفسه وبمعونة الله."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-8",
+                  "title": "8. المشورة كأداة للنعمة واستعادة الصورة الإلهية في النفس",
+                  "content": "يتميز النموذج المسيحي بأنه لا يعتبر المشورة مجرد تقنية علمانية ميكانيكية، بل عملاً من أعمال النعمة الإلهية العامة والخاصة؛ حيث يعمل الروح القدس كمشير أعظم ومرشد روحي داخلي في حياة الطرفين. المشورة تساهم في كشف 'الكذبات الجوهرية' التي زرعها العدو أو البيئة المشوهة في وجدان الإنسان (مثل: أنا مرفوض، أنا فاشل، أنا بلا قيمة)، وتستبدلها بحقائق الإنجيل التحريرية: الإنسان مدعو للمجد، محبوب بلا شروط، ومفتدى بدم كريم. هذا الشفاء الداخلي يزيل الحواجز النفسية التي كانت تعوق انسكاب النعمة، مما يجعل الحياة الروحية بعد المشورة أكثر عمقاً وأصالة وثماراً.",
+                  "keyPoints": [
+                        "المشير يصلي ويصغي بوعي لعمل الروح القدس أثناء استخدامه لأفضل الأدوات والمهارات العلمية.",
+                        "تفكيك الأكاذيب الجوهرية واستبدالها بالحق الإلهي يحرر الإرادة ويفتح باب الشفاء العميق.",
+                        "المشورة تمهد الطريق للنمو الروحي الحقيقي بإزالة العقد النفسية التي كانت تشوه الممارسة الدينية."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-9",
+                  "title": "9. المحاذير والمطبات الشائعة والاحتراق النفسي للمشير",
+                  "content": "تتطلب ممارسة المشورة يقظة وانضباطاً مستمراً لتجنب الانزلاق في أخطاء شائعة تُجهض العملية الإرشادية؛ ومن أهم هذه الفخاخ: فخ النصح العاجل والمباشر الذي يسلب المسترشد حريته في التفكير، وفخ 'التحويل والتحويل المضاد' (Transference & Counter-transference) حيث يُسقط المسترشد مشاعره القديمة تجاه والديه على المشير، أو يُسقط المشير مشاكله الخاصة واحتياجاته غير المسددة على المسترشد. تشير المحاضرة أيضاً إلى خطر 'الاحتراق النفسي' (Burnout) والإرهاق التعاطفي الناتج عن امتصاص آلام الآخرين دون تفريغ؛ مما يفرض على المشير الاهتمام الإلزامي بالرعاية الذاتية وجلسات الإشراف المهني والمتابعة الروحية الدورية لنفسه.",
+                  "keyPoints": [
+                        "التحويل والتحويل المضاد ديناميكية خطيرة تتطلب وعياً ذاتياً فائقاً من المشير لحماية الحدود.",
+                        "امتصاص المشاعر المؤلمة دون حدود واضحة يؤدي حتماً إلى الاحتراق النفسي وفقدان الشغف.",
+                        "الإشراف المشوري (Supervision) والرعاية الذاتية ليسا رفاهية بل شرط أساسي لاستمرار الخدمة بأمانة."
+                  ]
+            },
+            {
+                  "id": "lec2-sec-10",
+                  "title": "10. الميثاق الأخلاقي والمسؤولية الكنسية والمهنية للمشير",
+                  "content": "تختتم المحاضرة بوضع المعايير الأخلاقية والميثاق المهني الصارم الذي يحكم ممارسة المشورة الكنسية. يشمل هذا الميثاق: الاحترام المطلق لحرية المسترشد وعدم استغلال ضعفه أو اعتماديته مادياً أو معنوياً أو عاطفياً، تجنب الأدوار المزدوجة (عدم تقديم المشورة لأقارب الدرجة الأولى أو الأصدقاء المقربين جداً لضمان الحياد والموضوعية)، الصدق الكامل بشأن حدود الكفاءة العلمية، والالتزام بالقوانين المنظمة للسرية مع إدراك الاستثناءات القانونية الحتمية (مثل حالات التهديد الفعلي بالانتحار أو إيذاء الآخرين أو إساءة معاملة الأطفال). المشير المسيحي الأمين يعتبر خدمته وزنة مقدسة سيقدم عنها حساباً أمام الله والكنيسة والمجتمع.",
+                  "keyPoints": [
+                        "الميثاق الأخلاقي هو الدرع الذي يحمي المسترشد ويصون كرامة الخدمة الإرشادية في الكنيسة.",
+                        "تجنب العلاقات المزدوجة يحفظ المشير من تضارب المصالح ويضمن الموضوعية والحياد التام.",
+                        "حفظ الأمانة الإرشادية يتطلب التطوير العلمي المستمر والالتزام بالقواعد الأخلاقية والكنسية الرصينة."
+                  ]
+            }
+      ],
+      "keyTakeaways": [
+            "المشورة المسيحية هي شراكة استبصار وتحرير مقدسة قائمة على الحب والمعرفة وليست مجرد إلقاء نصائح أو وعظ.",
+            "الإنسان وحدة كلية متكاملة (روح ونفس وجسد)، ولا يمكن فصل الانكسار النفسي عن التحدي الروحي أو الجسدي.",
+            "مثلث الأمان العلاجي المتمثل في القبول غير المشروط، والتعاطف، والسرية المطلقة هو صلب أي نجاح إرشادي.",
+            "الإصغاء النشط ثلاثي الأبعاد والأسئلة السابرية المفتوحة هما أثمن أدوات المشير لتحفيز المسترشد على الوعي والتغيير.",
+            "المشورة تسند البنية النفسية، وسر الاعتراف يمنح النعمة والغفران، والطب النفسي يعالج الخلل الكيميائي العصبي.",
+            "العملية الإرشادية رحلة واضحة المعالم تبدأ بالتعاقد وتمتد عبر التغيير وتتوج بالاستقلال والإنهاء السليم.",
+            "الوعي بآليات التحويل والتحويل المضاد يحمي المشير من التورط العاطفي ويصون سلامة المسترشد النفسية.",
+            "الرعاية الذاتية والإشراف المشوري الدوري واجب إلزامي على كل مشير لحمايته من الاحتراق النفسي والإجهاد التعاطفي."
+      ],
+      "glossary": [
+            {
+                  "term": "المشورة المسيحية (Christian Counseling)",
+                  "definition": "عملية تفاعلية علاجية تكاملية بين المشير والمسترشد تهدف إلى استكشاف المشكلات النفسية والعلائقية والروحية في ضوء الإعلان الكتابي والعلوم الإنسانية، لتحقيق الشفاء والنضج واستعادة الصورة الإلهية."
+            },
+            {
+                  "term": "المساحة الآمنة (Safe Space)",
+                  "definition": "البيئة العلاجية الوجدانية والمكانية التي يوفرها المشير وتتسم بالقبول غير المشروط، والتعاطف العميق، والسرية التامة، وتسمح للمسترشد بالتعبير عن أعمق مخاوفه دون خوف من الرفض أو الإدانة."
+            },
+            {
+                  "term": "القبول غير المشروط (Unconditional Positive Regard)",
+                  "definition": "موقف وجداني وأخلاقي ثابت يتبناه المشير نحو المسترشد بتقدير قيمته ككائن محبوب ومفتدى، مع التمييز الواضح بين قبول شخص المسترشد ورفض سلوكه الخاطئ."
+            },
+            {
+                  "term": "التعاطف النشط (Active Empathy)",
+                  "definition": "القدرة النفسية والوجدانية على إدراك مشاعر المسترشد ورؤية واقعه الداخلي من منظوره الشخصي دون التورط العاطفي أو فقدان الحياد الموضوعي."
+            },
+            {
+                  "term": "الإصغاء ثلاثي الأبعاد (Three-Dimensional Listening)",
+                  "definition": "مهارة إنصات متقدمة تركز على الاستماع للكلمات المنطوقة، ولغة الجسد غير اللفظية، والمشاعر الكامنة في نبرات الصوت ومحطات الصمت."
+            },
+            {
+                  "term": "التحويل والتحويل المضاد (Transference & Counter-transference)",
+                  "definition": "إسقاط لا واعي لمشاعر وصراعات سابقة من المسترشد على المشير، أو العكس من المشير على المسترشد، ويتطلب إدراكاً ويقظة صارمة لمنع تشويه العلاقة الإرشادية."
+            },
+            {
+                  "term": "المرونة النفسية (Psychological Resilience)",
+                  "definition": "القدرة النفسية والروحية على التكيف الإيجابي والصمود والتعافي السريع عند مواجهة الأزمات الحياتية والضغوط الشديدة دون انهيار."
+            },
+            {
+                  "term": "الاحتراق النفسي والإرهاق التعاطفي (Burnout & Compassion Fatigue)",
+                  "definition": "حالة من الإنهاك الجسدي والعاطفي والروحي تصيب المشير نتيجة التعرض المستمر لآلام المسترشدين وصدماتهم دون وجود رعاية ذاتية أو تفريغ سليم."
+            }
+      ],
+      "reflectionQuestions": [
+            "كيف يمكنك كمشير التمييز عملياً بين دورك في بناء الرصيد النفسي ودور الأب الكاهن في سر الاعتراف دون إحداث أي لبس لدى المسترشد؟",
+            "تأمل في تجاربك الحياتية: ما هي 'الأكاذيب الجوهرية' الأكثر شيوعاً التي يتبناها الناس عن ذواتهم وكيف يسهم الإنجيل في كسرها؟",
+            "ما هي العلامات المبكرة للتحويل والتحويل المضاد أو الإرهاق التعاطفي التي ينبغي عليك مراقبتها في نفسك لحماية أمانة خدمتك؟",
+            "كيف تُوازن في جلسة المشورة بين إظهار القبول غير المشروط للمسترشد وبين رفض السلوكيات والأنماط المعطلة وغير المستقيمة؟"
+      ]
+},
+    "summaryDataJson": "{\"targetPages\": 5, \"overview\": \"تُمثل هذه المحاضرة حجر الزاوية والمدخل التأسيسي الأكاديمي لعلم المشورة المسيحية، حيث تستهدف صياغة تعريف دقيق ومُحكم لطبيعة المشورة وتمييزها عن الأنماط التقليدية الشائعة كالنصيحة العابرة أو الوعظ الإرشادي المباشر. تستند المشورة في هذا المرجع إلى رؤية أنثروبولوجية ولاهوتية متكاملة تنظر إلى الإنسان ككيان كلي متكامل (روح، نفس، وجسد) تأثر بسقوط الطبيعة البشرية ويحتاج إلى الشفاء الشامل بنعمة الفداء. تستعرض المحاضرة الأهداف الجوهرية للعملية الإرشادية التي تتجاوز مجرد تسكين الأعراض الآنية لتصل إلى استعادة الهوية الشخصية وبناء المرونة النفسية وتصحيح التشوهات المعرفية والعلائقية، مع التركيز على بيئة 'المساحة الآمنة' ومحددات الميثاق المهني والأخلاقي للمشير في الكنيسة المعاصرة.\", \"learningObjectives\": [\"صياغة تعريف أكاديمي ولاهوتي دقيق للمشورة المسيحية وتمييزها عن النصح والوعظ والعلاج الطبي.\", \"استيعاب الرؤية الأنثروبولوجية المتكاملة لطبيعة الإنسان الثلاثية وتأثير الانكسارات النفسية على السلوك.\", \"تحديد الأهداف الاستراتيجية قصيرة وطويلة المدى للعملية الإرشادية في تحقيق الشفاء والاستبصار.\", \"تطبيق ركائز مثلث الأمان العلاجي (القبول غير المشروط، التعاطف النشط، والسرية المهنية المطلقة).\", \"إتقان مهارات الحوار الإرشادي التفكيكي (الإصغاء الواعي، الأسئلة السابرية، والحياد الإيجابي).\", \"رسم الحدود المهنية الفاصلة بين المشورة، وسر الاعتراف، والتدخل الطبي النفسي المتخصص.\", \"استيعاب مراحل رحلة المشورة من التعاقد والاستكشاف إلى التغيير وتثبيت النضج ثم الإنهاء السليم.\"], \"sections\": [{\"id\": \"lec2-sec-1\", \"title\": \"1. المفهوم التأسيسي للمشورة المسيحية وتمييزها عن النماذج الأخرى\", \"content\": \"تؤسس المحاضرة لمفهوم المشورة باعتبارها 'رحلة استبصار ومرافقة علاجية مقدسة' يشترك فيها المشير مع المسترشد لكشف الحقائق الدفينة ومساعدته على فهم ذاته ومشكلاته. المشورة ليست جلسة وعظية يُلقى فيها الخطاب الديني التوجيهي، وليست نصائح سريعة ومجانية تُفرض على المسترشد، بل هي عملية تفاعلية تعتمد على تهيئة بيئة آمنة تُمكّن الإنسان من استعادة مسؤوليته الشخصية وقدرته على اتخاذ القرارات السليمة. يرتكز النموذج المسيحي للمشورة على تكامل حقائق الإعلان الإلهي في الكتاب المقدس مع الكشوفات العلمية الدقيقة لعلم النفس الإنساني، مع إخضاع الأدوات العلمية لروح الإنجيل لخدمة بنيان النفس وحريتها الحقيقية.\", \"keyPoints\": [\"المشورة شراكة علاجية قائمة على الاستبصار والتفاعل وليست توجيهاً تسلطياً أحادي الجانب.\", \"النصيحة السريعة غالباً ما تعطل نمو المسترشد، بينما المشورة تدربه على النضج وتحمل المسؤولية.\", \"التكامل المعرفي بين الوحي الإلهي والعلوم النفسية يُنشئ نموذجاً إرشادياً رصيناً يشفي الإنسان ككل.\"]}, {\"id\": \"lec2-sec-2\", \"title\": \"2. الإطار الأنثروبولوجي: الإنسان ككيان موحد (روح ونفس وجسد)\", \"content\": \"ينطلق علم المشورة من النظرة الكتابية المتكاملة للإنسان؛ فالإنسان ليس مجرد عقل يفكر أو جسد يستهلك، بل هو وحدة وجودية غير قابلة للتجزئة تشمل الروح والنفس والجسد. عندما يتعرض الإنسان لجرح نفسي أو صدمة في طفولته أو بيئته الأسرية، لا ينعزل هذا الجرح في مشاعره فقط، بل يمتد ليؤثر في جسده (أعراض نفس-جسمية كالصداع والقولون العصبي) وفي علاقته الروحية بالله (تشويه صورة الله كمعاقب أو قاضٍ صارم). المشير المسيحي الواعي يفهم أن السلوك الظاهري المرفوض أو العرض المؤلم هو بمثابة قمة جبل الجليد، بينما تكمن الجذور العميقة في تشوهات الاحتياجات النفسية والروحية غير المشبعة التي تحتاج إلى فحص وتضميد متأنٍ.\", \"keyPoints\": [\"الإنسان وحدة كلية متكاملة تتفاعل فيها المشاعر مع الجسد مع النضج الروحي بصورة تبادلية.\", \"الاضطراب النفسي ينعكس مباشرة على صورة الله في وجدان الفرد وممارسته للعبادة.\", \"التعامل مع السلوكيات الظاهرة دون فحص الدوافع والانكسارات الباطنية يُعتبر علاجاً سطحياً غير مستدام.\"]}, {\"id\": \"lec2-sec-3\", \"title\": \"3. الأهداف الجوهرية والنهائية للمشورة\", \"content\": \"تتدرج أهداف المشورة المسيحية عبر مستويات بنائية واضحة؛ تبدأ بالهدف العاجل المتمثل في تخفيف وطأة الألم النفسي وإدارة مشاعر الأزمة الضاغطة، ثم ترتقي سريعاً إلى الهدف البنائي الأساسي: تنمية الوعي الذاتي والاستبصار الواعي بجذور الأنماط السلوكية المعطلة. الهدف الروحي والعلائقي للمشورة يتجلى في تحرير الضمير من الشعور الزائف بالذنب، واستعادة قبول الذات المستمد من محبة الله وقبوله غير المشروط، وتطوير المرونة النفسية التي تُمكّن المؤمن من التعايش مع تقلبات الحياة بنضج ورجاء، دون السقوط في الانهيار أو الهروب في آليات دفاعية مرضية.\", \"keyPoints\": [\"تجاوز تسكين الأعراض الظاهرة نحو اقتلاع الجذور وإعادة هيكلة المنظومة المعرفية للمسترشد.\", \"بناء الهوية الشخصية على أساس القبول الإلهي الثابت بدلاً من تقدير الذات المشروط برأي الآخرين.\", \"اكتساب المرونة النفسية والروحية لمواجهة الأزمات الحتمية بثقة واتزان داخلي.\"]}, {\"id\": \"lec2-sec-4\", \"title\": \"4. بيئة الأمان العلاجي: مثلث القبول والتعاطف والسرية\", \"content\": \"لا يمكن لأي عملية مشورية أن تُثمر في غياب 'المساحة الآمنة' التي تحمي المسترشد وتدعوه لكشف جراحه دون قناع. يرتكز هذا الأمان على مثلث ذهبي: الركن الأول هو القبول غير المشروط، حيث يشعر المسترشد بأنه محبوب ومحترم كإنسان بصرف النظر عن خطيئته أو سقطاته. الركن الثاني هو التعاطف الوجداني الأصيل، وهو القدرة على ارتداء حذاء المسترشد ورؤية العالم بعينيه والشعور بألمه دون التورط أو الذوبان فيه. الركن الثالث هو السرية المهنية المطلقة، وهي العهد الأخلاقي الذي يحفظ أسرار الجلسة المشورية مقدسة ومصانة، مما يكسر حاجز الخوف والارتياب ويفتح أبواب الشفاء.\", \"keyPoints\": [\"المساحة الآمنة هي التربة الوحيدة التي يمكن أن تنمو فيها بذور المصارحة والشفاء الداخلي.\", \"القبول غير المشروط لا يعني تبرير الخطأ، بل يعني الفصل الكامل بين قيمة الشخص وسلوكه.\", \"السرية المطلقة هي الحصن القانوني والأخلاقي الذي يبني الثقة ويحمي كرامة المسترشد.\"]}, {\"id\": \"lec2-sec-5\", \"title\": \"5. مهارات المشير الأساسية في الحوار والاستكشاف\", \"content\": \"المشير المحترف ليس خبيراً يوزع الإجابات، بل هو مسهل ومحفز لعملية الاستبصار عبر امتلاك مهارات نوعية؛ أهمها الإصغاء النشط ثلاثي الأبعاد: الاستماع للكلمات المنطوقة، والاستماع لنبرة الصوت والمشاعر الكامنة وراءها، والاستماع للغة الجسد والصمت والإيماءات. تشمل هذه المهارات أيضاً صياغة 'الأسئلة السابرية المفتوحة' التي تبتعد عن التوجيه الاتهامي (لماذا فعلت كذا؟) وتتجه نحو الاستكشاف والتأمل (ما الذي كنت تشعر به في تلك اللحظة؟)، بالإضافة إلى مهارة إعادة الصياغة والانعكاس لضمان الفهم المشترك وتصحيح أي تشويه معرفي لدى المسترشد.\", \"keyPoints\": [\"الإصغاء النشط يتطلب تركيزاً كاملاً بالعين والقلب والعقل والتقاط الإشارات غير اللفظية.\", \"الأسئلة الاستكشافية تمنح المسترشد المساحة ليفكر ويفهم نفسه بدلاً من اتخاذ موقف الدفاع.\", \"انعكاس المشاعر يمنح المسترشد التحقق النفسي والشعور بأن ألمه مفهوم ومقدر.\"]}, {\"id\": \"lec2-sec-6\", \"title\": \"6. الحدود المهنية والتكامل بين المشورة والطب النفسي وسر الاعتراف\", \"content\": \"توضح المحاضرة بشكل حاسم الحدود الفاصلة والتكاملية بين ثلاثة ميادين كنسية وإنسانية أساسية: المشورة، الطب النفسي، وسر التوبة والاعتراف. المشورة تختص ببناء الرصيد النفسي وتعديل المفاهيم ومعالجة الصراعات العلائقية والوجدانية. سر الاعتراف سر كنسي مقدس لنوال الحل والصفح وغفران الخطايا والمصالحة مع الكنيسة عبر الأب الكاهن. الطب النفسي ميدان بيولوجي وإكلينيكي يعالج الخلل الكيميائي العصبي في الدماغ والاضطرابات العقلية الحادة (كالفصام، والاكتئاب الجسيم، والذهان) عبر العقاقير الطبية. المشير الناضج يدرك حدوده فوراً، ولا يتعدى على دور الأب الروحي، ويحيل الحالات التي تتطلب تدخلاً طبياً أو دوائياً دون تردد لحماية حياة المسترشد وسلامته.\", \"keyPoints\": [\"المشورة تسند النفس وتبني البنية الإنسانية، وسر الاعتراف يمنح النعمة والغفران الأبدي.\", \"المشير لا يملك سلطة الحل الكنسي ولا صلاحية وصف الأدوية أو التشخيص الدوائي.\", \"الإحالة المهنية السريعة للأطباء النفسيين المتخصصين واجب أخلاقي ومسؤولية قانونية وإنسانية.\"]}, {\"id\": \"lec2-sec-7\", \"title\": \"7. مراحل العملية الإرشادية من التعاقد إلى الإنهاء\", \"content\": \"المشورة ليست أحاديث عشوائية بل مسار منظم يمر بمراحل زمنية ومنهجية واضحة: المرحلة الأولى هي 'الاستكشاف والتعاقد' وبناء الألفة، وتحديد التوقعات وعدد الجلسات وميثاق السرية. المرحلة الثانية هي 'التقييم والفهم العميق'، وفيها يتم رسم شجرة العائلة واستكشاف الصدمات ومصادر الضغط. المرحلة الثالثة هي 'العمل والتغيير'، حيث يتم تحدي التشوهات المعرفية ووضع استراتيجيات عملية لتجربة سلوكيات وتفاعلات صحية جديدة. المرحلة الرابعة هي 'تثبيت النتائج والاستقلال والإنهاء'، وفيها يتأكد المشير من أن المسترشد أصبح قادراً على المشي مستقلاً دون الاعتماد المرضي على شخص المشير، محتفياً بما تم تحقيقه من نضج واستبصار.\", \"keyPoints\": [\"التعاقد الإرشادي في البداية يحمي الجلسات من السيولة والارتباك ويحدد سقف التوقعات.\", \"التغيير الإيجابي يحتاج إلى تفكيك القناعات الخاطئة وتدريب عملي ومتابعة مرحلية دقيقة.\", \"الإنهاء التدريجي يمنع ظاهرة التعلق المرضي ويؤكد استقلالية المسترشد وثقته بنفسه وبمعونة الله.\"]}, {\"id\": \"lec2-sec-8\", \"title\": \"8. المشورة كأداة للنعمة واستعادة الصورة الإلهية في النفس\", \"content\": \"يتميز النموذج المسيحي بأنه لا يعتبر المشورة مجرد تقنية علمانية ميكانيكية، بل عملاً من أعمال النعمة الإلهية العامة والخاصة؛ حيث يعمل الروح القدس كمشير أعظم ومرشد روحي داخلي في حياة الطرفين. المشورة تساهم في كشف 'الكذبات الجوهرية' التي زرعها العدو أو البيئة المشوهة في وجدان الإنسان (مثل: أنا مرفوض، أنا فاشل، أنا بلا قيمة)، وتستبدلها بحقائق الإنجيل التحريرية: الإنسان مدعو للمجد، محبوب بلا شروط، ومفتدى بدم كريم. هذا الشفاء الداخلي يزيل الحواجز النفسية التي كانت تعوق انسكاب النعمة، مما يجعل الحياة الروحية بعد المشورة أكثر عمقاً وأصالة وثماراً.\", \"keyPoints\": [\"المشير يصلي ويصغي بوعي لعمل الروح القدس أثناء استخدامه لأفضل الأدوات والمهارات العلمية.\", \"تفكيك الأكاذيب الجوهرية واستبدالها بالحق الإلهي يحرر الإرادة ويفتح باب الشفاء العميق.\", \"المشورة تمهد الطريق للنمو الروحي الحقيقي بإزالة العقد النفسية التي كانت تشوه الممارسة الدينية.\"]}, {\"id\": \"lec2-sec-9\", \"title\": \"9. المحاذير والمطبات الشائعة والاحتراق النفسي للمشير\", \"content\": \"تتطلب ممارسة المشورة يقظة وانضباطاً مستمراً لتجنب الانزلاق في أخطاء شائعة تُجهض العملية الإرشادية؛ ومن أهم هذه الفخاخ: فخ النصح العاجل والمباشر الذي يسلب المسترشد حريته في التفكير، وفخ 'التحويل والتحويل المضاد' (Transference & Counter-transference) حيث يُسقط المسترشد مشاعره القديمة تجاه والديه على المشير، أو يُسقط المشير مشاكله الخاصة واحتياجاته غير المسددة على المسترشد. تشير المحاضرة أيضاً إلى خطر 'الاحتراق النفسي' (Burnout) والإرهاق التعاطفي الناتج عن امتصاص آلام الآخرين دون تفريغ؛ مما يفرض على المشير الاهتمام الإلزامي بالرعاية الذاتية وجلسات الإشراف المهني والمتابعة الروحية الدورية لنفسه.\", \"keyPoints\": [\"التحويل والتحويل المضاد ديناميكية خطيرة تتطلب وعياً ذاتياً فائقاً من المشير لحماية الحدود.\", \"امتصاص المشاعر المؤلمة دون حدود واضحة يؤدي حتماً إلى الاحتراق النفسي وفقدان الشغف.\", \"الإشراف المشوري (Supervision) والرعاية الذاتية ليسا رفاهية بل شرط أساسي لاستمرار الخدمة بأمانة.\"]}, {\"id\": \"lec2-sec-10\", \"title\": \"10. الميثاق الأخلاقي والمسؤولية الكنسية والمهنية للمشير\", \"content\": \"تختتم المحاضرة بوضع المعايير الأخلاقية والميثاق المهني الصارم الذي يحكم ممارسة المشورة الكنسية. يشمل هذا الميثاق: الاحترام المطلق لحرية المسترشد وعدم استغلال ضعفه أو اعتماديته مادياً أو معنوياً أو عاطفياً، تجنب الأدوار المزدوجة (عدم تقديم المشورة لأقارب الدرجة الأولى أو الأصدقاء المقربين جداً لضمان الحياد والموضوعية)، الصدق الكامل بشأن حدود الكفاءة العلمية، والالتزام بالقوانين المنظمة للسرية مع إدراك الاستثناءات القانونية الحتمية (مثل حالات التهديد الفعلي بالانتحار أو إيذاء الآخرين أو إساءة معاملة الأطفال). المشير المسيحي الأمين يعتبر خدمته وزنة مقدسة سيقدم عنها حساباً أمام الله والكنيسة والمجتمع.\", \"keyPoints\": [\"الميثاق الأخلاقي هو الدرع الذي يحمي المسترشد ويصون كرامة الخدمة الإرشادية في الكنيسة.\", \"تجنب العلاقات المزدوجة يحفظ المشير من تضارب المصالح ويضمن الموضوعية والحياد التام.\", \"حفظ الأمانة الإرشادية يتطلب التطوير العلمي المستمر والالتزام بالقواعد الأخلاقية والكنسية الرصينة.\"]}], \"keyTakeaways\": [\"المشورة المسيحية هي شراكة استبصار وتحرير مقدسة قائمة على الحب والمعرفة وليست مجرد إلقاء نصائح أو وعظ.\", \"الإنسان وحدة كلية متكاملة (روح ونفس وجسد)، ولا يمكن فصل الانكسار النفسي عن التحدي الروحي أو الجسدي.\", \"مثلث الأمان العلاجي المتمثل في القبول غير المشروط، والتعاطف، والسرية المطلقة هو صلب أي نجاح إرشادي.\", \"الإصغاء النشط ثلاثي الأبعاد والأسئلة السابرية المفتوحة هما أثمن أدوات المشير لتحفيز المسترشد على الوعي والتغيير.\", \"المشورة تسند البنية النفسية، وسر الاعتراف يمنح النعمة والغفران، والطب النفسي يعالج الخلل الكيميائي العصبي.\", \"العملية الإرشادية رحلة واضحة المعالم تبدأ بالتعاقد وتمتد عبر التغيير وتتوج بالاستقلال والإنهاء السليم.\", \"الوعي بآليات التحويل والتحويل المضاد يحمي المشير من التورط العاطفي ويصون سلامة المسترشد النفسية.\", \"الرعاية الذاتية والإشراف المشوري الدوري واجب إلزامي على كل مشير لحمايته من الاحتراق النفسي والإجهاد التعاطفي.\"], \"glossary\": [{\"term\": \"المشورة المسيحية (Christian Counseling)\", \"definition\": \"عملية تفاعلية علاجية تكاملية بين المشير والمسترشد تهدف إلى استكشاف المشكلات النفسية والعلائقية والروحية في ضوء الإعلان الكتابي والعلوم الإنسانية، لتحقيق الشفاء والنضج واستعادة الصورة الإلهية.\"}, {\"term\": \"المساحة الآمنة (Safe Space)\", \"definition\": \"البيئة العلاجية الوجدانية والمكانية التي يوفرها المشير وتتسم بالقبول غير المشروط، والتعاطف العميق، والسرية التامة، وتسمح للمسترشد بالتعبير عن أعمق مخاوفه دون خوف من الرفض أو الإدانة.\"}, {\"term\": \"القبول غير المشروط (Unconditional Positive Regard)\", \"definition\": \"موقف وجداني وأخلاقي ثابت يتبناه المشير نحو المسترشد بتقدير قيمته ككائن محبوب ومفتدى، مع التمييز الواضح بين قبول شخص المسترشد ورفض سلوكه الخاطئ.\"}, {\"term\": \"التعاطف النشط (Active Empathy)\", \"definition\": \"القدرة النفسية والوجدانية على إدراك مشاعر المسترشد ورؤية واقعه الداخلي من منظوره الشخصي دون التورط العاطفي أو فقدان الحياد الموضوعي.\"}, {\"term\": \"الإصغاء ثلاثي الأبعاد (Three-Dimensional Listening)\", \"definition\": \"مهارة إنصات متقدمة تركز على الاستماع للكلمات المنطوقة، ولغة الجسد غير اللفظية، والمشاعر الكامنة في نبرات الصوت ومحطات الصمت.\"}, {\"term\": \"التحويل والتحويل المضاد (Transference & Counter-transference)\", \"definition\": \"إسقاط لا واعي لمشاعر وصراعات سابقة من المسترشد على المشير، أو العكس من المشير على المسترشد، ويتطلب إدراكاً ويقظة صارمة لمنع تشويه العلاقة الإرشادية.\"}, {\"term\": \"المرونة النفسية (Psychological Resilience)\", \"definition\": \"القدرة النفسية والروحية على التكيف الإيجابي والصمود والتعافي السريع عند مواجهة الأزمات الحياتية والضغوط الشديدة دون انهيار.\"}, {\"term\": \"الاحتراق النفسي والإرهاق التعاطفي (Burnout & Compassion Fatigue)\", \"definition\": \"حالة من الإنهاك الجسدي والعاطفي والروحي تصيب المشير نتيجة التعرض المستمر لآلام المسترشدين وصدماتهم دون وجود رعاية ذاتية أو تفريغ سليم.\"}], \"reflectionQuestions\": [\"كيف يمكنك كمشير التمييز عملياً بين دورك في بناء الرصيد النفسي ودور الأب الكاهن في سر الاعتراف دون إحداث أي لبس لدى المسترشد؟\", \"تأمل في تجاربك الحياتية: ما هي 'الأكاذيب الجوهرية' الأكثر شيوعاً التي يتبناها الناس عن ذواتهم وكيف يسهم الإنجيل في كسرها؟\", \"ما هي العلامات المبكرة للتحويل والتحويل المضاد أو الإرهاق التعاطفي التي ينبغي عليك مراقبتها في نفسك لحماية أمانة خدمتك؟\", \"كيف تُوازن في جلسة المشورة بين إظهار القبول غير المشروط للمسترشد وبين رفض السلوكيات والأنماط المعطلة وغير المستقيمة؟\"]}",
     "quizQuestions": [],
     "lastPosition": 0
   },
