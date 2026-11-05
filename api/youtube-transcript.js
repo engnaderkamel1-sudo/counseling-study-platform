@@ -1,5 +1,6 @@
 // Vercel Serverless Function: Resilient YouTube Transcript Extractor
-// Employs the official Android InnerTube protocol to reliably retrieve verbatim captions without cloud IP blocking
+// Employs the official Android InnerTube protocol without exp=xpe restrictions
+// to reliably retrieve verbatim spoken captions
 
 function extractYouTubeId(url) {
   if (!url) return null;
@@ -79,6 +80,50 @@ function groupIntoParagraphs(chunks) {
   return paragraphs.join("\n\n");
 }
 
+function extractCaptionTracksFromHtml(html) {
+  if (!html) return [];
+  const idx = html.indexOf('"captionTracks":');
+  if (idx === -1) return [];
+  const startBracket = html.indexOf('[', idx);
+  if (startBracket === -1) return [];
+  let bracketCount = 0;
+  let inString = false;
+  let escape = false;
+  let endBracket = -1;
+  for (let i = startBracket; i < html.length; i++) {
+    const ch = html[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (ch === '[') bracketCount++;
+      else if (ch === ']') {
+        bracketCount--;
+        if (bracketCount === 0) {
+          endBracket = i;
+          break;
+        }
+      }
+    }
+  }
+  if (endBracket !== -1) {
+    try {
+      const jsonStr = html.substring(startBracket, endBracket + 1);
+      return JSON.parse(jsonStr);
+    } catch (e) {}
+  }
+  return [];
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -103,73 +148,45 @@ module.exports = async function handler(req, res) {
     }
 
     let captionTracks = [];
-
-    // Step 1: Fetch watch page to extract latest INNERTUBE_API_KEY
     let apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+
+    // Step 1: Query YouTube Android InnerTube directly (cleanest timedtext URLs without exp=xpe restriction)
     try {
-      const watchResp = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      const innertubeResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+        method: "POST",
         headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept-Language": "ar,en;q=0.9"
-        }
-      });
-      if (watchResp.ok) {
-        const html = await watchResp.text();
-        const mKey = html.match(/"INNERTUBE_API_KEY":\s*"([a-zA-Z0-9_-]+)"/);
-        if (mKey && mKey[1]) {
-          apiKey = mKey[1];
-        }
-        // Fallback: direct scrape captionTracks if already embedded in watch page
-        const mCaptions = html.match(/"captionTracks":\s*(\[.*?\])/);
-        if (mCaptions) {
-          try {
-            captionTracks = JSON.parse(mCaptions[1]);
-          } catch(e) {}
-        }
-      }
-    } catch(eWatch) {
-      console.warn("Watch page scrape note:", eWatch.message);
-    }
-
-    // Step 2: Use Android InnerTube client with the active API key
-    if (!captionTracks || !captionTracks.length) {
-      try {
-        const innertubeResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip"
+          "Content-Type": "application/json",
+          "User-Agent": "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip",
+          "Accept-Language": "en-US"
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: "ANDROID",
+              clientVersion: "20.10.38"
+            }
           },
-          body: JSON.stringify({
-            context: {
-              client: {
-                clientName: "ANDROID",
-                clientVersion: "20.10.38",
-                hl: "ar",
-                gl: "EG"
-              }
-            },
-            videoId: videoId
-          })
-        });
+          videoId: videoId
+        })
+      });
 
-        if (innertubeResp.ok) {
-          const pData = await innertubeResp.json();
-          captionTracks = pData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-        }
-      } catch (eInner) {
-        console.warn("InnerTube Android client error:", eInner.message);
+      if (innertubeResp.ok) {
+        const pData = await innertubeResp.json();
+        captionTracks = pData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
       }
+    } catch (eInner) {
+      console.warn("InnerTube Android error:", eInner.message);
     }
 
-    // Step 3: Fallback to iOS InnerTube client if Android client yielded nothing
+    // Step 2: Fallback to iOS InnerTube client if Android client yielded nothing
     if (!captionTracks || !captionTracks.length) {
       try {
         const iosResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "User-Agent": "com.google.ios.youtube/19.09.3 (iPhone; CPU iPhone OS 17_4 like Mac OS X)"
+            "User-Agent": "com.google.ios.youtube/19.09.3 (iPhone; CPU iPhone OS 17_4 like Mac OS X)",
+            "Accept-Language": "en-US"
           },
           body: JSON.stringify({
             context: {
@@ -177,9 +194,7 @@ module.exports = async function handler(req, res) {
                 clientName: "IOS",
                 clientVersion: "19.09.3",
                 deviceMake: "Apple",
-                deviceModel: "iPhone14,3",
-                hl: "ar",
-                gl: "EG"
+                deviceModel: "iPhone14,3"
               }
             },
             videoId: videoId
@@ -191,7 +206,25 @@ module.exports = async function handler(req, res) {
           captionTracks = iosData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
         }
       } catch (eIos) {
-        console.warn("InnerTube iOS client error:", eIos.message);
+        console.warn("InnerTube iOS error:", eIos.message);
+      }
+    }
+
+    // Step 3: Fallback to watch page scrape
+    if (!captionTracks || !captionTracks.length) {
+      try {
+        const watchResp = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US"
+          }
+        });
+        if (watchResp.ok) {
+          const html = await watchResp.text();
+          captionTracks = extractCaptionTracksFromHtml(html);
+        }
+      } catch (eWatch) {
+        console.warn("Watch page scrape note:", eWatch.message);
       }
     }
 
@@ -207,73 +240,113 @@ module.exports = async function handler(req, res) {
     // Prefer Arabic transcript, then any track containing 'ar', then first available
     let chosen = captionTracks.find(t => t.languageCode === "ar" || (t.vssId && t.vssId.includes(".ar")));
     if (!chosen) {
-      chosen = captionTracks.find(t => t.languageCode?.startsWith("ar") || (t.name?.simpleText && t.name.simpleText.includes("عربي")));
+      chosen = captionTracks.find(t => {
+        const lang = t.languageCode || "";
+        const name = t.name?.simpleText || (t.name?.runs && t.name.runs[0]?.text) || "";
+        return lang.startsWith("ar") || name.includes("عربي");
+      });
     }
     if (!chosen) {
       chosen = captionTracks[0];
     }
 
-    const subBaseUrl = chosen.baseUrl;
+    let subBaseUrl = chosen.baseUrl;
+    // Strip &exp=xpe if present to avoid empty response from timedtext server
+    if (subBaseUrl.includes("&exp=xpe")) {
+      subBaseUrl = subBaseUrl.replace("&exp=xpe", "").replace("exp=xpe&", "");
+    }
+
     let chunks = [];
 
-    // Attempt fetching and parsing subtitle body (supports Format 3 XML, Format 1 XML, and JSON3)
+    const parseBodyToChunks = (bodyText) => {
+      const parsed = [];
+      if (!bodyText) return parsed;
+
+      // 1. Try parsing Format 3 XML (<p t="123" d="456">...text...<s>...</s></p>)
+      if (bodyText.includes("<p t=")) {
+        const pRegex = /<p\s+t="(\d+)"(?:[^>]*?d="(\d+)")?[^>]*>([\s\S]*?)<\/p>/g;
+        let pm;
+        while ((pm = pRegex.exec(bodyText)) !== null) {
+          const tMs = parseInt(pm[1], 10) || 0;
+          const dMs = parseInt(pm[2], 10) || 0;
+          const rawText = cleanSubText(pm[3]);
+          if (rawText) {
+            parsed.push({ startMs: tMs, durMs: dMs, text: rawText });
+          }
+        }
+      }
+
+      // 2. Try parsing Format 1 XML (<text start="1.23" dur="4.56">text</text>)
+      if (!parsed.length && bodyText.includes("<text start=")) {
+        const textRegex = /<text\s+start="([\d\.]+)"(?:[^>]*?dur="([\d\.]+)")?[^>]*>([\s\S]*?)<\/text>/g;
+        let tm;
+        while ((tm = textRegex.exec(bodyText)) !== null) {
+          const startMs = Math.round(parseFloat(tm[1]) * 1000);
+          const durMs = Math.round(parseFloat(tm[2] || "0") * 1000);
+          const rawText = cleanSubText(tm[3]);
+          if (rawText) {
+            parsed.push({ startMs: startMs, durMs: durMs, text: rawText });
+          }
+        }
+      }
+
+      // 3. Try parsing JSON format
+      if (!parsed.length && bodyText.trim().startsWith("{")) {
+        try {
+          const subData = JSON.parse(bodyText);
+          const events = subData.events || [];
+          for (const ev of events) {
+            if (!ev.segs) continue;
+            const text = ev.segs.map(s => s.utf8 || "").join("");
+            if (text.trim()) {
+              parsed.push({
+                startMs: ev.tStartMs || 0,
+                durMs: ev.dDurationMs || 0,
+                text: cleanSubText(text)
+              });
+            }
+          }
+        } catch (eJson) {}
+      }
+
+      return parsed;
+    };
+
+    // Attempt 1: Fetch subBaseUrl directly
     try {
       const subResp = await fetch(subBaseUrl, {
-        headers: { "User-Agent": "Mozilla/5.0" }
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US"
+        }
       });
-
       if (subResp.ok) {
         const bodyText = await subResp.text();
-
-        // 1. Try parsing Format 3 XML (<p t="123" d="456">...text...<s>...</s></p>)
-        if (bodyText.includes("<p t=")) {
-          const pRegex = /<p\s+t="(\d+)"(?:[^>]*?d="(\d+)")?[^>]*>([\s\S]*?)<\/p>/g;
-          let pm;
-          while ((pm = pRegex.exec(bodyText)) !== null) {
-            const tMs = parseInt(pm[1], 10) || 0;
-            const dMs = parseInt(pm[2], 10) || 0;
-            const rawText = cleanSubText(pm[3]);
-            if (rawText) {
-              chunks.push({ startMs: tMs, durMs: dMs, text: rawText });
-            }
-          }
-        }
-
-        // 2. Try parsing Format 1 XML (<text start="1.23" dur="4.56">text</text>)
-        if (!chunks.length && bodyText.includes("<text start=")) {
-          const textRegex = /<text\s+start="([\d\.]+)"(?:[^>]*?dur="([\d\.]+)")?[^>]*>([\s\S]*?)<\/text>/g;
-          let tm;
-          while ((tm = textRegex.exec(bodyText)) !== null) {
-            const startMs = Math.round(parseFloat(tm[1]) * 1000);
-            const durMs = Math.round(parseFloat(tm[2] || "0") * 1000);
-            const rawText = cleanSubText(tm[3]);
-            if (rawText) {
-              chunks.push({ startMs: startMs, durMs: durMs, text: rawText });
-            }
-          }
-        }
-
-        // 3. Try parsing JSON format
-        if (!chunks.length && bodyText.trim().startsWith("{")) {
-          try {
-            const subData = JSON.parse(bodyText);
-            const events = subData.events || [];
-            for (const ev of events) {
-              if (!ev.segs) continue;
-              const text = ev.segs.map(s => s.utf8 || "").join("");
-              if (text.trim()) {
-                chunks.push({
-                  startMs: ev.tStartMs || 0,
-                  durMs: ev.dDurationMs || 0,
-                  text: text
-                });
-              }
-            }
-          } catch(eJson) {}
-        }
+        chunks = parseBodyToChunks(bodyText);
       }
     } catch (eFetchSub) {
       console.warn("Subtitle body fetch error:", eFetchSub.message);
+    }
+
+    // Attempt 2: If chunks empty, fetch with fmt=json3
+    if (!chunks.length) {
+      try {
+        const jsonUrl = subBaseUrl.includes("?")
+          ? subBaseUrl + "&fmt=json3"
+          : subBaseUrl + "?fmt=json3";
+        const jsonResp = await fetch(jsonUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US"
+          }
+        });
+        if (jsonResp.ok) {
+          const jsonBody = await jsonResp.text();
+          chunks = parseBodyToChunks(jsonBody);
+        }
+      } catch (eJsonFetch) {
+        console.warn("Subtitle json fetch error:", eJsonFetch.message);
+      }
     }
 
     if (!chunks.length) {
@@ -298,13 +371,13 @@ module.exports = async function handler(req, res) {
       transcript: formattedTranscript
     }));
 
-  } catch (error) {
-    console.error("API error in youtube-transcript handler:", error);
+  } catch (err) {
+    console.error("Unhandled transcript extractor error:", err);
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
     return res.end(JSON.stringify({
       success: false,
-      error: "خطأ داخلي أثناء استخراج تفريغ اليوتيوب: " + (error?.message || error)
+      error: "حدث خطأ غير متوقع أثناء معالجة تفريغ الفيديو: " + err.message
     }));
   }
 };
