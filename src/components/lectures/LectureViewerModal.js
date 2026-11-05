@@ -17,9 +17,13 @@ window.LectureViewerModal = function(props) {
 
   var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'transcript', 'slides', 'mindmap', 'quiz', 'handout', 'notes'
   var [isDisclaimerDismissed, setIsDisclaimerDismissed] = React.useState(false);
+  var [mediaStartSeconds, setMediaStartSeconds] = React.useState(null);
+  var [activeJumpTimestamp, setActiveJumpTimestamp] = React.useState("");
 
   React.useEffect(function() {
     setIsDisclaimerDismissed(false);
+    setMediaStartSeconds(null);
+    setActiveJumpTimestamp("");
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
@@ -878,13 +882,42 @@ window.LectureViewerModal = function(props) {
 
         activeLecture.mediaUrl ? React.createElement(
           "div",
-          { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
-          React.createElement("iframe", {
-            src: utils.getMediaEmbedUrl(activeLecture.mediaUrl),
-            className: "w-full h-full border-0",
-            allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-            allowFullScreen: true
-          })
+          { className: "space-y-2.5" },
+          mediaStartSeconds !== null && mediaStartSeconds > 0 && React.createElement(
+            "div",
+            { className: "p-2.5 px-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/30 text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2 animate-fadeIn" },
+            React.createElement("span", { className: "flex items-center gap-1.5" },
+              React.createElement("span", null, "🎯"),
+              React.createElement("span", null, "تم توجيه المشغل تلقائياً لموضع إجابة السؤال عند: " + (activeJumpTimestamp || (mediaStartSeconds + " ثانية")))
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setMediaStartSeconds(null); setActiveJumpTimestamp(""); },
+                className: "px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-[11px] text-amber-900 dark:text-amber-100 hover:bg-amber-50 dark:hover:bg-slate-700 font-bold transition-all cursor-pointer"
+              },
+              "إعادة الفيديو من البداية ⏪"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
+            React.createElement("iframe", {
+              key: "media-player-" + (mediaStartSeconds !== null ? mediaStartSeconds : "default"),
+              src: (function() {
+                var baseEmbed = utils.getMediaEmbedUrl(activeLecture.mediaUrl);
+                if (mediaStartSeconds !== null && mediaStartSeconds >= 0) {
+                  var sep = baseEmbed.indexOf("?") >= 0 ? "&" : "?";
+                  return baseEmbed + sep + "start=" + mediaStartSeconds + "&autoplay=1";
+                }
+                return baseEmbed;
+              })(),
+              className: "w-full h-full border-0",
+              allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+              allowFullScreen: true
+            })
+          )
         ) : (function() {
           return React.createElement(
             "div",
@@ -1552,20 +1585,20 @@ window.LectureViewerModal = function(props) {
             mediaUrl: activeLecture.mediaUrl,
             onJumpToTimestamp: function(timeStr) {
               if (!timeStr) return;
-              var clean = timeStr.toString().replace(/[^0-9:]/g, "");
-              var parts = clean.split(":").map(function(p) { return parseInt(p, 10) || 0; });
-              var sec = 0;
-              if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
-              else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
-              else sec = parseInt(clean, 10) || 0;
-
-              setActiveSubTab("media");
-              if (activeLecture.mediaUrl) {
-                var ytId = utils.getYouTubeVideoId ? utils.getYouTubeVideoId(activeLecture.mediaUrl) : "";
-                if (ytId) {
-                  window.open("https://www.youtube.com/watch?v=" + ytId + "&t=" + sec + "s", "_blank");
-                }
+              var sec = (utils && typeof utils.parseTimeToSeconds === "function")
+                ? utils.parseTimeToSeconds(timeStr)
+                : 0;
+              if (sec <= 0) {
+                var clean = timeStr.toString().replace(/[^0-9:]/g, "");
+                var parts = clean.split(":").map(function(p) { return parseInt(p, 10) || 0; });
+                if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
+                else sec = parseInt(clean, 10) || 0;
               }
+
+              setMediaStartSeconds(sec);
+              setActiveJumpTimestamp(timeStr);
+              setActiveSubTab("media");
             }
           }
         ) : 

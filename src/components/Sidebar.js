@@ -83,8 +83,8 @@ window.Sidebar = function(props) {
             React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white block" }, (currentUser && currentUser.fullName) || (isAdmin ? "مشرف المنصة" : "دارس")),
             currentUser && currentUser.studyType && React.createElement("span", { className: "text-[10px] text-slate-400 block" }, currentUser.studyType + " • " + (currentUser.studyYear || ""))
           ),
-          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
-            isAdmin ? "مشرف" : "دارس"
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : (props.isPreviewMode ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300")) },
+            isAdmin ? "مشرف" : (props.isPreviewMode ? "معاينة كدارس" : "دارس")
           )
         ),
         React.createElement(
@@ -110,6 +110,22 @@ window.Sidebar = function(props) {
         React.createElement(
           "div",
           { className: "space-y-2 pt-1 border-t border-slate-200/50 dark:border-slate-700/50" },
+          props.isRealAdmin && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                if (props.onTogglePreviewMode) props.onTogglePreviewMode();
+                if (props.onClose) props.onClose();
+              },
+              className: "w-full text-xs py-2 px-3 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs " +
+                (props.isPreviewMode
+                  ? "bg-amber-500 hover:bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-amber-500/20 animate-pulse"
+                  : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30")
+            },
+            React.createElement("span", null, props.isPreviewMode ? "🔙" : "👁️"),
+            React.createElement("span", null, props.isPreviewMode ? "إنهاء المعاينة والعودة للمشرف" : "الرؤية كمستخدم")
+          ),
           // زر تفعيل التنبيهات البارز
           React.createElement(
             "button",

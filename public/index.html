@@ -374,13 +374,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"9b6556c","date":"2026-11-05 12:14","message":"Remove saved progress timer from header, add exact video timestamp verification and jump button to quiz help"},{"hash":"1465a36","date":"2026-11-05 12:09","message":"Add dedicated in-tab regeneration buttons for Quiz and Illustrated Study Guide"},{"hash":"95628af","date":"2026-11-05 11:35","message":"Add quiz sourceQuote grounding, help hint button, and bulk questions manager view"},{"hash":"9b92466","date":"2026-11-05 11:03","message":"Deploy updated public build with corrected pyramid orientation and cache bust"},{"hash":"1c85d83","date":"2026-11-05 09:59","message":"Fix pyramid hierarchy orientation, eliminate text truncation, add dual-system and cycle archetypes with cognitive thinking heuristics"},{"hash":"8bc0b1c","date":"2026-11-05 09:04","message":"Merge visual diagrams contextually into Illustrated Study Guide with automatic backward compatibility for existing lectures"},{"hash":"9967ff2","date":"2026-11-05 08:38","message":"Add comprehensive publishing control: publish/unpublish all, per-pillar toggle, and publishing manager modal"},{"hash":"1de2342","date":"2026-11-04 15:43","message":"Enforce strict zero-hallucination and factual grounding rule across all AI educational services"},{"hash":"fd09c1b","date":"2026-11-04 15:35","message":"Upgrade visual diagrams to dynamic NotebookLM standard: adaptive count, deep counseling structures, and real-time visual feedback"},{"hash":"fb15794","date":"2026-11-04 15:12","message":"Streamline lecture pillars: remove slides \u0026 mindmap, integrate visual diagrams into package modal"},{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"},{"hash":"bce38d1","date":"2026-10-19 13:54","message":"perf(tts): adjust inter-chunk throttle pause to 1200ms"}];
+window.APP_UPDATES_HISTORY = [{"hash":"ab79575","date":"2026-11-05 12:23","message":"Fix quiz regeneration loading indicator and robust JSON parsing with quote sanitization"},{"hash":"9b6556c","date":"2026-11-05 12:14","message":"Remove saved progress timer from header, add exact video timestamp verification and jump button to quiz help"},{"hash":"1465a36","date":"2026-11-05 12:09","message":"Add dedicated in-tab regeneration buttons for Quiz and Illustrated Study Guide"},{"hash":"95628af","date":"2026-11-05 11:35","message":"Add quiz sourceQuote grounding, help hint button, and bulk questions manager view"},{"hash":"9b92466","date":"2026-11-05 11:03","message":"Deploy updated public build with corrected pyramid orientation and cache bust"},{"hash":"1c85d83","date":"2026-11-05 09:59","message":"Fix pyramid hierarchy orientation, eliminate text truncation, add dual-system and cycle archetypes with cognitive thinking heuristics"},{"hash":"8bc0b1c","date":"2026-11-05 09:04","message":"Merge visual diagrams contextually into Illustrated Study Guide with automatic backward compatibility for existing lectures"},{"hash":"9967ff2","date":"2026-11-05 08:38","message":"Add comprehensive publishing control: publish/unpublish all, per-pillar toggle, and publishing manager modal"},{"hash":"1de2342","date":"2026-11-04 15:43","message":"Enforce strict zero-hallucination and factual grounding rule across all AI educational services"},{"hash":"fd09c1b","date":"2026-11-04 15:35","message":"Upgrade visual diagrams to dynamic NotebookLM standard: adaptive count, deep counseling structures, and real-time visual feedback"},{"hash":"fb15794","date":"2026-11-04 15:12","message":"Streamline lecture pillars: remove slides \u0026 mindmap, integrate visual diagrams into package modal"},{"hash":"5096d72","date":"2026-11-04 15:00","message":"feat(visuals): add interactive VisualDiagramsViewer tab with pyramid, pie, comparison matrix, and metrics"},{"hash":"9eb6013","date":"2026-11-04 14:42","message":"feat(ai): upgrade lecture summary engine to NotebookLM standard with full transcript context and deep thematic analysis"},{"hash":"30f5a67","date":"2026-11-04 14:14","message":"feat(transcript): add prominent direct YouTube transcript fetch button to empty state"},{"hash":"9a55ea4","date":"2026-11-04 14:07","message":"feat(lectures): add 5th package item for YouTube transcript and persist custom numeric settings"},{"hash":"e7cd05e","date":"2026-11-04 13:45","message":"Restore original curriculum.pdf binary"},{"hash":"3f6be44","date":"2026-11-04 13:43","message":"Add AI disclaimer banner with dismiss button to lecture tools"},{"hash":"51a2f51","date":"2026-11-04 13:26","message":"fix(lectures): remove broken background audio gimmick and unused audio reader tab"},{"hash":"5efaa12","date":"2026-11-04 13:00","message":"fix(audio): switch lecture reader to official Egyptian Salma neural voice"},{"hash":"11039a4","date":"2026-11-04 12:53","message":"feat(transcript): add transcript editor modal and save lecture 1 transcript"},{"hash":"a3566dd","date":"2026-11-04 12:46","message":"feat(lectures): add manual quiz \u0026 slides editor and smart audio TTS reader"},{"hash":"92fcdc7","date":"2026-11-04 12:12","message":"feat(admin): add clear AI package button and reset legacy lectures with backup"},{"hash":"a516847","date":"2026-11-04 11:52","message":"feat: Configure automatic multi-model failover for free-tier resilience"},{"hash":"aa16905","date":"2026-11-04 11:44","message":"feat: Add full speech-extracted educational package for lecture 30-10, interactive mindmap drawer, and transcript tab"},{"hash":"36b0a3e","date":"2026-11-04 09:27","message":"fix(autoscroll): isolate scrolling to text container, respect disable state and user touch"},{"hash":"8d47519","date":"2026-11-04 09:24","message":"feat: Add 4-step sequential AI pipeline, JSON repair, and dynamic Base64 encoded central API key"},{"hash":"f6e208c","date":"2026-11-04 09:11","message":"fix(modal): fix gear button error in subtitles panel and bump cache version"},{"hash":"45fa38a","date":"2026-11-03 15:28","message":"feat: Add comprehensive AI educational package with interactive slides, mind map, quiz, and draft-publish controls"},{"hash":"0bc1048","date":"2026-11-03 14:23","message":"fix(cache): add comprehensive local cache purge to header reload button"},{"hash":"81261b7","date":"2026-11-03 14:21","message":"fix(cache): enforce cloud-authoritative text and duration-bound subtitle cache key"},{"hash":"962b447","date":"2026-11-03 13:57","message":"feat(lectures): add quick action and support for multiple sessions on the same date"},{"hash":"5ed7af1","date":"2026-11-02 15:26","message":"feat(subtitles): smart cache invalidation and cloud-authoritative offset to prevent stale caching"},{"hash":"60c3c3c","date":"2026-11-02 15:09","message":"fix(subtitles): clean chap 10 duplicate text, realign subtitles, and add asyncSubtitles dependency in viewer"},{"hash":"111177c","date":"2026-11-02 14:01","message":"feat(subtitles): enable accurate subcollection per-chapter subtitles with instant SDK and REST loading"},{"hash":"bfc8388","date":"2026-11-02 09:35","message":"fix(push): set high urgency header and absolute icon paths for instant mobile delivery"},{"hash":"3e01074","date":"2026-11-02 09:28","message":"feat(notifications): add Web Push background notifications and fix past alerts bug"},{"hash":"5bf8d58","date":"2026-10-28 09:32","message":"fix(audio): link all 11 book chapters to permanent Google Drive audio streams and bump sw cache"},{"hash":"7da2896","date":"2026-10-28 09:29","message":"fix(curriculum): remove canvas toggle, hide side thumbnails, and optimize full screen for wide single page view"},{"hash":"90bf89c","date":"2026-10-28 09:14","message":"fix(curriculum): enable native high-definition vector PDF viewer for pristine Arabic font rendering"},{"hash":"f63d31a","date":"2026-10-28 09:04","message":"feat: place curriculum assets at root for direct vercel static delivery"},{"hash":"463cf69","date":"2026-10-28 09:04","message":"feat: integrate official year 1 curriculum with interactive viewer, subject division, and direct lecture navigation"},{"hash":"a8b5920","date":"2026-10-19 17:04","message":"docs: add rule 7 for REST-First architecture and empty-state immunity"},{"hash":"70c9b51","date":"2026-10-19 16:57","message":"fix(auth): use REST API first for login verification to prevent offline error on mobile"},{"hash":"0bf7f51","date":"2026-10-19 15:33","message":"fix: auto-logout when user doc deleted from Firestore"},{"hash":"a524bf0","date":"2026-10-19 15:29","message":"fix: remove setIsLoading(true) from fetchUsers, REST-first no-spinner approach prevents users disappearing"},{"hash":"7df838e","date":"2026-10-19 15:22","message":"fix: use REST API for user write in registration, add hasDelivered guard to prevent users disappearing"},{"hash":"90cbb8f","date":"2026-10-19 15:14","message":"fix: guard empty cloud list in lectures, users REST-first fetch, default filter all, reg offline fix"},{"hash":"71b37b5","date":"2026-10-19 14:58","message":"fix(lectures): restore lectures with direct REST fetch, fallback seed, and resilient sync"},{"hash":"c663980","date":"2026-10-19 14:34","message":"fix(sync): protect chapter audio URLs from overwrite and sync local storage with cloud"},{"hash":"c23492c","date":"2026-10-19 14:00","message":"fix(synthesize): decode utf-8-sig to handle Windows BOM and normalize bullets"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793874094",
-  buildTime: "2026-11-05T10:21:34",
+  version: "1.2.1793875110",
+  buildTime: "2026-11-05T10:38:30",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -6084,13 +6084,41 @@ window.APP_UTILS = window.utils = {
 };
 
 // Module: utils/embedHelpers.js
+// دالة استخراج معرف فيديو يوتيوب المكون من 11 حرفاً
+window.APP_UTILS.getYouTubeVideoId = function(url) {
+  if (!url) return "";
+  var m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  return (m && m[1]) ? m[1] : "";
+};
+
+// دالة تحويل أي نص توقيت (سواء بأرقام عربية مشرقية أو إنجليزية أو بصيغة ساعات ودقائق) إلى ثوانٍ بدقة
+window.APP_UTILS.parseTimeToSeconds = function(timeStr) {
+  if (!timeStr) return 0;
+  var str = String(timeStr).trim();
+  var arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  for (var i = 0; i < 10; i++) {
+    str = str.replace(new RegExp(arabicDigits[i], "g"), i.toString());
+  }
+  var clean = str.replace(/[^0-9:]/g, "");
+  if (!clean) return 0;
+  var parts = clean.split(":").map(function(n) { return parseInt(n, 10) || 0; });
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 1) {
+    return parts[0] || 0;
+  }
+  return 0;
+};
+
 // دالة استخراج وتضمين يوتيوب أو جوجل درايف
 window.APP_UTILS.getMediaEmbedUrl = function(url) {
   if (!url) return "";
   // فحص يوتيوب
-  var ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  if (ytMatch && ytMatch[1]) {
-    return "https://www.youtube.com/embed/" + ytMatch[1];
+  var ytId = window.APP_UTILS.getYouTubeVideoId(url);
+  if (ytId) {
+    return "https://www.youtube.com/embed/" + ytId;
   }
   // فحص جوجل درايف
   var driveId = window.APP_UTILS.extractDriveId(url);
@@ -6464,8 +6492,8 @@ window.Sidebar = function(props) {
             React.createElement("span", { className: "text-sm font-bold text-slate-900 dark:text-white block" }, (currentUser && currentUser.fullName) || (isAdmin ? "مشرف المنصة" : "دارس")),
             currentUser && currentUser.studyType && React.createElement("span", { className: "text-[10px] text-slate-400 block" }, currentUser.studyType + " • " + (currentUser.studyYear || ""))
           ),
-          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
-            isAdmin ? "مشرف" : "دارس"
+          React.createElement("span", { className: "text-[11px] px-2 py-0.5 rounded-md font-bold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : (props.isPreviewMode ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300")) },
+            isAdmin ? "مشرف" : (props.isPreviewMode ? "معاينة كدارس" : "دارس")
           )
         ),
         React.createElement(
@@ -6491,6 +6519,22 @@ window.Sidebar = function(props) {
         React.createElement(
           "div",
           { className: "space-y-2 pt-1 border-t border-slate-200/50 dark:border-slate-700/50" },
+          props.isRealAdmin && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() {
+                if (props.onTogglePreviewMode) props.onTogglePreviewMode();
+                if (props.onClose) props.onClose();
+              },
+              className: "w-full text-xs py-2 px-3 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs " +
+                (props.isPreviewMode
+                  ? "bg-amber-500 hover:bg-amber-400 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-amber-500/20 animate-pulse"
+                  : "bg-amber-500/10 hover:bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/30")
+            },
+            React.createElement("span", null, props.isPreviewMode ? "🔙" : "👁️"),
+            React.createElement("span", null, props.isPreviewMode ? "إنهاء المعاينة والعودة للمشرف" : "الرؤية كمستخدم")
+          ),
           // زر تفعيل التنبيهات البارز
           React.createElement(
             "button",
@@ -6601,7 +6645,9 @@ window.Header = function(props) {
   var onOpenAuth = props.onOpenAuth;
   var onOpenNotifications = props.onOpenNotifications;
   var unreadNotificationsCount = props.unreadNotificationsCount || 0;
-  var isAdmin = !!(currentUser && currentUser.role === "admin");
+  var isRealAdmin = props.isRealAdmin !== undefined ? props.isRealAdmin : !!(currentUser && currentUser.role === "admin");
+  var isPreviewMode = !!props.isPreviewMode;
+  var isAdmin = !isPreviewMode && !!(currentUser && currentUser.role === "admin");
   var isDismissed = props.isTopResumeDismissed !== undefined ? props.isTopResumeDismissed : isTopResumeDismissed;
   var utils = window.APP_UTILS || {};
   var formatAudioTime = function(sec) {
@@ -6618,11 +6664,11 @@ window.Header = function(props) {
     },
     React.createElement(
       "div",
-      { className: "px-4 md:px-8 h-16 flex items-center justify-between" },
+      { className: "px-2.5 sm:px-4 md:px-8 h-16 flex items-center justify-between" },
 
       React.createElement(
         "div",
-        { className: "flex items-center gap-3" },
+        { className: "flex items-center gap-2 sm:gap-3 shrink-0 min-w-0" },
         React.createElement(
           "button",
           {
@@ -6635,19 +6681,39 @@ window.Header = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-2.5" },
-          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-8 h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
           React.createElement(
             "div",
             { className: "flex flex-col" },
-            React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight" }, "الرفيق الذكي"),
-            React.createElement("span", { className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-none hidden xs:inline" }, "لدارسي معهد المشورة")
+            React.createElement("h1", { className: "text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate" }, "الرفيق الذكي"),
+            React.createElement("span", { className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-none hidden md:inline" }, "لدارسي معهد المشورة")
           )
         )
       ),
 
       React.createElement(
         "div",
-        { className: "flex items-center gap-1 sm:gap-2" },
+        { className: "flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0" },
+
+        // زر الرؤية كمستخدم للأدمن فقط (بتصميم متجاوب واقتصادي جداً للموبايل)
+        isRealAdmin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: props.onTogglePreviewMode,
+            title: isPreviewMode ? "إنهاء المعاينة والعودة لصلاحيات المشرف" : "معاينة المنصة كمستخدم (دارس) للتأكد مما يراه الدارس",
+            className: "flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl font-black transition-all active:scale-95 text-xs shadow-2xs shrink-0 select-none " +
+              (isPreviewMode
+                ? "bg-amber-500 hover:bg-amber-400 text-slate-950 ring-2 ring-amber-400/60 shadow-amber-500/30 animate-pulse"
+                : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/40")
+          },
+          React.createElement("span", { className: "text-xs shrink-0" }, isPreviewMode ? "🔙" : "👁️"),
+          React.createElement(
+            "span",
+            { className: "whitespace-nowrap text-[11px] sm:text-xs" },
+            isPreviewMode ? "إنهاء المعاينة" : "الرؤية كمستخدم"
+          )
+        ),
 
         // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
         currentUser && (function() {
@@ -6658,18 +6724,18 @@ window.Header = function(props) {
             "div",
             {
               onClick: onOpenAuth,
-              title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
-              className: "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs shrink-0"
+              title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : (isPreviewMode ? " (وضع المعاينة)" : " (دارس)")),
+              className: "flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs shrink-0"
             },
-            React.createElement("span", { className: "w-2 h-2 rounded-full shrink-0 " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+            React.createElement("span", { className: "w-2 h-2 rounded-full shrink-0 " + (isRealAdmin ? (isPreviewMode ? "bg-amber-500" : "bg-purple-500") : "bg-emerald-500") }),
             React.createElement(
               "span",
-              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px] sm:max-w-[140px]" },
+              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[45px] min-[390px]:max-w-[70px] sm:max-w-[140px]" },
               React.createElement("span", { className: "hidden sm:inline" }, timeGreeting + "، "),
               displayName
             ),
-            React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
-              isAdmin ? "مشرف" : "دارس"
+            React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : (isPreviewMode ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300")) },
+              isAdmin ? "مشرف" : (isPreviewMode ? "معاينة" : "دارس")
             )
           );
         })(),
@@ -6712,7 +6778,7 @@ window.Header = function(props) {
               window.location.reload(true);
             },
             title: "تحديث فوري وإفراغ الذاكرة المؤقتة",
-            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-all text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-95"
+            className: "w-8 h-8 sm:w-auto flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-all text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-95 shrink-0"
           },
           React.createElement("span", null, "🔄"),
           React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
@@ -6724,7 +6790,7 @@ window.Header = function(props) {
           {
             onClick: onOpenNotifications,
             title: unreadNotificationsCount > 0 ? ("لديك " + unreadNotificationsCount + " إشعار جديد") : "مركز الإشعارات والتنبيهات",
-            className: "relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all text-sm border border-slate-200 dark:border-slate-700 active:scale-95"
+            className: "relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all text-sm border border-slate-200 dark:border-slate-700 active:scale-95 shrink-0"
           },
           React.createElement("span", null, "🔔"),
           unreadNotificationsCount > 0 && React.createElement(
@@ -6740,7 +6806,7 @@ window.Header = function(props) {
           {
             onClick: onToggleTheme,
             title: "تبديل المظهر",
-            className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
+            className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm shrink-0"
           },
           theme === "dark" ? "☀️" : "🌙"
         )
@@ -15312,6 +15378,7 @@ window.LectureRow = function(props) {
 // مكون مشغل الكويز والاختبار التفاعلي الشامل (Responsive Interactive Quiz Viewer)
 // متجاوب بالكامل مع شاشات الموبايل والمتصفحات مع تصحيح فوري وتفسير تعليمي وإمكانية التحرير والحذف والإضافة للمشرف
 window.InteractiveQuizViewer = function(props) {
+  var utils = window.APP_UTILS || {};
   var quizData = props.quiz || [];
   var questions = Array.isArray(quizData) ? quizData : (quizData.questions || []);
   var isDraft = props.isDraft;
@@ -16171,22 +16238,45 @@ window.InteractiveQuizViewer = function(props) {
             { className: "flex items-center gap-2" },
             React.createElement("span", { className: "font-mono font-black px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/80 text-amber-950 dark:text-amber-100 text-xs" }, "⏱️ " + currentQuestion.timestamp),
             (onJumpToTimestamp || mediaUrl) && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() {
-                  if (onJumpToTimestamp) onJumpToTimestamp(currentQuestion.timestamp);
-                  else if (mediaUrl) {
-                    var clean = currentQuestion.timestamp.replace(/[^0-9:]/g, "");
-                    var p = clean.split(":").map(function(n) { return parseInt(n, 10) || 0; });
-                    var sec = p.length === 2 ? (p[0] * 60 + p[1]) : (p.length === 3 ? (p[0] * 3600 + p[1] * 60 + p[2]) : parseInt(clean, 10) || 0);
-                    window.open(mediaUrl + (mediaUrl.indexOf("?") >= 0 ? "&" : "?") + "t=" + sec + "s", "_blank");
-                  }
+              "div",
+              { className: "flex items-center gap-1.5 flex-wrap" },
+              onJumpToTimestamp && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() {
+                    onJumpToTimestamp(currentQuestion.timestamp);
+                  },
+                  title: "الانتقال لمشغل الفيديو المدمج في المنصة مباشرة",
+                  className: "px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
                 },
-                className: "px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
-              },
-              React.createElement("span", null, "🎬"),
-              React.createElement("span", null, "استمع للمحاضر في الفيديو")
+                React.createElement("span", null, "🎬"),
+                React.createElement("span", null, "استمع في المشغل")
+              ),
+              mediaUrl && (function() {
+                var sec = (utils && typeof utils.parseTimeToSeconds === "function")
+                  ? utils.parseTimeToSeconds(currentQuestion.timestamp)
+                  : 0;
+                var ytId = (utils && typeof utils.getYouTubeVideoId === "function")
+                  ? utils.getYouTubeVideoId(mediaUrl)
+                  : "";
+                var externalUrl = ytId
+                  ? ("https://youtu.be/" + ytId + (sec > 0 ? ("?t=" + sec) : ""))
+                  : (mediaUrl + (mediaUrl.indexOf("?") >= 0 ? "&" : "?") + "t=" + sec);
+                return React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      window.open(externalUrl, "_blank");
+                    },
+                    title: "فتح في تطبيق يوتيوب عند نفس التوقيت بالثانية",
+                    className: "px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  },
+                  React.createElement("span", null, "↗️"),
+                  React.createElement("span", null, "يوتيوب")
+                );
+              })()
             )
           )
         ),
@@ -16838,9 +16928,13 @@ window.LectureViewerModal = function(props) {
 
   var [activeSubTab, setActiveSubTab] = React.useState("media"); // 'media', 'summary', 'transcript', 'slides', 'mindmap', 'quiz', 'handout', 'notes'
   var [isDisclaimerDismissed, setIsDisclaimerDismissed] = React.useState(false);
+  var [mediaStartSeconds, setMediaStartSeconds] = React.useState(null);
+  var [activeJumpTimestamp, setActiveJumpTimestamp] = React.useState("");
 
   React.useEffect(function() {
     setIsDisclaimerDismissed(false);
+    setMediaStartSeconds(null);
+    setActiveJumpTimestamp("");
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
@@ -17699,13 +17793,42 @@ window.LectureViewerModal = function(props) {
 
         activeLecture.mediaUrl ? React.createElement(
           "div",
-          { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
-          React.createElement("iframe", {
-            src: utils.getMediaEmbedUrl(activeLecture.mediaUrl),
-            className: "w-full h-full border-0",
-            allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-            allowFullScreen: true
-          })
+          { className: "space-y-2.5" },
+          mediaStartSeconds !== null && mediaStartSeconds > 0 && React.createElement(
+            "div",
+            { className: "p-2.5 px-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/30 text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center justify-between gap-2 animate-fadeIn" },
+            React.createElement("span", { className: "flex items-center gap-1.5" },
+              React.createElement("span", null, "🎯"),
+              React.createElement("span", null, "تم توجيه المشغل تلقائياً لموضع إجابة السؤال عند: " + (activeJumpTimestamp || (mediaStartSeconds + " ثانية")))
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setMediaStartSeconds(null); setActiveJumpTimestamp(""); },
+                className: "px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-[11px] text-amber-900 dark:text-amber-100 hover:bg-amber-50 dark:hover:bg-slate-700 font-bold transition-all cursor-pointer"
+              },
+              "إعادة الفيديو من البداية ⏪"
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full rounded-2xl overflow-hidden bg-slate-950 aspect-video md:aspect-[21/9] flex items-center justify-center relative shadow-inner" },
+            React.createElement("iframe", {
+              key: "media-player-" + (mediaStartSeconds !== null ? mediaStartSeconds : "default"),
+              src: (function() {
+                var baseEmbed = utils.getMediaEmbedUrl(activeLecture.mediaUrl);
+                if (mediaStartSeconds !== null && mediaStartSeconds >= 0) {
+                  var sep = baseEmbed.indexOf("?") >= 0 ? "&" : "?";
+                  return baseEmbed + sep + "start=" + mediaStartSeconds + "&autoplay=1";
+                }
+                return baseEmbed;
+              })(),
+              className: "w-full h-full border-0",
+              allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+              allowFullScreen: true
+            })
+          )
         ) : (function() {
           return React.createElement(
             "div",
@@ -18373,20 +18496,20 @@ window.LectureViewerModal = function(props) {
             mediaUrl: activeLecture.mediaUrl,
             onJumpToTimestamp: function(timeStr) {
               if (!timeStr) return;
-              var clean = timeStr.toString().replace(/[^0-9:]/g, "");
-              var parts = clean.split(":").map(function(p) { return parseInt(p, 10) || 0; });
-              var sec = 0;
-              if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
-              else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
-              else sec = parseInt(clean, 10) || 0;
-
-              setActiveSubTab("media");
-              if (activeLecture.mediaUrl) {
-                var ytId = utils.getYouTubeVideoId ? utils.getYouTubeVideoId(activeLecture.mediaUrl) : "";
-                if (ytId) {
-                  window.open("https://www.youtube.com/watch?v=" + ytId + "&t=" + sec + "s", "_blank");
-                }
+              var sec = (utils && typeof utils.parseTimeToSeconds === "function")
+                ? utils.parseTimeToSeconds(timeStr)
+                : 0;
+              if (sec <= 0) {
+                var clean = timeStr.toString().replace(/[^0-9:]/g, "");
+                var parts = clean.split(":").map(function(p) { return parseInt(p, 10) || 0; });
+                if (parts.length === 3) sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+                else if (parts.length === 2) sec = parts[0] * 60 + parts[1];
+                else sec = parseInt(clean, 10) || 0;
               }
+
+              setMediaStartSeconds(sec);
+              setActiveJumpTimestamp(timeStr);
+              setActiveSubTab("media");
             }
           }
         ) : 
@@ -21671,9 +21794,28 @@ window.BooksPage = function(props) {
     return utils.getLocal("counsel_preview_as_student", false);
   });
 
-  var isRealAdmin = currentUser && currentUser.role === "admin";
-  var effectiveUser = (isRealAdmin && previewAsStudent)
-    ? Object.assign({}, currentUser, { role: "student" })
+  React.useEffect(function() {
+    var handleSync = function(e) {
+      if (e && e.detail && e.detail.previewAsStudent !== undefined) {
+        setPreviewAsStudent(e.detail.previewAsStudent);
+      } else {
+        setPreviewAsStudent(utils.getLocal("counsel_preview_as_student", false));
+      }
+    };
+    window.addEventListener("counsel_preview_mode_change", handleSync);
+    return function() {
+      window.removeEventListener("counsel_preview_mode_change", handleSync);
+    };
+  }, []);
+
+  var isRealAdmin = props.isRealAdmin !== undefined
+    ? props.isRealAdmin
+    : (currentUser && currentUser.role === "admin");
+  var isPreviewActive = props.isPreviewMode !== undefined
+    ? props.isPreviewMode
+    : previewAsStudent;
+  var effectiveUser = (isRealAdmin && isPreviewActive)
+    ? Object.assign({}, currentUser, { role: "student", isPreviewMode: true })
     : currentUser;
   var isAdmin = effectiveUser && effectiveUser.role === "admin";
 
@@ -24484,16 +24626,23 @@ window.BooksPage = function(props) {
           {
             type: "button",
             onClick: function() {
-              var nextVal = !previewAsStudent;
-              setPreviewAsStudent(nextVal);
-              utils.setLocal("counsel_preview_as_student", nextVal);
+              if (props.onTogglePreviewMode) {
+                props.onTogglePreviewMode();
+              } else {
+                var nextVal = !previewAsStudent;
+                setPreviewAsStudent(nextVal);
+                utils.setLocal("counsel_preview_as_student", nextVal);
+                try {
+                  window.dispatchEvent(new CustomEvent("counsel_preview_mode_change", { detail: { previewAsStudent: nextVal } }));
+                } catch (e) {}
+              }
             },
             className: "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 " +
-              (previewAsStudent
+              (isPreviewActive
                 ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-amber-500/30"
                 : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700")
           },
-          React.createElement("span", null, previewAsStudent ? "🔙 إنهاء معاينة الطالب" : "👁️ معاينة كطالب")
+          React.createElement("span", null, isPreviewActive ? "🔙 إنهاء المعاينة" : "👁️ الرؤية كمستخدم")
         ),
         isAdmin && React.createElement(
           "button",
@@ -24562,7 +24711,7 @@ window.BooksPage = function(props) {
     ),
 
     // شريط إشعار وضع المعاينة كطالب للأدمن
-    previewAsStudent && isRealAdmin && React.createElement(
+    previewAsStudent && isRealAdmin && props.isPreviewMode === undefined && React.createElement(
       "div",
       { className: "p-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-transparent border-2 border-amber-500/50 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-md animate-fade-in" },
       React.createElement("div", { className: "flex items-center gap-2.5" },
@@ -31328,6 +31477,43 @@ function App() {
     window.currentUser = currentUser;
   }, [currentUser]);
 
+  // وضع المعاينة كمستخدم (الرؤية كمستخدم) خاص بالمشرف للتأكد مما يراه الطالب
+  var [previewAsStudent, setPreviewAsStudent] = React.useState(function() {
+    return !!(utils && utils.getLocal && utils.getLocal("counsel_preview_as_student", false));
+  });
+
+  var isRealAdmin = !!(currentUser && currentUser.role === "admin");
+  var isPreviewMode = isRealAdmin && previewAsStudent;
+  var effectiveUser = isPreviewMode
+    ? Object.assign({}, currentUser, { role: "student", isPreviewMode: true })
+    : currentUser;
+
+  var handleTogglePreviewMode = function() {
+    if (!isRealAdmin) return;
+    var nextVal = !previewAsStudent;
+    setPreviewAsStudent(nextVal);
+    if (utils && utils.setLocal) {
+      utils.setLocal("counsel_preview_as_student", nextVal);
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("counsel_preview_mode_change", { detail: { previewAsStudent: nextVal } }));
+    } catch (e) {}
+  };
+
+  React.useEffect(function() {
+    var handleSync = function(e) {
+      if (e && e.detail && e.detail.previewAsStudent !== undefined) {
+        setPreviewAsStudent(e.detail.previewAsStudent);
+      } else if (utils && utils.getLocal) {
+        setPreviewAsStudent(!!utils.getLocal("counsel_preview_as_student", false));
+      }
+    };
+    window.addEventListener("counsel_preview_mode_change", handleSync);
+    return function() {
+      window.removeEventListener("counsel_preview_mode_change", handleSync);
+    };
+  }, []);
+
   // عدد طلبات الانضمام المعلقة في انتظار المشرف
   var [pendingUsersCount, setPendingUsersCount] = React.useState(0);
 
@@ -31366,12 +31552,16 @@ function App() {
           } else if (uData.status === "rejected" || uData.status === "pending") {
             alert("تنبيه: تم تعليق حسابك أو تعديل حالته من قِبل مشرف المنصة.");
             utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
             setCurrentUser(null);
           }
         } else if (!doc.metadata || !doc.metadata.fromCache) {
           // المستخدم اتحذف من Firestore — تسجيل خروج فوري
           alert("تنبيه: تم حذف حسابك من المنصة من قِبل المشرف.");
           utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
           setCurrentUser(null);
         }
       }, function(err) {
@@ -31383,12 +31573,12 @@ function App() {
 
   // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
   React.useEffect(function() {
-    if (currentUser && currentUser.role !== "admin") {
+    if (effectiveUser && effectiveUser.role !== "admin") {
       if (activeTab === "users" || activeTab === "errors" || activeTab === "settings" || activeTab === "updates") {
         setActiveTab("lectures");
       }
     }
-  }, [currentUser, activeTab]);
+  }, [effectiveUser, activeTab]);
 
   var [theme, setTheme] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.theme, "light");
@@ -31457,6 +31647,8 @@ function App() {
   var handleLogout = function() {
     if (confirm("هل تريد بالتأكيد تسجيل الخروج من حسابك؟")) {
       utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
       setCurrentUser(null);
       setIsSidebarOpen(false);
       if (window.auth && typeof window.auth.signOut === "function") {
@@ -31495,9 +31687,12 @@ function App() {
     React.createElement(window.Sidebar, {
       activeTab: activeTab,
       onTabChange: setActiveTab,
-      currentUser: currentUser,
+      currentUser: effectiveUser,
       onOpenAuth: function() { setIsAuthOpen(true); },
       onLogout: handleLogout,
+      isRealAdmin: isRealAdmin,
+      isPreviewMode: isPreviewMode,
+      onTogglePreviewMode: handleTogglePreviewMode,
       pendingCount: pendingUsersCount,
       isOpen: isSidebarOpen,
       onClose: function() { setIsSidebarOpen(false); },
@@ -31562,7 +31757,10 @@ function App() {
             onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
             theme: theme,
             onToggleTheme: handleToggleTheme,
-            currentUser: currentUser,
+            currentUser: effectiveUser,
+            isRealAdmin: isRealAdmin,
+            isPreviewMode: isPreviewMode,
+            onTogglePreviewMode: handleTogglePreviewMode,
             onOpenAuth: function() { setIsAuthOpen(true); },
             onLogout: handleLogout,
             onOpenErrorReport: function() { setIsErrorReportOpen(true); },
@@ -31579,6 +31777,34 @@ function App() {
             onResumeAudio: handleGlobalResumeAudio
           });
         })(),
+
+        // شريط التنبيه الدائم بوضع الرؤية كمستخدم للأدمن
+        isPreviewMode && React.createElement(
+          "div",
+          {
+            className: "bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 px-3 sm:px-6 py-2 text-xs font-bold flex items-center justify-between shadow-md border-b border-amber-600 animate-in fade-in"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 min-w-0 flex-1" },
+            React.createElement("span", { className: "text-base shrink-0 animate-pulse" }, "👁️"),
+            React.createElement(
+              "div",
+              { className: "truncate" },
+              React.createElement("span", { className: "font-black" }, "وضع «الرؤية كمستخدم» مفعّل: "),
+              React.createElement("span", { className: "text-slate-950/90 hidden xs:inline" }, "المنصة معروضة تماماً كما يراها الطالب (أدوات الإدارة مخفية).")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleTogglePreviewMode,
+              className: "bg-slate-950 hover:bg-slate-900 text-amber-300 px-3 py-1 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 shrink-0 flex items-center gap-1 mr-2"
+            },
+            "🔙 إنهاء المعاينة والعودة للمشرف"
+          )
+        ),
 
         // شريط تنبيه بث زوم المباشر أو التذكير بمحاضرة اليوم / غداً
         (function() {
@@ -31698,7 +31924,9 @@ function App() {
             if (hasUpdateAvailable) count++;
             if (hasTopZoom) count++;
             if (hasTopResume) count++;
-            if (count >= 3) return "pt-44 sm:pt-48";
+            if (isPreviewMode) count++;
+            if (count >= 4) return "pt-52 sm:pt-56";
+            if (count === 3) return "pt-44 sm:pt-48";
             if (count === 2) return "pt-36 sm:pt-40";
             if (count === 1) return "pt-28 sm:pt-32";
             return "pt-20 sm:pt-22";
@@ -31708,7 +31936,7 @@ function App() {
           "div",
           { className: activeTab === "lectures" ? "block" : "hidden" },
           React.createElement(window.LecturesPage, {
-            currentUser: currentUser,
+            currentUser: effectiveUser,
             onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
           })
         ),
@@ -31716,17 +31944,20 @@ function App() {
           "div",
           { className: activeTab === "books" ? "block" : "hidden" },
           React.createElement(window.BooksPage, {
-            currentUser: currentUser,
+            currentUser: effectiveUser,
+            isRealAdmin: isRealAdmin,
+            isPreviewMode: isPreviewMode,
+            onTogglePreviewMode: handleTogglePreviewMode,
             onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
           })
         ),
-        activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: currentUser }),
-        activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
-        activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
-        activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
-        activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: currentUser }),
-        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser }),
-        activeTab === "updates" && React.createElement(window.UpdatesPage, { currentUser: currentUser })
+        activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: effectiveUser }),
+        activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: effectiveUser }),
+        activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: effectiveUser }),
+        activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: effectiveUser }),
+        activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: effectiveUser }),
+        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: effectiveUser }),
+        activeTab === "updates" && React.createElement(window.UpdatesPage, { currentUser: effectiveUser })
       )
     ),
 

@@ -1,6 +1,7 @@
 // مكون مشغل الكويز والاختبار التفاعلي الشامل (Responsive Interactive Quiz Viewer)
 // متجاوب بالكامل مع شاشات الموبايل والمتصفحات مع تصحيح فوري وتفسير تعليمي وإمكانية التحرير والحذف والإضافة للمشرف
 window.InteractiveQuizViewer = function(props) {
+  var utils = window.APP_UTILS || {};
   var quizData = props.quiz || [];
   var questions = Array.isArray(quizData) ? quizData : (quizData.questions || []);
   var isDraft = props.isDraft;
@@ -860,22 +861,45 @@ window.InteractiveQuizViewer = function(props) {
             { className: "flex items-center gap-2" },
             React.createElement("span", { className: "font-mono font-black px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/80 text-amber-950 dark:text-amber-100 text-xs" }, "⏱️ " + currentQuestion.timestamp),
             (onJumpToTimestamp || mediaUrl) && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() {
-                  if (onJumpToTimestamp) onJumpToTimestamp(currentQuestion.timestamp);
-                  else if (mediaUrl) {
-                    var clean = currentQuestion.timestamp.replace(/[^0-9:]/g, "");
-                    var p = clean.split(":").map(function(n) { return parseInt(n, 10) || 0; });
-                    var sec = p.length === 2 ? (p[0] * 60 + p[1]) : (p.length === 3 ? (p[0] * 3600 + p[1] * 60 + p[2]) : parseInt(clean, 10) || 0);
-                    window.open(mediaUrl + (mediaUrl.indexOf("?") >= 0 ? "&" : "?") + "t=" + sec + "s", "_blank");
-                  }
+              "div",
+              { className: "flex items-center gap-1.5 flex-wrap" },
+              onJumpToTimestamp && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() {
+                    onJumpToTimestamp(currentQuestion.timestamp);
+                  },
+                  title: "الانتقال لمشغل الفيديو المدمج في المنصة مباشرة",
+                  className: "px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
                 },
-                className: "px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
-              },
-              React.createElement("span", null, "🎬"),
-              React.createElement("span", null, "استمع للمحاضر في الفيديو")
+                React.createElement("span", null, "🎬"),
+                React.createElement("span", null, "استمع في المشغل")
+              ),
+              mediaUrl && (function() {
+                var sec = (utils && typeof utils.parseTimeToSeconds === "function")
+                  ? utils.parseTimeToSeconds(currentQuestion.timestamp)
+                  : 0;
+                var ytId = (utils && typeof utils.getYouTubeVideoId === "function")
+                  ? utils.getYouTubeVideoId(mediaUrl)
+                  : "";
+                var externalUrl = ytId
+                  ? ("https://youtu.be/" + ytId + (sec > 0 ? ("?t=" + sec) : ""))
+                  : (mediaUrl + (mediaUrl.indexOf("?") >= 0 ? "&" : "?") + "t=" + sec);
+                return React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: function() {
+                      window.open(externalUrl, "_blank");
+                    },
+                    title: "فتح في تطبيق يوتيوب عند نفس التوقيت بالثانية",
+                    className: "px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] flex items-center gap-1 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  },
+                  React.createElement("span", null, "↗️"),
+                  React.createElement("span", null, "يوتيوب")
+                );
+              })()
             )
           )
         ),

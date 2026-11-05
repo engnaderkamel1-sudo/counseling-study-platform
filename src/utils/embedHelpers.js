@@ -1,10 +1,38 @@
+// دالة استخراج معرف فيديو يوتيوب المكون من 11 حرفاً
+window.APP_UTILS.getYouTubeVideoId = function(url) {
+  if (!url) return "";
+  var m = String(url).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  return (m && m[1]) ? m[1] : "";
+};
+
+// دالة تحويل أي نص توقيت (سواء بأرقام عربية مشرقية أو إنجليزية أو بصيغة ساعات ودقائق) إلى ثوانٍ بدقة
+window.APP_UTILS.parseTimeToSeconds = function(timeStr) {
+  if (!timeStr) return 0;
+  var str = String(timeStr).trim();
+  var arabicDigits = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  for (var i = 0; i < 10; i++) {
+    str = str.replace(new RegExp(arabicDigits[i], "g"), i.toString());
+  }
+  var clean = str.replace(/[^0-9:]/g, "");
+  if (!clean) return 0;
+  var parts = clean.split(":").map(function(n) { return parseInt(n, 10) || 0; });
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 1) {
+    return parts[0] || 0;
+  }
+  return 0;
+};
+
 // دالة استخراج وتضمين يوتيوب أو جوجل درايف
 window.APP_UTILS.getMediaEmbedUrl = function(url) {
   if (!url) return "";
   // فحص يوتيوب
-  var ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  if (ytMatch && ytMatch[1]) {
-    return "https://www.youtube.com/embed/" + ytMatch[1];
+  var ytId = window.APP_UTILS.getYouTubeVideoId(url);
+  if (ytId) {
+    return "https://www.youtube.com/embed/" + ytId;
   }
   // فحص جوجل درايف
   var driveId = window.APP_UTILS.extractDriveId(url);

@@ -660,6 +660,43 @@ function App() {
     window.currentUser = currentUser;
   }, [currentUser]);
 
+  // وضع المعاينة كمستخدم (الرؤية كمستخدم) خاص بالمشرف للتأكد مما يراه الطالب
+  var [previewAsStudent, setPreviewAsStudent] = React.useState(function() {
+    return !!(utils && utils.getLocal && utils.getLocal("counsel_preview_as_student", false));
+  });
+
+  var isRealAdmin = !!(currentUser && currentUser.role === "admin");
+  var isPreviewMode = isRealAdmin && previewAsStudent;
+  var effectiveUser = isPreviewMode
+    ? Object.assign({}, currentUser, { role: "student", isPreviewMode: true })
+    : currentUser;
+
+  var handleTogglePreviewMode = function() {
+    if (!isRealAdmin) return;
+    var nextVal = !previewAsStudent;
+    setPreviewAsStudent(nextVal);
+    if (utils && utils.setLocal) {
+      utils.setLocal("counsel_preview_as_student", nextVal);
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("counsel_preview_mode_change", { detail: { previewAsStudent: nextVal } }));
+    } catch (e) {}
+  };
+
+  React.useEffect(function() {
+    var handleSync = function(e) {
+      if (e && e.detail && e.detail.previewAsStudent !== undefined) {
+        setPreviewAsStudent(e.detail.previewAsStudent);
+      } else if (utils && utils.getLocal) {
+        setPreviewAsStudent(!!utils.getLocal("counsel_preview_as_student", false));
+      }
+    };
+    window.addEventListener("counsel_preview_mode_change", handleSync);
+    return function() {
+      window.removeEventListener("counsel_preview_mode_change", handleSync);
+    };
+  }, []);
+
   // عدد طلبات الانضمام المعلقة في انتظار المشرف
   var [pendingUsersCount, setPendingUsersCount] = React.useState(0);
 
@@ -698,12 +735,16 @@ function App() {
           } else if (uData.status === "rejected" || uData.status === "pending") {
             alert("تنبيه: تم تعليق حسابك أو تعديل حالته من قِبل مشرف المنصة.");
             utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
             setCurrentUser(null);
           }
         } else if (!doc.metadata || !doc.metadata.fromCache) {
           // المستخدم اتحذف من Firestore — تسجيل خروج فوري
           alert("تنبيه: تم حذف حسابك من المنصة من قِبل المشرف.");
           utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
           setCurrentUser(null);
         }
       }, function(err) {
@@ -715,12 +756,12 @@ function App() {
 
   // منع فتح تبويبات الإدارة إذا لم يكن مشرفاً
   React.useEffect(function() {
-    if (currentUser && currentUser.role !== "admin") {
+    if (effectiveUser && effectiveUser.role !== "admin") {
       if (activeTab === "users" || activeTab === "errors" || activeTab === "settings" || activeTab === "updates") {
         setActiveTab("lectures");
       }
     }
-  }, [currentUser, activeTab]);
+  }, [effectiveUser, activeTab]);
 
   var [theme, setTheme] = React.useState(function() {
     return utils.getLocal(cfg.storageKeys.theme, "light");
@@ -789,6 +830,8 @@ function App() {
   var handleLogout = function() {
     if (confirm("هل تريد بالتأكيد تسجيل الخروج من حسابك؟")) {
       utils.removeLocal("counsel_current_user");
+      utils.removeLocal("counsel_preview_as_student");
+      setPreviewAsStudent(false);
       setCurrentUser(null);
       setIsSidebarOpen(false);
       if (window.auth && typeof window.auth.signOut === "function") {
@@ -827,9 +870,12 @@ function App() {
     React.createElement(window.Sidebar, {
       activeTab: activeTab,
       onTabChange: setActiveTab,
-      currentUser: currentUser,
+      currentUser: effectiveUser,
       onOpenAuth: function() { setIsAuthOpen(true); },
       onLogout: handleLogout,
+      isRealAdmin: isRealAdmin,
+      isPreviewMode: isPreviewMode,
+      onTogglePreviewMode: handleTogglePreviewMode,
       pendingCount: pendingUsersCount,
       isOpen: isSidebarOpen,
       onClose: function() { setIsSidebarOpen(false); },
@@ -894,7 +940,10 @@ function App() {
             onOpenSidebar: function() { setIsSidebarOpen(function(prev) { return !prev; }); },
             theme: theme,
             onToggleTheme: handleToggleTheme,
-            currentUser: currentUser,
+            currentUser: effectiveUser,
+            isRealAdmin: isRealAdmin,
+            isPreviewMode: isPreviewMode,
+            onTogglePreviewMode: handleTogglePreviewMode,
             onOpenAuth: function() { setIsAuthOpen(true); },
             onLogout: handleLogout,
             onOpenErrorReport: function() { setIsErrorReportOpen(true); },
@@ -911,6 +960,34 @@ function App() {
             onResumeAudio: handleGlobalResumeAudio
           });
         })(),
+
+        // شريط التنبيه الدائم بوضع الرؤية كمستخدم للأدمن
+        isPreviewMode && React.createElement(
+          "div",
+          {
+            className: "bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 text-slate-950 px-3 sm:px-6 py-2 text-xs font-bold flex items-center justify-between shadow-md border-b border-amber-600 animate-in fade-in"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2 min-w-0 flex-1" },
+            React.createElement("span", { className: "text-base shrink-0 animate-pulse" }, "👁️"),
+            React.createElement(
+              "div",
+              { className: "truncate" },
+              React.createElement("span", { className: "font-black" }, "وضع «الرؤية كمستخدم» مفعّل: "),
+              React.createElement("span", { className: "text-slate-950/90 hidden xs:inline" }, "المنصة معروضة تماماً كما يراها الطالب (أدوات الإدارة مخفية).")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleTogglePreviewMode,
+              className: "bg-slate-950 hover:bg-slate-900 text-amber-300 px-3 py-1 rounded-xl text-xs font-black shadow-md transition-all active:scale-95 shrink-0 flex items-center gap-1 mr-2"
+            },
+            "🔙 إنهاء المعاينة والعودة للمشرف"
+          )
+        ),
 
         // شريط تنبيه بث زوم المباشر أو التذكير بمحاضرة اليوم / غداً
         (function() {
@@ -1030,7 +1107,9 @@ function App() {
             if (hasUpdateAvailable) count++;
             if (hasTopZoom) count++;
             if (hasTopResume) count++;
-            if (count >= 3) return "pt-44 sm:pt-48";
+            if (isPreviewMode) count++;
+            if (count >= 4) return "pt-52 sm:pt-56";
+            if (count === 3) return "pt-44 sm:pt-48";
             if (count === 2) return "pt-36 sm:pt-40";
             if (count === 1) return "pt-28 sm:pt-32";
             return "pt-20 sm:pt-22";
@@ -1040,7 +1119,7 @@ function App() {
           "div",
           { className: activeTab === "lectures" ? "block" : "hidden" },
           React.createElement(window.LecturesPage, {
-            currentUser: currentUser,
+            currentUser: effectiveUser,
             onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
           })
         ),
@@ -1048,17 +1127,20 @@ function App() {
           "div",
           { className: activeTab === "books" ? "block" : "hidden" },
           React.createElement(window.BooksPage, {
-            currentUser: currentUser,
+            currentUser: effectiveUser,
+            isRealAdmin: isRealAdmin,
+            isPreviewMode: isPreviewMode,
+            onTogglePreviewMode: handleTogglePreviewMode,
             onOpenRecycleBin: function() { setIsRecycleBinOpen(true); }
           })
         ),
-        activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: currentUser }),
-        activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: currentUser }),
-        activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: currentUser }),
-        activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: currentUser }),
-        activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: currentUser }),
-        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: currentUser }),
-        activeTab === "updates" && React.createElement(window.UpdatesPage, { currentUser: currentUser })
+        activeTab === "student_guide" && React.createElement(window.StudentGuidePage, { currentUser: effectiveUser }),
+        activeTab === "curriculum" && React.createElement(window.CurriculumPage, { currentUser: effectiveUser }),
+        activeTab === "notes" && React.createElement(window.NotesPage, { currentUser: effectiveUser }),
+        activeTab === "users" && React.createElement(window.UsersManagementPage, { currentUser: effectiveUser }),
+        activeTab === "errors" && React.createElement(window.ErrorReportsAdminPage, { currentUser: effectiveUser }),
+        activeTab === "settings" && React.createElement(window.SettingsPage, { currentUser: effectiveUser }),
+        activeTab === "updates" && React.createElement(window.UpdatesPage, { currentUser: effectiveUser })
       )
     ),
 

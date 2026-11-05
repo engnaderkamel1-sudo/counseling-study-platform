@@ -9,7 +9,9 @@ window.Header = function(props) {
   var onOpenAuth = props.onOpenAuth;
   var onOpenNotifications = props.onOpenNotifications;
   var unreadNotificationsCount = props.unreadNotificationsCount || 0;
-  var isAdmin = !!(currentUser && currentUser.role === "admin");
+  var isRealAdmin = props.isRealAdmin !== undefined ? props.isRealAdmin : !!(currentUser && currentUser.role === "admin");
+  var isPreviewMode = !!props.isPreviewMode;
+  var isAdmin = !isPreviewMode && !!(currentUser && currentUser.role === "admin");
   var isDismissed = props.isTopResumeDismissed !== undefined ? props.isTopResumeDismissed : isTopResumeDismissed;
   var utils = window.APP_UTILS || {};
   var formatAudioTime = function(sec) {
@@ -26,11 +28,11 @@ window.Header = function(props) {
     },
     React.createElement(
       "div",
-      { className: "px-4 md:px-8 h-16 flex items-center justify-between" },
+      { className: "px-2.5 sm:px-4 md:px-8 h-16 flex items-center justify-between" },
 
       React.createElement(
         "div",
-        { className: "flex items-center gap-3" },
+        { className: "flex items-center gap-2 sm:gap-3 shrink-0 min-w-0" },
         React.createElement(
           "button",
           {
@@ -43,19 +45,39 @@ window.Header = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center gap-2.5" },
-          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-8 h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
+          React.createElement("img", { src: "icon-192.png", alt: "أيقونة التطبيق", className: "w-7 h-7 sm:w-8 sm:h-8 rounded-xl shadow-2xs object-cover border border-slate-200 dark:border-slate-700 shrink-0" }),
           React.createElement(
             "div",
             { className: "flex flex-col" },
-            React.createElement("h1", { className: "text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight" }, "الرفيق الذكي"),
-            React.createElement("span", { className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-none hidden xs:inline" }, "لدارسي معهد المشورة")
+            React.createElement("h1", { className: "text-sm sm:text-base md:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate" }, "الرفيق الذكي"),
+            React.createElement("span", { className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold leading-none hidden md:inline" }, "لدارسي معهد المشورة")
           )
         )
       ),
 
       React.createElement(
         "div",
-        { className: "flex items-center gap-1 sm:gap-2" },
+        { className: "flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0" },
+
+        // زر الرؤية كمستخدم للأدمن فقط (بتصميم متجاوب واقتصادي جداً للموبايل)
+        isRealAdmin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: props.onTogglePreviewMode,
+            title: isPreviewMode ? "إنهاء المعاينة والعودة لصلاحيات المشرف" : "معاينة المنصة كمستخدم (دارس) للتأكد مما يراه الدارس",
+            className: "flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl font-black transition-all active:scale-95 text-xs shadow-2xs shrink-0 select-none " +
+              (isPreviewMode
+                ? "bg-amber-500 hover:bg-amber-400 text-slate-950 ring-2 ring-amber-400/60 shadow-amber-500/30 animate-pulse"
+                : "bg-amber-500/15 hover:bg-amber-500/25 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/40")
+          },
+          React.createElement("span", { className: "text-xs shrink-0" }, isPreviewMode ? "🔙" : "👁️"),
+          React.createElement(
+            "span",
+            { className: "whitespace-nowrap text-[11px] sm:text-xs" },
+            isPreviewMode ? "إنهاء المعاينة" : "الرؤية كمستخدم"
+          )
+        ),
 
         // شارة المستخدم الحالي والترحيب بصباح الخير ومساء الخير
         currentUser && (function() {
@@ -66,18 +88,18 @@ window.Header = function(props) {
             "div",
             {
               onClick: onOpenAuth,
-              title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : " (دارس)"),
-              className: "flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs shrink-0"
+              title: "الحساب: " + (currentUser.fullName || "") + (isAdmin ? " (مشرف)" : (isPreviewMode ? " (وضع المعاينة)" : " (دارس)")),
+              className: "flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-2xs shrink-0"
             },
-            React.createElement("span", { className: "w-2 h-2 rounded-full shrink-0 " + (isAdmin ? "bg-purple-500" : "bg-emerald-500") }),
+            React.createElement("span", { className: "w-2 h-2 rounded-full shrink-0 " + (isRealAdmin ? (isPreviewMode ? "bg-amber-500" : "bg-purple-500") : "bg-emerald-500") }),
             React.createElement(
               "span",
-              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[80px] sm:max-w-[140px]" },
+              { className: "font-bold text-slate-800 dark:text-slate-200 truncate max-w-[45px] min-[390px]:max-w-[70px] sm:max-w-[140px]" },
               React.createElement("span", { className: "hidden sm:inline" }, timeGreeting + "، "),
               displayName
             ),
-            React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300") },
-              isAdmin ? "مشرف" : "دارس"
+            React.createElement("span", { className: "hidden md:inline-block text-[10px] px-1.5 py-0.2 rounded font-semibold " + (isAdmin ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300" : (isPreviewMode ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300")) },
+              isAdmin ? "مشرف" : (isPreviewMode ? "معاينة" : "دارس")
             )
           );
         })(),
@@ -120,7 +142,7 @@ window.Header = function(props) {
               window.location.reload(true);
             },
             title: "تحديث فوري وإفراغ الذاكرة المؤقتة",
-            className: "flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-all text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-95"
+            className: "w-8 h-8 sm:w-auto flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-600 transition-all text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-95 shrink-0"
           },
           React.createElement("span", null, "🔄"),
           React.createElement("span", { className: "hidden sm:inline" }, "تحديث")
@@ -132,7 +154,7 @@ window.Header = function(props) {
           {
             onClick: onOpenNotifications,
             title: unreadNotificationsCount > 0 ? ("لديك " + unreadNotificationsCount + " إشعار جديد") : "مركز الإشعارات والتنبيهات",
-            className: "relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all text-sm border border-slate-200 dark:border-slate-700 active:scale-95"
+            className: "relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all text-sm border border-slate-200 dark:border-slate-700 active:scale-95 shrink-0"
           },
           React.createElement("span", null, "🔔"),
           unreadNotificationsCount > 0 && React.createElement(
@@ -148,7 +170,7 @@ window.Header = function(props) {
           {
             onClick: onToggleTheme,
             title: "تبديل المظهر",
-            className: "w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm"
+            className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-all text-sm shrink-0"
           },
           theme === "dark" ? "☀️" : "🌙"
         )

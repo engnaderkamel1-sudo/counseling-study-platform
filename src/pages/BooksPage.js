@@ -211,9 +211,28 @@ window.BooksPage = function(props) {
     return utils.getLocal("counsel_preview_as_student", false);
   });
 
-  var isRealAdmin = currentUser && currentUser.role === "admin";
-  var effectiveUser = (isRealAdmin && previewAsStudent)
-    ? Object.assign({}, currentUser, { role: "student" })
+  React.useEffect(function() {
+    var handleSync = function(e) {
+      if (e && e.detail && e.detail.previewAsStudent !== undefined) {
+        setPreviewAsStudent(e.detail.previewAsStudent);
+      } else {
+        setPreviewAsStudent(utils.getLocal("counsel_preview_as_student", false));
+      }
+    };
+    window.addEventListener("counsel_preview_mode_change", handleSync);
+    return function() {
+      window.removeEventListener("counsel_preview_mode_change", handleSync);
+    };
+  }, []);
+
+  var isRealAdmin = props.isRealAdmin !== undefined
+    ? props.isRealAdmin
+    : (currentUser && currentUser.role === "admin");
+  var isPreviewActive = props.isPreviewMode !== undefined
+    ? props.isPreviewMode
+    : previewAsStudent;
+  var effectiveUser = (isRealAdmin && isPreviewActive)
+    ? Object.assign({}, currentUser, { role: "student", isPreviewMode: true })
     : currentUser;
   var isAdmin = effectiveUser && effectiveUser.role === "admin";
 
@@ -3024,16 +3043,23 @@ window.BooksPage = function(props) {
           {
             type: "button",
             onClick: function() {
-              var nextVal = !previewAsStudent;
-              setPreviewAsStudent(nextVal);
-              utils.setLocal("counsel_preview_as_student", nextVal);
+              if (props.onTogglePreviewMode) {
+                props.onTogglePreviewMode();
+              } else {
+                var nextVal = !previewAsStudent;
+                setPreviewAsStudent(nextVal);
+                utils.setLocal("counsel_preview_as_student", nextVal);
+                try {
+                  window.dispatchEvent(new CustomEvent("counsel_preview_mode_change", { detail: { previewAsStudent: nextVal } }));
+                } catch (e) {}
+              }
             },
             className: "px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 " +
-              (previewAsStudent
+              (isPreviewActive
                 ? "bg-amber-500 hover:bg-amber-600 text-slate-950 font-black ring-2 ring-amber-400/50 shadow-amber-500/30"
                 : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700")
           },
-          React.createElement("span", null, previewAsStudent ? "🔙 إنهاء معاينة الطالب" : "👁️ معاينة كطالب")
+          React.createElement("span", null, isPreviewActive ? "🔙 إنهاء المعاينة" : "👁️ الرؤية كمستخدم")
         ),
         isAdmin && React.createElement(
           "button",
@@ -3102,7 +3128,7 @@ window.BooksPage = function(props) {
     ),
 
     // شريط إشعار وضع المعاينة كطالب للأدمن
-    previewAsStudent && isRealAdmin && React.createElement(
+    previewAsStudent && isRealAdmin && props.isPreviewMode === undefined && React.createElement(
       "div",
       { className: "p-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/15 to-transparent border-2 border-amber-500/50 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold shadow-md animate-fade-in" },
       React.createElement("div", { className: "flex items-center gap-2.5" },
