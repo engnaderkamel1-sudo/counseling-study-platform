@@ -1,4 +1,4 @@
-// Vercel Serverless Function: Web Push Notification Dispatcher
+﻿// Vercel Serverless Function: Web Push Notification Dispatcher
 // Dispatches background push notifications to subscribed devices via Web Push protocol
 
 const webpush = require('web-push');
@@ -85,16 +85,29 @@ module.exports = async function handler(req, res) {
 
       for (const doc of docs) {
         const fields = doc.fields || {};
-        const subStr = fields.pushSubscription && fields.pushSubscription.stringValue;
-        if (!subStr) continue;
+        const userSubs = [];
 
-        let userSub = null;
-        try {
-          userSub = JSON.parse(subStr);
-        } catch (e) {
-          continue;
+        // 1. اشتراك الجهاز المنفرد (Legacy / Single Device)
+        if (fields.pushSubscription && fields.pushSubscription.stringValue) {
+          try {
+            const parsed = JSON.parse(fields.pushSubscription.stringValue);
+            if (parsed && parsed.endpoint) userSubs.push(parsed);
+          } catch (e) {}
         }
-        if (!userSub || !userSub.endpoint) continue;
+
+        // 2. مصفوفة الأجهزة المتعددة (Multi-Device: Mobile + Desktop + Tablet)
+        if (fields.pushSubscriptions && fields.pushSubscriptions.arrayValue && fields.pushSubscriptions.arrayValue.values) {
+          for (const item of fields.pushSubscriptions.arrayValue.values) {
+            const raw = item && item.stringValue;
+            if (!raw) continue;
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed && parsed.endpoint) userSubs.push(parsed);
+            } catch (e) {}
+          }
+        }
+
+        if (userSubs.length === 0) continue;
 
         const docId = doc.name ? doc.name.split('/').pop() : '';
         const role = fields.role && fields.role.stringValue;
@@ -121,7 +134,9 @@ module.exports = async function handler(req, res) {
         }
 
         if (shouldSend) {
-          subscriptionsToSend.push(userSub);
+          for (const s of userSubs) {
+            subscriptionsToSend.push(s);
+          }
         }
       }
     }

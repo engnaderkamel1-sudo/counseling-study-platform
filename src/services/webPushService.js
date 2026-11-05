@@ -1,4 +1,4 @@
-// Web Push Client Service (Service Worker & PushManager Subscription)
+﻿// Web Push Client Service (Service Worker & PushManager Subscription)
 // Handles device registration for background Web Push and server dispatching
 
 (function() {
@@ -78,8 +78,13 @@
           }
 
           if (userId) {
+            var arrayUnionVal = (window.firebase && firebase.firestore && firebase.firestore.FieldValue && firebase.firestore.FieldValue.arrayUnion)
+              ? firebase.firestore.FieldValue.arrayUnion(subJson)
+              : [subJson];
+
             var updatePayload = {
               pushSubscription: subJson,
+              pushSubscriptions: arrayUnionVal,
               pushUpdatedAt: (window.firebase && firebase.firestore && firebase.firestore.FieldValue)
                 ? firebase.firestore.FieldValue.serverTimestamp()
                 : new Date().toISOString()

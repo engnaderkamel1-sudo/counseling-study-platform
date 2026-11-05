@@ -1,4 +1,4 @@
-// المكون الرئيسي App.js مع دمج نظام التقاط وبلاغات الأعطال
+﻿// المكون الرئيسي App.js مع دمج نظام التقاط وبلاغات الأعطال
 function App() {
   var utils = window.APP_UTILS;
   var cfg = window.APP_CONFIG;
@@ -277,6 +277,9 @@ function App() {
   var [deferredPrompt, setDeferredPrompt] = React.useState(null);
   var [hasNotificationPermission, setHasNotificationPermission] = React.useState(function() {
     return ("Notification" in window) && Notification.permission === "granted";
+  });
+  var [isNotifBannerDismissed, setIsNotifBannerDismissed] = React.useState(function() {
+    return !!(window.APP_UTILS && window.APP_UTILS.getLocal && window.APP_UTILS.getLocal("counsel_dismiss_notif_banner", false));
   });
 
   var [hasUpdateAvailable, setHasUpdateAvailable] = React.useState(false);
@@ -1094,7 +1097,52 @@ function App() {
               )
             );
           }
-        })()
+        })(),
+
+        // شريط تفعيل إشعارات المحاضرات وزووم المباشرة (مطابق لمنظومة إعداد خدام)
+        (!hasNotificationPermission && currentUser && !isNotifBannerDismissed) && React.createElement(
+          "div",
+          {
+            className: "bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white px-3 sm:px-6 py-2.5 text-xs font-bold flex items-center justify-between shadow-lg border-b border-emerald-500/40 animate-in fade-in"
+          },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5 min-w-0 flex-1" },
+            React.createElement("span", { className: "text-lg shrink-0 animate-bounce" }, "🔔"),
+            React.createElement(
+              "div",
+              { className: "truncate" },
+              React.createElement("span", { className: "font-black text-emerald-300" }, "تفعيل إشعارات زووم والمحاضرات: "),
+              React.createElement("span", { className: "text-white/90 hidden xs:inline" }, "لتصلك التنبيهات على الموبايل حتى وإن كان التطبيق أو الشاشة مغلقة.")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-1.5 shrink-0 mr-2" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: handleToggleNotification,
+                className: "bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black px-3.5 py-1.5 rounded-xl text-xs shadow-md transition-all active:scale-95 hover:scale-105 cursor-pointer"
+              },
+              "تفعيل الآن 🚀"
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() {
+                  setIsNotifBannerDismissed(true);
+                  if (utils && utils.setLocal) utils.setLocal("counsel_dismiss_notif_banner", true);
+                },
+                className: "text-white/60 hover:text-white p-1 text-xs cursor-pointer",
+                title: "إخفاء مؤقت"
+              },
+              "✕"
+            )
+          )
+        )
       ),
 
       React.createElement(
@@ -1103,14 +1151,16 @@ function App() {
           className: "flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 md:px-8 py-5 pb-20 md:pb-8 " + (function() {
             var hasTopResume = !!(lastAudioRecord && !isTopResumeDismissed);
             var hasTopZoom = !!(upcomingZoomInfo && !isTopZoomDismissed);
+            var hasTopNotif = !!(!hasNotificationPermission && currentUser && !isNotifBannerDismissed);
             var count = 0;
             if (hasUpdateAvailable) count++;
             if (hasTopZoom) count++;
             if (hasTopResume) count++;
             if (isPreviewMode) count++;
-            if (count >= 4) return "pt-52 sm:pt-56";
-            if (count === 3) return "pt-44 sm:pt-48";
-            if (count === 2) return "pt-36 sm:pt-40";
+            if (hasTopNotif) count++;
+            if (count >= 4) return "pt-56 sm:pt-60";
+            if (count === 3) return "pt-48 sm:pt-52";
+            if (count === 2) return "pt-38 sm:pt-42";
             if (count === 1) return "pt-28 sm:pt-32";
             return "pt-20 sm:pt-22";
           })()

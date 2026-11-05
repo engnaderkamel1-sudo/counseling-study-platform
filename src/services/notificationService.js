@@ -421,13 +421,6 @@ window.NotificationService = {
       };
       await window.db.collection("notifications").add(notifData);
       if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
-        var expireMs = Date.now() + (2 * 60 * 60 * 1000);
-        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
-          var pLec = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
-          if (pLec && pLec.targetDate) {
-            expireMs = pLec.targetDate.getTime() + (2 * 60 * 60 * 1000);
-          }
-        }
         window.WebPushService.triggerServerPush({
           title: notifData.title,
           body: notifData.body,
@@ -435,8 +428,7 @@ window.NotificationService = {
           zoomUrl: lecture.zoomUrl || "",
           target: "all",
           tag: "zoom_link_" + lecture.id,
-          expireAt: expireMs,
-          ttl: 7200
+          ttl: 86400
         }).catch(function() {});
       }
     } catch (e) {
@@ -481,13 +473,6 @@ window.NotificationService = {
       };
       await window.db.collection("notifications").add(notifData);
       if (window.WebPushService && typeof window.WebPushService.triggerServerPush === "function") {
-        var expireMsRem = Date.now() + (2 * 60 * 60 * 1000);
-        if (window.utils && window.utils.parseLectureDateTime && lecture.date) {
-          var pLecRem = window.utils.parseLectureDateTime(lecture.date, lecture.zoomTimeStr || lecture.startTime, lecture.notes);
-          if (pLecRem && pLecRem.targetDate) {
-            expireMsRem = pLecRem.targetDate.getTime() + (2 * 60 * 60 * 1000);
-          }
-        }
         window.WebPushService.triggerServerPush({
           title: notifData.title,
           body: notifData.body,
@@ -495,8 +480,7 @@ window.NotificationService = {
           zoomUrl: lecture.zoomUrl || "",
           target: "all",
           tag: "zoom_rem_" + lecture.id + "_" + reminderType,
-          expireAt: expireMsRem,
-          ttl: 7200
+          ttl: 86400
         }).catch(function() {});
       }
     } catch (e) {
