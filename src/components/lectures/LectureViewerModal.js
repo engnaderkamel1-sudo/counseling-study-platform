@@ -752,8 +752,7 @@ window.LectureViewerModal = function(props) {
         [
           { id: "media", label: "📺 مشاهدة المحاضرة" },
           { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript") },
-          { id: "summary", label: "📄 الملخص الموسع", isDraft: getIsDraft("summary") },
-          { id: "visuals", label: "📊 المخططات البصرية (Visuals)", isDraft: getIsDraft("visuals") },
+          { id: "summary", label: "📄 الدليل الدراسي المصور", isDraft: getIsDraft("summary") },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
           { id: "handout", label: "📁 المرفقات والملفات" },
           { id: "notes", label: "✍️ الملاحظات" }
@@ -787,7 +786,7 @@ window.LectureViewerModal = function(props) {
       ),
 
       // شريط التنبيه وإخلاء المسؤولية للحزمة الذكية (الملخص الموسع، شرائح العرض، الخريطة الذهنية، الاختبار التفاعلي)
-      (activeSubTab === "summary" || activeSubTab === "visuals" || activeSubTab === "quiz") && !isDisclaimerDismissed && React.createElement(
+      (activeSubTab === "summary" || activeSubTab === "quiz") && !isDisclaimerDismissed && React.createElement(
         "div",
         {
           className: "flex items-start sm:items-center justify-between gap-3 p-3 sm:px-4 sm:py-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 dark:border-amber-400/20 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium transition-all shadow-xs animate-fadeIn"
@@ -1060,67 +1059,288 @@ window.LectureViewerModal = function(props) {
           );
         })(),
 
-      // 3. تبويب الملخص المكتوب
-      activeSubTab === "summary" && React.createElement(
-        "div",
-        { className: "space-y-4" },
-        currentUser.role === "admin" && React.createElement(
+      // 3. تبويب الدليل الدراسي المصور (الملخص الأكاديمي مع المخططات البصرية المدمجة سياقياً)
+      activeSubTab === "summary" && (function() {
+        var summaryData = activeLecture.summaryData || (function() {
+          try { return JSON.parse(activeLecture.summaryDataJson); } catch(e) { return null; }
+        })();
+
+        var legacyCharts = (activeLecture.visualsData && Array.isArray(activeLecture.visualsData.charts))
+          ? activeLecture.visualsData.charts
+          : (function() {
+              try {
+                var p = JSON.parse(activeLecture.visualsDataJson);
+                return (p && Array.isArray(p.charts)) ? p.charts : [];
+              } catch(e) { return []; }
+            })();
+
+        return React.createElement(
           "div",
-          { className: "flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800" },
-          React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300" }, "خيارات الملخص"),
-          React.createElement(
+          { className: "space-y-5 animate-in fade-in duration-200" },
+
+          // شريط أدوات المسؤول للملخص المصور
+          currentUser.role === "admin" && React.createElement(
             "div",
-            { className: "flex items-center gap-2 flex-wrap" },
-            currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.summaryData) && React.createElement(
-              "button",
-              {
-                type: "button",
-                onClick: function() { handlePublishToggle("summary", getIsDraft("summary")); },
-                className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
-                  (getIsDraft("summary")
-                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                    : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
-              },
-              React.createElement("span", null, getIsDraft("summary") ? "🚀 نشر الملخص للطلاب" : "🔒 حجب الملخص (مسودة)")
+            { className: "flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              React.createElement("span", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "خيارات الدليل الدراسي المصور:"),
+              getIsDraft("summary") && React.createElement(
+                "span",
+                { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
+                "🔒 مسودة (محجوبة عن الطلاب)"
+              )
             ),
             React.createElement(
-              "button",
-              {
-                onClick: function() { if (openEditModal) openEditModal(activeLecture, "summary"); },
-                className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold hover:bg-slate-100 flex items-center gap-1"
-              },
-              React.createElement("span", null, activeLecture.writtenSummary ? "تعديل الملخص" : "كتابة ملخص")
+              "div",
+              { className: "flex items-center gap-2 flex-wrap" },
+              (activeLecture.writtenSummary || summaryData) && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { handlePublishToggle("summary", getIsDraft("summary")); },
+                  className: "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer " +
+                    (getIsDraft("summary")
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800")
+                },
+                React.createElement("span", null, getIsDraft("summary") ? "🚀 نشر للطلاب" : "🔒 حجب (مسودة)")
+              ),
+              React.createElement(
+                "button",
+                {
+                  onClick: function() { if (openEditModal) openEditModal(activeLecture, "summary"); },
+                  className: "px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
+                },
+                React.createElement("span", null, activeLecture.writtenSummary ? "✏️ تعديل النص" : "✍️ كتابة ملخص")
+              ),
+              React.createElement(
+                "button",
+                {
+                  onClick: handleGenerateSummary,
+                  disabled: isAiGenerating,
+                  className: "px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                },
+                React.createElement("span", null, isAiGenerating ? "⏳" : "✨"),
+                React.createElement("span", null, isAiGenerating ? "جاري البناء..." : "إعادة بناء الدليل المصور")
+              )
+            )
+          ),
+
+          // عرض الدليل الدراسي المنظم والمصور بأسلوب NotebookLM
+          summaryData ? React.createElement(
+            "div",
+            { className: "space-y-6" },
+
+            // 1. الملخص التنفيذي وسياق المحاضرة
+            summaryData.overview && React.createElement(
+              "div",
+              { className: "p-5 sm:p-6 rounded-3xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/50 space-y-2.5" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-black text-sm" },
+                React.createElement("span", { className: "text-lg" }, "📌"),
+                React.createElement("span", null, "الملخص التنفيذي وسياق المحاضرة")
+              ),
+              React.createElement("p", { className: "text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, summaryData.overview)
             ),
+
+            // 2. أهداف التعلم
+            Array.isArray(summaryData.learningObjectives) && summaryData.learningObjectives.length > 0 && React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-sm" },
+                React.createElement("span", null, "🎯"),
+                React.createElement("span", null, "أهداف التعلم ومخرجات اللقاء:")
+              ),
+              React.createElement(
+                "div",
+                { className: "grid grid-cols-1 sm:grid-cols-2 gap-2" },
+                summaryData.learningObjectives.map(function(obj, oIdx) {
+                  return React.createElement(
+                    "div",
+                    { key: oIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs" },
+                    React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold shrink-0 mt-0.5" }, "✓"),
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-snug" }, obj)
+                  );
+                })
+              )
+            ),
+
+            // 3. المحاور الدراسية التفصيلية وتتخللها المخططات البصرية في أماكنها
+            Array.isArray(summaryData.sections) && React.createElement(
+              "div",
+              { className: "space-y-6 pt-2" },
+              summaryData.sections.map(function(sec, sIdx) {
+                // فحص ما إذا كان للمحور مخطط مدمج مباشرة، أو مخطط سابق متوافق بالترتيب
+                var inlineChart = sec.visualDiagram || (legacyCharts && legacyCharts[sIdx]) || null;
+
+                return React.createElement(
+                  "div",
+                  {
+                    key: sIdx,
+                    className: "p-5 sm:p-7 rounded-3xl bg-slate-50/60 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-800 space-y-4"
+                  },
+                  // رأس المحور
+                  React.createElement(
+                    "div",
+                    { className: "flex items-center gap-2.5 pb-3 border-b border-slate-200/60 dark:border-slate-700/60" },
+                    React.createElement("span", { className: "w-7 h-7 rounded-xl bg-indigo-600 text-white font-mono font-black text-xs flex items-center justify-center shrink-0 shadow-2xs" }, sIdx + 1),
+                    React.createElement("h4", { className: "text-sm sm:text-base font-black text-slate-900 dark:text-white" }, sec.title)
+                  ),
+                  // نص الشرح الأكاديمي
+                  React.createElement(
+                    "div",
+                    { className: "text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text" },
+                    sec.content
+                  ),
+                  // النقاط الجوهرية للمحور
+                  Array.isArray(sec.keyPoints) && sec.keyPoints.length > 0 && React.createElement(
+                    "div",
+                    { className: "p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-1.5" },
+                    React.createElement("span", { className: "text-[11px] font-bold text-slate-500 block mb-1" }, "📌 نقاط جوهرية في هذا المحور:"),
+                    React.createElement(
+                      "ul",
+                      { className: "space-y-1 text-xs text-slate-700 dark:text-slate-300" },
+                      sec.keyPoints.map(function(kp, kIdx) {
+                        return React.createElement(
+                          "li",
+                          { key: kIdx, className: "flex items-start gap-2" },
+                          React.createElement("span", { className: "text-indigo-500 font-bold shrink-0 mt-0.5" }, "•"),
+                          React.createElement("span", { className: "leading-relaxed" }, kp)
+                        );
+                      })
+                    )
+                  ),
+                  // ════════════════════════════════════════════════
+                  // المخطط البصري التفاعلي المدمج في موضعه الطبيعي
+                  // ════════════════════════════════════════════════
+                  inlineChart && window.SingleVisualChartCard && React.createElement(
+                    "div",
+                    { className: "pt-1" },
+                    React.createElement(window.SingleVisualChartCard, { chart: inlineChart })
+                  )
+                );
+              })
+            ),
+
+            // 4. الخلاصات العملية للمشير
+            Array.isArray(summaryData.keyTakeaways) && summaryData.keyTakeaways.length > 0 && React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/50 space-y-3" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-emerald-950 dark:text-emerald-200 font-black text-xs sm:text-sm" },
+                React.createElement("span", null, "🌟"),
+                React.createElement("span", null, "خلاصات عملية وتطبيقية للمشير في الخدمة والحياة:")
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-2 text-xs" },
+                summaryData.keyTakeaways.map(function(kt, tIdx) {
+                  return React.createElement(
+                    "div",
+                    { key: tIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30" },
+                    React.createElement("span", { className: "text-emerald-600 font-bold shrink-0 mt-0.5" }, "★"),
+                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed" }, kt)
+                  );
+                })
+              )
+            ),
+
+            // 5. معجم المفاهيم والمصطلحات
+            Array.isArray(summaryData.glossary) && summaryData.glossary.length > 0 && React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-slate-800 dark:text-slate-200 font-black text-xs sm:text-sm" },
+                React.createElement("span", null, "📖"),
+                React.createElement("span", null, "معجم المصطلحات والمفاهيم المفتاحية:")
+              ),
+              React.createElement(
+                "div",
+                { className: "grid grid-cols-1 sm:grid-cols-2 gap-2.5" },
+                summaryData.glossary.map(function(g, gIdx) {
+                  return React.createElement(
+                    "div",
+                    { key: gIdx, className: "p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-1 text-xs" },
+                    React.createElement("span", { className: "font-black text-indigo-700 dark:text-indigo-400 block" }, g.term || ""),
+                    React.createElement("p", { className: "text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]" }, g.definition || "")
+                  );
+                })
+              )
+            ),
+
+            // 6. أسئلة للتأمل والتقييم الذاتي
+            Array.isArray(summaryData.reflectionQuestions) && summaryData.reflectionQuestions.length > 0 && React.createElement(
+              "div",
+              { className: "p-5 rounded-3xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/50 space-y-3" },
+              React.createElement(
+                "div",
+                { className: "flex items-center gap-2 text-amber-950 dark:text-amber-200 font-black text-xs sm:text-sm" },
+                React.createElement("span", null, "❓"),
+                React.createElement("span", null, "أسئلة للتأمل والتقييم الذاتي وتطوير الخدمة:")
+              ),
+              React.createElement(
+                "div",
+                { className: "space-y-2 text-xs" },
+                summaryData.reflectionQuestions.map(function(rq, qIdx) {
+                  return React.createElement(
+                    "div",
+                    { key: qIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30" },
+                    React.createElement("span", { className: "text-amber-600 font-bold shrink-0 mt-0.5" }, "•"),
+                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed" }, rq)
+                  );
+                })
+              )
+            )
+          ) : activeLecture.writtenSummary ? React.createElement(
+            "div",
+            { className: "space-y-6" },
             React.createElement(
-              "button",
-              {
-                onClick: handleGenerateSummary,
-                disabled: isAiGenerating,
-                className: "px-3 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-emerald-600 text-xs font-bold hover:opacity-90 flex items-center gap-1"
-              },
-              React.createElement("span", null, isAiGenerating ? "جاري التلخيص..." : "تلخيص تلقائي")
+              "div",
+              { className: "p-6 sm:p-8 rounded-3xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-loose whitespace-pre-wrap font-sans select-text shadow-2xs" },
+              activeLecture.writtenSummary
+            ),
+            // عرض المخططات السابقة تحت النص إن وجدت لضمان عدم ضياعها
+            legacyCharts && legacyCharts.length > 0 && window.SingleVisualChartCard && React.createElement(
+              "div",
+              { className: "space-y-4 pt-2" },
+              React.createElement("h4", { className: "text-xs font-black text-slate-700 dark:text-slate-300" }, "📊 المخططات والرسوم البصرية التوضيحية الملحقة:"),
+              legacyCharts.map(function(c, idx) {
+                return React.createElement(window.SingleVisualChartCard, { key: c.id || idx, chart: c });
+              })
+            )
+          ) : React.createElement(
+            "div",
+            { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-3" },
+            React.createElement("div", { className: "text-3xl" }, "📄"),
+            React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لا يوجد دليل دراسي مصور لهذه المحاضرة حتى الآن."),
+            React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
+              "يمكن استخراج وصياغة دليل دراسي مصور متكامل يجمع بين الشرح الأكاديمي والمخططات التفاعلية بالذكاء الاصطناعي."
+            ),
+            currentUser.role === "admin" && React.createElement(
+              "div",
+              { className: "pt-2 flex items-center justify-center gap-2" },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  disabled: isAiGenerating,
+                  onClick: handleGenerateSummary,
+                  className: "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                },
+                React.createElement("span", null, isAiGenerating ? "⏳" : "✨"),
+                React.createElement("span", null, isAiGenerating ? "جاري بناء الدليل المصور..." : "توليد الدليل الدراسي المصور الآن")
+              )
             )
           )
-        ),
-        activeLecture.writtenSummary ? React.createElement(
-          "div",
-          { className: "p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-sans select-text" },
-          activeLecture.writtenSummary
-        ) : React.createElement(
-          "div",
-          { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs space-y-2" },
-          React.createElement("p", null, "لا يوجد ملخص مكتوب لهذه المحاضرة حتى الآن."),
-          currentUser.role === "admin" && React.createElement(
-            "button",
-            {
-              type: "button",
-              onClick: function() { if (openEditModal) openEditModal(activeLecture, "summary"); },
-              className: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-emerald-600 text-white text-xs font-bold shadow-sm"
-            },
-            "إضافة ملخص مكتوب"
-          )
-        )
-      ),
+        );
+      })(),
 
       // 4. تبويب الملخص الصوتي المسموع
       
@@ -1252,20 +1472,7 @@ window.LectureViewerModal = function(props) {
         })()
       ),
 
-      // تبويب المخططات البصرية التفاعلية
-      activeSubTab === "visuals" && (
-        window.VisualDiagramsViewer ? React.createElement(
-          window.VisualDiagramsViewer,
-          {
-            visuals: activeLecture.visualsData || (function() { try { return JSON.parse(activeLecture.visualsDataJson); } catch(e) { return null; } })(),
-            isAdmin: currentUser.role === "admin",
-            isDraft: getIsDraft("visuals"),
-            onPublishToggle: handlePublishToggle,
-            isGenerating: isAiGenerating,
-            onGenerateVisuals: handleGenerateVisualsDirectly
-          }
-        ) : React.createElement("div", { className: "p-4 text-center text-xs text-slate-400" }, "جاري تحميل عارض المخططات البصرية...")
-      ),
+
 
 
 
@@ -1706,8 +1913,7 @@ window.LectureViewerModal = function(props) {
           { className: "space-y-3" },
           [
             { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", desc: "النص الحرفي الكامل لكلام المحاضر مع التوقيتات الدقيقة", hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText) },
-            { id: "summary", label: "📄 الملخص الموسع", desc: "الدليل الدراسي الشامل والأكاديمي للمحاضرة", hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData) },
-            { id: "visuals", label: "📊 المخططات البصرية (Visuals)", desc: "المقارنات والمسارات والأركان البصرية التفاعلية", hasData: Boolean(activeLecture.visualsData || activeLecture.visualsDataJson) },
+            { id: "summary", label: "📄 الدليل الدراسي المصور", desc: "الشرح الأكاديمي الشامل متضمناً المخططات والمقارنات البصرية المدمجة", hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData) },
             { id: "quiz", label: "📝 الاختبار التفاعلي", desc: "أسئلة الكويز الذاتي والتفسيرات التعليمية", hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) }
           ].map(function(item) {
             var isDraft = getIsDraft(item.id);
@@ -1895,8 +2101,7 @@ window.LectureViewerModal = function(props) {
               { className: "grid grid-cols-2 gap-2" },
               [
                 { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو" },
-                { id: "summary", label: "📄 الملخص الموسع" },
-                { id: "visuals", label: "📊 المخططات البصرية (Visuals)" },
+                { id: "summary", label: "📄 الدليل الدراسي المصور (الملخص والمخططات المدمجة)" },
                 { id: "quiz", label: "📝 الكويز التفاعلي" }
               ].map(function(item) {
                 var checked = genSelected[item.id] !== false;

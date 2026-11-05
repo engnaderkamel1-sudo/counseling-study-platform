@@ -197,23 +197,40 @@
     // 4.1 توليد خطوة الملخص الموسع بشكل مستقل
     generateSummaryOnly: async function(lectureTitle, lectureContent, targetPages, customInstructions) {
       var pages = parseInt(targetPages, 10) || 5;
-      var prompt = "أنت مستشار أكاديمي خبير ومصمم مناهج متقدم في معهد المشورة المسيحية الأرثوذكسية.\n" +
-        "المطلوب: صياغة دليل دراسي شامل ومفصل (Study Guide & Briefing Doc) فائق الجودة والعمق بأسلوب Google NotebookLM لمحاضرة: '" + lectureTitle + "'.\n\n" +
+      var prompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية والبصرية (Chief Educational & Visual Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
+        "المطلوب: صياغة دليل دراسي مصور فائق الجودة والعمق بأسلوب Google NotebookLM المعمق لمحاضرة: '" + lectureTitle + "'.\n\n" +
         "المحتوى المرجعي الكامل للمحاضرة:\n" + lectureContent + "\n\n" +
-        "الشروط الأكاديمية الصارمة:\n" +
-        "- قاعدة الأمانة العلمية الإلزامية (مُحرّم التوقع أو التأليف نهائياً): يُمنع منعاً باتاً ذكر أي رأي شخصي أو معلومة أو نظرية غير واردة صراحة في كلام المحاضر في هذا التسجيل.\n" +
-        "- الاعتماد الحصري والأمين بنسبة 100% على ما ورد في كلام المحاضر والتفاصيل والأمثلة الواقعية المذكورة دون أي زيادة خارجية.\n" +
-        "- تغطية ما يعادل " + pages + " صفحات دراسية غنية بالتحليل المشوري والنفسي والروحي من صلب المحاضرة حصراً.\n" +
-        (customInstructions ? ("- توجيهات خاصة: " + customInstructions + "\n") : "") +
+        "الشروط الأكاديمية الصارمة (قواعد قطعية لا تهاون فيها):\n" +
+        "1. قاعدة الأمانة العلمية الإلزامية (مُحرّم التوقع أو التأليف نهائياً): يُمنع منعاً باتاً ذكر أي رأي شخصي أو معلومة أو نظرية غير واردة صراحة في كلام المحاضر في هذا التسجيل.\n" +
+        "2. حظر قطعي للبيانات الإدارية: يُمنع منعاً باتاً ذكر (زووم، مدة الفيديو، عدد ساعات التسجيل، رقم المحاضرة، تاريخ اللقاء، منصة البث، وقت الاستراحة).\n" +
+        "3. دمج المخططات البصرية سياقياً داخل المحاور: لكل محور تفصيلي في 'sections'، إذا كانت أفكار هذا المحور تحديداً قابلة للتجسيد البصري (مقارنة منهجية، مسار مراحل، أبعاد تشريحية، أو هرم مفاهيمي)، قم بتصميم مخطط بصري نوعي تفاعلي ملحق بهذا المحور حصراً في حقل 'visualDiagram'.\n" +
+        "   - إذا كان المحور نظرياً بحتاً لا يحتاج رسماً، ضع visualDiagram: null دون أي افتعال.\n" +
+        "   - أنواع المخططات المتاحة لحقل visualDiagram:\n" +
+        "     • comparison: مصفوفة مقارنة بصرية عميقة { id, type='comparison', title, subtitle, badge, left: { title, icon, items: [{ aspect, value }] }, right: { title, icon, items: [{ aspect, value }] } }\n" +
+        "     • process: مسار تسلسلي ومراحل ديناميكية { id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }] }\n" +
+        "     • pillars: أركان وأبعاد تشريحية { id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['نقطة 1', 'نقطة 2'] }] }\n" +
+        "     • pyramid: هرم متدرج من القاعدة للقمة { id, type='pyramid', title, subtitle, badge, levels: [{ level: 1, title, color, desc, isPeak: true/false }] }\n" +
+        "     • metric_card: معادلة أو قاعدة مشورية عددية حقيقية { id, type='metric_card', title, subtitle, badge, metrics: [{ num, label, note, color }], takeaway }\n" +
+        "4. تغطية ما يعادل " + pages + " صفحات دراسية غنية بالتحليل المشوري والنفسي والروحي الرصين من صلب المحاضرة حصراً.\n" +
+        (customInstructions ? ("5. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق تماماً للنموذج التالي:\n" +
         JSON.stringify({
           overview: "ملخص تنفيذي وسياق عام للمحاضرة يوضح الإطار العام والهدف من اللقاء وأهميته للدارس والمشير",
           learningObjectives: ["هدف تعليمي أساسي 1", "هدف تعليمي أساسي 2", "هدف تعليمي أساسي 3", "هدف تعليمي أساسي 4"],
           sections: [
             {
-              title: "عنوان المحور التفصيلي الأول",
+              title: "عنوان المحور التفصيلي",
               content: "شرح تفصيلي موسع ومترابط يغطي كافة النقاط والأمثلة والشروحات التي ذكرها المحاضر في هذا الجزء من التسجيل",
-              keyPoints: ["نقطة جوهرية 1", "نقطة جوهرية 2", "نقطة جوهرية 3"]
+              keyPoints: ["نقطة جوهرية 1", "نقطة جوهرية 2", "نقطة جوهرية 3"],
+              visualDiagram: {
+                id: "sec_visual_1",
+                type: "comparison",
+                title: "عنوان المخطط البصري المركز الخاص بهذا المحور",
+                subtitle: "شرح موجز للهدف من المخطط",
+                badge: "المحور الأكاديمي",
+                left: { title: "المسار الأول", icon: "✝️", items: [{ aspect: "المنظور", value: "القيمة" }] },
+                right: { title: "المسار الثاني", icon: "🧠", items: [{ aspect: "المنظور", value: "القيمة" }] }
+              }
             }
           ],
           keyTakeaways: ["خلاصة عملية وتطبيقية للمشير في الخدمة والحياة 1", "خلاصة عملية وتطبيقية للمشير في الخدمة والحياة 2"],
@@ -390,9 +407,9 @@
 
       var output = {};
 
-      // الخطوة 1: الملخص الموسع
+      // الخطوة 1: الدليل الدراسي المصور (الملخص الموسع مع المخططات البصرية المدمجة سياقياً)
       if (selected.summary !== false) {
-        if (onProgress) onProgress(20, "جاري إعداد وصياغة الملخص الموسع الشامل (" + summaryPages + " صفحات)... [1/3]");
+        if (onProgress) onProgress(35, "جاري صياغة الدليل الدراسي المصور وبناء المخططات البصرية في مواضعها (" + summaryPages + " صفحات)... [1/2]");
         try {
           output.summary = await window.EducationalAIService.generateSummaryOnly(
             lectureTitle,
@@ -400,30 +417,27 @@
             summaryPages,
             customInstructions
           );
+          // استخراج مصفوفة المخططات المدمجة لضمان التوافق مع أي عوارض سابقة
+          if (output.summary && Array.isArray(output.summary.sections)) {
+            var extractedCharts = [];
+            output.summary.sections.forEach(function(sec) {
+              if (sec.visualDiagram && sec.visualDiagram.type) {
+                extractedCharts.push(sec.visualDiagram);
+              }
+            });
+            if (extractedCharts.length > 0) {
+              output.visuals = { charts: extractedCharts };
+            }
+          }
         } catch (sumErr) {
           console.error("Summary step error:", sumErr);
-          throw new Error("فشل إعداد الملخص: " + sumErr.message);
+          throw new Error("فشل إعداد الدليل الدراسي: " + sumErr.message);
         }
       }
 
-      // الخطوة 2: المخططات البصرية والرسوم التفاعلية
-      if (selected.visuals !== false) {
-        if (onProgress) onProgress(60, "جاري تصميم وبناء المخططات البصرية والرسوم التفاعلية... [2/3]");
-        try {
-          output.visuals = await window.EducationalAIService.generateVisualsOnly(
-            lectureTitle,
-            lectureContent,
-            customInstructions
-          );
-        } catch (visErr) {
-          console.error("Visuals step error:", visErr);
-          throw new Error("فشل تصميم المخططات البصرية: " + visErr.message);
-        }
-      }
-
-      // الخطوة 3: الكويز التفاعلي
+      // الخطوة 2: الكويز التفاعلي
       if (selected.quiz !== false) {
-        if (onProgress) onProgress(90, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [3/3]");
+        if (onProgress) onProgress(80, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [2/2]");
         try {
           output.quiz = await window.EducationalAIService.generateQuizOnly(
             lectureTitle,
