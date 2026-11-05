@@ -55,6 +55,82 @@ window.LectureViewerModal = function(props) {
     return parseInt(saved) || 1;
   });
 
+  // حالة تدوير الشاشة وملء الشاشة في نافذة المحاضرة
+  var [isLandscapeActive, setIsLandscapeActive] = React.useState(false);
+  var modalRef = React.useRef(null);
+
+  var handleToggleLandscape = async function() {
+    var targetEl = modalRef.current || document.documentElement;
+
+    if (!isLandscapeActive) {
+      try {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (targetEl.requestFullscreen) {
+            await targetEl.requestFullscreen().catch(function() {});
+          } else if (targetEl.webkitRequestFullscreen) {
+            targetEl.webkitRequestFullscreen();
+          }
+        }
+      } catch(eFs) {}
+
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock("landscape").catch(function() {});
+        }
+      } catch(eLock) {}
+
+      setIsLandscapeActive(true);
+    } else {
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch(eUn) {}
+
+      try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen().catch(function() {});
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
+      } catch(eEx) {}
+
+      setIsLandscapeActive(false);
+    }
+  };
+
+  React.useEffect(function() {
+    var handleFs = function() {
+      var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFs) {
+        setIsLandscapeActive(false);
+        try {
+          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+        } catch(e) {}
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFs);
+    document.addEventListener("webkitfullscreenchange", handleFs);
+    return function() {
+      document.removeEventListener("fullscreenchange", handleFs);
+      document.removeEventListener("webkitfullscreenchange", handleFs);
+    };
+  }, []);
+
+  var handleModalClose = function() {
+    if (isLandscapeActive) {
+      try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch(e) {}
+      try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          if (document.exitFullscreen) document.exitFullscreen().catch(function() {});
+        }
+      } catch(e) {}
+    }
+    if (onClose) onClose();
+  };
+
   // حالة تدوين الملاحظات السريعة من داخل المحاضرة
   var [quickNoteText, setQuickNoteText] = React.useState("");
   var [lectureNotesList, setLectureNotesList] = React.useState([]);
@@ -613,7 +689,11 @@ window.LectureViewerModal = function(props) {
     },
     React.createElement(
       "div",
-      { className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[96vh] sm:max-h-[92vh] overflow-y-auto my-auto" },
+      {
+        ref: modalRef,
+        className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[96vh] sm:max-h-[92vh] overflow-y-auto my-auto transition-all duration-200" +
+          (isLandscapeActive ? " !max-h-screen !h-screen !w-screen !max-w-none !rounded-none !border-0 !p-4 sm:!p-6" : "")
+      },
 
       // رأس المحاضرة داخل النافذة
       React.createElement(
@@ -640,7 +720,18 @@ window.LectureViewerModal = function(props) {
         ),
         React.createElement(
           "div",
-          { className: "flex items-center gap-2.5" },
+          { className: "flex items-center gap-2 flex-wrap" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: handleToggleLandscape,
+              title: isLandscapeActive ? "العودة للوضع الرأسي الطبيعي" : "تدوير الشاشة بالعرض وملء الشاشة",
+              className: "px-3 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-xs font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all cursor-pointer"
+            },
+            React.createElement("span", null, isLandscapeActive ? "📱" : "🔄"),
+            React.createElement("span", null, isLandscapeActive ? "وضع رأسي" : "تدوير بالعرض")
+          ),
           currentUser.role === "admin" && React.createElement(
             "button",
             {
@@ -657,8 +748,8 @@ window.LectureViewerModal = function(props) {
             "button",
             {
               type: "button",
-              onClick: function() { if (onClose) onClose(); },
-              className: "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-xs"
+              onClick: handleModalClose,
+              className: "px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
             },
             React.createElement("span", null, "✕"),
             React.createElement("span", null, "إغلاق والعودة للجدول")
