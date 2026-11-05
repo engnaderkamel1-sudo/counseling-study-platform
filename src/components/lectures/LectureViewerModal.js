@@ -54,92 +54,61 @@ window.LectureViewerModal = function(props) {
     var saved = utils.getLocal ? utils.getLocal("handout_page_" + (activeLecture ? activeLecture.id : ""), 1) : 1;
     return parseInt(saved) || 1;
   });
+  // حالة وحجم خط القراءة في الدليل الدراسي والمحاضرة
+  var [readingFontSize, setReadingFontSize] = React.useState(function() {
+    return (utils.getLocal ? utils.getLocal("counsel_reader_font_size", "md") : "md");
+  });
 
-
-  // حالة التدوير التلقائي الذكي بمستشعر حركة الهاتف (بدون أزرار أو إعادة تحميل)
-  var [sensorLandscape, setSensorLandscape] = React.useState(false);
-  var [sensorAngle, setSensorAngle] = React.useState(90);
-  var modalScrollRef = React.useRef(null);
-  var touchPosRef = React.useRef({ x: 0, y: 0 });
-
-  React.useEffect(function() {
-    var checkIsNativeLandscape = function() {
-      return window.innerWidth > window.innerHeight;
-    };
-
-    var handleOrientation = function(e) {
-      if (checkIsNativeLandscape()) {
-        if (sensorLandscape) setSensorLandscape(false);
-        return;
-      }
-      var gamma = e.gamma;
-      var beta = e.beta;
-      if (typeof gamma !== "number" || typeof beta !== "number") return;
-
-      var absG = Math.abs(gamma);
-      var absB = Math.abs(beta);
-
-      if (absG > 52 && absB < 65) {
-        var ang = gamma < 0 ? 90 : -90;
-        setSensorAngle(ang);
-        setSensorLandscape(true);
-      } else if (absG < 32) {
-        setSensorLandscape(false);
-      }
-    };
-
-    var handleMotion = function(e) {
-      if (checkIsNativeLandscape()) {
-        if (sensorLandscape) setSensorLandscape(false);
-        return;
-      }
-      var acc = e.accelerationIncludingGravity;
-      if (!acc) return;
-      var ax = acc.x || 0;
-      var ay = acc.y || 0;
-      var absX = Math.abs(ax);
-      var absY = Math.abs(ay);
-
-      if (absX > 6.2 && absY < 5.0) {
-        var ang = ax > 0 ? 90 : -90;
-        setSensorAngle(ang);
-        setSensorLandscape(true);
-      } else if (absX < 3.5 && absY > 5.5) {
-        setSensorLandscape(false);
-      }
-    };
-
-    window.addEventListener("deviceorientation", handleOrientation, true);
-    window.addEventListener("devicemotion", handleMotion, true);
-
-    return function() {
-      window.removeEventListener("deviceorientation", handleOrientation, true);
-      window.removeEventListener("devicemotion", handleMotion, true);
-    };
-  }, [sensorLandscape]);
-
-  var handleSensorTouchStart = function(e) {
-    if (e.touches && e.touches[0]) {
-      touchPosRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
+  var handleSetFontSize = function(sz) {
+    setReadingFontSize(sz);
+    if (utils.setLocal) utils.setLocal("counsel_reader_font_size", sz);
   };
 
-  var handleSensorTouchMove = function(e) {
-    if (!sensorLandscape || !modalScrollRef.current) return;
-    if (e.touches && e.touches[0]) {
-      var curX = e.touches[0].clientX;
-      var deltaX = curX - touchPosRef.current.x;
-      touchPosRef.current = { x: curX, y: e.touches[0].clientY };
+  var fontTextClass = (readingFontSize === "sm")
+    ? "text-xs sm:text-sm"
+    : (readingFontSize === "lg")
+      ? "text-base sm:text-lg"
+      : (readingFontSize === "xl")
+        ? "text-lg sm:text-xl"
+        : "text-sm sm:text-base";
 
-      if (sensorAngle === 90) {
-        modalScrollRef.current.scrollTop -= deltaX * 1.2;
-      } else {
-        modalScrollRef.current.scrollTop += deltaX * 1.2;
-      }
-    }
+  var renderFontSizeBar = function() {
+    return React.createElement(
+      "div",
+      { className: "flex items-center gap-1.5" },
+      React.createElement("span", { className: "text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1" },
+        React.createElement("span", null, "🔍"),
+        React.createElement("span", null, "حجم الخط:")
+      ),
+      React.createElement(
+        "div",
+        { className: "flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs" },
+        [
+          { id: "sm", label: "A-", title: "خط مدمج (14 بكسل)" },
+          { id: "md", label: "عادي", title: "خط عادي قياسي (16 بكسل)" },
+          { id: "lg", label: "A+", title: "خط كبير ومريح (18 بكسل)" },
+          { id: "xl", label: "A++", title: "خط كبير جداً (20 بكسل)" }
+        ].map(function(fBtn) {
+          var isAct = readingFontSize === fBtn.id;
+          return React.createElement(
+            "button",
+            {
+              key: fBtn.id,
+              type: "button",
+              onClick: function() { handleSetFontSize(fBtn.id); },
+              title: fBtn.title,
+              className: "px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer " +
+                (isAct
+                  ? "bg-indigo-600 text-white shadow-2xs scale-102"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")
+            },
+            fBtn.label
+          );
+        })
+      )
+    );
   };
 
-  // حالة تدوين الملاحظات السريعة من داخل المحاضرة
   var [quickNoteText, setQuickNoteText] = React.useState("");
   var [lectureNotesList, setLectureNotesList] = React.useState([]);
   var [isSavingQuickNote, setIsSavingQuickNote] = React.useState(false);
@@ -688,48 +657,15 @@ window.LectureViewerModal = function(props) {
       setIsRefining(false);
     }
   };
-
-  var outerLandscapeStyle = sensorLandscape ? {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vh",
-    height: "100vw",
-    transform: sensorAngle === -90 ? "rotate(-90deg) translateX(-100%)" : "rotate(90deg) translateY(-100%)",
-    transformOrigin: "top left",
-    zIndex: 99999,
-    padding: "8px",
-    display: "flex",
-    alignItems: "stretch",
-    justifyContent: "center",
-    transition: "transform 0.25s ease-out"
-  } : {
-    transition: "transform 0.25s ease-out"
-  };
-
-  var innerLandscapeStyle = sensorLandscape ? {
-    width: "100%",
-    maxWidth: "100%",
-    height: "100%",
-    maxHeight: "100%",
-    borderRadius: "16px",
-    margin: 0
-  } : {};
-
   return React.createElement(
     "div",
     {
       className: "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 overflow-y-auto",
-      style: outerLandscapeStyle,
       onClick: function(e) { if (e.target === e.currentTarget && onClose) onClose(); }
     },
     React.createElement(
       "div",
       {
-        ref: modalScrollRef,
-        style: innerLandscapeStyle,
-        onTouchStart: handleSensorTouchStart,
-        onTouchMove: handleSensorTouchMove,
         className: "bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 sm:space-y-4 max-h-[95vh] sm:max-h-[92vh] overflow-y-auto my-auto"
       },
 
@@ -1355,10 +1291,14 @@ window.LectureViewerModal = function(props) {
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // خيارات المسؤول (نشر، تعديل، إعادة توليد)
-          currentUser.role === "admin" && React.createElement(
+          // شريط أدوات القراءة وتكبير الخط وخيارات المسؤول
+          React.createElement(
             "div",
-            { className: "flex items-center justify-end p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
+            { className: "flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2.5 flex-wrap" },
+            renderFontSizeBar(),
+            currentUser.role === "admin" && React.createElement(
+              "div",
+              { className: "flex items-center gap-2 flex-wrap" },
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
@@ -1395,7 +1335,8 @@ window.LectureViewerModal = function(props) {
                 React.createElement("span", null, "🔄"),
                 React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "إعادة التوليد")
               )
-            ),
+            )
+          ),
 
           // عرض الدليل الدراسي المنظم والمصور بأسلوب NotebookLM
           summaryData ? React.createElement(
