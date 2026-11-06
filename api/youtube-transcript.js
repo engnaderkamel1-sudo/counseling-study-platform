@@ -1,4 +1,7 @@
-// Vercel Serverless Function: Resilient YouTube Transcript Extractor with Debugging
+// Vercel Serverless Function: Resilient YouTube Transcript Extractor
+// Employs official YouTube Visitor Session initialization (visitor_id + visitorData)
+// to reliably establish a recognized session before requesting player caption tracks
+
 function extractYouTubeId(url) {
   if (!url) return null;
   const str = String(url).trim();
@@ -76,50 +79,6 @@ function groupIntoParagraphs(chunks) {
   return paragraphs.join("\n\n");
 }
 
-function extractCaptionTracksFromHtml(html) {
-  if (!html) return [];
-  const idx = html.indexOf('"captionTracks":');
-  if (idx === -1) return [];
-  const startBracket = html.indexOf('[', idx);
-  if (startBracket === -1) return [];
-  let bracketCount = 0;
-  let inString = false;
-  let escape = false;
-  let endBracket = -1;
-  for (let i = startBracket; i < html.length; i++) {
-    const ch = html[i];
-    if (escape) {
-      escape = false;
-      continue;
-    }
-    if (ch === '\\') {
-      escape = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (!inString) {
-      if (ch === '[') bracketCount++;
-      else if (ch === ']') {
-        bracketCount--;
-        if (bracketCount === 0) {
-          endBracket = i;
-          break;
-        }
-      }
-    }
-  }
-  if (endBracket !== -1) {
-    try {
-      const jsonStr = html.substring(startBracket, endBracket + 1);
-      return JSON.parse(jsonStr);
-    } catch (e) {}
-  }
-  return [];
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -145,25 +104,64 @@ module.exports = async function handler(req, res) {
       }));
     }
 
-    let captionTracks = [];
-    let apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+    const apiKey = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+    let visitorData = null;
 
-    // Step 1: Query YouTube Android InnerTube directly
+    // Step 1: Initialize an official visitor session to get a valid visitorData token
     try {
-      const innertubeResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+      const visitorResp = await fetch(`https://www.youtube.com/youtubei/v1/visitor_id?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip",
-          "Accept-Language": "en-US"
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         },
         body: JSON.stringify({
           context: {
             client: {
-              clientName: "ANDROID",
-              clientVersion: "20.10.38"
+              clientName: "WEB",
+              clientVersion: "2.20240506.06.00"
             }
-          },
+          }
+        })
+      });
+
+      if (visitorResp.ok) {
+        const vData = await visitorResp.json();
+        visitorData = vData?.responseContext?.visitorData;
+        debug.visitor_data_obtained = !!visitorData;
+      }
+    } catch (eVis) {
+      debug.visitor_err = eVis.message;
+    }
+
+    let captionTracks = [];
+
+    // Step 2: Query InnerTube Android Player with the established visitor session
+    try {
+      const androidContext = {
+        client: {
+          clientName: "ANDROID",
+          clientVersion: "20.10.38"
+        }
+      };
+      if (visitorData) {
+        androidContext.client.visitorData = visitorData;
+      }
+
+      const playerHeaders = {
+        "Content-Type": "application/json",
+        "User-Agent": "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip",
+        "Accept-Language": "en-US"
+      };
+      if (visitorData) {
+        playerHeaders["X-Goog-Visitor-Id"] = visitorData;
+      }
+
+      const innertubeResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+        method: "POST",
+        headers: playerHeaders,
+        body: JSON.stringify({
+          context: androidContext,
           videoId: videoId
         })
       });
@@ -180,58 +178,47 @@ module.exports = async function handler(req, res) {
       debug.android_err = eInner.message;
     }
 
-    // Step 2: Fallback to iOS InnerTube client
+    // Step 3: Fallback to Web Client with visitorData if Android didn't return tracks
     if (!captionTracks || !captionTracks.length) {
       try {
-        const iosResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+        const webContext = {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20240506.06.00",
+            hl: "ar",
+            gl: "EG"
+          }
+        };
+        if (visitorData) {
+          webContext.client.visitorData = visitorData;
+        }
+
+        const webHeaders = {
+          "Content-Type": "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        };
+        if (visitorData) {
+          webHeaders["X-Goog-Visitor-Id"] = visitorData;
+        }
+
+        const webResp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "com.google.ios.youtube/19.09.3 (iPhone; CPU iPhone OS 17_4 like Mac OS X)",
-            "Accept-Language": "en-US"
-          },
+          headers: webHeaders,
           body: JSON.stringify({
-            context: {
-              client: {
-                clientName: "IOS",
-                clientVersion: "19.09.3",
-                deviceMake: "Apple",
-                deviceModel: "iPhone14,3"
-              }
-            },
+            context: webContext,
             videoId: videoId
           })
         });
 
-        debug.ios_status = iosResp.status;
-        if (iosResp.ok) {
-          const iosData = await iosResp.json();
-          debug.ios_playability = iosData?.playabilityStatus?.status;
-          captionTracks = iosData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
-          debug.ios_tracks_count = captionTracks.length;
+        debug.web_status = webResp.status;
+        if (webResp.ok) {
+          const wData = await webResp.json();
+          debug.web_playability = wData?.playabilityStatus?.status;
+          captionTracks = wData?.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
+          debug.web_tracks_count = captionTracks.length;
         }
-      } catch (eIos) {
-        debug.ios_err = eIos.message;
-      }
-    }
-
-    // Step 3: Fallback to watch page scrape
-    if (!captionTracks || !captionTracks.length) {
-      try {
-        const watchResp = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US"
-          }
-        });
-        debug.watch_status = watchResp.status;
-        if (watchResp.ok) {
-          const html = await watchResp.text();
-          captionTracks = extractCaptionTracksFromHtml(html);
-          debug.watch_tracks_count = captionTracks.length;
-        }
-      } catch (eWatch) {
-        debug.watch_err = eWatch.message;
+      } catch (eWeb) {
+        debug.web_err = eWeb.message;
       }
     }
 
@@ -245,6 +232,7 @@ module.exports = async function handler(req, res) {
       }));
     }
 
+    // Select Arabic track or fallback
     let chosen = captionTracks.find(t => t.languageCode === "ar" || (t.vssId && t.vssId.includes(".ar")));
     if (!chosen) {
       chosen = captionTracks.find(t => {
@@ -258,14 +246,17 @@ module.exports = async function handler(req, res) {
     }
 
     let subBaseUrl = chosen.baseUrl;
-    debug.chosen_lang = chosen.languageCode;
-    debug.sub_url_has_xpe = subBaseUrl.includes("exp=xpe");
+    if (subBaseUrl.includes("&exp=xpe")) {
+      subBaseUrl = subBaseUrl.replace("&exp=xpe", "").replace("exp=xpe&", "");
+    }
 
     let chunks = [];
 
     const parseBodyToChunks = (bodyText) => {
       const parsed = [];
       if (!bodyText) return parsed;
+
+      // 1. Format 3 XML
       if (bodyText.includes("<p t=")) {
         const pRegex = /<p\s+t="(\d+)"(?:[^>]*?d="(\d+)")?[^>]*>([\s\S]*?)<\/p>/g;
         let pm;
@@ -278,6 +269,8 @@ module.exports = async function handler(req, res) {
           }
         }
       }
+
+      // 2. Format 1 XML
       if (!parsed.length && bodyText.includes("<text start=")) {
         const textRegex = /<text\s+start="([\d\.]+)"(?:[^>]*?dur="([\d\.]+)")?[^>]*>([\s\S]*?)<\/text>/g;
         let tm;
@@ -290,17 +283,40 @@ module.exports = async function handler(req, res) {
           }
         }
       }
+
+      // 3. JSON format
+      if (!parsed.length && bodyText.trim().startsWith("{")) {
+        try {
+          const subData = JSON.parse(bodyText);
+          const events = subData.events || [];
+          for (const ev of events) {
+            if (!ev.segs) continue;
+            const text = ev.segs.map(s => s.utf8 || "").join("");
+            if (text.trim()) {
+              parsed.push({
+                startMs: ev.tStartMs || 0,
+                durMs: ev.dDurationMs || 0,
+                text: cleanSubText(text)
+              });
+            }
+          }
+        } catch (eJson) {}
+      }
+
       return parsed;
     };
 
     try {
-      const subResp = await fetch(subBaseUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-          "Accept-Language": "en-US"
-        }
-      });
-      debug.sub_fetch_status = subResp.status;
+      const subHeaders = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US"
+      };
+      if (visitorData) {
+        subHeaders["X-Goog-Visitor-Id"] = visitorData;
+      }
+
+      const subResp = await fetch(subBaseUrl, { headers: subHeaders });
+      debug.sub_status = subResp.status;
       if (subResp.ok) {
         const bodyText = await subResp.text();
         debug.sub_body_length = bodyText.length;
