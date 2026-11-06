@@ -243,20 +243,27 @@
         generationConfig: genConfig
       };
 
-      // تحديد نموذجين حصريين فقط لمنع أي دوران في حلقات مفرغة:
+      // تحديد نموذجين حصريين فقط من واقع النماذج النشطة في حساب المستخدم لمنع أي دوران:
       // النموذج الأول: نموذج الفلاش فائق السرعة
-      // النموذج الثاني: نموذج الإنتاج المستقر الأضخم عالمياً كبديل فوري عند ذروة الضغط
+      // النموذج الثاني: نموذج الإنتاج الرسمي الدائم المعتمد
       var candidateModels = [
-        "gemini-2.0-flash",
-        "gemini-1.5-flash"
+        "gemini-2.5-flash",
+        "gemini-flash-latest"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
         try {
           var discovered = await window.GeminiAIService.fetchSupportedModels(key);
           if (Array.isArray(discovered) && discovered.length > 0) {
-            var primary = discovered.find(function(m) { return m.includes("2.5-flash") || m.includes("2.0-flash"); }) || "gemini-2.0-flash";
-            var backup = discovered.find(function(m) { return m.includes("1.5-flash") && !m.includes("8b"); }) || "gemini-1.5-flash";
+            var activeFlashes = discovered.filter(function(m) {
+              return m.includes("flash") &&
+                     !m.includes("tts") &&
+                     !m.includes("image") &&
+                     !m.includes("embedding") &&
+                     !m.includes("vision");
+            });
+            var primary = activeFlashes.find(function(m) { return m === "gemini-2.5-flash" || m.includes("2.5-flash"); }) || activeFlashes[0] || "gemini-2.5-flash";
+            var backup = activeFlashes.find(function(m) { return m === "gemini-flash-latest" || m.includes("flash-latest"); }) || activeFlashes[1] || "gemini-flash-latest";
             candidateModels = [primary, backup];
           }
         } catch (discErr) {}
