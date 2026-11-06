@@ -386,7 +386,7 @@ window.LectureViewerModal = function(props) {
   // جلب تفريغ المحاضرة الحرفي وتوجيه المستخدم لمساعد Google Antigravity
   var handleFetchYouTubeTranscriptDirectly = async function() {
     if (!activeLecture || !activeLecture.mediaUrl) {
-      alert("هذه المحاضرة لا تحتوي على رابط فيديو يوتيوب لجلب التفريغ منه.");
+      alert("🎙️ استخراج وتدقيق التفريغ الحرفي للمحاضرة:\n\nهذه المحاضرة لا تحتوي على رابط فيديو يوتيوب مسجل في بياناتها حتى الآن.\n\nبمجرد توفر رابط الفيديو، كل ما عليك هو إرساله في محادثة Google Antigravity، وسيتولى استخراج النص الحرفي كاملاً بالدقائق والثواني ورفعه للمنصة فوراً.");
       return;
     }
 
@@ -395,7 +395,7 @@ window.LectureViewerModal = function(props) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
         await navigator.clipboard.writeText(videoUrl);
-        copyNotice = "\n\n📋 تم نسخ رابط الفيديو تلقائياً إلى الحافظة (Clipboard) لتسهيل إرساله.";
+        copyNotice = "\n\n📋 تم نسخ رابط الفيديو تلقائياً إلى الحافظة (Clipboard)، يمكنك لصقه مباشرة في محادثة Antigravity بمجرد الضغط على Ctrl + V.";
       } catch (e) {}
     }
 
@@ -1661,7 +1661,7 @@ window.LectureViewerModal = function(props) {
                   },
                   React.createElement("span", null, getIsDraft("transcript") ? "🚀 نشر التفريغ للطلاب" : "🔒 حجب التفريغ (مسودة)")
                 ),
-                currentUser.role === "admin" && activeLecture.mediaUrl && React.createElement(
+                currentUser.role === "admin" && React.createElement(
                   "button",
                   {
                     type: "button",
@@ -1670,7 +1670,7 @@ window.LectureViewerModal = function(props) {
                     className: "px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition-all shadow-2xs disabled:opacity-50"
                   },
                   React.createElement("span", null, isFetchingYouTubeTranscript ? "⏳" : "⚡"),
-                  React.createElement("span", null, isFetchingYouTubeTranscript ? "جاري جلب تفريغ الفيديو..." : "جلب التفريغ من فيديو اليوتيوب")
+                  React.createElement("span", null, "جلب التفريغ عبر Google Antigravity")
                 ),
                 currentUser.role === "admin" && React.createElement(
                   "button",
@@ -1712,7 +1712,7 @@ window.LectureViewerModal = function(props) {
               currentUser.role === "admin" && React.createElement(
                 "div",
                 { className: "flex flex-wrap items-center justify-center gap-3 pt-2" },
-                activeLecture.mediaUrl && React.createElement(
+                React.createElement(
                   "button",
                   {
                     type: "button",
@@ -1720,8 +1720,8 @@ window.LectureViewerModal = function(props) {
                     onClick: handleFetchYouTubeTranscriptDirectly,
                     className: "px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md inline-flex items-center gap-2 active:scale-95 transition-all disabled:opacity-50"
                   },
-                  React.createElement("span", null, isFetchingYouTubeTranscript ? "⏳" : "⚡"),
-                  React.createElement("span", null, isFetchingYouTubeTranscript ? "جاري جلب تفريغ الفيديو من يوتيوب..." : "جلب التفريغ من فيديو اليوتيوب الآن")
+                  React.createElement("span", null, "⚡"),
+                  React.createElement("span", null, "جلب وتدقيق التفريغ عبر Google Antigravity")
                 ),
                 React.createElement(
                   "button",
