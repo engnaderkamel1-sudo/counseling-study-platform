@@ -2296,7 +2296,7 @@ window.LectureViewerModal = function(props) {
               "div",
               null,
               React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "توليد الحزمة التعليمية الشاملة"),
-              React.createElement("p", { className: "text-xs text-slate-500" }, "حدد الأعداد والمعايير الرقمية بدقة")
+              React.createElement("p", { className: "text-xs text-slate-500" }, "توليد أكاديمي ذكي ومتوافق تلقائياً مع حجم وكثافة المحاضرة")
             )
           ),
           React.createElement(
@@ -2316,54 +2316,36 @@ window.LectureViewerModal = function(props) {
           "div",
           { className: "space-y-4" },
 
-          // 1. عدد صفحات الملخص
+          // 1. لوحة المعايير الأكاديمية الذكية والتلقائية (صفر أرقام يدوية)
           React.createElement(
             "div",
-            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
+            { className: "p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/50 space-y-3" },
             React.createElement(
               "div",
-              null,
-              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📄 تغطية الملخص الدراسي المصور:"),
-              React.createElement("span", { className: "text-[11px] text-slate-500" }, "تغطية شاملة وتلقائية 100% لكافة المحاور مع مخطط بصري لكل محور")
-            ),
-            React.createElement("input", {
-              type: "number",
-              min: 1,
-              max: 20,
-              value: genSummaryPages,
-              onChange: function(e) {
-                var v = e.target.value;
-                setGenSummaryPages(v);
-                if (utils && utils.setLocal) utils.setLocal("counsel_gen_summary_pages", v);
-              },
-              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            })
-          ),
-
-
-
-          // 3. عدد أسئلة الكويز
-          React.createElement(
-            "div",
-            { className: "flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60" },
-            React.createElement(
-              "div",
-              null,
-              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📝 أسئلة الكويز التفاعلي (المعيار الذهبي):"),
-              React.createElement("span", { className: "text-[11px] text-slate-500" }, "سؤالان لكل محور جوهري (مفاهيمي ولغوي + تطبيقي ورعائي)")
-            ),
-            React.createElement("input", {
-              type: "number",
-              min: 3,
-              max: 30,
-              value: genQuizCount,
-              onChange: function(e) {
-                var v = e.target.value;
-                setGenQuizCount(v);
-                if (utils && utils.setLocal) utils.setLocal("counsel_gen_quiz_count", v);
-              },
-              className: "w-20 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            })
+              { className: "flex items-start gap-2.5" },
+              React.createElement("span", { className: "text-base mt-0.5 shrink-0" }, "✨"),
+              React.createElement(
+                "div",
+                { className: "space-y-1 text-xs" },
+                React.createElement("p", { className: "font-black text-indigo-950 dark:text-indigo-200" }, "معايير التوليد التلقائي المعتمدة للمنصة:"),
+                React.createElement(
+                  "ul",
+                  { className: "space-y-1.5 text-indigo-900/90 dark:text-indigo-300/90 font-medium pt-1" },
+                  React.createElement(
+                    "li",
+                    { className: "flex items-start gap-1.5" },
+                    React.createElement("span", { className: "text-indigo-600 dark:text-indigo-400 font-bold" }, "•"),
+                    React.createElement("span", null, React.createElement("strong", { className: "font-bold text-indigo-950 dark:text-indigo-100" }, "الدليل الدراسي المصور: "), "تغطية عضوية شاملة لكافة محاور ومصطلحات المحاضرة دون حد مقيد للصفحات، مع رسم مخطط بصري منضبط لكل محور.")
+                  ),
+                  React.createElement(
+                    "li",
+                    { className: "flex items-start gap-1.5" },
+                    React.createElement("span", { className: "text-indigo-600 dark:text-indigo-400 font-bold" }, "•"),
+                    React.createElement("span", null, React.createElement("strong", { className: "font-bold text-indigo-950 dark:text-indigo-100" }, "الكويز التفاعلي: "), "توليد سؤالين متكاملين لكل محور جوهري (سؤال مفاهيمي ولغوي + سؤال تطبيقي ورعائي).")
+                  )
+                )
+              )
+            )
           ),
 
           // 4. خيارات التحديد المخصصة
