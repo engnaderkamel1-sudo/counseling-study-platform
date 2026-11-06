@@ -243,30 +243,21 @@
         generationConfig: genConfig
       };
 
+      // تحديد نموذجين حصريين فقط لمنع أي دوران في حلقات مفرغة:
+      // النموذج الأول: نموذج الفلاش فائق السرعة
+      // النموذج الثاني: نموذج الإنتاج المستقر الأضخم عالمياً كبديل فوري عند ذروة الضغط
       var candidateModels = [
-        "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-flash-latest"
+        "gemini-1.5-flash"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
         try {
           var discovered = await window.GeminiAIService.fetchSupportedModels(key);
           if (Array.isArray(discovered) && discovered.length > 0) {
-            // حصر الاستدعاء في أسرع نماذج Flash الحديثة ذات سعة 8192 توكنز واستبعاد النماذج البطيئة أو القديمة
-            var fastFlash = discovered.filter(function(m) {
-              return (m.includes("flash") || m.includes("2.5") || m.includes("2.0")) &&
-                     !m.includes("embedding") &&
-                     !m.includes("vision") &&
-                     !m.includes("image") &&
-                     !m.includes("tts") &&
-                     !m.includes("realtime") &&
-                     !m.includes("pro");
-            });
-            if (fastFlash.length > 0) {
-              candidateModels = fastFlash.slice(0, 3);
-            }
+            var primary = discovered.find(function(m) { return m.includes("2.5-flash") || m.includes("2.0-flash"); }) || "gemini-2.0-flash";
+            var backup = discovered.find(function(m) { return m.includes("1.5-flash") && !m.includes("8b"); }) || "gemini-1.5-flash";
+            candidateModels = [primary, backup];
           }
         } catch (discErr) {}
       }
@@ -306,6 +297,12 @@
               throw new Error("مفتاح API غير صالح أو انتهت صلاحيته. يرجى تحديثه في صفحة الإعدادات.");
             }
             lastError = errMsg || ("خطأ في النموذج: " + modelName);
+
+            // إذا كان سبب الخطأ ذروة ضغط مؤقتة (503 / 429)، ننتظر ثانيتين فقط قبل تجربة النموذج المستقر الأخير
+            var isBusy = response.status === 503 || response.status === 429 || errMsg.includes("high demand") || errMsg.includes("quota");
+            if (isBusy && i < candidateModels.length - 1) {
+              await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+            }
           }
         } catch (netErr) {
           clearTimeout(timeoutId);
@@ -318,7 +315,8 @@
         }
       }
 
-      throw new Error(lastError || "تعذر إتمام طلب التوليد بنماذج الذكاء الاصطناعي المتاحة.");
+      // إذا فشل النموذجان كلاهما، يتوقف النظام فوراً ويُظهر رسالة واضحة دون أي دوران
+      throw new Error("خوادم الذكاء الاصطناعي تشهد حالياً ذروة ضغط استثنائية لدى جوجل. يرجى الانتظار دقيقة واحدة ثم المحاولة مجدداً: " + lastError);
     },
 
     // 4.1 توليد خطوة الملخص الموسع بشكل مستقل
