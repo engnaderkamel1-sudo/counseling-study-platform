@@ -600,20 +600,7 @@ window.LectureViewerModal = function(props) {
         }
       }
 
-      // 5. جلب تفريغ المحاضرة من فيديو اليوتيوب إذا كان الخيار محدداً
-      if (genSelected.transcript !== false && activeLecture.mediaUrl) {
-        setPackageGenStatus("جاري استخراج وتنسيق تفريغ المحاضرة من فيديو اليوتيوب بالكامل...");
-        try {
-          var transData = await fetchTranscriptSmart(activeLecture.mediaUrl);
-          if (transData.success && transData.transcript) {
-            updated.transcript = transData.transcript;
-            updated.transcriptText = transData.transcriptText || transData.transcript;
-            if (updated.publishStatus) updated.publishStatus.transcript = false;
-          }
-        } catch (tErr) {
-          console.warn("Failed to fetch YouTube transcript in package generator:", tErr);
-        }
-      }
+      // تم استبعاد توليد التفريغ من هنا ليكون التفريغ الحرفي حصرياً عبر Google Antigravity بأعلى دقة
 
       if (cloud && cloud.saveLecture) {
         await cloud.saveLecture(updated);
@@ -2388,7 +2375,6 @@ window.LectureViewerModal = function(props) {
               "div",
               { className: "grid grid-cols-2 gap-2" },
               [
-                { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو" },
                 { id: "summary", label: "📄 الدليل الدراسي المصور (الملخص والمخططات المدمجة)" },
                 { id: "quiz", label: "📝 الكويز التفاعلي" }
               ].map(function(item) {
