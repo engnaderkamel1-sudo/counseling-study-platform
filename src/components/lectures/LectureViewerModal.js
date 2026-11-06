@@ -376,109 +376,37 @@ window.LectureViewerModal = function(props) {
   };
 
   // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
-  // دالة جلب التفريغ الذكية (تتصل بمساعد التفريغ المحلي على جهازك أولاً، ثم السيرفر كخطة بديلة)
+  // دالة جلب التفريغ الحرفي المعتمد عبر Google Antigravity
   var fetchTranscriptSmart = function(mediaUrl) {
     return new Promise(function(resolve, reject) {
-      if (!mediaUrl) {
-        reject(new Error("لا يوجد رابط فيديو يوتيوب مسجل لهذه المحاضرة."));
-        return;
-      }
-
-      var videoId = null;
-      if (window.APP_UTILS && window.APP_UTILS.getYouTubeVideoId) {
-        videoId = window.APP_UTILS.getYouTubeVideoId(mediaUrl);
-      } else {
-        var m = String(mediaUrl).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-        videoId = m ? m[1] : null;
-      }
-
-      // خطة 1: الاتصال بمساعد التفريغ المحلي على جهازك (127.0.0.1:8765)
-      var tryLocalServer = function() {
-        if (!videoId) {
-          return fallbackToServer();
-        }
-
-        var localUrl = "http://127.0.0.1:8765/transcript?videoId=" + encodeURIComponent(videoId);
-        var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
-
-        fetch(localUrl, { signal: controller.signal })
-          .then(function(res) {
-            clearTimeout(timeoutId);
-            return res.json();
-          })
-          .then(function(data) {
-            if (data && data.success && data.transcript) {
-              resolve({
-                success: true,
-                transcript: data.transcript,
-                transcriptText: data.transcriptText || data.transcript,
-                wordCount: data.wordCount || data.transcript.trim().split(/\s+/).length,
-                source: "local_service"
-              });
-            } else {
-              fallbackToServer(data ? data.error : null);
-            }
-          })
-          .catch(function(err) {
-            clearTimeout(timeoutId);
-            fallbackToServer();
-          });
-      };
-
-      // خطة 2: محاولة السيرفر السحابي كخطة بديلة
-      var fallbackToServer = function(localErr) {
-        fetch("/api/youtube-transcript?url=" + encodeURIComponent(mediaUrl))
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            if (d.success && d.transcript) {
-              resolve(d);
-            } else {
-              var errMsg = "💡 لم يتم العثور على مساعد التفريغ المحلي قيد التشغيل على جهازك.\n\nلتفريغ المحاضرة فوراً:\n1. افتح مجلد المشروع واضغط مرتين على ملف:\n   تشغيل_مساعد_التفريغ.bat\n2. ثم اضغط على زر (جلب التفريغ من فيديو اليوتيوب) مجدداً.";
-              if (localErr) {
-                errMsg += "\n\n(تفاصيل: " + localErr + ")";
-              }
-              reject(new Error(errMsg));
-            }
-          })
-          .catch(function(e) {
-            var errMsg = "💡 لم يتم الاتصال بمساعد التفريغ المحلي على جهازك.\n\nيرجى تشغيل ملف (تشغيل_مساعد_التفريغ.bat) على جهازك، ثم إعادة المحاولة.";
-            reject(new Error(errMsg));
-          });
-      };
-
-      tryLocalServer();
+      reject(new Error("نظراً لقيود الخصوصية والحماية في يوتيوب، يتم استخراج التفريغ الحرفي وتدقيقه حصرياً عبر Google Antigravity لضمان أعلى دقة علمية."));
     });
   };
-  // جلب تفريغ المحاضرة الحرفي من فيديو اليوتيوب مباشرة
+
+  // جلب تفريغ المحاضرة الحرفي وتوجيه المستخدم لمساعد Google Antigravity
   var handleFetchYouTubeTranscriptDirectly = async function() {
     if (!activeLecture || !activeLecture.mediaUrl) {
       alert("هذه المحاضرة لا تحتوي على رابط فيديو يوتيوب لجلب التفريغ منه.");
       return;
     }
-    setIsFetchingYouTubeTranscript(true);
-    try {
-      var data = await fetchTranscriptSmart(activeLecture.mediaUrl);
-      var updated = Object.assign({}, activeLecture, {
-        transcript: data.transcript,
-        transcriptText: data.transcriptText || data.transcript
-      });
-      if (cloud && cloud.saveLecture) {
-        await cloud.saveLecture(updated);
-      }
-      if (onSelectLecture) onSelectLecture(updated);
-      var msg = "✅ تم جلب تفريغ المحاضرة من فيديو اليوتيوب بنجاح! (" + data.wordCount + " كلمة مسجلة)";
-      if (data.source === "local_service") {
-        msg += "\n(تم الجلب المباشر الحرفي وفك قيود يوتيوب عبر المساعد المحلي 🚀)";
-      }
-      alert(msg);
-    } catch (err) {
-      alert("تنبيه: " + (err && err.message ? err.message : err));
-    } finally {
-      setIsFetchingYouTubeTranscript(false);
-    }
-  };
 
+    var videoUrl = activeLecture.mediaUrl;
+    var copyNotice = "";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(videoUrl);
+        copyNotice = "\n\n📋 تم نسخ رابط الفيديو تلقائياً إلى الحافظة (Clipboard) لتسهيل إرساله.";
+      } catch (e) {}
+    }
+
+    var msg = "🎙️ استخراج وتدقيق التفريغ الحرفي للمحاضرة:\n\n" +
+      "نظراً لقيود الخصوصية والحماية المفروضة من موقع يوتيوب، يتم استخراج التفريغ الحرفي وتدقيقه بأعلى دقة عبر:\n" +
+      "Google Antigravity\n\n" +
+      "كل ما عليك هو إرسال رابط المحاضرة في محادثة Antigravity، وسيتولى استخراج النص الحرفي كاملاً بالدقائق والثواني ورفعه للمنصة فوراً." +
+      copyNotice;
+
+    alert(msg);
+  };
   // توليد المخططات البصرية التفاعلية بالذكاء الاصطناعي بأسلوب NotebookLM
   var handleGenerateVisualsDirectly = async function() {
     if (!window.EducationalAIService || currentUser.role !== "admin") return;
