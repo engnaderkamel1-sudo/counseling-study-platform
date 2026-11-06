@@ -69,7 +69,7 @@
       try {
         return JSON.parse(cleaned);
       } catch (firstErr) {
-        // المحاولة 2: استخراج كائن JSON من بين نصوص الشرح في حال وجود هوامش
+        // المحاولة 2: استخراج كائن JSON من بين نصوص الشرح في حال وجود هوامش خارجية
         var firstBrace = cleaned.indexOf("{");
         var lastBrace = cleaned.lastIndexOf("}");
         if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -77,96 +77,65 @@
           try {
             return JSON.parse(subJson);
           } catch (eSub) {}
+        } else {
+          var subJson = cleaned;
         }
 
-        // المحاولة 3: مرشح تعريب علامات التنصيص الداخلية الذكي والآمن مع حماية أسماء الخصائص
-        var sanitizeQuotesSafely = function(str) {
-          var lines = str.split("\n");
-          var kvPattern = /^(\s*"[a-zA-Z0-9_\-]+"\s*:\s*")(.*)("[,]?\s*)$/;
-          var arrPattern = /^(\s*")(.*)("[,]?\s*)$/;
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            var m = line.match(kvPattern);
-            if (m) {
-              var startPart = m[1];
-              var content = m[2];
-              var endPart = m[3];
-              if (content.indexOf('":') === -1) {
-                var fixed = "";
-                var qOpen = true;
-                for (var j = 0; j < content.length; j++) {
-                  var ch = content[j];
-                  if (ch === '"') {
-                    fixed += qOpen ? "«" : "»";
-                    qOpen = !qOpen;
-                  } else {
-                    fixed += ch;
-                  }
-                }
-                lines[i] = startPart + fixed + endPart;
-              }
-            } else if (!/^\s*"[a-zA-Z0-9_\-]+"\s*:/.test(line)) {
-              var mArr = line.match(arrPattern);
-              if (mArr) {
-                var aStart = mArr[1];
-                var aContent = mArr[2];
-                var aEnd = mArr[3];
-                var aFixed = "";
-                var aOpen = true;
-                for (var k = 0; k < aContent.length; k++) {
-                  var ach = aContent[k];
-                  if (ach === '"') {
-                    aFixed += aOpen ? "«" : "»";
-                    aOpen = !aOpen;
-                  } else {
-                    aFixed += ach;
-                  }
-                }
-                lines[i] = aStart + aFixed + aEnd;
-              }
+        // المحاولة 3: محلل تدفق الحالات الذكي (State Machine Parser) لحل علامات التنصيص والقفزات السطرية الداخلية
+        var repairJsonStateMachine = function(s) {
+          var result = "";
+          var inString = false;
+          var isEscaped = false;
+          var quoteOpen = true;
+          // التعبير النمطي لما هو مسموح به بعد علامة تنصيص نهاية النص في JSON
+          var endPattern = /^\s*(:\s*|,\s*("[a-zA-Z0-9_\-]+"\s*:|["{\[]|[\]\}])|[\]\}]|$)/;
+
+          for (var i = 0; i < s.length; i++) {
+            var ch = s[i];
+
+            if (ch === '\\' && !isEscaped) {
+              isEscaped = true;
+              result += ch;
+              continue;
             }
-          }
-          return lines.join("\n");
-        };
 
-        var sanitized = sanitizeQuotesSafely(cleaned);
-        sanitized = sanitized.replace(/,(\s*[\]}])/g, "$1");
-        try {
-          return JSON.parse(sanitized);
-        } catch (eSanitized) {}
-
-        // المحاولة 4: تعقيم القفزات السطرية غير المشفرة داخل قيم النصوص في JSON
-        var escapeNewlinesInsideStrings = function(str) {
-          var inStr = false;
-          var escape = false;
-          var out = "";
-          for (var i = 0; i < str.length; i++) {
-            var c = str[i];
-            if (c === '"' && !escape) {
-              inStr = !inStr;
-              out += c;
-            } else if (c === '\\' && !escape) {
-              escape = true;
-              out += c;
-            } else if (c === '\n' && inStr) {
-              out += '\\n';
-              escape = false;
-            } else if (c === '\r' && inStr) {
-              escape = false;
+            if (ch === '"' && !isEscaped) {
+              if (!inString) {
+                inString = true;
+                quoteOpen = true;
+                result += ch;
+              } else {
+                var nextPart = s.substring(i + 1, i + 100);
+                if (endPattern.test(nextPart)) {
+                  inString = false;
+                  result += ch;
+                } else {
+                  // علامة تنصيص داخلية في سياق الكلام - تُحول تلقائياً إلى قوس عربي
+                  result += quoteOpen ? "«" : "»";
+                  quoteOpen = !quoteOpen;
+                }
+              }
+            } else if (inString && (ch === '\n' || ch === '\r')) {
+              // قفزة سطر داخل نص JSON دون تشفير
+              result += "\\n";
             } else {
-              escape = false;
-              out += c;
+              result += ch;
             }
+
+            isEscaped = false;
           }
-          return out;
+          return result;
         };
 
-        var safeNewlinesText = escapeNewlinesInsideStrings(sanitized);
-        try {
-          return JSON.parse(safeNewlinesText);
-        } catch (eNewlines) {}
+        var sanitizedState = repairJsonStateMachine(subJson);
+        // إزالة الفواصل المتأخرة الزائدة قبل إغلاق الأقواس
+        sanitizedState = sanitizedState.replace(/,(\s*[\]}])/g, "$1");
 
-        // المحاولة 5: دالة إنقاذ وترميم JSON المقطوع عند حد التوكنز
+        try {
+          return JSON.parse(sanitizedState);
+        } catch (eState) {}
+
+        // المحاولة 4: دالة إنقاذ وترميم JSON المقطوع عند سقف التوكنز
         var repairTruncatedJson = function(str) {
           var lastB = str.lastIndexOf("}");
           if (lastB === -1) return null;
@@ -180,7 +149,7 @@
         };
 
         try {
-          var repaired = repairTruncatedJson(safeNewlinesText);
+          var repaired = repairTruncatedJson(sanitizedState);
           if (repaired) {
             return JSON.parse(repaired);
           }
@@ -190,7 +159,6 @@
         throw new Error("تعذر استخراج بيانات بصيغة صالحة: " + firstErr.message);
       }
     },
-
     // 2.5 دالة تنقية واستبعاد أي مخططات أو بطاقات إدارية وتنظيمية (زووم، أرقام الساعات، منصة البث)
     _sanitizeDiagram: function(diagram) {
       if (!diagram || typeof diagram !== "object" || !diagram.type) return null;
@@ -345,7 +313,8 @@
         "     • النمط 2: process (مسار تسلسلي ومراحل ديناميكية): يُستخدم عند ذكر خطوات أو مراحل متتالية لعملية إرشادية أو علاجية أو نمو شخصي. { id, type='process', title, subtitle, badge, steps: [{ step: 1, title, desc, icon, outcome }] }\n" +
         "     • النمط 3: pyramid أو dual_system أو cycle: يُستخدم عند وجود تدرج هرمي صريح ذكره المحاضر (كهرم الاحتياجات الإنسانية)، أو نظام ثنائي تكاملي (كنصفي المخ أو الجهاز العصبي)، أو حلقة تفاعلية مغلقة.\n" +
         "     • النمط 4: pillars (أركان وأبعاد الموقف التطبيقي للمشير): إذا كان المحور فكرياً عاماً، يُصمم كمخطط أبعاد وتطبيقات إرشادية للمشير توضح: ما هو التوجيه السليم؟ وما هي المحاذير المشورية؟ من واقع نص كلام المحاضر حصراً. { id, type='pillars', title, subtitle, badge, pillars: [{ title, icon, desc, keyInsights: ['تطبيق عملي 1', 'محذور مشوري 2'] }] }\n" +
-        "   ⚠️ قاعدة منع الهلاوس والتأليف البصري (Zero Hallucination Rule): يُحظر تماماً اختراع أي أشكال أو رموز وهمية لم يذكرها المحاضر، وكل عنصر أو نقطة في المخطط يجب أن تستند صراحة لكلامه في التسجيل.\n" +
+        "   ⚠️ قاعدة منع الهلاوس والتأليف البصري (Zero Hallucination Rule): يُحظر تماماً اختراع أي أشكال أو رموز وهمية لم يذكرها المحاضر، وكل عنصر أو نقطة في المخطط يجب أن تستند صراحة لكلامه في التسجيل.\n"    ⚠️ شرط قطعي لسلامة بنية البيانات: يُحظر استخدام علامات التنصيص المزدوجة (\") نهائياً داخل نصوص الشرح أو الأمثلة أو قيم المخططات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
+        "+
         "   - أنواع المخططات المتاحة لحقل visualDiagram:\n" +
         "     • dual_system: نظام ثنائي متقابل ومتكامل (تشريح نصفي المخ، الفص الأيمن مقابل الأيسر، الجهاز السمبثاوي والباراسمبثاوي، العقل العاطفي مقابل المنطقي) { id, type='dual_system', title, subtitle, badge, leftWing: { title, icon, color, traits: ['نقطة 1', 'نقطة 2'], counselingRole }, rightWing: { title, icon, color, traits: ['نقطة 1', 'نقطة 2'], counselingRole }, integration }\n" +
         "     • cycle: حلقة أو دورة مغلقة أو مثلث علاقات ديناميكي (دورة الصدمة، حلقة الإدمان، مثلث كاربمان: الضحية والجلاد والمنقذ) { id, type='cycle', title, subtitle, badge, stages: [{ step: 1, title, desc, icon }], breakthrough }\n" +
