@@ -247,31 +247,291 @@
       });
     };
 
+    window.__preReactEmergencyTab = 'books';
+
     window.__preReactGoToSection = function(tabName, btnElem) {
-      var tab = tabName || 'lectures';
+      var tab = tabName || 'books';
       if (tab === 'guide') tab = 'student_guide';
       try {
         localStorage.setItem('counsel_active_tab', tab);
         sessionStorage.setItem('counsel_active_tab', tab);
       } catch (e) {}
 
-      if (btnElem) {
-        btnElem.style.opacity = '0.6';
-        btnElem.style.pointerEvents = 'none';
-        var labelSpan = btnElem.querySelector('span:last-child');
-        if (labelSpan) labelSpan.textContent = 'جاري التحويل... ⏳';
-      }
+      window.__preReactEmergencyTab = tab;
+      var fallbackCard = document.getElementById('pre-react-fallback-card');
+      var emergencyView = document.getElementById('pre-react-emergency-view');
+      var shieldContainer = document.getElementById('pre-react-shield-container');
 
-      var targetHash = '#' + tab;
-      var cleanUrl = window.location.origin + window.location.pathname + targetHash;
-      try {
-        window.location.replace(cleanUrl);
-      } catch (e) {
-        window.location.href = cleanUrl;
+      if (fallbackCard) fallbackCard.style.display = 'none';
+      if (emergencyView) {
+        emergencyView.style.display = 'block';
+        if (shieldContainer) {
+          shieldContainer.style.maxWidth = '780px';
+          shieldContainer.style.maxHeight = '92vh';
+          shieldContainer.style.overflowY = 'auto';
+        }
+        window.__preReactRenderEmergencyContent(tab);
       }
+    };
+
+    window.__preReactBackToError = function() {
+      var fallbackCard = document.getElementById('pre-react-fallback-card');
+      var emergencyView = document.getElementById('pre-react-emergency-view');
+      var shieldContainer = document.getElementById('pre-react-shield-container');
+
+      if (emergencyView) emergencyView.style.display = 'none';
+      if (fallbackCard) fallbackCard.style.display = 'block';
+      if (shieldContainer) {
+        shieldContainer.style.maxWidth = '440px';
+        shieldContainer.style.maxHeight = '';
+        shieldContainer.style.overflowY = '';
+      }
+    };
+
+    window.__preReactReloadFullApp = function(btn) {
+      if (btn) {
+        btn.textContent = 'جاري إعادة التشغيل... ⏳';
+        btn.style.opacity = '0.7';
+        btn.style.pointerEvents = 'none';
+      }
+      var tab = window.__preReactEmergencyTab || 'lectures';
+      var cleanUrl = window.location.origin + window.location.pathname + '#' + tab;
+      try { window.location.replace(cleanUrl); } catch(e) {}
       setTimeout(function() {
         window.location.reload();
-      }, 50);
+      }, 100);
+    };
+
+    window.__preReactRenderEmergencyContent = function(tab) {
+      window.__preReactEmergencyTab = tab;
+      var contentDiv = document.getElementById('pre-react-emergency-content');
+      if (!contentDiv) return;
+
+      var tabs = ['lectures', 'books', 'student_guide'];
+      tabs.forEach(function(t) {
+        var btn = document.getElementById('pre-btn-tab-' + t);
+        if (btn) {
+          if (t === tab) {
+            btn.style.background = '#2563eb';
+            btn.style.color = '#ffffff';
+            btn.style.borderColor = '#3b82f6';
+          } else {
+            btn.style.background = '#1e293b';
+            btn.style.color = '#94a3b8';
+            btn.style.borderColor = '#334155';
+          }
+        }
+      });
+
+      var html = '';
+
+      if (tab === 'student_guide') {
+        var defaultDocs = [
+          {
+            title: "منهج المشورة المعتمد - السنة الأولى (كامل 104 صفحات)",
+            desc: "المقرر الدراسي الشامل المعتمد لجميع مواد المشورة المسيحية",
+            url: "./curriculum/oula_mashora_smart.pdf",
+            icon: "📑",
+            size: "3.02 MB"
+          },
+          {
+            title: "1. النفس الإنسانية (CED 102)",
+            desc: "المقرر المعتمد لمادة النفس الإنسانية ومكوناتها ودوافع السلوك",
+            url: "./curriculum/subjects/subject_1_nafs_insaneya.pdf",
+            icon: "📜",
+            size: "1.8 MB"
+          },
+          {
+            title: "2. الشخصية الإنسانية (CED 101)",
+            desc: "دراسة سمات الشخصية وأنماطها والاضطرابات السلوكية",
+            url: "./curriculum/subjects/subject_2_shakhseya_insaneya.pdf",
+            icon: "📜",
+            size: "1.7 MB"
+          },
+          {
+            title: "3. علم المشورة أ (CED 103)",
+            desc: "مبادئ المشورة التأسيسية وأركان الجلسة الإرشادية والميثاق الأخلاقي",
+            url: "./curriculum/subjects/subject_3_elm_mashora_a.pdf",
+            icon: "📜",
+            size: "1.6 MB"
+          },
+          {
+            title: "4. علم المشورة ب (CED 104)",
+            desc: "المهارات المتقدمة، آليات التحويل، وإدارة الأزمات والمشكلات الأسرية",
+            url: "./curriculum/subjects/subject_4_elm_mashora_b.pdf",
+            icon: "📜",
+            size: "1.9 MB"
+          },
+          {
+            title: "5. علم النفس العصبي (Neuropsychology)",
+            desc: "وظائف الدماغ والأعصاب والأساس البيولوجي للانفعالات والأمان",
+            url: "./curriculum/subjects/subject_5_neuropsychology.pdf",
+            icon: "📜",
+            size: "1.8 MB"
+          }
+        ];
+
+        try {
+          var rawDocs = localStorage.getItem('counsel_guide_docs_backup');
+          if (rawDocs) {
+            var parsed = JSON.parse(rawDocs);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parsed.forEach(function(d) {
+                if (d && d.files && Array.isArray(d.files)) {
+                  d.files.forEach(function(f) {
+                    if (f && f.url && !defaultDocs.some(function(x) { return x.url === f.url; })) {
+                      defaultDocs.push({
+                        title: (d.title || '') + ' - ' + (f.name || 'ملف'),
+                        desc: d.description || 'مستند إضافي من دليل الطالب',
+                        url: f.url,
+                        icon: d.icon || '📑',
+                        size: f.size || ''
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          }
+        } catch(e) {}
+
+        html += '<div style="display: flex; flex-direction: column; gap: 0.65rem; text-align: right;">';
+        html += '<p style="margin: 0; font-size: 0.8rem; color: #cbd5e1; font-weight: 700;">📖 جميع وثائق ومقررات دليل الطالب متاحة للقراءة المباشرة والتحميل أوفلاين:</p>';
+        defaultDocs.forEach(function(doc) {
+          html += '<div style="background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">';
+          html += '  <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">';
+          html += '    <div style="font-size: 1.5rem; flex-shrink: 0;">' + doc.icon + '</div>';
+          html += '    <div style="min-width: 0;">';
+          html += '      <h4 style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + doc.title + '</h4>';
+          html += '      <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: #94a3b8; line-height: 1.3;">' + doc.desc + (doc.size ? ' (' + doc.size + ')' : '') + '</p>';
+          html += '    </div>';
+          html += '  </div>';
+          html += '  <a href="' + doc.url + '" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; background: #2563eb; color: #ffffff; text-decoration: none; padding: 0.45rem 0.85rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; transition: background 0.2s;">';
+          html += '    <span>📖 فتح وقراءة</span>';
+          html += '  </a>';
+          html += '</div>';
+        });
+        html += '</div>';
+
+      } else if (tab === 'books') {
+        var cachedBooks = [];
+        try {
+          var rawB = localStorage.getItem('counsel_books_data') || localStorage.getItem('counsel_custom_books');
+          if (rawB) {
+            var parsedB = JSON.parse(rawB);
+            if (Array.isArray(parsedB)) cachedBooks = parsedB;
+          }
+        } catch(e) {}
+
+        if (cachedBooks.length === 0) {
+          cachedBooks = [
+            {
+              title: "منهج المشورة المعتمد - السنة الأولى",
+              author: "معهد المشورة الأرثوذكسية بالمعادي",
+              category: "مناهج المشورة",
+              pdfUrl: "./curriculum/oula_mashora_smart.pdf",
+              description: "المقرر الأكاديمي المعتمد الشامل لجميع مواد ودبلومة المشورة"
+            },
+            {
+              title: "علم النفس المسيحي وأركان المشورة",
+              author: "معهد المشورة",
+              category: "مراجع تخصصية",
+              pdfUrl: "./curriculum/subjects/subject_3_elm_mashora_a.pdf",
+              description: "المرجع التأسيسي للعملية الإرشادية ومثلث الأمان العلاجي"
+            },
+            {
+              title: "تشريح الشخصية الإنسانية والاضطرابات",
+              author: "معهد المشورة",
+              category: "علم النفس والشخصية",
+              pdfUrl: "./curriculum/subjects/subject_2_shakhseya_insaneya.pdf",
+              description: "دراسة تفصيلية لأنماط الشخصيات، الحيل الدفاعية، والصدمات النفسية"
+            }
+          ];
+        }
+
+        html += '<div style="display: flex; flex-direction: column; gap: 0.65rem; text-align: right;">';
+        html += '<p style="margin: 0; font-size: 0.8rem; color: #cbd5e1; font-weight: 700;">📚 قائمة المراجع والكتب المعتمدة المتاحة للقراءة والاستماع في وضع الطوارئ:</p>';
+        cachedBooks.forEach(function(b) {
+          var targetUrl = b.driveUrl || b.pdfUrl || b.fileUrl || "./curriculum/oula_mashora_smart.pdf";
+          html += '<div style="background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;">';
+          html += '  <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;">';
+          html += '    <div style="display: flex; align-items: center; gap: 0.6rem;">';
+          html += '      <span style="font-size: 1.5rem;">📘</span>';
+          html += '      <div>';
+          html += '        <h4 style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #f8fafc;">' + (b.title || 'مرجع دراسي') + '</h4>';
+          html += '        <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: #94a3b8;">' + (b.author || 'معهد المشورة') + (b.category ? ' • ' + b.category : '') + '</p>';
+          html += '      </div>';
+          html += '    </div>';
+          html += '    <a href="' + targetUrl + '" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; background: #059669; color: #ffffff; text-decoration: none; padding: 0.45rem 0.85rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; transition: background 0.2s;">';
+          html += '      <span>📄 فتح المرجع</span>';
+          html += '    </a>';
+          html += '  </div>';
+          if (b.audioTrack1Url || (b.audioChapters && b.audioChapters[0] && b.audioChapters[0].audioUrl)) {
+            var audioSrc = b.audioTrack1Url || b.audioChapters[0].audioUrl;
+            html += '  <div style="padding-top: 0.3rem; border-top: 1px solid rgba(51, 65, 85, 0.5);">';
+            html += '    <p style="margin: 0 0 0.2rem 0; font-size: 0.7rem; color: #38bdf8; font-weight: 600;">🎧 استماع صوتي للمرجع:</p>';
+            html += '    <audio src="' + audioSrc + '" controls style="width: 100%; height: 32px; border-radius: 8px;"></audio>';
+            html += '  </div>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+
+      } else {
+        var cachedLectures = [];
+        try {
+          var rawL = localStorage.getItem('counsel_term1_lectures') || localStorage.getItem('counsel_lectures_data');
+          if (rawL) {
+            var parsedL = JSON.parse(rawL);
+            if (Array.isArray(parsedL)) cachedLectures = parsedL;
+          }
+        } catch(e) {}
+
+        if (cachedLectures.length === 0) {
+          cachedLectures = [
+            {
+              id: 1,
+              title: "محاضرة 1: مدخل علم المشورة وسر الاعتراف وهرم الاحتياجات",
+              speaker: "أنبا دانيال ود. مجدي إسحق",
+              audioUrl: "https://ia800109.us.archive.org/3/items/counseling-term1/Lec01_Introduction.mp3"
+            },
+            {
+              id: 2,
+              title: "محاضرة 2: المفهوم التأسيسي للمشورة ومثلث الأمان العلاجي",
+              speaker: "د. مجدي إسحق",
+              audioUrl: "https://ia800109.us.archive.org/3/items/counseling-term1/Lec02_Foundations.mp3"
+            },
+            {
+              id: 3,
+              title: "محاضرة 3: تشريح الشخصية الإنسانية والاحتياجات النفسية",
+              speaker: "د. مجدي إسحق",
+              audioUrl: "https://ia800109.us.archive.org/3/items/counseling-term1/Lec03_Personality.mp3"
+            }
+          ];
+        }
+
+        html += '<div style="display: flex; flex-direction: column; gap: 0.65rem; text-align: right;">';
+        html += '<p style="margin: 0; font-size: 0.8rem; color: #cbd5e1; font-weight: 700;">🎧 محاضرات التيرم والتسجيلات المباشرة المتاحة للاستماع في وضع الطوارئ:</p>';
+        cachedLectures.slice(0, 15).forEach(function(lec) {
+          html += '<div style="background: #0f172a; border: 1px solid #334155; border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.45rem;">';
+          html += '  <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">';
+          html += '    <div>';
+          html += '      <h4 style="margin: 0; font-size: 0.85rem; font-weight: 700; color: #f8fafc;">' + (lec.title || 'محاضرة') + '</h4>';
+          html += '      <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: #94a3b8;">' + (lec.speaker || 'معهد المشورة') + '</p>';
+          html += '    </div>';
+          if (lec.handoutUrl) {
+            html += '    <a href="' + lec.handoutUrl + '" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; background: #334155; color: #cbd5e1; text-decoration: none; padding: 0.35rem 0.65rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600;">📄 الهاند آوت</a>';
+          }
+          html += '  </div>';
+          if (lec.audioUrl) {
+            html += '  <audio src="' + lec.audioUrl + '" controls style="width: 100%; height: 32px; border-radius: 8px; margin-top: 0.2rem;"></audio>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      contentDiv.innerHTML = html;
     };
 
     window.__preReactCopyError = function() {
@@ -322,7 +582,7 @@
   <div id="root">
     <!-- درع الأمان التلقائي لمنع الشاشة البيضاء وإرسال البلاغ للمشرفين -->
     <div id="pre-react-shield">
-      <div style="max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+      <div id="pre-react-shield-container" style="max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; transition: max-width 0.3s ease;">
         <div style="width: 60px; height: 60px; border-radius: 16px; background: linear-gradient(135deg, #2563eb, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);">
           🎓
         </div>
@@ -384,6 +644,49 @@
               <span>📋</span>
               <span>نسخ تفاصيل الخطأ</span>
             </button>
+          </div>
+        </div>
+
+        <!-- وضع القراءة السريع للطوارئ البديل -->
+        <div id="pre-react-emergency-view" style="display: none; width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 1.25rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+          <!-- شريط التحكم العلوي -->
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #334155;">
+            <div style="text-align: right;">
+              <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #f8fafc; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🛡️</span>
+                <span>وضع الطوارئ والقراءة الآمنة</span>
+              </h3>
+              <p style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: #94a3b8;">تصفح وقراءة مراجعك ومحاضراتك مباشرة دون توقف</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <button type="button" onclick="window.__preReactReloadFullApp(this)" style="background: #334155; color: #ffffff; border: 1px solid #475569; border-radius: 10px; padding: 0.4rem 0.75rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; font-family: inherit;">
+                <span>🔄</span>
+                <span>إعادة تشغيل التطبيق</span>
+              </button>
+              <button type="button" onclick="window.__preReactBackToError()" style="background: transparent; color: #94a3b8; border: 1px solid #334155; border-radius: 10px; padding: 0.4rem 0.65rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit;">
+                <span>تفاصيل الخطأ</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- شريط التبديل بين الأقسام الثلاثة -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+            <button type="button" id="pre-btn-tab-lectures" onclick="window.__preReactRenderEmergencyContent('lectures')" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 12px; padding: 0.6rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-family: inherit; transition: all 0.2s;">
+              <span style="font-size: 1.1rem;">🎧</span>
+              <span>المحاضرات</span>
+            </button>
+            <button type="button" id="pre-btn-tab-books" onclick="window.__preReactRenderEmergencyContent('books')" style="background: #2563eb; color: #ffffff; border: 1px solid #3b82f6; border-radius: 12px; padding: 0.6rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-family: inherit; transition: all 0.2s;">
+              <span style="font-size: 1.1rem;">📚</span>
+              <span>المكتبة والمراجع</span>
+            </button>
+            <button type="button" id="pre-btn-tab-student_guide" onclick="window.__preReactRenderEmergencyContent('student_guide')" style="background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 12px; padding: 0.6rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; font-family: inherit; transition: all 0.2s;">
+              <span style="font-size: 1.1rem;">📖</span>
+              <span>دليل الطالب</span>
+            </button>
+          </div>
+
+          <!-- مساحة عرض محتوى القسم المختار -->
+          <div id="pre-react-emergency-content" style="max-height: 55vh; overflow-y: auto; padding-right: 0.25rem;">
           </div>
         </div>
       </div>
