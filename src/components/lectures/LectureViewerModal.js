@@ -376,6 +376,92 @@ window.LectureViewerModal = function(props) {
   };
 
   // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
+  // دالة جلب التفريغ الذكية (تفحص إضافة المتصفح أولاً، ثم السيرفر)
+  var fetchTranscriptSmart = function(mediaUrl) {
+    return new Promise(function(resolve, reject) {
+      if (!mediaUrl) {
+        reject(new Error("لا يوجد رابط فيديو يوتيوب مسجل لهذه المحاضرة."));
+        return;
+      }
+
+      var videoId = null;
+      if (window.APP_UTILS && window.APP_UTILS.getYouTubeVideoId) {
+        videoId = window.APP_UTILS.getYouTubeVideoId(mediaUrl);
+      } else {
+        var m = String(mediaUrl).match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+        videoId = m ? m[1] : null;
+      }
+
+      var requestId = "req_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+      var extensionTimeout = null;
+      var hasResponded = false;
+
+      var listener = function(event) {
+        if (event.source !== window || !event.data) return;
+        if (event.data.type === "RECEIVE_YOUTUBE_TRANSCRIPT" && event.data.requestId === requestId) {
+          hasResponded = true;
+          window.removeEventListener("message", listener);
+          clearTimeout(extensionTimeout);
+
+          if (event.data.success && event.data.transcript) {
+            var words = event.data.transcript.trim().split(/\s+/).length;
+            resolve({
+              success: true,
+              transcript: event.data.transcript,
+              transcriptText: event.data.transcriptText || event.data.transcript,
+              wordCount: words,
+              source: "extension"
+            });
+          } else {
+            fallbackToServer(event.data.error);
+          }
+        }
+      };
+
+      var fallbackToServer = function(extError) {
+        fetch("/api/youtube-transcript?url=" + encodeURIComponent(mediaUrl))
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.success && d.transcript) {
+              resolve(d);
+            } else {
+              var errMsg = d.error || extError || "تعذر جلب تفريغ الفيديو من يوتيوب.";
+              if (errMsg.indexOf("مسارات") !== -1 || errMsg.indexOf("حظر") !== -1 || errMsg.indexOf("LOGIN") !== -1) {
+                errMsg += "\n\n💡 نصيحة: لتفادي قيود يوتيوب، تأكد من تفعيل إضافة المتصفح المخصصة للمنصة لجلب التفريغ فوراً بضغطة زر.";
+              }
+              reject(new Error(errMsg));
+            }
+          })
+          .catch(function(e) {
+            if (extError) {
+              reject(new Error(extError));
+            } else {
+              reject(new Error("تعذر الاتصال بالسيرفر."));
+            }
+          });
+      };
+
+      if (videoId) {
+        window.addEventListener("message", listener);
+        window.postMessage({
+          type: "REQUEST_YOUTUBE_TRANSCRIPT",
+          videoId: videoId,
+          requestId: requestId
+        }, "*");
+
+        // إذا لم ترد الإضافة خلال ثانية ونصف، ننتقل تلقائياً لطلب السيرفر
+        extensionTimeout = setTimeout(function() {
+          if (!hasResponded) {
+            window.removeEventListener("message", listener);
+            fallbackToServer();
+          }
+        }, 1500);
+      } else {
+        fallbackToServer();
+      }
+    });
+  };
+
   // جلب تفريغ المحاضرة الحرفي من فيديو اليوتيوب مباشرة
   var handleFetchYouTubeTranscriptDirectly = async function() {
     if (!activeLecture || !activeLecture.mediaUrl) {
@@ -384,20 +470,20 @@ window.LectureViewerModal = function(props) {
     }
     setIsFetchingYouTubeTranscript(true);
     try {
-      var resp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
-      var data = await resp.json();
-      if (!resp.ok || !data.success) {
-        throw new Error(data.error || "تعذر جلب تفريغ الفيديو من يوتيوب.");
-      }
+      var data = await fetchTranscriptSmart(activeLecture.mediaUrl);
       var updated = Object.assign({}, activeLecture, {
         transcript: data.transcript,
-        transcriptText: data.transcript
+        transcriptText: data.transcriptText || data.transcript
       });
       if (cloud && cloud.saveLecture) {
         await cloud.saveLecture(updated);
       }
       if (onSelectLecture) onSelectLecture(updated);
-      alert("✅ تم جلب تفريغ المحاضرة من فيديو اليوتيوب بنجاح! (" + data.wordCount + " كلمة مسجلة).");
+      var msg = "✅ تم جلب تفريغ المحاضرة من فيديو اليوتيوب بنجاح! (" + data.wordCount + " كلمة مسجلة)";
+      if (data.source === "extension") {
+        msg += "\n(تم الجلب المباشر وفك القيود بواسطة إضافة المتصفح 🚀)";
+      }
+      alert(msg);
     } catch (err) {
       alert("تنبيه: " + (err && err.message ? err.message : err));
     } finally {
@@ -417,14 +503,11 @@ window.LectureViewerModal = function(props) {
       if (!sourceContent && activeLecture.mediaUrl) {
         try {
           setPackageGenStatus("جاري فحص وجلب تفريغ فيديو اليوتيوب للمحاضرة...");
-          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
-          if (transResp.ok) {
-            var transData = await transResp.json();
-            if (transData.success && transData.transcript) {
-              activeLecture.transcript = transData.transcript;
-              activeLecture.transcriptText = transData.transcript;
-              sourceContent = transData.transcript.trim();
-            }
+          var transData = await fetchTranscriptSmart(activeLecture.mediaUrl);
+          if (transData.success && transData.transcript) {
+            activeLecture.transcript = transData.transcript;
+            activeLecture.transcriptText = transData.transcriptText || transData.transcript;
+            sourceContent = transData.transcript.trim();
           }
         } catch(tErr) {
           console.warn("Transcript auto-fetch skipped:", tErr);
@@ -483,14 +566,11 @@ window.LectureViewerModal = function(props) {
       if (!sourceContent && activeLecture.mediaUrl) {
         try {
           setPackageGenStatus("جاري فحص وجلب تفريغ فيديو اليوتيوب للمحاضرة...");
-          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
-          if (transResp.ok) {
-            var transData = await transResp.json();
-            if (transData.success && transData.transcript) {
-              activeLecture.transcript = transData.transcript;
-              activeLecture.transcriptText = transData.transcript;
-              sourceContent = transData.transcript.trim();
-            }
+          var transData = await fetchTranscriptSmart(activeLecture.mediaUrl);
+          if (transData.success && transData.transcript) {
+            activeLecture.transcript = transData.transcript;
+            activeLecture.transcriptText = transData.transcriptText || transData.transcript;
+            sourceContent = transData.transcript.trim();
           }
         } catch(tErr) {
           console.warn("Transcript auto-fetch in full package skipped:", tErr);
@@ -608,16 +688,11 @@ window.LectureViewerModal = function(props) {
       if (genSelected.transcript !== false && activeLecture.mediaUrl) {
         setPackageGenStatus("جاري استخراج وتنسيق تفريغ المحاضرة من فيديو اليوتيوب بالكامل...");
         try {
-          var transResp = await fetch("/api/youtube-transcript?url=" + encodeURIComponent(activeLecture.mediaUrl));
-          if (transResp.ok) {
-            var transData = await transResp.json();
-            if (transData.success && transData.transcript) {
-              updated.transcript = transData.transcript;
-              updated.transcriptText = transData.transcript;
-              if (updated.publishStatus) updated.publishStatus.transcript = false;
-            }
-          } else {
-            console.warn("YouTube transcript API returned status:", transResp.status);
+          var transData = await fetchTranscriptSmart(activeLecture.mediaUrl);
+          if (transData.success && transData.transcript) {
+            updated.transcript = transData.transcript;
+            updated.transcriptText = transData.transcriptText || transData.transcript;
+            if (updated.publishStatus) updated.publishStatus.transcript = false;
           }
         } catch (tErr) {
           console.warn("Failed to fetch YouTube transcript in package generator:", tErr);

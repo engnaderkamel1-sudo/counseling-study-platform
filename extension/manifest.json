@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "مساعد تفريغ المحاضرات - منصة المشورة",
+  "version": "1.0.0",
+  "description": "جلب التفريغ الحرفي للمحاضرات من يوتيوب لحسابك المحلي",
+  "permissions": [],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://*.googlevideo.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://counseling-study-platform.vercel.app/*",
+        "http://localhost:*/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
