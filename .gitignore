@@ -6,3 +6,6 @@ check-remote.ps1
 public/audio/
 *.ps1
 !build.ps1
+
+.backup_trash/
+__pycache__/
