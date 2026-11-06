@@ -138,11 +138,19 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
     var tab = targetTab || "lectures";
     if (tab === "guide") tab = "student_guide";
     try {
-      window.location.hash = "#" + tab;
       localStorage.setItem("counsel_active_tab", tab);
+      sessionStorage.setItem("counsel_active_tab", tab);
     } catch (e) {}
     this.setState({ hasError: false, error: null, errorInfo: null, sentSuccess: false });
-    window.location.reload();
+    var cleanUrl = window.location.origin + window.location.pathname + "#" + tab;
+    try {
+      window.location.replace(cleanUrl);
+    } catch (e) {
+      window.location.hash = "#" + tab;
+    }
+    setTimeout(function() {
+      window.location.reload();
+    }, 50);
   };
 
   render() {
@@ -210,11 +218,12 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
 
         this.state.sentSuccess ? React.createElement(
           "div",
-          { className: "p-4 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl text-center space-y-1" },
-          React.createElement("div", { className: "text-2xl" }, "✅"),
-          React.createElement("div", { className: "text-sm font-bold text-emerald-300" }, "تم إرسال تقرير الخطأ بنجاح!"),
-          React.createElement("div", { className: "text-xs text-emerald-400" }, "جاري نقلك للصفحة الرئيسية...")
-        ) : React.createElement(
+          { className: "p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl text-center space-y-1" },
+          React.createElement("div", { className: "text-lg" }, "✅"),
+          React.createElement("div", { className: "text-xs font-bold text-emerald-300" }, "تم تسجيل البلاغ بنجاح لدى المشرفين")
+        ) : null,
+
+        React.createElement(
           "div",
           { className: "space-y-3 pt-2" },
           React.createElement("p", { className: "text-xs font-bold text-slate-300 text-center" }, "يمكنك متابعة التصفح عبر الانتقال لقسم بديل بالمنصة:"),
@@ -224,7 +233,7 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
             React.createElement("button", {
               type: "button",
               onClick: function() { self.handleRecover("lectures"); },
-              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1 active:scale-95"
             },
               React.createElement("span", { className: "text-base" }, "🎧"),
               React.createElement("span", null, "المحاضرات")
@@ -232,15 +241,15 @@ window.ErrorBoundary = class ErrorBoundary extends React.Component {
             React.createElement("button", {
               type: "button",
               onClick: function() { self.handleRecover("books"); },
-              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1 active:scale-95"
             },
               React.createElement("span", { className: "text-base" }, "📚"),
-              React.createElement("span", null, "المكتبة")
+              React.createElement("span", null, "المكتبة والمراجع")
             ),
             React.createElement("button", {
               type: "button",
-              onClick: function() { self.handleRecover("guide"); },
-              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1"
+              onClick: function() { self.handleRecover("student_guide"); },
+              className: "py-2.5 px-2 rounded-xl bg-slate-700/80 hover:bg-slate-600 text-white font-bold text-xs shadow-md transition-all flex flex-col items-center gap-1 active:scale-95"
             },
               React.createElement("span", { className: "text-base" }, "📖"),
               React.createElement("span", null, "دليل الطالب")

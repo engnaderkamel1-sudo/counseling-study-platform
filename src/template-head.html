@@ -247,13 +247,31 @@
       });
     };
 
-    window.__preReactGoToSection = function(tabName) {
+    window.__preReactGoToSection = function(tabName, btnElem) {
       var tab = tabName || 'lectures';
+      if (tab === 'guide') tab = 'student_guide';
       try {
         localStorage.setItem('counsel_active_tab', tab);
-        window.location.hash = '#' + tab;
+        sessionStorage.setItem('counsel_active_tab', tab);
       } catch (e) {}
-      window.location.href = window.location.origin + window.location.pathname + '#' + tab;
+
+      if (btnElem) {
+        btnElem.style.opacity = '0.6';
+        btnElem.style.pointerEvents = 'none';
+        var labelSpan = btnElem.querySelector('span:last-child');
+        if (labelSpan) labelSpan.textContent = 'جاري التحويل... ⏳';
+      }
+
+      var targetHash = '#' + tab;
+      var cleanUrl = window.location.origin + window.location.pathname + targetHash;
+      try {
+        window.location.replace(cleanUrl);
+      } catch (e) {
+        window.location.href = cleanUrl;
+      }
+      setTimeout(function() {
+        window.location.reload();
+      }, 50);
     };
 
     window.__preReactCopyError = function() {
@@ -346,17 +364,17 @@
               يمكنك متابعة التصفح عبر الانتقال لقسم بديل بالمنصة:
             </p>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
-              <button type="button" onclick="window.__preReactGoToSection('lectures')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+              <button type="button" onclick="window.__preReactGoToSection('lectures', this)" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit; transition: opacity 0.2s;">
                 <span style="font-size: 1.1rem;">🎧</span>
                 <span>المحاضرات</span>
               </button>
 
-              <button type="button" onclick="window.__preReactGoToSection('books')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+              <button type="button" onclick="window.__preReactGoToSection('books', this)" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit; transition: opacity 0.2s;">
                 <span style="font-size: 1.1rem;">📚</span>
-                <span>المكتبة</span>
+                <span>المكتبة والمراجع</span>
               </button>
 
-              <button type="button" onclick="window.__preReactGoToSection('guide')" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit;">
+              <button type="button" onclick="window.__preReactGoToSection('student_guide', this)" style="background: #334155; color: #ffffff; border: none; border-radius: 12px; padding: 0.65rem 0.25rem; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; font-family: inherit; transition: opacity 0.2s;">
                 <span style="font-size: 1.1rem;">📖</span>
                 <span>دليل الطالب</span>
               </button>
