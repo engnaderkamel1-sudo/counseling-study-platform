@@ -376,7 +376,7 @@ window.LectureViewerModal = function(props) {
   };
 
   // توليد الحزمة التعليمية الشاملة بالأرقام المرنة
-  // دالة جلب التفريغ الذكية (تفحص إضافة المتصفح أولاً، ثم السيرفر)
+  // دالة جلب التفريغ الذكية (تتصل بمساعد التفريغ المحلي على جهازك أولاً، ثم السيرفر كخطة بديلة)
   var fetchTranscriptSmart = function(mediaUrl) {
     return new Promise(function(resolve, reject) {
       if (!mediaUrl) {
@@ -392,76 +392,64 @@ window.LectureViewerModal = function(props) {
         videoId = m ? m[1] : null;
       }
 
-      var requestId = "req_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
-      var extensionTimeout = null;
-      var hasResponded = false;
-
-      var listener = function(event) {
-        if (event.source !== window || !event.data) return;
-        if (event.data.type === "RECEIVE_YOUTUBE_TRANSCRIPT" && event.data.requestId === requestId) {
-          hasResponded = true;
-          window.removeEventListener("message", listener);
-          clearTimeout(extensionTimeout);
-
-          if (event.data.success && event.data.transcript) {
-            var words = event.data.transcript.trim().split(/\s+/).length;
-            resolve({
-              success: true,
-              transcript: event.data.transcript,
-              transcriptText: event.data.transcriptText || event.data.transcript,
-              wordCount: words,
-              source: "extension"
-            });
-          } else {
-            fallbackToServer(event.data.error);
-          }
+      // خطة 1: الاتصال بمساعد التفريغ المحلي على جهازك (127.0.0.1:8765)
+      var tryLocalServer = function() {
+        if (!videoId) {
+          return fallbackToServer();
         }
+
+        var localUrl = "http://127.0.0.1:8765/transcript?videoId=" + encodeURIComponent(videoId);
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 5000);
+
+        fetch(localUrl, { signal: controller.signal })
+          .then(function(res) {
+            clearTimeout(timeoutId);
+            return res.json();
+          })
+          .then(function(data) {
+            if (data && data.success && data.transcript) {
+              resolve({
+                success: true,
+                transcript: data.transcript,
+                transcriptText: data.transcriptText || data.transcript,
+                wordCount: data.wordCount || data.transcript.trim().split(/\s+/).length,
+                source: "local_service"
+              });
+            } else {
+              fallbackToServer(data ? data.error : null);
+            }
+          })
+          .catch(function(err) {
+            clearTimeout(timeoutId);
+            fallbackToServer();
+          });
       };
 
-      var fallbackToServer = function(extError) {
+      // خطة 2: محاولة السيرفر السحابي كخطة بديلة
+      var fallbackToServer = function(localErr) {
         fetch("/api/youtube-transcript?url=" + encodeURIComponent(mediaUrl))
           .then(function(r) { return r.json(); })
           .then(function(d) {
             if (d.success && d.transcript) {
               resolve(d);
             } else {
-              var errMsg = d.error || extError || "تعذر جلب تفريغ الفيديو من يوتيوب.";
-              if (errMsg.indexOf("مسارات") !== -1 || errMsg.indexOf("حظر") !== -1 || errMsg.indexOf("LOGIN") !== -1) {
-                errMsg += "\n\n💡 نصيحة: لتفادي قيود يوتيوب، تأكد من تفعيل إضافة المتصفح المخصصة للمنصة لجلب التفريغ فوراً بضغطة زر.";
+              var errMsg = "💡 لم يتم العثور على مساعد التفريغ المحلي قيد التشغيل على جهازك.\n\nلتفريغ المحاضرة فوراً:\n1. افتح مجلد المشروع واضغط مرتين على ملف:\n   تشغيل_مساعد_التفريغ.bat\n2. ثم اضغط على زر (جلب التفريغ من فيديو اليوتيوب) مجدداً.";
+              if (localErr) {
+                errMsg += "\n\n(تفاصيل: " + localErr + ")";
               }
               reject(new Error(errMsg));
             }
           })
           .catch(function(e) {
-            if (extError) {
-              reject(new Error(extError));
-            } else {
-              reject(new Error("تعذر الاتصال بالسيرفر."));
-            }
+            var errMsg = "💡 لم يتم الاتصال بمساعد التفريغ المحلي على جهازك.\n\nيرجى تشغيل ملف (تشغيل_مساعد_التفريغ.bat) على جهازك، ثم إعادة المحاولة.";
+            reject(new Error(errMsg));
           });
       };
 
-      if (videoId) {
-        window.addEventListener("message", listener);
-        window.postMessage({
-          type: "REQUEST_YOUTUBE_TRANSCRIPT",
-          videoId: videoId,
-          requestId: requestId
-        }, "*");
-
-        // إذا لم ترد الإضافة خلال ثانية ونصف، ننتقل تلقائياً لطلب السيرفر
-        extensionTimeout = setTimeout(function() {
-          if (!hasResponded) {
-            window.removeEventListener("message", listener);
-            fallbackToServer();
-          }
-        }, 1500);
-      } else {
-        fallbackToServer();
-      }
+      tryLocalServer();
     });
   };
-
   // جلب تفريغ المحاضرة الحرفي من فيديو اليوتيوب مباشرة
   var handleFetchYouTubeTranscriptDirectly = async function() {
     if (!activeLecture || !activeLecture.mediaUrl) {
@@ -480,8 +468,8 @@ window.LectureViewerModal = function(props) {
       }
       if (onSelectLecture) onSelectLecture(updated);
       var msg = "✅ تم جلب تفريغ المحاضرة من فيديو اليوتيوب بنجاح! (" + data.wordCount + " كلمة مسجلة)";
-      if (data.source === "extension") {
-        msg += "\n(تم الجلب المباشر وفك القيود بواسطة إضافة المتصفح 🚀)";
+      if (data.source === "local_service") {
+        msg += "\n(تم الجلب المباشر الحرفي وفك قيود يوتيوب عبر المساعد المحلي 🚀)";
       }
       alert(msg);
     } catch (err) {

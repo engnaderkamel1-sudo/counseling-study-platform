@@ -9,3 +9,5 @@ public/audio/
 
 .backup_trash/
 __pycache__/
+
+.github/
