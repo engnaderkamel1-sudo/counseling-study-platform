@@ -695,13 +695,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"0c9ce53","date":"2026-11-06 00:00","message":"feat(lectures): upgrade Lecture 2 (lec-20260926-2) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"de988da","date":"2026-11-05 23:36","message":"feat(reader): move font size controller to modal header and bind guaranteed inline fontSize to study guide and transcript"},{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"},{"hash":"082e6c1","date":"2026-11-05 22:35","message":"feat(pyramid): unify tier numbering format across all levels and enforce concise title rules in AI prompt"},{"hash":"4d5c3ad","date":"2026-11-05 22:30","message":"fix(pyramid): optimize peak typography and height to prevent text overflow in golden apex"},{"hash":"615f5ce","date":"2026-11-05 22:26","message":"feat(pyramid): implement authentic unified vector SVG pyramid with sharp triangular apex and seamless tiers"},{"hash":"1e717e8","date":"2026-11-05 22:19","message":"fix(pyramid): upgrade pyramid diagram with true geometric trapezoid slopes and mobile responsiveness"},{"hash":"e5e4ac6","date":"2026-11-05 21:58","message":"fix: update Firestore summaryData map and enable smart local cache refresh for full 10-section study guide"},{"hash":"3c26bfe","date":"2026-11-05 21:49","message":"fix: resolve SyntaxError by wrapping lecture study guide in template literal and enhance offline sw cache matching"},{"hash":"9949be0","date":"2026-11-05 21:33","message":"feat: upgrade AI summary to Comprehensive Textbook Standard and update Lecture 1 with full 10-section study guide"},{"hash":"f14cf90","date":"2026-11-05 13:56","message":"Fix mobile push notifications: multi-device subscription array, prominent activation banner, and simplified zoom payload"},{"hash":"0681b93","date":"2026-11-05 13:45","message":"Fix quiz property name quote in regex sanitizer and escape newlines after quotes"},{"hash":"b296d21","date":"2026-11-05 13:33","message":"Fix JSON parser cascade: direct untouched parse first, non-destructive quotes filter with key protection"},{"hash":"0cde715","date":"2026-11-05 13:29","message":"Implement incremental auto-save per stage, fault isolation for quiz, and Arabic quote sanitizer"}];
+window.APP_UPDATES_HISTORY = [{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"0c9ce53","date":"2026-11-06 00:00","message":"feat(lectures): upgrade Lecture 2 (lec-20260926-2) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"de988da","date":"2026-11-05 23:36","message":"feat(reader): move font size controller to modal header and bind guaranteed inline fontSize to study guide and transcript"},{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"},{"hash":"082e6c1","date":"2026-11-05 22:35","message":"feat(pyramid): unify tier numbering format across all levels and enforce concise title rules in AI prompt"},{"hash":"4d5c3ad","date":"2026-11-05 22:30","message":"fix(pyramid): optimize peak typography and height to prevent text overflow in golden apex"},{"hash":"615f5ce","date":"2026-11-05 22:26","message":"feat(pyramid): implement authentic unified vector SVG pyramid with sharp triangular apex and seamless tiers"},{"hash":"1e717e8","date":"2026-11-05 22:19","message":"fix(pyramid): upgrade pyramid diagram with true geometric trapezoid slopes and mobile responsiveness"},{"hash":"e5e4ac6","date":"2026-11-05 21:58","message":"fix: update Firestore summaryData map and enable smart local cache refresh for full 10-section study guide"},{"hash":"3c26bfe","date":"2026-11-05 21:49","message":"fix: resolve SyntaxError by wrapping lecture study guide in template literal and enhance offline sw cache matching"},{"hash":"9949be0","date":"2026-11-05 21:33","message":"feat: upgrade AI summary to Comprehensive Textbook Standard and update Lecture 1 with full 10-section study guide"},{"hash":"f14cf90","date":"2026-11-05 13:56","message":"Fix mobile push notifications: multi-device subscription array, prominent activation banner, and simplified zoom payload"},{"hash":"0681b93","date":"2026-11-05 13:45","message":"Fix quiz property name quote in regex sanitizer and escape newlines after quotes"},{"hash":"b296d21","date":"2026-11-05 13:33","message":"Fix JSON parser cascade: direct untouched parse first, non-destructive quotes filter with key protection"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1793982661",
-  buildTime: "2026-11-06T16:31:01",
+  version: "1.2.1793987556",
+  buildTime: "2026-11-06T17:52:36",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -15426,18 +15426,29 @@ window.GeminiAIService = {
       };
 
       var candidateModels = [
-        "gemini-3.5-flash-lite",
-        "gemini-3.5-flash",
-        "gemini-3.6-flash",
-        "gemini-flash-latest",
-        "gemini-flash-lite-latest"
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-flash-latest"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
         try {
           var discovered = await window.GeminiAIService.fetchSupportedModels(key);
           if (Array.isArray(discovered) && discovered.length > 0) {
-            candidateModels = discovered;
+            // حصر الاستدعاء في أسرع نماذج Flash الحديثة ذات سعة 8192 توكنز واستبعاد النماذج البطيئة أو القديمة
+            var fastFlash = discovered.filter(function(m) {
+              return (m.includes("flash") || m.includes("2.5") || m.includes("2.0")) &&
+                     !m.includes("embedding") &&
+                     !m.includes("vision") &&
+                     !m.includes("image") &&
+                     !m.includes("tts") &&
+                     !m.includes("realtime") &&
+                     !m.includes("pro");
+            });
+            if (fastFlash.length > 0) {
+              candidateModels = fastFlash.slice(0, 3);
+            }
           }
         } catch (discErr) {}
       }
@@ -15448,6 +15459,9 @@ window.GeminiAIService = {
         var modelName = candidateModels[i];
         var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
 
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 45000);
+
         try {
           var response = await fetch(url, {
             method: "POST",
@@ -15455,8 +15469,10 @@ window.GeminiAIService = {
               "Content-Type": "application/json",
               "x-goog-api-key": key
             },
-            body: JSON.stringify(body)
+            body: JSON.stringify(body),
+            signal: controller.signal
           });
+          clearTimeout(timeoutId);
 
           if (response.ok) {
             var data = await response.json();
@@ -15474,8 +15490,13 @@ window.GeminiAIService = {
             lastError = errMsg || ("خطأ في النموذج: " + modelName);
           }
         } catch (netErr) {
-          if (netErr.message && netErr.message.includes("مفتاح API")) throw netErr;
-          lastError = netErr.message;
+          clearTimeout(timeoutId);
+          if (netErr.name === "AbortError") {
+            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 45 ثانية): " + modelName;
+          } else {
+            if (netErr.message && netErr.message.includes("مفتاح API")) throw netErr;
+            lastError = netErr.message;
+          }
         }
       }
 
@@ -15516,13 +15537,13 @@ window.GeminiAIService = {
         "     - كل اسم خاصية (key) وكل قيمة نصية يجب أن تكون محاطة حصراً بعلامات تنصيص مزدوجة قياسية (\").\n" +
         "     - يُحظر نهائياً استخدام علامات التنصيص المفردة (') أو كتابة أي اسم خاصية بدون علامات تنصيص مزدوجة.\n" +
         "     - يُحظر ترك أي فواصل زائدة قبل إغلاق الأقواس المعقوفة أو المربعة.\n" +
-        "4. المرجعية الأكاديمية الشاملة ومعيار صفر فقدان للمعلومات الجوهرية (Comprehensive Textbook Standard):\n" +
-        "   - التغطية العضوية الشاملة لكامل المحاضرة: الهدف الأساسي ليس الاختزال أو التقيد بعدد صفحات مصطنع، بل استيعاب 100% من أفكار وشروحات المحاضرة ونظرياتها وأمثلتها بدقة بالغة.\n" +
-        "   - الحفظ الحرفي للمصطلحات العلمية واليونانية والأكاديمية: يُحظر اختصار أو إسقاط أي مصطلح أصيل ذكره المحاضر (مثل ساركس، سوما، نوما، هابتو، والنظريات وأسماء واضعيها)؛ ويجب تسجيل المصطلح الأصلي وشرحه بدقة في متنه ومعجم المفاهيم.\n" +
-        "   - قارئ الدليل يجب أن يشعر بأنه قرأ المحاضرة بالكامل؛ حيث يُحذف فقط الحشو اللفظي العابر والتكرار الشفهي والوقفات، مع الإبقاء على كل تفصيلة علمية، ولغوية، وكتابية، وإرشادية.\n" +
-        "   - قسّم المحاضرة إلى محاور متسلسلة وافية (من 8 إلى 12 محوراً تفصيلياً) تغطي خط سير المحاضرة من بدايتها وحتى ختامها دون القفز فوق أي فكرة.\n" +
-        "   - في كل محور في 'sections'، يجب أن يكون الشرح في 'content' وافياً وغنياً ودسماً يسرد الفكرة وأبعادها النفسية والشاهد الكتابي والمثال الإرشادي والتحليل الإكلينيكي دون استعجال.\n" +
-        "   - الرصد الإلزامي للكنوز والأدوات الإرشادية: احرص على تفصيل النظريات بأسماء واضعيها ونقدها (مثل فرويد واعترافه الصادم حول مدة السبع سنوات، ونظرية جبل الثلج وتشريح الأثمان السبعة الغاطسة ودور المشير فيها، وهرم ماسلو وتعديله الأرثوذكسي بالاحتياج السادس لله، وهرمون الأوكسيتوسين وبناء الأمان، والتأصيل اللغوي للفظ هابتو في لمس الأبرص، ومقارنة أبيجايل وميكال، وقاعدة 1 إلى 9 في التشجيع التربوي ومحو النقد).\n" +
+        "4. المرجعية الأكاديمية الشاملة والمعادلة الذهبية للاستيعاب السريع (Comprehensive High-Yield Standard):\n" +
+        "   - التقسيم العضوي التلقائي للمحاور: قسّم المحاضرة إلى محاور رئيسية وافية بحسب التحولات الفكرية الحقيقية للمحاضر في التسجيل دون تقيد مسبق بعدد مصطنع (سواء استلزمت مادة المحاضرة 4 أو 6 أو 8 محاور)؛ تتبع خط سير أفكاره بدقة وموضوعية دون قفز.\n" +
+        "   - بنية المحور المركزة ثلاثية الطبقات (قراءة مكثفة وشاملة في 7 إلى 10 دقائق): في كل محور في 'sections'، التزم بالطبقات الثلاث التالية حصراً:\n" +
+        "     1. المتن الأكاديمي المكثف في 'content' (فقرة من 4 إلى 7 أسطر مركزة): صياغة عربية فصحى نقية ورصينة لجوهر الفكرة دون حشو شفهي، مع الحفظ الحرفي الصارم لكافة المصطلحات الأصيلة (يونانية، نفسية، كتابية) وأسماء النظريات وواضعيها ونقدها (كجبل الثلج، أو هرم ماسلو بتعديله المشوري، أو قاعدة 1 إلى 9 في التشجيع، أو مصطلحات ساركس وسوما وهابتو).\n" +
+        "     2. ركائز التطبيق والمثال في 'keyPoints' (مصفوفة نقاط محددة): رصد الشاهد والمثال التوضيحي الأصلي الذي ذكره المحاضر لتثبيت الفكرة في الذاكرة، والتوجيه المشوري التطبيقي، والمحذور الإرشادي.\n" +
+        "     3. المخطط البصري المركز في 'visualDiagram': بطاقة بصرية وفق أحد الأنماط العلمية تلخص علاقات المحور في ثوانٍ معدودة.\n" +
+        "   - التصفية الصارمة للشوائب والهوامش: احذف تماماً أي مقدمات ترحيبية، أو تفقد للحضور، أو إعلانات، أو تنبيهات إدارية، أو إشارات لمنصة زووم أو التسجيل أو أوقات الاستراحة؛ فالدليل مخصص حصراً بنسبة 100% للمادة اللاهوتية والنفسية والمشورية الصافية.\n" +
         (customInstructions ? ("5. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق تماماً للنموذج التالي:\n" +
         JSON.stringify({
@@ -15656,14 +15677,14 @@ window.GeminiAIService = {
       if (!lectureContent || lectureContent.length < 100) {
         throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
       }
-      var prompt = "المطلوب: إعداد وتوليد بالضبط " + count + " سؤال كويز تفاعلي استيعابي وتطبيقي لمحاضرة المشورة: '" + lectureTitle + "'.\n" +
+      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محاضرة المشورة: '" + lectureTitle + "'.\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
         "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
         "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
-        "3. المعيار الأكاديمي الذهبي لصياغة الأسئلة (سؤالان لكل محور جوهري):\n" +
-        "   - وزع الأسئلة بتسلسل طبيعي يغطي كافة محاور ومفاصل المحاضرة بالتساوي.\n" +
-        "   - لكل مفهوم أو محور رئيسي، احرص على صياغة سؤالين متكاملين:\n" +
+        "3. التغطية العضوية الشاملة (المعيار الأكاديمي الذهبي: سؤالان لكل محور حقيقي):\n" +
+        "   - تتبع مسار المحاضرة وصغ الأسئلة لتغطي كافة محاور ومفاصل المحاضرة بالتساوي (بواقع سؤالين لكل محور رئيسي تم شرحه في المحاضرة ما يقارب " + count + " سؤالاً إجمالياً).\n" +
+        "   - لكل محور رئيسي، احرص على صياغة سؤالين متكاملين:\n" +
         "     • السؤال الأول (مفاهيمي ولغوي ولاهوتي): يقيس الاستيعاب الدقيق للمصطلح والتعريف والفروق العلمية التي ذكرها المحاضر (مثل الفارق بين ساركس وسوما، أو أركان العقد المشوري).\n" +
         "     • السؤال الثاني (تطبيقي وإكلينيكي ورعائي): يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة، والتعامل مع حالات وسيناريوهات المخدومين والمحاذير الأخلاقية.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +
