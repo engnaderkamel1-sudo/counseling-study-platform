@@ -2323,8 +2323,8 @@ window.LectureViewerModal = function(props) {
             React.createElement(
               "div",
               null,
-              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📄 عمق الملخص الموسع (بالصفحات):"),
-              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الصفحات التقديرية المطلوبة")
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📄 تغطية الملخص الدراسي المصور:"),
+              React.createElement("span", { className: "text-[11px] text-slate-500" }, "تغطية شاملة وتلقائية 100% لكافة المحاور مع مخطط بصري لكل محور")
             ),
             React.createElement("input", {
               type: "number",
@@ -2349,8 +2349,8 @@ window.LectureViewerModal = function(props) {
             React.createElement(
               "div",
               null,
-              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📝 عدد أسئلة الكويز التفاعلي:"),
-              React.createElement("span", { className: "text-[11px] text-slate-500" }, "اكتب عدد الأسئلة المطلوبة بالضبط")
+              React.createElement("label", { className: "text-xs font-bold text-slate-800 dark:text-slate-200 block" }, "📝 أسئلة الكويز التفاعلي (المعيار الذهبي):"),
+              React.createElement("span", { className: "text-[11px] text-slate-500" }, "سؤالان لكل محور جوهري (مفاهيمي ولغوي + تطبيقي ورعائي)")
             ),
             React.createElement("input", {
               type: "number",
