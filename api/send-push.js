@@ -1,4 +1,4 @@
-﻿// Vercel Serverless Function: Web Push Notification Dispatcher
+// Vercel Serverless Function: Web Push Notification Dispatcher
 // Dispatches background push notifications to subscribed devices via Web Push protocol
 
 const webpush = require('web-push');
@@ -117,7 +117,8 @@ module.exports = async function handler(req, res) {
         // استبعاد الحسابات المرفوضة
         if (status === 'rejected') continue;
 
-        const isAdmin = role === 'admin' || email.includes('nader.kamel') || email.includes('eng.nader');
+        const phone = (fields.phone && fields.phone.stringValue) || (fields.whatsapp && fields.whatsapp.stringValue) || '';
+        const isAdmin = role === 'admin' || email.includes('nader.kamel') || email.includes('eng.nader') || phone.includes('01275571569');
         let shouldSend = false;
 
         const effectiveTarget = target || targetRole || 'all';
@@ -126,10 +127,10 @@ module.exports = async function handler(req, res) {
           shouldSend = true;
         } else if (effectiveTarget === 'students') {
           if (!isAdmin) shouldSend = true;
-        } else if (effectiveTarget === 'admin') {
+        } else if (effectiveTarget === 'admin' || targetUserId === 'SUPER_ADMIN') {
           if (isAdmin) shouldSend = true;
         } else if (effectiveTarget === 'user') {
-          if (targetUserId && targetUserId === docId) shouldSend = true;
+          if (targetUserId && (targetUserId === docId || (targetUserId === 'SUPER_ADMIN' && isAdmin))) shouldSend = true;
           if (targetUserEmail && targetUserEmail.toLowerCase().trim() === email) shouldSend = true;
         }
 

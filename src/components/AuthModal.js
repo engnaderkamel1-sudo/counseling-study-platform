@@ -175,12 +175,30 @@ window.AuthModal = function(props) {
         console.warn("REST write failed, falling back to SDK:", restWriteErr && restWriteErr.message);
       }
 
+      var userData = {
+        id: userDocId,
+        fullName: cleanFullName,
+        email: cleanEmail,
+        password: cleanPassword,
+        phone: cleanWhatsapp,
+        whatsapp: cleanWhatsapp,
+        studyType: studyType,
+        studyYear: studyYear,
+        church: cleanChurch,
+        diocese: cleanDiocese,
+        governorate: cleanGov,
+        role: userRole,
+        status: userStatus,
+        createdAt: nowIso,
+        updatedAt: nowIso
+      };
+
       // احتياط: إذا فشل REST، نحاول SDK
       if (!writeOk) {
         if (!window.db) {
           throw new Error("تعذّر حفظ البيانات. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.");
         }
-        var userData = {
+        var sdkUserData = {
           id: userDocId, fullName: cleanFullName, email: cleanEmail, password: cleanPassword,
           phone: cleanWhatsapp, whatsapp: cleanWhatsapp, studyType: studyType, studyYear: studyYear,
           church: cleanChurch, diocese: cleanDiocese, governorate: cleanGov,
@@ -188,7 +206,7 @@ window.AuthModal = function(props) {
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        await window.db.collection("users").doc(userDocId).set(userData, { merge: true });
+        await window.db.collection("users").doc(userDocId).set(sdkUserData, { merge: true });
       }
 
       // إرسال إشعار فوري لموبايل المشرف

@@ -274,6 +274,25 @@ window.NotificationCenterModal = function(props) {
         )
       ),
 
+      // تنبيه تفعيل الإشعارات إذا لم تكن مفعلة بالجهاز
+      (("Notification" in window) && Notification.permission !== "granted") && React.createElement(
+        "div",
+        { className: "p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 flex items-center justify-between gap-2 text-xs" },
+        React.createElement("div", { className: "flex items-center gap-2 text-amber-800 dark:text-amber-200 font-bold" },
+          React.createElement("span", { className: "text-base" }, "🔔"),
+          React.createElement("span", null, "إشعارات الهاتف غير مفعلة")
+        ),
+        React.createElement("button", {
+          type: "button",
+          onClick: async function() {
+            if (window.NotificationService && window.NotificationService.requestPermission) {
+              await window.NotificationService.requestPermission();
+            }
+          },
+          className: "px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-transform active:scale-95 cursor-pointer"
+        }, "تفعيل الآن")
+      ),
+
       // قسم المشرف: إرسال تعميم رسمي للدارسين واختبار إشعار الجهاز
       isAdmin && React.createElement(
         "div",

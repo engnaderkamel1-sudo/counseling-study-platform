@@ -1,4 +1,4 @@
-﻿// Web Push Client Service (Service Worker & PushManager Subscription)
+// Web Push Client Service (Service Worker & PushManager Subscription)
 // Handles device registration for background Web Push and server dispatching
 
 (function() {
@@ -67,7 +67,7 @@
         }
 
         // حفظ بيانات اشتراك الجهاز في وثيقة المستخدم بقاعدة البيانات
-        if (subscription && currentUser && window.db) {
+        if (subscription && currentUser) {
           var subJson = JSON.stringify(subscription);
           var userId = currentUser.id;
 
@@ -78,6 +78,22 @@
           }
 
           if (userId) {
+            var nowIso = new Date().toISOString();
+            // حفظ مباشر فوري عبر REST API لضمان وصوله السريع حتى لو كان اتصال WebSockets بطيئاً
+            try {
+              var writeApiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "AIzaSyBgodgcRNLnPJrZMqJ_d2pdnyTvESDVeT8";
+              var patchUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/users/" + userId + "?updateMask.fieldPaths=pushSubscription&updateMask.fieldPaths=pushUpdatedAt&key=" + writeApiKey;
+              fetch(patchUrl, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fields: {
+                    pushSubscription: { stringValue: subJson },
+                    pushUpdatedAt: { timestampValue: nowIso }
+                  }
+                })
+              }).catch(function() {});
+            } catch (eRest) {}
             var arrayUnionVal = (window.firebase && firebase.firestore && firebase.firestore.FieldValue && firebase.firestore.FieldValue.arrayUnion)
               ? firebase.firestore.FieldValue.arrayUnion(subJson)
               : [subJson];
@@ -90,10 +106,12 @@
                 : new Date().toISOString()
             };
 
-            window.db.collection("users").doc(userId).set(updatePayload, { merge: true })
+            if (window.db) {
+              window.db.collection("users").doc(userId).set(updatePayload, { merge: true })
               .catch(function(err) {
                 console.warn("Could not save push subscription to Firestore:", err);
               });
+            }
           }
 
           // إرسال إشعار ترحيبي لمرة واحدة فقط عند التفعيل اليدوي الصريح
