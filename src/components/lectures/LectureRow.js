@@ -64,7 +64,7 @@ window.LectureRow = function(props) {
           { className: "flex items-center gap-2 flex-wrap" },
           React.createElement("span", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate" }, lec.title),
           lec.subject && React.createElement("span", { className: "text-[10px] font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 shrink-0" }, lec.subject),
-          (lec.sessionOrder && (lec.sessionOrder > 1 || props.hasMultipleSessions)) && React.createElement(
+          (props.hasMultipleSessions) && React.createElement(
             "span",
             { className: "text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 shrink-0" },
             "جلسة " + (lec.sessionOrder || 1)

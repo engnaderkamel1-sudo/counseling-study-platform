@@ -3251,7 +3251,7 @@ window.DEFAULT_TERM1_LECTURES = [
   {
     "id": "lec-20261003-4",
     "orderIndex": 4,
-    "sessionOrder": 2,
+    "sessionOrder": 1,
     "date": "2026-10-03",
     "title": "العلاج النفسي الأرثوذكسي",
     "subject": "رؤية آبائية للمشورة",
@@ -7289,7 +7289,7 @@ window.DEFAULT_TERM1_LECTURES = [
   {
     "id": "lec-20261017-7",
     "orderIndex": 7,
-    "sessionOrder": 2,
+    "sessionOrder": 1,
     "date": "2026-10-17",
     "title": "النفس الإنسانية وتشريحها",
     "subject": "أنثروبولوجيا النفس",
@@ -9427,7 +9427,7 @@ window.DEFAULT_TERM1_LECTURES = [
   {
     "id": "lec-20261031-10",
     "orderIndex": 10,
-    "sessionOrder": 2,
+    "sessionOrder": 1,
     "date": "2026-10-31",
     "title": "الحيل الدفاعية",
     "subject": "الحيل الدفاعية",

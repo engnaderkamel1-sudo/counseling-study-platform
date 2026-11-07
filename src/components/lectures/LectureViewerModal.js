@@ -731,7 +731,7 @@ window.LectureViewerModal = function(props) {
             actSeq.isExam
               ? React.createElement("span", { className: "text-xs font-bold bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-800" }, "📝 امتحان وتقييم نهائي")
               : React.createElement("span", { className: "text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-lg" }, "المحاضرة رقم: " + actSeq.num),
-            (activeLecture.sessionOrder && (activeLecture.sessionOrder > 1 || props.hasMultipleSessions)) && React.createElement(
+            (props.hasMultipleSessions) && React.createElement(
               "span",
               { className: "text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2.5 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800" },
               "الجلسة رقم: " + activeLecture.sessionOrder
