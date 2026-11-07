@@ -276,7 +276,7 @@
         var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
 
         var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 45000);
+        var timeoutId = setTimeout(function() { controller.abort(); }, 90000);
 
         try {
           var response = await fetch(url, {
@@ -314,7 +314,7 @@
         } catch (netErr) {
           clearTimeout(timeoutId);
           if (netErr.name === "AbortError") {
-            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 45 ثانية): " + modelName;
+            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 90 ثانية): " + modelName;
           } else {
             if (netErr.message && netErr.message.includes("مفتاح API")) throw netErr;
             lastError = netErr.message;
