@@ -165,21 +165,42 @@
           }
 
           var fixed = out.join("");
-          // إزالة الفواصل المتأخرة الزائدة قبل إغلاق الأقواس
-          fixed = fixed.replace(/,\s*([\}\]])/g, "$1");
 
+          // محاولة سريعة بالنص المعالج من الماسح
           try {
-            return JSON.parse(fixed);
-          } catch (eFix) {
-            // إنقاذ عند انقطاع النص عند سقف التوكنز
-            var lastB = fixed.lastIndexOf("}");
-            if (lastB !== -1) {
-              var trimmed = fixed.substring(0, lastB + 1).replace(/,\s*$/, "");
+            return JSON.parse(fixed.replace(/,\s*([\}\]])/g, "$1"));
+          } catch (ePre) {}
+
+          // المحاولة 5: معالجة الفواصل الإنجليزية المفقودة بين الخصائص وعناصر المصفوفات (Missing Commas Repair)
+          var repairCommas = function(str) {
+            var r = str;
+            // 1. فاصلة مفقودة بعد قيمة نصية يتبعها سطر بمفتاح جديد أو عنصر جديد
+            r = r.replace(/("[^"\\]*(?:\\.[^"\\]*)*")\s*\n\s*(")/g, "$1,\n$2");
+            // 2. فاصلة مفقودة بعد إغلاق كائن أو مصفوفة يتبعها كائن أو مفتاح جديد
+            r = r.replace(/(\}|\])\s*\n\s*(\{|\[|")/g, "$1,\n$2");
+            // 3. فاصلة مفقودة بعد القيم الرقمية والمنطقية
+            r = r.replace(/(\btrue\b|\bfalse\b|\bnull\b|\b\d+(?:\.\d+)?)\s*\n\s*(")/g, "$1,\n$2");
+            // 4. إزالة أي فواصل زائدة قبل إغلاق الأقواس
+            r = r.replace(/,\s*([\}\]])/g, "$1");
+            return r;
+          };
+
+          var candidate = repairCommas(fixed);
+          try {
+            return JSON.parse(candidate);
+          } catch (eWithCommas) {
+            // المحاولة 6: إنقاذ النص عند الانقطاع اللحظي بسقف الإخراج أو الفواصل الصعبة
+            var lastObjEnd = Math.max(candidate.lastIndexOf("}"), candidate.lastIndexOf("]"));
+            if (lastObjEnd !== -1) {
+              var trimmed = candidate.substring(0, lastObjEnd + 1).replace(/,\s*$/, "");
               var openBrackets = (trimmed.match(/\[/g) || []).length - (trimmed.match(/\]/g) || []).length;
-              for (var b = 0; b < openBrackets; b++) trimmed += "]";
+              for (var b = 0; b < Math.max(0, openBrackets); b++) trimmed += "]";
               var openBraces = (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
-              for (var c = 0; c < openBraces; c++) trimmed += "}";
-              return JSON.parse(trimmed);
+              for (var c = 0; c < Math.max(0, openBraces); c++) trimmed += "}";
+              trimmed = trimmed.replace(/,\s*([\}\]])/g, "$1");
+              try {
+                return JSON.parse(trimmed);
+              } catch (eTrim) {}
             }
           }
         } catch (scannerErr) {}
@@ -640,7 +661,7 @@
 
       // الخطوة 1: الدليل الدراسي المصور (الملخص الموسع مع المخططات البصرية المدمجة سياقياً)
       if (selected.summary !== false) {
-        if (onProgress) onProgress(35, "جاري صياغة الدليل الدراسي المصور وبناء المخططات البصرية في مواضعها (" + summaryPages + " صفحات)... [1/2]");
+        if (onProgress) onProgress(35, "جاري صياغة الدليل الدراسي المصور وبناء المخططات البصرية عضوياً... [1/2]");
         try {
           output.summary = await window.EducationalAIService.generateSummaryOnly(
             lectureTitle,
