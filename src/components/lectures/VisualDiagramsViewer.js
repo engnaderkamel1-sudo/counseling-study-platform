@@ -45,9 +45,21 @@
     var [activePyramidLevel, setActivePyramidLevel] = React.useState(null);
     var icon = window.getVisualChartIcon(chart.type);
 
+    var currentFontSize = props.fontSize || props.readingFontSize || (window.APP_UTILS && window.APP_UTILS.getLocal ? window.APP_UTILS.getLocal("counsel_reader_font_size", "md") : "md");
+    var fontScale = (currentFontSize === "sm")
+      ? { title: "15px", sub: "13.5px", body: "14px", small: "12px", badge: "11px", icon: "1.2rem" }
+      : (currentFontSize === "lg")
+        ? { title: "19px", sub: "17px", body: "18px", small: "15.5px", badge: "13.5px", icon: "1.45rem" }
+        : (currentFontSize === "xl")
+          ? { title: "22px", sub: "19.5px", body: "20.5px", small: "17.5px", badge: "15px", icon: "1.65rem" }
+          : { title: "17px", sub: "15px", body: "16px", small: "13.5px", badge: "12px", icon: "1.3rem" };
+
     return React.createElement(
       "div",
-      { className: "my-5 p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-5 animate-in fade-in duration-200" },
+      {
+        className: "my-5 p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-5 animate-in fade-in duration-200",
+        style: { fontSize: fontScale.body, lineHeight: "1.6" }
+      },
 
       // رأس المخطط البصري
       React.createElement(
@@ -59,14 +71,14 @@
           React.createElement(
             "div",
             { className: "flex items-center gap-2" },
-            React.createElement("span", { className: "text-lg sm:text-xl" }, icon),
-            React.createElement("h4", { className: "text-sm sm:text-base font-black text-slate-900 dark:text-white" }, chart.title)
+            React.createElement("span", { style: { fontSize: fontScale.icon } }, icon),
+            React.createElement("h4", { className: "font-black text-slate-900 dark:text-white font-sans", style: { fontSize: fontScale.title } }, chart.title)
           ),
-          chart.subtitle && React.createElement("p", { className: "text-xs text-slate-500 max-w-2xl leading-relaxed" }, chart.subtitle)
+          chart.subtitle && React.createElement("p", { className: "text-slate-500 max-w-2xl leading-relaxed font-sans", style: { fontSize: fontScale.sub } }, chart.subtitle)
         ),
         chart.badge && React.createElement(
           "span",
-          { className: "px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-[11px] font-bold shrink-0" },
+          { className: "px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-bold shrink-0 font-sans", style: { fontSize: fontScale.badge } },
           chart.badge
         )
       ),
@@ -93,15 +105,15 @@
                   React.createElement(
                     "div",
                     { className: "flex items-center justify-between" },
-                    React.createElement("span", { className: "px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-mono font-black text-[10px]" }, "مرحلة " + (st.step || (idx + 1))),
-                    React.createElement("span", { className: "text-xl" }, st.icon || "➡️")
+                    React.createElement("span", { className: "px-2.5 py-0.5 rounded-lg bg-indigo-600 text-white font-mono font-black font-sans", style: { fontSize: fontScale.small } }, "مرحلة " + (st.step || (idx + 1))),
+                    React.createElement("span", { style: { fontSize: fontScale.icon } }, st.icon || "➡️")
                   ),
-                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white" }, st.title),
-                  React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, st.desc)
+                  React.createElement("h5", { className: "font-black text-slate-900 dark:text-white font-sans", style: { fontSize: fontScale.title } }, st.title),
+                  React.createElement("p", { className: "text-slate-600 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontScale.body } }, st.desc)
                 ),
                 st.outcome && React.createElement(
                   "div",
-                  { className: "pt-2 border-t border-slate-200/60 dark:border-slate-700/50 text-[11px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5" },
+                  { className: "pt-2 border-t border-slate-200/60 dark:border-slate-700/50 text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5 font-sans", style: { fontSize: fontScale.small } },
                   React.createElement("span", null, "🎯"),
                   React.createElement("span", null, st.outcome)
                 )
@@ -127,19 +139,19 @@
               React.createElement(
                 "div",
                 { className: "flex items-center gap-2" },
-                React.createElement("span", { className: "text-xl p-1.5 rounded-xl bg-white dark:bg-slate-900 shadow-2xs" }, p.icon || "🏛️"),
-                React.createElement("h5", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white" }, p.title)
+                React.createElement("span", { className: "p-1.5 rounded-xl bg-white dark:bg-slate-900 shadow-2xs", style: { fontSize: fontScale.icon } }, p.icon || "🏛️"),
+                React.createElement("h5", { className: "font-black text-slate-900 dark:text-white font-sans", style: { fontSize: fontScale.title } }, p.title)
               ),
-              p.desc && React.createElement("p", { className: "text-xs text-slate-600 dark:text-slate-300 leading-relaxed" }, p.desc),
+              p.desc && React.createElement("p", { className: "text-slate-600 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontScale.body } }, p.desc),
               Array.isArray(p.keyInsights) && p.keyInsights.length > 0 && React.createElement(
                 "ul",
-                { className: "space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/50 text-[11px] text-slate-500 dark:text-slate-400" },
+                { className: "space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 font-sans", style: { fontSize: fontScale.small } },
                 p.keyInsights.map(function(ins, iIdx) {
                   return React.createElement(
                     "li",
                     { key: iIdx, className: "flex items-start gap-1.5" },
                     React.createElement("span", { className: "text-indigo-500 font-bold shrink-0 mt-0.5" }, "✓"),
-                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-snug" }, ins)
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-snug font-sans" }, ins)
                   );
                 })
               )
@@ -163,18 +175,18 @@
             React.createElement(
               "div",
               { className: "flex items-center gap-2 pb-2 border-b border-amber-200/60 dark:border-amber-800/40" },
-              React.createElement("span", { className: "text-xl" }, left.icon || "✝️"),
-              React.createElement("h5", { className: "text-xs sm:text-sm font-black text-amber-950 dark:text-amber-200" }, left.title)
+              React.createElement("span", { style: { fontSize: fontScale.icon } }, left.icon || "✝️"),
+              React.createElement("h5", { className: "font-black text-amber-950 dark:text-amber-200 font-sans", style: { fontSize: fontScale.title } }, left.title)
             ),
             React.createElement(
               "div",
-              { className: "space-y-2 text-xs" },
+              { className: "space-y-2" },
               (left.items || []).map(function(item, idx) {
                 return React.createElement(
                   "div",
-                  { key: idx, className: "p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/30" },
-                  React.createElement("span", { className: "font-bold text-amber-800 dark:text-amber-400 block mb-0.5" }, item.aspect + ":"),
-                  React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, item.value)
+                  { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-amber-100 dark:border-amber-900/30" },
+                  React.createElement("span", { className: "font-bold text-amber-800 dark:text-amber-400 block mb-0.5 font-sans", style: { fontSize: fontScale.body } }, item.aspect + ":"),
+                  React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontScale.body } }, item.value)
                 );
               })
             )
@@ -186,18 +198,18 @@
             React.createElement(
               "div",
               { className: "flex items-center gap-2 pb-2 border-b border-indigo-200/60 dark:border-indigo-800/40" },
-              React.createElement("span", { className: "text-xl" }, right.icon || "🧠"),
-              React.createElement("h5", { className: "text-xs sm:text-sm font-black text-indigo-950 dark:text-indigo-200" }, right.title)
+              React.createElement("span", { style: { fontSize: fontScale.icon } }, right.icon || "🧠"),
+              React.createElement("h5", { className: "font-black text-indigo-950 dark:text-indigo-200 font-sans", style: { fontSize: fontScale.title } }, right.title)
             ),
             React.createElement(
               "div",
-              { className: "space-y-2 text-xs" },
+              { className: "space-y-2" },
               (right.items || []).map(function(item, idx) {
                 return React.createElement(
                   "div",
-                  { key: idx, className: "p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/30" },
-                  React.createElement("span", { className: "font-bold text-indigo-800 dark:text-indigo-400 block mb-0.5" }, item.aspect + ":"),
-                  React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed" }, item.value)
+                  { key: idx, className: "p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-indigo-100 dark:border-indigo-900/30" },
+                  React.createElement("span", { className: "font-bold text-indigo-800 dark:text-indigo-400 block mb-0.5 font-sans", style: { fontSize: fontScale.body } }, item.aspect + ":"),
+                  React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontScale.body } }, item.value)
                 );
               })
             )
@@ -379,14 +391,14 @@
             if (!found) return null;
             return React.createElement(
               "div",
-              { className: "p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-xs sm:text-sm space-y-1.5 animate-in fade-in duration-150 shadow-2xs" },
+              { className: "p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-1.5 animate-in fade-in duration-150 shadow-2xs" },
               React.createElement(
                 "div",
                 { className: "font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-2 flex-wrap" },
-                React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-mono text-xs" }, "المستوى " + found.level),
-                React.createElement("span", { className: "text-sm sm:text-base" }, found.title)
+                React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-mono font-sans", style: { fontSize: fontScale.small } }, "المستوى " + found.level),
+                React.createElement("span", { className: "font-sans", style: { fontSize: fontScale.title } }, found.title)
               ),
-              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, found.desc)
+              React.createElement("p", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: fontScale.body } }, found.desc)
             );
           })()
         );
@@ -500,17 +512,17 @@
                   className: "p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-center space-y-1.5"
                 },
                 React.createElement("div", {
-                  className: "text-3xl sm:text-4xl font-black",
+                  className: "text-3xl sm:text-4xl font-black font-sans",
                   style: { color: numColor }
                 }, m.num),
-                React.createElement("div", { className: "text-xs font-bold text-slate-800 dark:text-slate-200" }, m.label),
-                m.note && React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed" }, m.note)
+                React.createElement("div", { className: "font-bold text-slate-800 dark:text-slate-200 font-sans", style: { fontSize: fontScale.body } }, m.label),
+                m.note && React.createElement("p", { className: "text-slate-500 leading-relaxed font-sans", style: { fontSize: fontScale.small } }, m.note)
               );
             })
           ),
           chart.takeaway && React.createElement(
             "div",
-            { className: "p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 font-medium leading-relaxed flex items-center gap-2" },
+            { className: "p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 font-medium leading-relaxed flex items-center gap-2 font-sans", style: { fontSize: fontScale.body } },
             React.createElement("span", { className: "text-base shrink-0" }, "💡"),
             React.createElement("span", null, chart.takeaway)
           )
@@ -539,25 +551,25 @@
                 React.createElement(
                   "div",
                   null,
-                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-blue-950 dark:text-blue-100" }, left.title || "الجانب الأيسر"),
-                  left.subtitle && React.createElement("p", { className: "text-[11px] text-blue-600 dark:text-blue-400 font-medium" }, left.subtitle)
+                  React.createElement("h5", { className: "font-black text-blue-950 dark:text-blue-100 font-sans", style: { fontSize: fontScale.title } }, left.title || "الجانب الأيسر"),
+                  left.subtitle && React.createElement("p", { className: "text-blue-600 dark:text-blue-400 font-medium font-sans", style: { fontSize: fontScale.small } }, left.subtitle)
                 )
               ),
               Array.isArray(left.traits) && left.traits.length > 0 && React.createElement(
                 "ul",
-                { className: "space-y-1.5 text-xs text-slate-700 dark:text-slate-300" },
+                { className: "space-y-1.5 text-slate-700 dark:text-slate-300 font-sans", style: { fontSize: fontScale.body } },
                 left.traits.map(function(t, idx) {
                   return React.createElement(
                     "li",
-                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-blue-100 dark:border-blue-900/30" },
+                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900/30 font-sans", style: { fontSize: fontScale.body } },
                     React.createElement("span", { className: "text-blue-600 font-bold shrink-0" }, "•"),
-                    React.createElement("span", { className: "leading-snug break-words" }, t)
+                    React.createElement("span", { className: "leading-snug break-words font-sans" }, t)
                   );
                 })
               ),
               left.counselingRole && React.createElement(
                 "div",
-                { className: "pt-2 text-[11px] text-blue-900 dark:text-blue-200 font-bold flex items-start gap-1.5 bg-blue-100/60 dark:bg-blue-900/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40" },
+                { className: "pt-2 text-blue-900 dark:text-blue-200 font-bold flex items-start gap-1.5 bg-blue-100/60 dark:bg-blue-900/40 p-2.5 rounded-xl border border-blue-200/60 dark:border-blue-800/40 font-sans", style: { fontSize: fontScale.small } },
                 React.createElement("span", { className: "shrink-0" }, "🎯"),
                 React.createElement("span", { className: "leading-relaxed" }, left.counselingRole)
               )
@@ -574,25 +586,25 @@
                 React.createElement(
                   "div",
                   null,
-                  React.createElement("h5", { className: "text-xs sm:text-sm font-black text-purple-950 dark:text-purple-100" }, right.title || "الجانب الأيمن"),
-                  right.subtitle && React.createElement("p", { className: "text-[11px] text-purple-600 dark:text-purple-400 font-medium" }, right.subtitle)
+                  React.createElement("h5", { className: "font-black text-purple-950 dark:text-purple-100 font-sans", style: { fontSize: fontScale.title } }, right.title || "الجانب الأيمن"),
+                  right.subtitle && React.createElement("p", { className: "text-purple-600 dark:text-purple-400 font-medium font-sans", style: { fontSize: fontScale.small } }, right.subtitle)
                 )
               ),
               Array.isArray(right.traits) && right.traits.length > 0 && React.createElement(
                 "ul",
-                { className: "space-y-1.5 text-xs text-slate-700 dark:text-slate-300" },
+                { className: "space-y-1.5 text-slate-700 dark:text-slate-300 font-sans", style: { fontSize: fontScale.body } },
                 right.traits.map(function(t, idx) {
                   return React.createElement(
                     "li",
-                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2 rounded-xl border border-purple-100 dark:border-purple-900/30" },
+                    { key: idx, className: "flex items-start gap-2 bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-purple-100 dark:border-purple-900/30 font-sans", style: { fontSize: fontScale.body } },
                     React.createElement("span", { className: "text-purple-600 font-bold shrink-0" }, "•"),
-                    React.createElement("span", { className: "leading-snug break-words" }, t)
+                    React.createElement("span", { className: "leading-snug break-words font-sans" }, t)
                   );
                 })
               ),
               right.counselingRole && React.createElement(
                 "div",
-                { className: "pt-2 text-[11px] text-purple-900 dark:text-purple-200 font-bold flex items-start gap-1.5 bg-purple-100/60 dark:bg-purple-900/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40" },
+                { className: "pt-2 text-purple-900 dark:text-purple-200 font-bold flex items-start gap-1.5 bg-purple-100/60 dark:bg-purple-900/40 p-2.5 rounded-xl border border-purple-200/60 dark:border-purple-800/40 font-sans", style: { fontSize: fontScale.small } },
                 React.createElement("span", { className: "shrink-0" }, "🎯"),
                 React.createElement("span", { className: "leading-relaxed" }, right.counselingRole)
               )
@@ -636,7 +648,7 @@
                   React.createElement(
                     "div",
                     { className: "flex items-center justify-between" },
-                    React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-amber-500 text-white font-mono font-black text-[10px]" }, "محطة " + (st.step || (idx + 1))),
+                    React.createElement("span", { className: "px-2 py-0.5 rounded-lg bg-amber-500 text-white font-mono font-black font-sans", style: { fontSize: fontScale.small } }, "محطة " + (st.step || (idx + 1))),
                     React.createElement("span", { className: "text-lg" }, st.icon || "🔄")
                   ),
                   React.createElement("h5", { className: "text-xs sm:text-sm font-black text-slate-900 dark:text-white leading-snug break-words" }, st.title),

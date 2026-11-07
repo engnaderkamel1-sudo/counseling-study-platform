@@ -72,20 +72,28 @@ window.LectureViewerModal = function(props) {
   };
 
   var fontPixelSize = (readingFontSize === "sm")
-    ? "14px"
+    ? "15px"
     : (readingFontSize === "lg")
-      ? "18px"
+      ? "19px"
       : (readingFontSize === "xl")
-        ? "21px"
-        : "16px";
+        ? "22px"
+        : "17px";
+
+  var subFontPixelSize = (readingFontSize === "sm")
+    ? "13.5px"
+    : (readingFontSize === "lg")
+      ? "17px"
+      : (readingFontSize === "xl")
+        ? "19.5px"
+        : "15px";
 
   var fontTextClass = (readingFontSize === "sm")
-    ? "text-xs sm:text-sm"
+    ? "text-sm"
     : (readingFontSize === "lg")
-      ? "text-base sm:text-lg"
+      ? "text-lg"
       : (readingFontSize === "xl")
-        ? "text-lg sm:text-xl"
-        : "text-sm sm:text-base";
+        ? "text-xl"
+        : "text-base";
 
   var renderFontSizeBar = function() {
     return React.createElement(
@@ -99,10 +107,10 @@ window.LectureViewerModal = function(props) {
         "div",
         { className: "flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs" },
         [
-          { id: "sm", label: "A-", title: "خط مدمج (14 بكسل)" },
-          { id: "md", label: "عادي", title: "خط عادي قياسي (16 بكسل)" },
-          { id: "lg", label: "A+", title: "خط كبير ومريح (18 بكسل)" },
-          { id: "xl", label: "A++", title: "خط كبير جداً (20 بكسل)" }
+          { id: "sm", label: "A-", title: "خط مدمج (15 بكسل)" },
+          { id: "md", label: "عادي", title: "خط قياسي مريح (17 بكسل)" },
+          { id: "lg", label: "A+", title: "خط كبير وواضح (19 بكسل)" },
+          { id: "xl", label: "A++", title: "خط فائق الكبر والوضوح (22 بكسل)" }
         ].map(function(fBtn) {
           var isAct = readingFontSize === fBtn.id;
           return React.createElement(
@@ -1480,9 +1488,9 @@ window.LectureViewerModal = function(props) {
                 summaryData.learningObjectives.map(function(obj, oIdx) {
                   return React.createElement(
                     "div",
-                    { key: oIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-xs" },
+                    { key: oIdx, className: "flex items-start gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-2xs", style: { fontSize: fontPixelSize } },
                     React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-bold shrink-0 mt-0.5" }, "✓"),
-                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-snug" }, obj)
+                    React.createElement("span", { className: "text-slate-700 dark:text-slate-300 leading-relaxed font-sans" }, obj)
                   );
                 })
               )
@@ -1522,13 +1530,13 @@ window.LectureViewerModal = function(props) {
                     React.createElement("span", { className: "text-[11px] font-bold text-slate-500 block mb-1" }, "📌 نقاط جوهرية في هذا المحور:"),
                     React.createElement(
                       "ul",
-                      { className: "space-y-1 text-xs text-slate-700 dark:text-slate-300" },
+                      { className: "space-y-1.5 text-slate-700 dark:text-slate-300", style: { fontSize: fontPixelSize } },
                       sec.keyPoints.map(function(kp, kIdx) {
                         return React.createElement(
                           "li",
-                          { key: kIdx, className: "flex items-start gap-2" },
+                          { key: kIdx, className: "flex items-start gap-2.5" },
                           React.createElement("span", { className: "text-indigo-500 font-bold shrink-0 mt-0.5" }, "•"),
-                          React.createElement("span", { className: "leading-relaxed" }, kp)
+                          React.createElement("span", { className: "leading-relaxed font-sans" }, kp)
                         );
                       })
                     )
@@ -1539,7 +1547,7 @@ window.LectureViewerModal = function(props) {
                   inlineChart && window.SingleVisualChartCard && React.createElement(
                     "div",
                     { className: "pt-1" },
-                    React.createElement(window.SingleVisualChartCard, { chart: inlineChart })
+                    React.createElement(window.SingleVisualChartCard, { chart: inlineChart, fontSize: readingFontSize })
                   )
                 );
               })
@@ -1561,9 +1569,9 @@ window.LectureViewerModal = function(props) {
                 summaryData.keyTakeaways.map(function(kt, tIdx) {
                   return React.createElement(
                     "div",
-                    { key: tIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30" },
+                    { key: tIdx, className: "flex items-start gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/30 shadow-2xs", style: { fontSize: fontPixelSize } },
                     React.createElement("span", { className: "text-emerald-600 font-bold shrink-0 mt-0.5" }, "★"),
-                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed" }, kt)
+                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed font-sans" }, kt)
                   );
                 })
               )
@@ -1585,9 +1593,9 @@ window.LectureViewerModal = function(props) {
                 summaryData.glossary.map(function(g, gIdx) {
                   return React.createElement(
                     "div",
-                    { key: gIdx, className: "p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-1 text-xs" },
-                    React.createElement("span", { className: "font-black text-indigo-700 dark:text-indigo-400 block" }, g.term || ""),
-                    React.createElement("p", { className: "text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]" }, g.definition || "")
+                    { key: gIdx, className: "p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-1 shadow-2xs" },
+                    React.createElement("span", { className: "font-black text-indigo-700 dark:text-indigo-400 block font-sans", style: { fontSize: fontPixelSize } }, g.term || ""),
+                    React.createElement("p", { className: "text-slate-600 dark:text-slate-300 leading-relaxed font-sans", style: { fontSize: subFontPixelSize } }, g.definition || "")
                   );
                 })
               )
@@ -1609,9 +1617,9 @@ window.LectureViewerModal = function(props) {
                 summaryData.reflectionQuestions.map(function(rq, qIdx) {
                   return React.createElement(
                     "div",
-                    { key: qIdx, className: "flex items-start gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30" },
+                    { key: qIdx, className: "flex items-start gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30 shadow-2xs", style: { fontSize: fontPixelSize } },
                     React.createElement("span", { className: "text-amber-600 font-bold shrink-0 mt-0.5" }, "•"),
-                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed" }, rq)
+                    React.createElement("span", { className: "text-slate-800 dark:text-slate-200 leading-relaxed font-sans" }, rq)
                   );
                 })
               )
@@ -1630,7 +1638,7 @@ window.LectureViewerModal = function(props) {
               { className: "space-y-4 pt-2" },
               React.createElement("h4", { className: "text-xs font-black text-slate-700 dark:text-slate-300" }, "📊 المخططات والرسوم البصرية التوضيحية الملحقة:"),
               legacyCharts.map(function(c, idx) {
-                return React.createElement(window.SingleVisualChartCard, { key: c.id || idx, chart: c });
+                return React.createElement(window.SingleVisualChartCard, { key: c.id || idx, chart: c, fontSize: readingFontSize });
               })
             )
           ) : React.createElement(
