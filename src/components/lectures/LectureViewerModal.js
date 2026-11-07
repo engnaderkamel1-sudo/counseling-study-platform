@@ -30,8 +30,6 @@ window.LectureViewerModal = function(props) {
   var [showClearPackageModal, setShowClearPackageModal] = React.useState(false);
   var [clearItemsSelection, setClearItemsSelection] = React.useState({
     summary: true,
-    slides: true,
-    mindmap: true,
     quiz: true,
     transcript: false
   });
@@ -638,11 +636,9 @@ window.LectureViewerModal = function(props) {
   var handleOpenClearPackageModal = function() {
     if (!activeLecture || currentUser.role !== "admin") return;
     setClearItemsSelection({
-      summary: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson),
-      slides: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson),
-      mindmap: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson),
-      quiz: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0),
-      transcript: false // حماية التفريغ الصوتي: غير محدد افتراضياً
+      summary: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0)),
+      quiz: Boolean(Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0),
+      transcript: false // حماية تفريغ المحاضرة: غير محدد افتراضياً
     });
     setShowClearPackageModal(true);
   };
@@ -651,22 +647,20 @@ window.LectureViewerModal = function(props) {
   var handleExecuteClearPackageSelection = async function() {
     if (!activeLecture || currentUser.role !== "admin") return;
 
-    var hasSelection = clearItemsSelection.summary || clearItemsSelection.slides || clearItemsSelection.mindmap || clearItemsSelection.quiz || clearItemsSelection.transcript;
+    var hasSelection = clearItemsSelection.summary || clearItemsSelection.quiz || clearItemsSelection.transcript;
     if (!hasSelection) {
-      alert("يرجى اختيار عنصر واحد على الأقل للمسح.");
+      alert("يرجى اختيار ركن واحد على الأقل للمسح.");
       return;
     }
 
     var selectedLabels = [];
-    if (clearItemsSelection.summary) selectedLabels.push("الملخص والدليل الدراسي");
-    if (clearItemsSelection.slides) selectedLabels.push("شرائح العرض التقديمي");
-    if (clearItemsSelection.mindmap) selectedLabels.push("الخريطة الذهنية");
-    if (clearItemsSelection.quiz) selectedLabels.push("بنك الأسئلة والاختبار");
-    if (clearItemsSelection.transcript) selectedLabels.push("⚠️ التفريغ الصوتي والنصي للمحاضرة");
+    if (clearItemsSelection.summary) selectedLabels.push("الدليل الدراسي المصور");
+    if (clearItemsSelection.quiz) selectedLabels.push("الاختبار التفاعلي");
+    if (clearItemsSelection.transcript) selectedLabels.push("⚠️ تفريغ المحاضرة من الفيديو");
 
-    var confirmMsg = "هل أنت متأكد من مسح العناصر المحددة التالية من هذه المحاضرة؟\n\n" +
+    var confirmMsg = "هل أنت متأكد من مسح الأركان المحددة التالية من هذه المحاضرة؟\n\n" +
       "• " + selectedLabels.join("\n• ") + "\n\n" +
-      "✅ ستبقى كافة العناصر الأخرى غير المحددة محفوظة بالكامل في المحاضرة وقاعدة البيانات.";
+      "✅ ستبقى كافة العناصر والأركان الأخرى غير المحددة محفوظة بالكامل في المحاضرة وقاعدة البيانات.";
     if (!window.confirm(confirmMsg)) return;
 
     setIsClearingPackage(true);
@@ -678,23 +672,14 @@ window.LectureViewerModal = function(props) {
         updated.writtenSummary = "";
         updated.summaryData = null;
         updated.summaryDataJson = "";
-        currentPublish.summary = false;
-      }
-
-      if (clearItemsSelection.slides) {
+        updated.visualsData = null;
+        updated.visualsDataJson = "";
         updated.presentationSlides = null;
         updated.slidesData = null;
         updated.slidesDataJson = "";
-      }
-
-      if (clearItemsSelection.mindmap) {
         updated.mindMapData = null;
         updated.mindMapDataJson = "";
-      }
-
-      if (clearItemsSelection.slides && clearItemsSelection.mindmap) {
-        updated.visualsData = null;
-        updated.visualsDataJson = "";
+        currentPublish.summary = false;
         currentPublish.visuals = false;
       }
 
@@ -718,9 +703,9 @@ window.LectureViewerModal = function(props) {
         onSelectLecture(updated);
       }
       setShowClearPackageModal(false);
-      alert("تم مسح العناصر المحددة بنجاح مع بقاء باقي محتويات المحاضرة سليمة ومحفوظة!");
+      alert("تم مسح الأركان المحددة بنجاح مع بقاء باقي محتويات المحاضرة سليمة ومحفوظة!");
     } catch (err) {
-      alert("حدث خطأ أثناء مسح العناصر: " + (err && err.message ? err.message : err));
+      alert("حدث خطأ أثناء مسح الأركان: " + (err && err.message ? err.message : err));
     } finally {
       setIsClearingPackage(false);
     }
@@ -2546,7 +2531,7 @@ window.LectureViewerModal = function(props) {
             React.createElement(
               "div",
               null,
-              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تخصيص ومسح محتويات الحزمة"),
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تخصيص ومسح أركان الحزمة"),
               React.createElement("p", { className: "text-xs text-slate-500" }, "حدد الأركان التي ترغب في مسحها فقط مع بقاء باقي محتويات المحاضرة محفوظة")
             )
           ),
@@ -2562,7 +2547,7 @@ window.LectureViewerModal = function(props) {
           )
         ),
 
-        // تنبيه حماية التفريغ الصوتي
+        // تنبيه حماية تفريغ المحاضرة
         React.createElement(
           "div",
           { className: "p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed" },
@@ -2570,8 +2555,8 @@ window.LectureViewerModal = function(props) {
           React.createElement(
             "div",
             null,
-            React.createElement("span", { className: "font-bold" }, "حماية التفريغ الصوتي: "),
-            React.createElement("span", null, "تم استثناء التفريغ الصوتي تلقائياً لحمايته من المسح العرضي. يمكنك تحديده يدوياً إن أردت مسحه.")
+            React.createElement("span", { className: "font-bold" }, "حماية تفريغ المحاضرة: "),
+            React.createElement("span", null, "تم استثناء تفريغ المحاضرة تلقائياً لحمايته من المسح العرضي. يمكنك تحديده يدوياً إن أردت مسحه.")
           )
         ),
 
@@ -2587,15 +2572,13 @@ window.LectureViewerModal = function(props) {
               onClick: function() {
                 setClearItemsSelection({
                   summary: true,
-                  slides: true,
-                  mindmap: true,
                   quiz: true,
                   transcript: false
                 });
               },
               className: "px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold cursor-pointer transition-all"
             },
-            "تحديد كل المولد (دون التفريغ)"
+            "تحديد الكل (دون التفريغ)"
           ),
           React.createElement(
             "button",
@@ -2605,8 +2588,6 @@ window.LectureViewerModal = function(props) {
               onClick: function() {
                 setClearItemsSelection({
                   summary: true,
-                  slides: true,
-                  mindmap: true,
                   quiz: true,
                   transcript: true
                 });
@@ -2623,8 +2604,6 @@ window.LectureViewerModal = function(props) {
               onClick: function() {
                 setClearItemsSelection({
                   summary: false,
-                  slides: false,
-                  mindmap: false,
                   quiz: false,
                   transcript: false
                 });
@@ -2635,40 +2614,28 @@ window.LectureViewerModal = function(props) {
           )
         ),
 
-        // قائمة العناصر الخمسة
+        // قائمة الأركان الثلاثة
         React.createElement(
           "div",
           { className: "space-y-2 py-1" },
           [
             {
               id: "summary",
-              label: "📄 الدليل الدراسي والملخص المكتوب",
-              desc: "الملخص والشرح الأكاديمي والمخططات والمقارنات المدمجة",
-              hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson)
-            },
-            {
-              id: "slides",
-              label: "📊 شرائح العرض التقديمي",
-              desc: "الشرائح المولدة والمجهزة للشرح والعرض",
-              hasData: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson)
-            },
-            {
-              id: "mindmap",
-              label: "🧠 الخريطة الذهنية التفاعلية",
-              desc: "المخطط الشجري التفاعلي وعقد المفاهيم والمحاور",
-              hasData: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson)
+              label: "📄 الدليل الدراسي المصور",
+              desc: "الشرح الأكاديمي الشامل متضمناً المخططات والمقارنات البصرية المدمجة",
+              hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0))
             },
             {
               id: "quiz",
-              label: "📝 بنك الأسئلة والاختبار التفاعلي",
-              desc: "الأسئلة التفاعلية والاختبارات القصيرة وإجاباتها",
-              hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0)
+              label: "📝 الاختبار التفاعلي",
+              desc: "أسئلة الكويز الذاتي والتفسيرات التعليمية",
+              hasData: Boolean(Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0)
             },
             {
               id: "transcript",
-              label: "🎙️ التفريغ الصوتي والنصي للمحاضرة",
-              desc: "النص الحرفي الدقيق المستخرج من الصوت أو الفيديو مع التوقيتات",
-              hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText),
+              label: "📜 تفريغ المحاضرة من الفيديو",
+              desc: "النص الحرفي الكامل لكلام المحاضر مع التوقيتات الدقيقة",
+              hasData: Boolean((activeLecture.transcript && activeLecture.transcript.trim()) || (activeLecture.transcriptText && activeLecture.transcriptText.trim())),
               isTranscript: true
             }
           ].map(function(item) {
@@ -2677,7 +2644,7 @@ window.LectureViewerModal = function(props) {
               "label",
               {
                 key: item.id,
-                className: "flex items-start gap-3 p-3 rounded-2xl border cursor-pointer select-none transition-all " +
+                className: "flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all " +
                   (isChecked
                     ? (item.isTranscript
                         ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800"
@@ -2740,7 +2707,7 @@ window.LectureViewerModal = function(props) {
               className: "px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             },
             React.createElement("span", null, isClearingPackage ? "⏳" : "🗑️"),
-            React.createElement("span", null, isClearingPackage ? "جاري المسح..." : "تأكيد مسح العناصر المحددة")
+            React.createElement("span", null, isClearingPackage ? "جاري المسح..." : "تأكيد مسح الأركان المحددة")
           )
         )
       )
