@@ -27,6 +27,15 @@ window.LectureViewerModal = function(props) {
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
+  var [showClearPackageModal, setShowClearPackageModal] = React.useState(false);
+  var [clearItemsSelection, setClearItemsSelection] = React.useState({
+    summary: true,
+    slides: true,
+    mindmap: true,
+    quiz: true,
+    transcript: false
+  });
+  var [isClearingPackage, setIsClearingPackage] = React.useState(false);
   var [genSummaryPages, setGenSummaryPages] = React.useState(function() {
     return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_summary_pages", 5), 10) || 5) : 5;
   });
@@ -625,41 +634,100 @@ window.LectureViewerModal = function(props) {
     }
   };
 
-  // مسح وتصفير الحزمة التعليمية المولدة بالكامل للبدء من جديد
-  var handleClearAiPackage = async function() {
+  // فتح نافذة تخصيص مسح أركان الحزمة المولدة
+  var handleOpenClearPackageModal = function() {
     if (!activeLecture || currentUser.role !== "admin") return;
-    var confirmMsg = "هل أنت متأكد من مسح الحزمة التعليمية المولدة لهذه المحاضرة للبدء من جديد؟\n\n" +
-      "⚠️ سيتم تصفير: الملخص المكتوب، شرائح العرض، الخريطة الذهنية، الكويز، والتفريغ النصي.\n" +
-      "✅ ستبقى كافة بيانات المحاضرة الأساسية وروابط الفيديو واليوتيوب والمذكرات محفوظة بالكامل دون مساس.";
+    setClearItemsSelection({
+      summary: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson),
+      slides: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson),
+      mindmap: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson),
+      quiz: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0),
+      transcript: false // حماية التفريغ الصوتي: غير محدد افتراضياً
+    });
+    setShowClearPackageModal(true);
+  };
+
+  // تنفيذ مسح الأركان المحددة فقط من الحزمة
+  var handleExecuteClearPackageSelection = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+
+    var hasSelection = clearItemsSelection.summary || clearItemsSelection.slides || clearItemsSelection.mindmap || clearItemsSelection.quiz || clearItemsSelection.transcript;
+    if (!hasSelection) {
+      alert("يرجى اختيار عنصر واحد على الأقل للمسح.");
+      return;
+    }
+
+    var selectedLabels = [];
+    if (clearItemsSelection.summary) selectedLabels.push("الملخص والدليل الدراسي");
+    if (clearItemsSelection.slides) selectedLabels.push("شرائح العرض التقديمي");
+    if (clearItemsSelection.mindmap) selectedLabels.push("الخريطة الذهنية");
+    if (clearItemsSelection.quiz) selectedLabels.push("بنك الأسئلة والاختبار");
+    if (clearItemsSelection.transcript) selectedLabels.push("⚠️ التفريغ الصوتي والنصي للمحاضرة");
+
+    var confirmMsg = "هل أنت متأكد من مسح العناصر المحددة التالية من هذه المحاضرة؟\n\n" +
+      "• " + selectedLabels.join("\n• ") + "\n\n" +
+      "✅ ستبقى كافة العناصر الأخرى غير المحددة محفوظة بالكامل في المحاضرة وقاعدة البيانات.";
     if (!window.confirm(confirmMsg)) return;
 
-    var updated = Object.assign({}, activeLecture, {
-      writtenSummary: "",
-      summaryData: null,
-      summaryDataJson: "",
-      visualsData: null,
-      visualsDataJson: "",
-      presentationSlides: null,
-      slidesData: null,
-      slidesDataJson: "",
-      mindMapData: null,
-      mindMapDataJson: "",
-      quizQuestions: [],
-      transcript: "",
-      transcriptText: "",
-      publishStatus: { summary: false, visuals: false, quiz: false, transcript: false }
-    });
-
+    setIsClearingPackage(true);
     try {
+      var updated = Object.assign({}, activeLecture);
+      var currentPublish = Object.assign({}, activeLecture.publishStatus || {});
+
+      if (clearItemsSelection.summary) {
+        updated.writtenSummary = "";
+        updated.summaryData = null;
+        updated.summaryDataJson = "";
+        currentPublish.summary = false;
+      }
+
+      if (clearItemsSelection.slides) {
+        updated.presentationSlides = null;
+        updated.slidesData = null;
+        updated.slidesDataJson = "";
+      }
+
+      if (clearItemsSelection.mindmap) {
+        updated.mindMapData = null;
+        updated.mindMapDataJson = "";
+      }
+
+      if (clearItemsSelection.slides && clearItemsSelection.mindmap) {
+        updated.visualsData = null;
+        updated.visualsDataJson = "";
+        currentPublish.visuals = false;
+      }
+
+      if (clearItemsSelection.quiz) {
+        updated.quizQuestions = [];
+        currentPublish.quiz = false;
+      }
+
+      if (clearItemsSelection.transcript) {
+        updated.transcript = "";
+        updated.transcriptText = "";
+        currentPublish.transcript = false;
+      }
+
+      updated.publishStatus = currentPublish;
+
       if (cloud && cloud.saveLecture) {
         await cloud.saveLecture(updated);
       }
-      if (onSelectLecture) onSelectLecture(updated);
-      alert("تم مسح الحزمة التعليمية بنجاح! أصبحت المحاضرة الآن خالية من أي محتوى آلي سابق ويمكنك إعادة توليدها في أي وقت.");
+      if (onSelectLecture) {
+        onSelectLecture(updated);
+      }
+      setShowClearPackageModal(false);
+      alert("تم مسح العناصر المحددة بنجاح مع بقاء باقي محتويات المحاضرة سليمة ومحفوظة!");
     } catch (err) {
-      alert("حدث خطأ أثناء مسح الحزمة: " + (err && err.message ? err.message : err));
+      alert("حدث خطأ أثناء مسح العناصر: " + (err && err.message ? err.message : err));
+    } finally {
+      setIsClearingPackage(false);
     }
   };
+
+  // ربط الدالة القديمة بالنافذة الجديدة للحفاظ على التوافق التام
+  var handleClearAiPackage = handleOpenClearPackageModal;
 
   // تطبيق تعديل فردي بالذكاء الاصطناعي على ركن محدد
   var handleApplyRefinement = async function() {
@@ -846,12 +914,12 @@ window.LectureViewerModal = function(props) {
           "button",
           {
             type: "button",
-            onClick: handleClearAiPackage,
-            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95",
-            title: "مسح وتصفير الحزمة المولدة لهذه المحاضرة للبدء من جديد"
+            onClick: handleOpenClearPackageModal,
+            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer",
+            title: "تخصيص ومسح عناصر من الحزمة المولدة مع حماية التفريغ الصوتي"
           },
           React.createElement("span", null, "🗑️"),
-          React.createElement("span", null, "مسح الحزمة المولدة")
+          React.createElement("span", null, "مسح الحزمة")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",
@@ -2425,12 +2493,12 @@ window.LectureViewerModal = function(props) {
               disabled: isAiGenerating,
               onClick: function() {
                 setShowPackageModal(false);
-                handleClearAiPackage();
+                handleOpenClearPackageModal();
               },
-              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all"
+              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
             },
             React.createElement("span", null, "🗑️"),
-            React.createElement("span", null, "مسح الحزمة الحالية")
+            React.createElement("span", null, "مسح الحزمة")
           ),
           React.createElement(
             "button",
@@ -2452,6 +2520,227 @@ window.LectureViewerModal = function(props) {
             },
             React.createElement("span", null, "🚀"),
             React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "بدء التوليد الذكي الآن")
+          )
+        )
+      )
+    ),
+
+    // نافذة تخصيص ومسح محتويات الحزمة
+    showClearPackageModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget && !isClearingPackage) setShowClearPackageModal(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-2xl" }, "🗑️"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تخصيص ومسح محتويات الحزمة"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, "حدد الأركان التي ترغب في مسحها فقط مع بقاء باقي محتويات المحاضرة محفوظة")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() { setShowClearPackageModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+            },
+            "✕"
+          )
+        ),
+
+        // تنبيه حماية التفريغ الصوتي
+        React.createElement(
+          "div",
+          { className: "p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed" },
+          React.createElement("span", { className: "text-base shrink-0" }, "🛡️"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("span", { className: "font-bold" }, "حماية التفريغ الصوتي: "),
+            React.createElement("span", null, "تم استثناء التفريغ الصوتي تلقائياً لحمايته من المسح العرضي. يمكنك تحديده يدوياً إن أردت مسحه.")
+          )
+        ),
+
+        // أزرار التحديد السريع
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 pt-1 flex-wrap" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: true,
+                  slides: true,
+                  mindmap: true,
+                  quiz: true,
+                  transcript: false
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold cursor-pointer transition-all"
+            },
+            "تحديد كل المولد (دون التفريغ)"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: true,
+                  slides: true,
+                  mindmap: true,
+                  quiz: true,
+                  transcript: true
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-[11px] font-bold cursor-pointer transition-all"
+            },
+            "تحديد الكل شاملاً التفريغ"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: false,
+                  slides: false,
+                  mindmap: false,
+                  quiz: false,
+                  transcript: false
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 text-[11px] font-bold cursor-pointer transition-all mr-auto"
+            },
+            "إلغاء التحديد"
+          )
+        ),
+
+        // قائمة العناصر الخمسة
+        React.createElement(
+          "div",
+          { className: "space-y-2 py-1" },
+          [
+            {
+              id: "summary",
+              label: "📄 الدليل الدراسي والملخص المكتوب",
+              desc: "الملخص والشرح الأكاديمي والمخططات والمقارنات المدمجة",
+              hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson)
+            },
+            {
+              id: "slides",
+              label: "📊 شرائح العرض التقديمي",
+              desc: "الشرائح المولدة والمجهزة للشرح والعرض",
+              hasData: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson)
+            },
+            {
+              id: "mindmap",
+              label: "🧠 الخريطة الذهنية التفاعلية",
+              desc: "المخطط الشجري التفاعلي وعقد المفاهيم والمحاور",
+              hasData: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson)
+            },
+            {
+              id: "quiz",
+              label: "📝 بنك الأسئلة والاختبار التفاعلي",
+              desc: "الأسئلة التفاعلية والاختبارات القصيرة وإجاباتها",
+              hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0)
+            },
+            {
+              id: "transcript",
+              label: "🎙️ التفريغ الصوتي والنصي للمحاضرة",
+              desc: "النص الحرفي الدقيق المستخرج من الصوت أو الفيديو مع التوقيتات",
+              hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText),
+              isTranscript: true
+            }
+          ].map(function(item) {
+            var isChecked = Boolean(clearItemsSelection[item.id]);
+            return React.createElement(
+              "label",
+              {
+                key: item.id,
+                className: "flex items-start gap-3 p-3 rounded-2xl border cursor-pointer select-none transition-all " +
+                  (isChecked
+                    ? (item.isTranscript
+                        ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800"
+                        : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800")
+                    : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 hover:border-slate-300")
+              },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: isChecked,
+                disabled: isClearingPackage,
+                onChange: function(e) {
+                  var val = e.target.checked;
+                  setClearItemsSelection(function(prev) {
+                    var next = Object.assign({}, prev);
+                    next[item.id] = val;
+                    return next;
+                  });
+                },
+                className: "mt-1 w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+              }),
+              React.createElement(
+                "div",
+                { className: "flex-1 min-w-0" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between gap-2" },
+                  React.createElement("span", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white" }, item.label),
+                  React.createElement(
+                    "span",
+                    { className: "text-[10px] font-semibold " + (item.hasData ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400") },
+                    item.hasData ? "متوفر بالمحاضرة" : "غير متوفر"
+                  )
+                ),
+                React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed mt-0.5" }, item.desc)
+              )
+            );
+          })
+        ),
+
+        // أزرار التحكم في الأسفل
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() { setShowClearPackageModal(false); },
+              className: "px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: handleExecuteClearPackageSelection,
+              className: "px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            },
+            React.createElement("span", null, isClearingPackage ? "⏳" : "🗑️"),
+            React.createElement("span", null, isClearingPackage ? "جاري المسح..." : "تأكيد مسح العناصر المحددة")
           )
         )
       )

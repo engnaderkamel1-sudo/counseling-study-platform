@@ -695,13 +695,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"0c9ce53","date":"2026-11-06 00:00","message":"feat(lectures): upgrade Lecture 2 (lec-20260926-2) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"de988da","date":"2026-11-05 23:36","message":"feat(reader): move font size controller to modal header and bind guaranteed inline fontSize to study guide and transcript"},{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"},{"hash":"082e6c1","date":"2026-11-05 22:35","message":"feat(pyramid): unify tier numbering format across all levels and enforce concise title rules in AI prompt"}];
+window.APP_UPDATES_HISTORY = [{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"0c9ce53","date":"2026-11-06 00:00","message":"feat(lectures): upgrade Lecture 2 (lec-20260926-2) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"de988da","date":"2026-11-05 23:36","message":"feat(reader): move font size controller to modal header and bind guaranteed inline fontSize to study guide and transcript"},{"hash":"ad77aec","date":"2026-11-05 23:22","message":"feat(reader): add interactive font size controller (A- / standard / A+ / A++) in study guide"},{"hash":"0a351f4","date":"2026-11-05 23:11","message":"feat(orientation): implement smart gyroscope auto-rotation with seamless touch scrolling in lecture viewer"},{"hash":"6f31787","date":"2026-11-05 23:00","message":"fix(reader): remove unrequested font size controls and restore standard reading view"},{"hash":"5196baf","date":"2026-11-05 22:51","message":"feat(reader): remove conflicting orientation reload button and add interactive font size controller (A- / A+) for study guide"},{"hash":"533d05c","date":"2026-11-05 22:46","message":"feat(modal): add dedicated Rotate Screen button and landscape fullscreen engine in lecture viewer"},{"hash":"5e89a45","date":"2026-11-05 22:39","message":"feat(orientation): unlock auto-rotation to landscape mode and optimize modal responsiveness"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1794043540",
-  buildTime: "2026-11-07T09:25:40",
+  version: "1.2.1794044574",
+  buildTime: "2026-11-07T09:42:54",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -27788,6 +27788,15 @@ window.LectureViewerModal = function(props) {
   }, [activeLecture ? activeLecture.id : null]);
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
+  var [showClearPackageModal, setShowClearPackageModal] = React.useState(false);
+  var [clearItemsSelection, setClearItemsSelection] = React.useState({
+    summary: true,
+    slides: true,
+    mindmap: true,
+    quiz: true,
+    transcript: false
+  });
+  var [isClearingPackage, setIsClearingPackage] = React.useState(false);
   var [genSummaryPages, setGenSummaryPages] = React.useState(function() {
     return (utils && utils.getLocal) ? (parseInt(utils.getLocal("counsel_gen_summary_pages", 5), 10) || 5) : 5;
   });
@@ -28386,41 +28395,100 @@ window.LectureViewerModal = function(props) {
     }
   };
 
-  // مسح وتصفير الحزمة التعليمية المولدة بالكامل للبدء من جديد
-  var handleClearAiPackage = async function() {
+  // فتح نافذة تخصيص مسح أركان الحزمة المولدة
+  var handleOpenClearPackageModal = function() {
     if (!activeLecture || currentUser.role !== "admin") return;
-    var confirmMsg = "هل أنت متأكد من مسح الحزمة التعليمية المولدة لهذه المحاضرة للبدء من جديد؟\n\n" +
-      "⚠️ سيتم تصفير: الملخص المكتوب، شرائح العرض، الخريطة الذهنية، الكويز، والتفريغ النصي.\n" +
-      "✅ ستبقى كافة بيانات المحاضرة الأساسية وروابط الفيديو واليوتيوب والمذكرات محفوظة بالكامل دون مساس.";
+    setClearItemsSelection({
+      summary: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson),
+      slides: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson),
+      mindmap: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson),
+      quiz: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0),
+      transcript: false // حماية التفريغ الصوتي: غير محدد افتراضياً
+    });
+    setShowClearPackageModal(true);
+  };
+
+  // تنفيذ مسح الأركان المحددة فقط من الحزمة
+  var handleExecuteClearPackageSelection = async function() {
+    if (!activeLecture || currentUser.role !== "admin") return;
+
+    var hasSelection = clearItemsSelection.summary || clearItemsSelection.slides || clearItemsSelection.mindmap || clearItemsSelection.quiz || clearItemsSelection.transcript;
+    if (!hasSelection) {
+      alert("يرجى اختيار عنصر واحد على الأقل للمسح.");
+      return;
+    }
+
+    var selectedLabels = [];
+    if (clearItemsSelection.summary) selectedLabels.push("الملخص والدليل الدراسي");
+    if (clearItemsSelection.slides) selectedLabels.push("شرائح العرض التقديمي");
+    if (clearItemsSelection.mindmap) selectedLabels.push("الخريطة الذهنية");
+    if (clearItemsSelection.quiz) selectedLabels.push("بنك الأسئلة والاختبار");
+    if (clearItemsSelection.transcript) selectedLabels.push("⚠️ التفريغ الصوتي والنصي للمحاضرة");
+
+    var confirmMsg = "هل أنت متأكد من مسح العناصر المحددة التالية من هذه المحاضرة؟\n\n" +
+      "• " + selectedLabels.join("\n• ") + "\n\n" +
+      "✅ ستبقى كافة العناصر الأخرى غير المحددة محفوظة بالكامل في المحاضرة وقاعدة البيانات.";
     if (!window.confirm(confirmMsg)) return;
 
-    var updated = Object.assign({}, activeLecture, {
-      writtenSummary: "",
-      summaryData: null,
-      summaryDataJson: "",
-      visualsData: null,
-      visualsDataJson: "",
-      presentationSlides: null,
-      slidesData: null,
-      slidesDataJson: "",
-      mindMapData: null,
-      mindMapDataJson: "",
-      quizQuestions: [],
-      transcript: "",
-      transcriptText: "",
-      publishStatus: { summary: false, visuals: false, quiz: false, transcript: false }
-    });
-
+    setIsClearingPackage(true);
     try {
+      var updated = Object.assign({}, activeLecture);
+      var currentPublish = Object.assign({}, activeLecture.publishStatus || {});
+
+      if (clearItemsSelection.summary) {
+        updated.writtenSummary = "";
+        updated.summaryData = null;
+        updated.summaryDataJson = "";
+        currentPublish.summary = false;
+      }
+
+      if (clearItemsSelection.slides) {
+        updated.presentationSlides = null;
+        updated.slidesData = null;
+        updated.slidesDataJson = "";
+      }
+
+      if (clearItemsSelection.mindmap) {
+        updated.mindMapData = null;
+        updated.mindMapDataJson = "";
+      }
+
+      if (clearItemsSelection.slides && clearItemsSelection.mindmap) {
+        updated.visualsData = null;
+        updated.visualsDataJson = "";
+        currentPublish.visuals = false;
+      }
+
+      if (clearItemsSelection.quiz) {
+        updated.quizQuestions = [];
+        currentPublish.quiz = false;
+      }
+
+      if (clearItemsSelection.transcript) {
+        updated.transcript = "";
+        updated.transcriptText = "";
+        currentPublish.transcript = false;
+      }
+
+      updated.publishStatus = currentPublish;
+
       if (cloud && cloud.saveLecture) {
         await cloud.saveLecture(updated);
       }
-      if (onSelectLecture) onSelectLecture(updated);
-      alert("تم مسح الحزمة التعليمية بنجاح! أصبحت المحاضرة الآن خالية من أي محتوى آلي سابق ويمكنك إعادة توليدها في أي وقت.");
+      if (onSelectLecture) {
+        onSelectLecture(updated);
+      }
+      setShowClearPackageModal(false);
+      alert("تم مسح العناصر المحددة بنجاح مع بقاء باقي محتويات المحاضرة سليمة ومحفوظة!");
     } catch (err) {
-      alert("حدث خطأ أثناء مسح الحزمة: " + (err && err.message ? err.message : err));
+      alert("حدث خطأ أثناء مسح العناصر: " + (err && err.message ? err.message : err));
+    } finally {
+      setIsClearingPackage(false);
     }
   };
+
+  // ربط الدالة القديمة بالنافذة الجديدة للحفاظ على التوافق التام
+  var handleClearAiPackage = handleOpenClearPackageModal;
 
   // تطبيق تعديل فردي بالذكاء الاصطناعي على ركن محدد
   var handleApplyRefinement = async function() {
@@ -28607,12 +28675,12 @@ window.LectureViewerModal = function(props) {
           "button",
           {
             type: "button",
-            onClick: handleClearAiPackage,
-            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95",
-            title: "مسح وتصفير الحزمة المولدة لهذه المحاضرة للبدء من جديد"
+            onClick: handleOpenClearPackageModal,
+            className: "px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer",
+            title: "تخصيص ومسح عناصر من الحزمة المولدة مع حماية التفريغ الصوتي"
           },
           React.createElement("span", null, "🗑️"),
-          React.createElement("span", null, "مسح الحزمة المولدة")
+          React.createElement("span", null, "مسح الحزمة")
         ),
         activeLecture.zoomUrl && React.createElement(
           "button",
@@ -30186,12 +30254,12 @@ window.LectureViewerModal = function(props) {
               disabled: isAiGenerating,
               onClick: function() {
                 setShowPackageModal(false);
-                handleClearAiPackage();
+                handleOpenClearPackageModal();
               },
-              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all"
+              className: "mr-auto px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
             },
             React.createElement("span", null, "🗑️"),
-            React.createElement("span", null, "مسح الحزمة الحالية")
+            React.createElement("span", null, "مسح الحزمة")
           ),
           React.createElement(
             "button",
@@ -30213,6 +30281,227 @@ window.LectureViewerModal = function(props) {
             },
             React.createElement("span", null, "🚀"),
             React.createElement("span", null, isAiGenerating ? "جاري التوليد..." : "بدء التوليد الذكي الآن")
+          )
+        )
+      )
+    ),
+
+    // نافذة تخصيص ومسح محتويات الحزمة
+    showClearPackageModal && React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget && !isClearingPackage) setShowClearPackageModal(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4" },
+        // رأس النافذة
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-2xl" }, "🗑️"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تخصيص ومسح محتويات الحزمة"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, "حدد الأركان التي ترغب في مسحها فقط مع بقاء باقي محتويات المحاضرة محفوظة")
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() { setShowClearPackageModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+            },
+            "✕"
+          )
+        ),
+
+        // تنبيه حماية التفريغ الصوتي
+        React.createElement(
+          "div",
+          { className: "p-3 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed" },
+          React.createElement("span", { className: "text-base shrink-0" }, "🛡️"),
+          React.createElement(
+            "div",
+            null,
+            React.createElement("span", { className: "font-bold" }, "حماية التفريغ الصوتي: "),
+            React.createElement("span", null, "تم استثناء التفريغ الصوتي تلقائياً لحمايته من المسح العرضي. يمكنك تحديده يدوياً إن أردت مسحه.")
+          )
+        ),
+
+        // أزرار التحديد السريع
+        React.createElement(
+          "div",
+          { className: "flex items-center gap-2 pt-1 flex-wrap" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: true,
+                  slides: true,
+                  mindmap: true,
+                  quiz: true,
+                  transcript: false
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold cursor-pointer transition-all"
+            },
+            "تحديد كل المولد (دون التفريغ)"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: true,
+                  slides: true,
+                  mindmap: true,
+                  quiz: true,
+                  transcript: true
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 text-[11px] font-bold cursor-pointer transition-all"
+            },
+            "تحديد الكل شاملاً التفريغ"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() {
+                setClearItemsSelection({
+                  summary: false,
+                  slides: false,
+                  mindmap: false,
+                  quiz: false,
+                  transcript: false
+                });
+              },
+              className: "px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-500 text-[11px] font-bold cursor-pointer transition-all mr-auto"
+            },
+            "إلغاء التحديد"
+          )
+        ),
+
+        // قائمة العناصر الخمسة
+        React.createElement(
+          "div",
+          { className: "space-y-2 py-1" },
+          [
+            {
+              id: "summary",
+              label: "📄 الدليل الدراسي والملخص المكتوب",
+              desc: "الملخص والشرح الأكاديمي والمخططات والمقارنات المدمجة",
+              hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || activeLecture.summaryDataJson)
+            },
+            {
+              id: "slides",
+              label: "📊 شرائح العرض التقديمي",
+              desc: "الشرائح المولدة والمجهزة للشرح والعرض",
+              hasData: Boolean(activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson)
+            },
+            {
+              id: "mindmap",
+              label: "🧠 الخريطة الذهنية التفاعلية",
+              desc: "المخطط الشجري التفاعلي وعقد المفاهيم والمحاور",
+              hasData: Boolean(activeLecture.mindMapData || activeLecture.mindMapDataJson)
+            },
+            {
+              id: "quiz",
+              label: "📝 بنك الأسئلة والاختبار التفاعلي",
+              desc: "الأسئلة التفاعلية والاختبارات القصيرة وإجاباتها",
+              hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0)
+            },
+            {
+              id: "transcript",
+              label: "🎙️ التفريغ الصوتي والنصي للمحاضرة",
+              desc: "النص الحرفي الدقيق المستخرج من الصوت أو الفيديو مع التوقيتات",
+              hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText),
+              isTranscript: true
+            }
+          ].map(function(item) {
+            var isChecked = Boolean(clearItemsSelection[item.id]);
+            return React.createElement(
+              "label",
+              {
+                key: item.id,
+                className: "flex items-start gap-3 p-3 rounded-2xl border cursor-pointer select-none transition-all " +
+                  (isChecked
+                    ? (item.isTranscript
+                        ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800"
+                        : "bg-amber-50/70 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800")
+                    : "bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/60 hover:border-slate-300")
+              },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: isChecked,
+                disabled: isClearingPackage,
+                onChange: function(e) {
+                  var val = e.target.checked;
+                  setClearItemsSelection(function(prev) {
+                    var next = Object.assign({}, prev);
+                    next[item.id] = val;
+                    return next;
+                  });
+                },
+                className: "mt-1 w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+              }),
+              React.createElement(
+                "div",
+                { className: "flex-1 min-w-0" },
+                React.createElement(
+                  "div",
+                  { className: "flex items-center justify-between gap-2" },
+                  React.createElement("span", { className: "text-xs sm:text-sm font-bold text-slate-900 dark:text-white" }, item.label),
+                  React.createElement(
+                    "span",
+                    { className: "text-[10px] font-semibold " + (item.hasData ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400") },
+                    item.hasData ? "متوفر بالمحاضرة" : "غير متوفر"
+                  )
+                ),
+                React.createElement("p", { className: "text-[11px] text-slate-500 leading-relaxed mt-0.5" }, item.desc)
+              )
+            );
+          })
+        ),
+
+        // أزرار التحكم في الأسفل
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: function() { setShowClearPackageModal(false); },
+              className: "px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
+            },
+            "إلغاء"
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              disabled: isClearingPackage,
+              onClick: handleExecuteClearPackageSelection,
+              className: "px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            },
+            React.createElement("span", null, isClearingPackage ? "⏳" : "🗑️"),
+            React.createElement("span", null, isClearingPackage ? "جاري المسح..." : "تأكيد مسح العناصر المحددة")
           )
         )
       )
