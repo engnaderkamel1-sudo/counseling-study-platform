@@ -972,15 +972,15 @@ window.LectureViewerModal = function(props) {
         { className: "flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 overflow-x-auto scrollbar-thin pb-0.5" },
         [
           { id: "media", label: "📺 مشاهدة المحاضرة" },
-          { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript") },
-          { id: "summary", label: "📄 الدليل الدراسي المصور", isDraft: getIsDraft("summary") },
-          { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz") },
+          { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript"), hasData: Boolean((activeLecture.transcript && activeLecture.transcript.trim()) || (activeLecture.transcriptText && activeLecture.transcriptText.trim())) },
+          { id: "summary", label: "📄 الدليل الدراسي المصور", isDraft: getIsDraft("summary"), hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0)) },
+          { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz"), hasData: Boolean(Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0) },
           { id: "handout", label: "📁 المرفقات والملفات" },
           { id: "notes", label: "✍️ الملاحظات" }
         ].filter(function(tab) {
           if (currentUser.role === "admin") return true;
           if (tab.id === "media" || tab.id === "handout" || tab.id === "notes") return true;
-          return !tab.isDraft;
+          return tab.hasData && !tab.isDraft;
         }).map(function(tab) {
           var isCurrent = activeSubTab === tab.id;
           return React.createElement(
@@ -992,16 +992,27 @@ window.LectureViewerModal = function(props) {
                 (isCurrent ? "border-emerald-600 dark:border-emerald-500 text-emerald-600 dark:text-emerald-400" : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")
             },
             React.createElement("span", null, tab.label),
-            currentUser.role === "admin" && tab.isDraft !== undefined && React.createElement(
-              "span",
-              {
-                className: "px-1.5 py-0.2 rounded-md text-[10px] font-black transition-all " +
-                  (tab.isDraft
-                    ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/60"
-                    : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60")
-              },
-              tab.isDraft ? "🔒 مسودة" : "✓ منشور"
-            )
+            currentUser.role === "admin" && tab.isDraft !== undefined && (function() {
+              if (!tab.hasData) {
+                return React.createElement(
+                  "span",
+                  {
+                    className: "px-1.5 py-0.2 rounded-md text-[10px] font-black transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300/60 dark:border-slate-700"
+                  },
+                  "غير متوفر"
+                );
+              }
+              return React.createElement(
+                "span",
+                {
+                  className: "px-1.5 py-0.2 rounded-md text-[10px] font-black transition-all " +
+                    (tab.isDraft
+                      ? "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300/60"
+                      : "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300/60")
+                },
+                tab.isDraft ? "🔒 مسودة" : "✓ منشور"
+              );
+            })()
           );
         })
       ),
@@ -1573,9 +1584,9 @@ window.LectureViewerModal = function(props) {
             "div",
             { className: "p-10 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-400 text-xs space-y-3" },
             React.createElement("div", { className: "text-3xl" }, "📄"),
-            React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "لا يوجد دليل دراسي مصور لهذه المحاضرة حتى الآن."),
+            React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" }, "هذا المحتوى غير متوفر حالياً جاري إعداده"),
             React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-              "يمكن استخراج وصياغة دليل دراسي مصور متكامل يجمع بين الشرح الأكاديمي والمخططات التفاعلية بالذكاء الاصطناعي."
+              "سيتم توفير ونشر الدليل الدراسي المصور فور الانتهاء من إعداده وتدقيقه."
             ),
             currentUser.role === "admin" && React.createElement(
               "div",

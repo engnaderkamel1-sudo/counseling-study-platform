@@ -313,12 +313,12 @@ window.InteractiveQuizViewer = function(props) {
       { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
       React.createElement("div", { className: "text-4xl" }, isGenerating ? "⏳" : "📝"),
       React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" },
-        isGenerating ? "جاري استخراج وتوليد أسئلة الكويز..." : "لا يوجد اختبار تفاعلي لهذه المحاضرة بعد"
+        isGenerating ? "جاري استخراج وتوليد أسئلة الكويز..." : "هذا المحتوى غير متوفر حالياً جاري إعداده"
       ),
       React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
         isGenerating
           ? (generatingStatus || "يقوم الذكاء الاصطناعي الآن بقراءة وتحليل نص وتفريغ المحاضرة واستخراج أسئلة دقيقة...")
-          : "يمكن لمسؤول المنصة توليد أسئلة الكويز بالذكاء الاصطناعي، أو كتابة وإضافة أسئلة يدوياً الآن."
+          : "سيتم توفير ونشر أسئلة الاختبار التفاعلي فور الانتهاء من إعدادها وتدقيقها."
       ),
       isGenerating ? React.createElement(
         "div",
