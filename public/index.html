@@ -695,13 +695,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"},{"hash":"0c9ce53","date":"2026-11-06 00:00","message":"feat(lectures): upgrade Lecture 2 (lec-20260926-2) to Comprehensive Textbook Standard with 10 academic sections"}];
+window.APP_UPDATES_HISTORY = [{"hash":"94f4f5e","date":"2026-11-07 21:53","message":"fix(lectures): enforce cumulative non-destructive cloud merge, preserve draft visibility for admins, and fix summary badge flicker"},{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"},{"hash":"a065fdb","date":"2026-11-06 00:17","message":"upgrade lecture 9 to comprehensive textbook standard with firestore sync"},{"hash":"da2e024","date":"2026-11-06 00:15","message":"upgrade lecture 8 to comprehensive textbook standard with firestore sync"},{"hash":"bbf372f","date":"2026-11-06 00:13","message":"upgrade lecture 7 to comprehensive textbook standard with firestore sync"},{"hash":"2bc1da2","date":"2026-11-06 00:11","message":"upgrade lecture 6 to comprehensive textbook standard with firestore sync"},{"hash":"403becb","date":"2026-11-06 00:10","message":"upgrade lecture 5 to comprehensive textbook standard with firestore sync"},{"hash":"f5e9a23","date":"2026-11-06 00:07","message":"upgrade lecture 4 to comprehensive textbook standard with firestore sync"},{"hash":"136abbb","date":"2026-11-06 00:03","message":"feat(lectures): upgrade Lecture 3 (lec-20261002-3) to Comprehensive Textbook Standard with 10 academic sections"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1794081187",
-  buildTime: "2026-11-07T19:53:07",
+  version: "1.2.1794081889",
+  buildTime: "2026-11-07T20:04:49",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -882,6 +882,14 @@ window.getTodayVerse = function() {
 window.DEFAULT_TERM1_LECTURES = [
   {
     "id": "lec-20260919-1",
+    "publishStatus": {
+      "summary": true,
+      "visuals": true,
+      "quiz": true,
+      "transcript": true,
+      "slides": true,
+      "mindMap": true
+    },
     "orderIndex": 1,
     "sessionOrder": 1,
     "date": "2026-09-19",
@@ -1536,8 +1544,305 @@ window.DEFAULT_TERM1_LECTURES = [
     "handoutUrl": "",
     "handoutName": "",
     "audioSummaryUrl": "",
-    "writtenSummary": "",
-    "summaryData": null,
+    "publishStatus": {
+      "summary": false,
+      "visuals": false,
+      "quiz": false,
+      "transcript": false,
+      "slides": false,
+      "mindMap": false
+    },
+    "writtenSummary": `دليل دراسي شامل ومكثف لمحاضرة «ما هي المشورة؟ وأهدافها»، صُمم وفق أعلى المعايير الأكاديمية والبصرية لتأهيل الدارس وخادم المشورة. يتناول الدليل الجذور التاريخية والاحتياج الكنسي للمشورة، وأسباب الممانعة والرفض للجلسات الفردية، والهدف الإرشادي الأسمى المتوافق مع النضوج المسيحي، إضافة إلى التحليل التفصيلي للنصوص الكتابية، والتمييز بين المشورة وغيرها من الممارسات (كتقديم الحلول الجاهزة أو الوعظ)، مع شرح أركان العملية المشورية، ونموذج العلاقة الشفائية (USA Model)، ومواصفات المشير النفسية والروحية، وركائز النمو الثلاث (3Fs).
+
+🎯 أهداف التعلم:
+• فهم نشأة علم المشورة وتطوره التاريخي وأسباب الاحتياج الماس للجلسات الإرشادية الفردية في الكنيسة.
+• تشخيص أسباب رفض أو ممانعة طالب المشورة للجلسات الفردية وكيفية التعامل معها.
+• استيعاب الأهداف السبعة للعملية المشورية وتحقيق التوازن بين العلوم النفسية والنصوص الكتابية.
+• إتقان أركان العملية المشورية ونموذج العلاقة الشفائية الثلاثي (USA) وآليات الاستماع والإصغاء الفعال.
+
+📌 نشأة علم المشورة والاحتياج الشامل للجلسات الإرشادية:
+بدأت خدمة المشورة كعلم أكاديمي في مصر عام 2004 بجهود مبكرة، رغم وجودها مسبقاً في الكليات العالمية لأكثر من عشرين عاماً وتدريسها في درجات الليسانس والماجستير والدكتوراه (مثل حصول الأنبا يوسف على الدكتوراه في المشورة). وقد ارتبطت بداياتها بالأطباء النفسيين لأن الجلسات النفسية والإرشادية تمثل جزءاً رئيسياً من العلاج. يعود الاحتياج الكنسي للمشورة إلى شموليتها لكافة مناحي الحياة: تربية الأبناء، حسم المشكلات الأسرية، تقييم التوافق قبل الارتباط، اتخاذ القرارات، وإدارة الأزمات. وتؤكد المبادئ الإرشادية عدم وجود شخص غير محتاج للمشورة، كما يشير حكيم العهد القديم سليمان: «أرأيت حكيماً في عينَي نفسه؟ الرجاء بالجاهل خيرٌ من الرجاء به».
+  - المشورة علم أكاديمي موثق يمنح درجات جامعية وليس اختراعاً أو بدعة حديثة.
+  - كافة مجالات الحياة (التربية، الأسرة، ما قبل الارتباط، القرار، الأزمات) تتطلب جلسات مشورية فردية.
+  - الامتناع عن مشورة ما قبل الارتباط بدعوى «أروح ليه؟ يقولوا لي أعمل إيه؟» مؤشر صريح على عدم الجاهزية للتعلم والنمو.
+
+📌 أسباب رفض جلسات المشورة ومحدودية الوعظ العام:
+تتعدد الأسباب التي تدفع الأشخاص لرفض طلب المشورة رغم حاجتهم الأكيدة لها، وتتلخص في أربعة أسباب رئيسية: الإنكار والآليات الدفاعية اللاشعورية (مثل عدم دراية الزوج في فيلم Kramer vs. Kramer)، الخبرات السابقة السلبية وإفشاء السرية من قبل الخدام مما يوجد قطعاً داخلياً، كبرياء القلب والترفع عن التوجيه («ما اتخلقش اللي يقول لي اعمل إيه»)، والتذرع الخاطئ بالوسائط الروحية («أنا بتاع ربنا بصلي وبصوم وأتداول»). وتظهر أهمية الجلسة الفردية نظراً لمحدودية المحاضرات والوعظات العامة؛ إذ لا يوجد حل واحد ينفع لجميع الناس، فضلاً عن احتياج الإنسان الأصيل لأن يُسمع ويُفهم ويُحس به دون إدانة.
+  - أسباب الرفض: الإنكار اللاشعوري، فقدان الأمان بخرق السرية، كبرياء القلب، والظن الروحي الخاطئ.
+  - المحاضرات العامة لا تكفي بسبب فردية المشكلات والاحتياج الشديد للإصغاء الفردي والتفهم.
+  - إعداد خادم المشورة يتطلب سنتين من التدريب العملي بعد إنهاء الدراسة الأكاديمية لضمان كفاءة الإصغاء.`,
+    "summaryData": {
+      "overview": "دليل دراسي شامل ومكثف لمحاضرة «ما هي المشورة؟ وأهدافها»، صُمم وفق أعلى المعايير الأكاديمية والبصرية لتأهيل الدارس وخادم المشورة. يتناول الدليل الجذور التاريخية والاحتياج الكنسي للمشورة، وأسباب الممانعة والرفض للجلسات الفردية، والهدف الإرشادي الأسمى المتوافق مع النضوج المسيحي، إضافة إلى التحليل التفصيلي للنصوص الكتابية، والتمييز بين المشورة وغيرها من الممارسات (كتقديم الحلول الجاهزة أو الوعظ)، مع شرح أركان العملية المشورية، ونموذج العلاقة الشفائية (USA Model)، ومواصفات المشير النفسية والروحية، وركائز النمو الثلاث (3Fs).",
+      "glossary": [
+            {
+                  "term": "المشورة",
+                  "definition": "علم وخدمة تهدف إلى مساعدة الإنسان على نضج شخصيته وحل مشاكله عبر الإصغاء والفهم وتمكينه من اتخاذ قراره بنفسه"
+            },
+            {
+                  "term": "قاعدة الاستيعاب والقبول (USA)",
+                  "definition": "مكونات العلاقة الشفائية المتمثلة في الاستيعاب والفهم (Understanding)، الأصالة والصدق (Sincere)، والقبول (Acceptance)"
+            },
+            {
+                  "term": "الشوريا (Fellowship)",
+                  "definition": "الشركة المقدسة والدفء الروحي المتبادل بين الاخوة والخدّام داخل الجماعة الكنسية"
+            },
+            {
+                  "term": "الصورة الذاتية السلبية (Negative Self-Image)",
+                  "definition": "نظرة الإنسان المشوهة عن نفسه والناتجة عن صدمات الطفولة أو صغر النفس والتي تؤثر على سلوكه وعلاقاته"
+            }
+      ],
+      "isPublished": false,
+      "keyTakeaways": [
+            "المشورة ليست نصيحة ولا عظة ولا تقديم حلول جاهزة، بل هي مساعدة المستشير على فهم مشكلته ونضج شخصيته",
+            "تكوين العلاقة الشفائية يعتمد على قاعدة الاستيعاب والاصغاء الفعال والأصالة والقبول (USA)",
+            "خادم المشورة الحقيقي هو من اختبر التغيير في شخصيته، ويمارس مبدأ فعل الحق قبل تعليمه",
+            "الأبوة والشركة وكلمة الله الحية هي الركائز الثلاث (3Fs) لنمو الخادم واستمرار خدمته بقوة"
+      ],
+      "sections": [
+            {
+                  "title": "نشأة علم المشورة والاحتياج الشامل للجلسات الإرشادية",
+                  "content": "بدأت خدمة المشورة كعلم أكاديمي في مصر عام 2004 بجهود مبكرة، رغم وجودها مسبقاً في الكليات العالمية لأكثر من عشرين عاماً وتدريسها في درجات الليسانس والماجستير والدكتوراه (مثل حصول الأنبا يوسف على الدكتوراه في المشورة). وقد ارتبطت بداياتها بالأطباء النفسيين لأن الجلسات النفسية والإرشادية تمثل جزءاً رئيسياً من العلاج. يعود الاحتياج الكنسي للمشورة إلى شموليتها لكافة مناحي الحياة: تربية الأبناء، حسم المشكلات الأسرية، تقييم التوافق قبل الارتباط، اتخاذ القرارات، وإدارة الأزمات. وتؤكد المبادئ الإرشادية عدم وجود شخص غير محتاج للمشورة، كما يشير حكيم العهد القديم سليمان: «أرأيت حكيماً في عينَي نفسه؟ الرجاء بالجاهل خيرٌ من الرجاء به».",
+                  "keyPoints": [
+                        "المشورة علم أكاديمي موثق يمنح درجات جامعية وليس اختراعاً أو بدعة حديثة.",
+                        "كافة مجالات الحياة (التربية، الأسرة، ما قبل الارتباط، القرار، الأزمات) تتطلب جلسات مشورية فردية.",
+                        "الامتناع عن مشورة ما قبل الارتباط بدعوى «أروح ليه؟ يقولوا لي أعمل إيه؟» مؤشر صريح على عدم الجاهزية للتعلم والنمو."
+                  ],
+                  "visualDiagram": {
+                        "id": "sec_visual_1",
+                        "type": "pillars",
+                        "title": "مجالات الاحتياج الشامل للمشورة الفردية",
+                        "subtitle": "القطاعات الحياتية الخمسة التي تستدعي التدخل المشوري بحسب المحاضرة",
+                        "badge": "مجالات الخدمة",
+                        "pillars": [
+                              {
+                                    "title": "التربية والرعاية",
+                                    "description": "تعلم أساليب التعامل السليم مع الأبناء في المراحل المختلفة.",
+                                    "directive": "توجيه الآباء لتعديل الأساليب التربوية",
+                                    "warning": "تجنب فرض الأوامر الجافة في سن المراهقة"
+                              },
+                              {
+                                    "title": "المشكلات الأسرية",
+                                    "description": "حل النزاعات الزوجية وتفكيك دوائر التواصل المغلقة.",
+                                    "directive": "الفهم العميق لاحتياجات الطرف الآخر",
+                                    "warning": "الحذر من التصلب والرأي الواحد"
+                              },
+                              {
+                                    "title": "ما قبل الارتباط",
+                                    "description": "تقييم التوافق النفسي والفكري بين الشريكين قبل الزواج.",
+                                    "directive": "حضور جلسات مشتركة لاستكشاف التناسب",
+                                    "warning": "اعتبار رفض المشورة علامة كبرياء"
+                              },
+                              {
+                                    "title": "إدارة الأزمات",
+                                    "description": "مساندة الشخص أثناء الصدمات والظروف الضاغطة.",
+                                    "directive": "التواجد والتدعيم وتضميد الجراح",
+                                    "warning": "تجنب إعطاء حلول سريعة وسط الأزمة"
+                              },
+                              {
+                                    "title": "اتخاذ القرارات",
+                                    "description": "مساعدة المستشير على التفكير المنظم وحسم الخيارات.",
+                                    "directive": "توضيح الرؤية وتطوير المحاكمة العقلية",
+                                    "warning": "منع اتخاذ القرار نيابة عن المستشير"
+                              }
+                        ]
+                  }
+            },
+            {
+                  "title": "أسباب رفض جلسات المشورة ومحدودية الوعظ العام",
+                  "content": "تتعدد الأسباب التي تدفع الأشخاص لرفض طلب المشورة رغم حاجتهم الأكيدة لها، وتتلخص في أربعة أسباب رئيسية: الإنكار والآليات الدفاعية اللاشعورية (مثل عدم دراية الزوج في فيلم Kramer vs. Kramer)، الخبرات السابقة السلبية وإفشاء السرية من قبل الخدام مما يوجد قطعاً داخلياً، كبرياء القلب والترفع عن التوجيه («ما اتخلقش اللي يقول لي اعمل إيه»)، والتذرع الخاطئ بالوسائط الروحية («أنا بتاع ربنا بصلي وبصوم وأتداول»). وتظهر أهمية الجلسة الفردية نظراً لمحدودية المحاضرات والوعظات العامة؛ إذ لا يوجد حل واحد ينفع لجميع الناس، فضلاً عن احتياج الإنسان الأصيل لأن يُسمع ويُفهم ويُحس به دون إدانة.",
+                  "keyPoints": [
+                        "أسباب الرفض: الإنكار اللاشعوري، فقدان الأمان بخرق السرية، كبرياء القلب، والظن الروحي الخاطئ.",
+                        "المحاضرات العامة لا تكفي بسبب فردية المشكلات والاحتياج الشديد للإصغاء الفردي والتفهم.",
+                        "إعداد خادم المشورة يتطلب سنتين من التدريب العملي بعد إنهاء الدراسة الأكاديمية لضمان كفاءة الإصغاء."
+                  ],
+                  "visualDiagram": {
+                        "id": "sec_visual_2",
+                        "type": "pillars",
+                        "title": "موانع طلب المشورة الأربعة ومقابلها الإرشادي",
+                        "subtitle": "تفصيل المعوقات النفسية والروحية التي تعطل طلب المساعدة",
+                        "badge": "تشخيص الممانعة",
+                        "pillars": [
+                              {
+                                    "title": "الإنكار واللاوعي",
+                                    "description": "استخدام الحيل الدفاعية اللاشعورية لعدم رؤية المشكلة القائمة.",
+                                    "directive": "مساعدة المستشير على مواجهة الواقع بتدرج",
+                                    "warning": "تجنب الصدمة المباشرة دون تهيئة"
+                              },
+                              {
+                                    "title": "افتقاد الأمان والسرية",
+                                    "description": "تجارب سابقة أُفشيت فيها أسراره فحدث انغلاق وجداني كامل.",
+                                    "directive": "بناء جسور الثقة والالتزام الحازم بالسرية",
+                                    "warning": "إخراج أي كلمة أو معلومة خارج الجلسة"
+                              },
+                              {
+                                    "title": "كبرياء القلب",
+                                    "description": "الشعور بالتفوق والأنفة من الخضوع لتوجيه أو مشورة شخص آخر.",
+                                    "directive": "الاتضاع وقبول التعلم من الآخرين",
+                                    "warning": "اعتبار النفس حكيماً ولا يحتاج لأحد"
+                              },
+                              {
+                                    "title": "التذرع بالروحيات",
+                                    "description": "اعتقاد أن الصوم والصلاة والتناول تغني عن حل المشكلات النفسية.",
+                                    "directive": "التكامل بين وسائط النعمة والتعلم المشوري",
+                                    "warning": "عزل الجسد الواحد وعوز الأعضاء لبعضها"
+                              }
+                        ]
+                  }
+            }
+      ],
+      "targetPages": 10,
+      "learningObjectives": [
+            "فهم نشأة علم المشورة وتطوره التاريخي وأسباب الاحتياج الماس للجلسات الإرشادية الفردية في الكنيسة.",
+            "تشخيص أسباب رفض أو ممانعة طالب المشورة للجلسات الفردية وكيفية التعامل معها.",
+            "استيعاب الأهداف السبعة للعملية المشورية وتحقيق التوازن بين العلوم النفسية والنصوص الكتابية.",
+            "إتقان أركان العملية المشورية ونموذج العلاقة الشفائية الثلاثي (USA) وآليات الاستماع والإصغاء الفعال."
+      ],
+      "reflectionQuestions": [
+            "إلى أي مدى أعتمد في خدمتي وعلاقاتي على تقديم «الحلول الجاهزة والنصائح» بدلاً من الاصغاء العميق ومساعدة الطرف الآخر على النضج واتخاذ القرار بنفسه؟",
+            "كيف تتجلى في حياتي الشخصية والخدمية ركائز الري أف (الأبوة، الشركة، التغذي بكلمة الله) وهل أنطبق عليّ مبدأ «فعل وعلم» قبل تقديم التعليم للآخرين؟"
+      ]
+},
+    "summaryDataJson": "{\"overview\":\"دليل دراسي شامل ومكثف لمحاضرة «ما هي المشورة؟ وأهدافها»، صُمم وفق أعلى المعايير الأكاديمية والبصرية لتأهيل الدارس وخادم المشورة. يتناول الدليل الجذور التاريخية والاحتياج الكنسي للمشورة، وأسباب الممانعة والرفض للجلسات الفردية، والهدف الإرشادي الأسمى المتوافق مع النضوج المسيحي، إضافة إلى التحليل التفصيلي للنصوص الكتابية، والتمييز بين المشورة وغيرها من الممارسات (كتقديم الحلول الجاهزة أو الوعظ)، مع شرح أركان العملية المشورية، ونموذج العلاقة الشفائية (USA Model)، ومواصفات المشير النفسية والروحية، وركائز النمو الثلاث (3Fs).\",\"learningObjectives\":[\"فهم نشأة علم المشورة وتطوره التاريخي وأسباب الاحتياج الماس للجلسات الإرشادية الفردية في الكنيسة.\",\"تشخيص أسباب رفض أو ممانعة طالب المشورة للجلسات الفردية وكيفية التعامل معها.\",\"استيعاب الأهداف السبعة للعملية المشورية وتحقيق التوازن بين العلوم النفسية والنصوص الكتابية.\",\"إتقان أركان العملية المشورية ونموذج العلاقة الشفائية الثلاثي (USA) وآليات الاستماع والإصغاء الفعال.\"],\"sections\":[{\"title\":\"نشأة علم المشورة والاحتياج الشامل للجلسات الإرشادية\",\"content\":\"بدأت خدمة المشورة كعلم أكاديمي في مصر عام 2004 بجهود مبكرة، رغم وجودها مسبقاً في الكليات العالمية لأكثر من عشرين عاماً وتدريسها في درجات الليسانس والماجستير والدكتوراه (مثل حصول الأنبا يوسف على الدكتوراه في المشورة). وقد ارتبطت بداياتها بالأطباء النفسيين لأن الجلسات النفسية والإرشادية تمثل جزءاً رئيسياً من العلاج. يعود الاحتياج الكنسي للمشورة إلى شموليتها لكافة مناحي الحياة: تربية الأبناء، حسم المشكلات الأسرية، تقييم التوافق قبل الارتباط، اتخاذ القرارات، وإدارة الأزمات. وتؤكد المبادئ الإرشادية عدم وجود شخص غير محتاج للمشورة، كما يشير حكيم العهد القديم سليمان: «أرأيت حكيماً في عينَي نفسه؟ الرجاء بالجاهل خيرٌ من الرجاء به».\",\"keyPoints\":[\"المشورة علم أكاديمي موثق يمنح درجات جامعية وليس اختراعاً أو بدعة حديثة.\",\"كافة مجالات الحياة (التربية، الأسرة، ما قبل الارتباط، القرار، الأزمات) تتطلب جلسات مشورية فردية.\",\"الامتناع عن مشورة ما قبل الارتباط بدعوى «أروح ليه؟ يقولوا لي أعمل إيه؟» مؤشر صريح على عدم الجاهزية للتعلم والنمو.\"],\"visualDiagram\":{\"id\":\"sec_visual_1\",\"type\":\"pillars\",\"title\":\"مجالات الاحتياج الشامل للمشورة الفردية\",\"subtitle\":\"القطاعات الحياتية الخمسة التي تستدعي التدخل المشوري بحسب المحاضرة\",\"badge\":\"مجالات الخدمة\",\"pillars\":[{\"title\":\"التربية والرعاية\",\"description\":\"تعلم أساليب التعامل السليم مع الأبناء في المراحل المختلفة.\",\"directive\":\"توجيه الآباء لتعديل الأساليب التربوية\",\"warning\":\"تجنب فرض الأوامر الجافة في سن المراهقة\"},{\"title\":\"المشكلات الأسرية\",\"description\":\"حل النزاعات الزوجية وتفكيك دوائر التواصل المغلقة.\",\"directive\":\"الفهم العميق لاحتياجات الطرف الآخر\",\"warning\":\"الحذر من التصلب والرأي الواحد\"},{\"title\":\"ما قبل الارتباط\",\"description\":\"تقييم التوافق النفسي والفكري بين الشريكين قبل الزواج.\",\"directive\":\"حضور جلسات مشتركة لاستكشاف التناسب\",\"warning\":\"اعتبار رفض المشورة علامة كبرياء\"},{\"title\":\"إدارة الأزمات\",\"description\":\"مساندة الشخص أثناء الصدمات والظروف الضاغطة.\",\"directive\":\"التواجد والتدعيم وتضميد الجراح\",\"warning\":\"تجنب إعطاء حلول سريعة وسط الأزمة\"},{\"title\":\"اتخاذ القرارات\",\"description\":\"مساعدة المستشير على التفكير المنظم وحسم الخيارات.\",\"directive\":\"توضيح الرؤية وتطوير المحاكمة العقلية\",\"warning\":\"منع اتخاذ القرار نيابة عن المستشير\"}]}},{\"title\":\"أسباب رفض جلسات المشورة ومحدودية الوعظ العام\",\"content\":\"تتعدد الأسباب التي تدفع الأشخاص لرفض طلب المشورة رغم حاجتهم الأكيدة لها، وتتلخص في أربعة أسباب رئيسية: الإنكار والآليات الدفاعية اللاشعورية (مثل عدم دراية الزوج في فيلم Kramer vs. Kramer)، الخبرات السابقة السلبية وإفشاء السرية من قبل الخدام مما يوجد قطعاً داخلياً، كبرياء القلب والترفع عن التوجيه («ما اتخلقش اللي يقول لي اعمل إيه»)، والتذرع الخاطئ بالوسائط الروحية («أنا بتاع ربنا بصلي وبصوم وأتداول»). وتظهر أهمية الجلسة الفردية نظراً لمحدودية المحاضرات والوعظات العامة؛ إذ لا يوجد حل واحد ينفع لجميع الناس، فضلاً عن احتياج الإنسان الأصيل لأن يُسمع ويُفهم ويُحس به دون إدانة.\",\"keyPoints\":[\"أسباب الرفض: الإنكار اللاشعوري، فقدان الأمان بخرق السرية، كبرياء القلب، والظن الروحي الخاطئ.\",\"المحاضرات العامة لا تكفي بسبب فردية المشكلات والاحتياج الشديد للإصغاء الفردي والتفهم.\",\"إعداد خادم المشورة يتطلب سنتين من التدريب العملي بعد إنهاء الدراسة الأكاديمية لضمان كفاءة الإصغاء.\"],\"visualDiagram\":{\"id\":\"sec_visual_2\",\"type\":\"pillars\",\"title\":\"موانع طلب المشورة الأربعة ومقابلها الإرشادي\",\"subtitle\":\"تفصيل المعوقات النفسية والروحية التي تعطل طلب المساعدة\",\"badge\":\"تشخيص الممانعة\",\"pillars\":[{\"title\":\"الإنكار واللاوعي\",\"description\":\"استخدام الحيل الدفاعية اللاشعورية لعدم رؤية المشكلة القائمة.\",\"directive\":\"مساعدة المستشير على مواجهة الواقع بتدرج\",\"warning\":\"تجنب الصدمة المباشرة دون تهيئة\"},{\"title\":\"افتقاد الأمان والسرية\",\"description\":\"تجارب سابقة أُفشيت فيها أسراره فحدث انغلاق وجداني كامل.\",\"directive\":\"بناء جسور الثقة والالتزام الحازم بالسرية\",\"warning\":\"إخراج أي كلمة أو معلومة خارج الجلسة\"},{\"title\":\"كبرياء القلب\",\"description\":\"الشعور بالتفوق والأنفة من الخضوع لتوجيه أو مشورة شخص آخر.\",\"directive\":\"الاتضاع وقبول التعلم من الآخرين\",\"warning\":\"اعتبار النفس حكيماً ولا يحتاج لأحد\"},{\"title\":\"التذرع بالروحيات\",\"description\":\"اعتقاد أن الصوم والصلاة والتناول تغني عن حل المشكلات النفسية.\",\"directive\":\"التكامل بين وسائط النعمة والتعلم المشوري\",\"warning\":\"عزل الجسد الواحد وعوز الأعضاء لبعضها\"}]}}],\"isPublished\":false,\"targetPages\":10}",
+    "visualsData": {
+      "charts": [
+            {
+                  "id": "sec_visual_1",
+                  "type": "pillars",
+                  "title": "مجالات الاحتياج الشامل للمشورة الفردية",
+                  "subtitle": "القطاعات الحياتية الخمسة التي تستدعي التدخل المشوري بحسب المحاضرة",
+                  "badge": "مجالات الخدمة",
+                  "pillars": [
+                        {
+                              "title": "التربية والرعاية",
+                              "description": "تعلم أساليب التعامل السليم مع الأبناء في المراحل المختلفة.",
+                              "directive": "توجيه الآباء لتعديل الأساليب التربوية",
+                              "warning": "تجنب فرض الأوامر الجافة في سن المراهقة"
+                        },
+                        {
+                              "title": "المشكلات الأسرية",
+                              "description": "حل النزاعات الزوجية وتفكيك دوائر التواصل المغلقة.",
+                              "directive": "الفهم العميق لاحتياجات الطرف الآخر",
+                              "warning": "الحذر من التصلب والرأي الواحد"
+                        },
+                        {
+                              "title": "ما قبل الارتباط",
+                              "description": "تقييم التوافق النفسي والفكري بين الشريكين قبل الزواج.",
+                              "directive": "حضور جلسات مشتركة لاستكشاف التناسب",
+                              "warning": "اعتبار رفض المشورة علامة كبرياء"
+                        },
+                        {
+                              "title": "إدارة الأزمات",
+                              "description": "مساندة الشخص أثناء الصدمات والظروف الضاغطة.",
+                              "directive": "التواجد والتدعيم وتضميد الجراح",
+                              "warning": "تجنب إعطاء حلول سريعة وسط الأزمة"
+                        },
+                        {
+                              "title": "اتخاذ القرارات",
+                              "description": "مساعدة المستشير على التفكير المنظم وحسم الخيارات.",
+                              "directive": "توضيح الرؤية وتطوير المحاكمة العقلية",
+                              "warning": "منع اتخاذ القرار نيابة عن المستشير"
+                        }
+                  ]
+            },
+            {
+                  "id": "sec_visual_2",
+                  "type": "pillars",
+                  "title": "موانع طلب المشورة الأربعة ومقابلها الإرشادي",
+                  "subtitle": "تفصيل المعوقات النفسية والروحية التي تعطل طلب المساعدة",
+                  "badge": "تشخيص الممانعة",
+                  "pillars": [
+                        {
+                              "title": "الإنكار واللاوعي",
+                              "description": "استخدام الحيل الدفاعية اللاشعورية لعدم رؤية المشكلة القائمة.",
+                              "directive": "مساعدة المستشير على مواجهة الواقع بتدرج",
+                              "warning": "تجنب الصدمة المباشرة دون تهيئة"
+                        },
+                        {
+                              "title": "افتقاد الأمان والسرية",
+                              "description": "تجارب سابقة أُفشيت فيها أسراره فحدث انغلاق وجداني كامل.",
+                              "directive": "بناء جسور الثقة والالتزام الحازم بالسرية",
+                              "warning": "إخراج أي كلمة أو معلومة خارج الجلسة"
+                        },
+                        {
+                              "title": "كبرياء القلب",
+                              "description": "الشعور بالتفوق والأنفة من الخضوع لتوجيه أو مشورة شخص آخر.",
+                              "directive": "الاتضاع وقبول التعلم من الآخرين",
+                              "warning": "اعتبار النفس حكيماً ولا يحتاج لأحد"
+                        },
+                        {
+                              "title": "التذرع بالروحيات",
+                              "description": "اعتقاد أن الصوم والصلاة والتناول تغني عن حل المشكلات النفسية.",
+                              "directive": "التكامل بين وسائط النعمة والتعلم المشوري",
+                              "warning": "عزل الجسد الواحد وعوز الأعضاء لبعضها"
+                        }
+                  ]
+            }
+      ],
+      "isPublished": false
+},
+    "visualsDataJson": "{\"charts\":[{\"id\":\"sec_visual_1\",\"type\":\"pillars\",\"title\":\"مجالات الاحتياج الشامل للمشورة الفردية\",\"subtitle\":\"القطاعات الحياتية الخمسة التي تستدعي التدخل المشوري بحسب المحاضرة\",\"badge\":\"مجالات الخدمة\",\"pillars\":[{\"title\":\"التربية والرعاية\",\"description\":\"تعلم أساليب التعامل السليم مع الأبناء في المراحل المختلفة.\",\"directive\":\"توجيه الآباء لتعديل الأساليب التربوية\",\"warning\":\"تجنب فرض الأوامر الجافة في سن المراهقة\"},{\"title\":\"المشكلات الأسرية\",\"description\":\"حل النزاعات الزوجية وتفكيك دوائر التواصل المغلقة.\",\"directive\":\"الفهم العميق لاحتياجات الطرف الآخر\",\"warning\":\"الحذر من التصلب والرأي الواحد\"},{\"title\":\"ما قبل الارتباط\",\"description\":\"تقييم التوافق النفسي والفكري بين الشريكين قبل الزواج.\",\"directive\":\"حضور جلسات مشتركة لاستكشاف التناسب\",\"warning\":\"اعتبار رفض المشورة علامة كبرياء\"},{\"title\":\"إدارة الأزمات\",\"description\":\"مساندة الشخص أثناء الصدمات والظروف الضاغطة.\",\"directive\":\"التواجد والتدعيم وتضميد الجراح\",\"warning\":\"تجنب إعطاء حلول سريعة وسط الأزمة\"},{\"title\":\"اتخاذ القرارات\",\"description\":\"مساعدة المستشير على التفكير المنظم وحسم الخيارات.\",\"directive\":\"توضيح الرؤية وتطوير المحاكمة العقلية\",\"warning\":\"منع اتخاذ القرار نيابة عن المستشير\"}]},{\"id\":\"sec_visual_2\",\"type\":\"pillars\",\"title\":\"موانع طلب المشورة الأربعة ومقابلها الإرشادي\",\"subtitle\":\"تفصيل المعوقات النفسية والروحية التي تعطل طلب المساعدة\",\"badge\":\"تشخيص الممانعة\",\"pillars\":[{\"title\":\"الإنكار واللاوعي\",\"description\":\"استخدام الحيل الدفاعية اللاشعورية لعدم رؤية المشكلة القائمة.\",\"directive\":\"مساعدة المستشير على مواجهة الواقع بتدرج\",\"warning\":\"تجنب الصدمة المباشرة دون تهيئة\"},{\"title\":\"افتقاد الأمان والسرية\",\"description\":\"تجارب سابقة أُفشيت فيها أسراره فحدث انغلاق وجداني كامل.\",\"directive\":\"بناء جسور الثقة والالتزام الحازم بالسرية\",\"warning\":\"إخراج أي كلمة أو معلومة خارج الجلسة\"},{\"title\":\"كبرياء القلب\",\"description\":\"الشعور بالتفوق والأنفة من الخضوع لتوجيه أو مشورة شخص آخر.\",\"directive\":\"الاتضاع وقبول التعلم من الآخرين\",\"warning\":\"اعتبار النفس حكيماً ولا يحتاج لأحد\"},{\"title\":\"التذرع بالروحيات\",\"description\":\"اعتقاد أن الصوم والصلاة والتناول تغني عن حل المشكلات النفسية.\",\"directive\":\"التكامل بين وسائط النعمة والتعلم المشوري\",\"warning\":\"عزل الجسد الواحد وعوز الأعضاء لبعضها\"}]}]}",
+    "quizQuestions": [
+      {
+            "id": "q-1",
+            "question": "ما الحقيقة الأكاديمية والتاريخية لعلم المشورة والتي أكد عليها المحاضر لرفع اللبس عن نشأته؟",
+            "options": [
+                  "أنه اختراع حديث تم ابتكاره داخل الكنائس المحلية لمواجهة الأزمات المعاصرة",
+                  "أنه علم نظامي تمنح فيه درجات الليسانس والماجستير والدكتوراه في الكليات بالخارج منذ عقود",
+                  "أنه مجرد فرع فرعي من علم النفس العام لا وجود له كعلم مستقل",
+                  "أنه منهج استحدثه الأطباء النفسيون ليكون بديلاً عن العلاج الروحي التقليدي"
+            ],
+            "correctAnswerIndex": 1,
+            "sourceQuote": "هي علم موجود في الكليات من قبل ما نبتدي المشوره ب 20 سنه ده كان سنه 2004 بره في كليات بتدي ليسانس مشهوره وتدي ماجستير مشوره ودكتوراه مشهوره",
+            "timestamp": "00:00",
+            "hint": "تذكر ما ذكره المحاضر عن الشهادات العلمية المؤهلة للمشورة في الكليات الخارجية قبل تأسيس المعهد.",
+            "explanation": "أوضح المحاضر أن المشورة علم قائم بذاته مُعترف به في الكليات الخارجية قبل بدء المعهد بعشرين عاماً، وتُمنح فيه درجات علمية أكاديمية كـ الليسانس والماجستير والدكتوراه."
+      },
+      {
+            "id": "q-2",
+            "question": "في جلسات مشورة ما قبل الارتباط، كيف يفسر المشير موقف الخطيب الذي يرفض الحضور بحجة «أنا أعرف كيف أدير حياتي ولا أحتاج لمن يملي عليّ ما أفعله»؟",
+            "options": [
+                  "دليل على اكتمال النضج النفسي والاستقلالية الشخصية في اتخاذ القرار",
+                  "مؤشر على امتلاكه خبرة كافية تُغنيه عن التوجيه والإرشاد الأُسري",
+                  "علامة على كبريائه وعدم وعيه باحتياجه للتعلم طبقاً لقول سليمان الحكيم",
+                  "سلوك طبيعي يعكس الثقة الذاتية التي يجب تشجيعها لدى المشير"
+            ],
+            "correctAnswerIndex": 2,
+            "sourceQuote": "دي علامه ان ده مش محتاج يتعلم مش عارف انه محتاج يتعلم... قديما قال سليمان حكيم ارايت حكيما في عيني نفسه الرجاء بالجاهل خير من الرجاء",
+            "timestamp": "03:03",
+            "hint": "استحضر الاستشهاد بسفر الأمثال ومفهوم المحاضر حول الشخص الذي يظن أنه غير محتاج للتعلم.",
+            "explanation": "بيّن المحاضر أن رفض الشخص للمشورة بدعوى أنه يدرك كل شيء ينم عن عدم وعيه باحتياجه للتعلم ونوع من الكبرياء، مستشهداً بآية سليمان الحكيم عن الحكيم في عيني نفسه."
+      },
+      {
+            "id": "q-3",
+            "question": "ما السبب النفسي اللاشعوري الذي يجعل المخدوم ينفي وجود أي مشكلة لديه رغم تفاقم أزماته الأسرية؟",
+            "options": [
+                  "الخوف الإرادي من كشف أسرار بيته أمام الخادم",
+                  "استخدام حيل دفاعية لا شعورية تُعرف بالإنكار تجعله غير واعٍ بالمشكلة",
+                  "التطوع الواعي لتحمل المسؤولية لحماية بقية أفراد الأسرة",
+                  "التظاهر بالتعافي لتجنب اللوم الاجتماعي والعتاب الكنسي"
+            ],
+            "correctAnswerIndex": 1,
+            "sourceQuote": "في واحد عنده انكار او بيقول ما عنديش مشكله كلمة انكار غير انه يقول ما عنديش انكار بتبقى هتاخده بعد كده حاجه اسمها حيل دفاعية لا شعرية دي الحته بيبقى هو يعني مش يعني مش واعي",
+            "timestamp": "03:40",
+            "hint": "ركز على الآلية النفسية اللاشعورية التي ذكرها المحاضر والتي تجعل الفرد غير دريان بمشكلته.",
+            "explanation": "شرح المحاضر أن الإنكار هو إحدى الحيل الدفاعية اللاشعورية التي تجعل الشخص غير واعٍ تماماً بوجود المشكلة وغير دريان بها."
+      },
+      {
+            "id": "q-4",
+            "question": "لماذا تُعتبر المحاضرات الكنسية والوعظ العام غير كافية وحدها لمعالجة المشكلات النفسية والإرشادية للأفراد؟",
+            "options": [
+                  "لأن الوعظ يقتصر على التعليم الروحي ويمتنع عن طرح القضايا العملية",
+                  "لأنه لا يوجد حل واحد يناسب جميع الناس، والوعظ لا يوفر فرصة الإصغاء الفردي والشعور بالمخدوم",
+                  "لأن المستمعين في المحاضرات لا يمتلكون التخصص الأكاديمي لفهم الوعظ",
+                  "لأن الجلسات العامة تفتقر إلى استخدام المراجع العلمية والنصوص الكتابية"
+            ],
+            "correctAnswerIndex": 1,
+            "sourceQuote": "المحاضرات والوعظات مش كافيه ليه مافيش حل ينفع كل الناس اسمعوا الجمله دي مره تانيه مافيش حل واحد ينفع لكل الناس... وفي نفس الوقت في احتياج شديد ان الشخص يتسمع",
+            "timestamp": "07:24",
+            "hint": "فكر في الفارق بين الحل الجماعي العام والاحتياج إلى الاستماع الفردي والتفهم.",
+            "explanation": "أكد المحاضر أن الوعظ والمحاضرات العامة لا تكفي لأن المشاكل تختلف من شخص لآخر ولا يوجد حل موحد للجميع، بالإضافة إلى احتياج المخدوم الفردي لأن يُصغى إليه ويُحس به في جلسة مشورة خاصة."
+      }
+],
     "transcript": `⏱️ [00:00]
 المحاضره دي لما اتكتبت ا انتم عارفين المعهد بدا سنه 2004 فكان ساعتها علم المشوره ولازال مش موجود كعلم في بلادنا المصريه بمعنى ا الاسم كان غريب علينا فالناس فاكره ايه ان ده اختراع كده اخترعوه ولا هرطقه جديده ولا حاجه لكن هي علم موجود في الكليات من قبل ما نبتدي المشوره ب 20 سنه عشان كده التاريخ اللي مكتوب مكتوب من 20 سنه ده كان سنه 2004 ا بره في كليات بتدي ليسانس مشهوره وتدي
 
