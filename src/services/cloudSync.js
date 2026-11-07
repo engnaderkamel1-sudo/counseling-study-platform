@@ -6,7 +6,7 @@ window.CloudSyncService = {
     var hasDelivered = false;
 
     var handleUpdate = function(list) {
-      if (!list || !Array.isArray(list)) return;
+      if (!list || !Array.isArray(list) || list.length === 0) return;
       var finalList = (typeof window.mergeWithDefaultLectures === "function")
         ? window.mergeWithDefaultLectures(list)
         : list;
@@ -156,7 +156,7 @@ window.CloudSyncService = {
     var hasDelivered = false;
 
     var handleUpdate = function(list) {
-      if (!list || !Array.isArray(list)) return;
+      if (!list || !Array.isArray(list) || list.length === 0) return;
       hasDelivered = true;
       if (typeof onUpdate === "function") {
         onUpdate(list);

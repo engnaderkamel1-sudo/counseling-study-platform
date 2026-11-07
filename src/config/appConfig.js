@@ -21,7 +21,7 @@ window.APP_CONFIG = {
   storageKeys: {
     apiKey: "counsel_ai_api_key",
     theme: "counsel_theme",
-    lectures: "counsel_lectures_data",
+    lectures: "counsel_lectures_data_v2",
     books: "counsel_books_data",
     tasks: "counsel_tasks_data",
     playbackPositions: "counsel_playback_positions",

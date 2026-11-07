@@ -11404,7 +11404,7 @@ window.DEFAULT_TERM1_LECTURES = [
 ];
 
 
-// دالة دمج محكمة تضمن عدم اختفاء أي محاضرة افتراضية حتى لو كان السحاب يحتوي على جزء منها
+// دالة دمج محكمة تضمن عدم اختفاء أي محاضرة افتراضية أو محتوى مولد سحابياً
 window.mergeWithDefaultLectures = function(incomingList) {
   var defaults = (Array.isArray(window.DEFAULT_TERM1_LECTURES) && window.DEFAULT_TERM1_LECTURES.length > 0)
     ? window.DEFAULT_TERM1_LECTURES : [];
@@ -11417,8 +11417,8 @@ window.mergeWithDefaultLectures = function(incomingList) {
     if (!match) return defItem;
     var res = Object.assign({}, defItem, match);
 
-    // 1. حماية التلخيص السحابي: إذا كان الكائن مجرد سلسلة نصية JSON، نقوم بفك تشفيره لكائن فوري
-    if ((!res.summaryData || !Array.isArray(res.summaryData.sections)) && res.summaryDataJson) {
+    // 1. حماية التلخيص السحابي: فك تشفير JSON إن وجد
+    if ((!res.summaryData || !Array.isArray(res.summaryData.sections) || res.summaryData.sections.length === 0) && res.summaryDataJson) {
       try {
         var parsedSum = typeof res.summaryDataJson === "string" ? JSON.parse(res.summaryDataJson) : res.summaryDataJson;
         if (parsedSum && (parsedSum.sections || parsedSum.overview)) {
@@ -11427,17 +11427,33 @@ window.mergeWithDefaultLectures = function(incomingList) {
       } catch(e) {}
     }
 
-    // 2. إذا كان التلخيص الأكاديمي الشامل في الكود أحدث أو يحوي تفاصيل أكثر، نحافظ عليه
-    if (defItem.summaryData && Array.isArray(defItem.summaryData.sections)) {
+    // وإذا كان summaryData متوفراً ككائن ولكن summaryDataJson فارغ، نقوم بتوليده فوراً
+    if (res.summaryData && !res.summaryDataJson) {
+      try { res.summaryDataJson = JSON.stringify(res.summaryData); } catch(e) {}
+    }
+
+    // 2. إذا كان التلخيص الأكاديمي الشامل في الكود أحدث ويحوي أقساماً أكثر، نحافظ عليه، عدا ذلك نعتمد السحابي
+    if (defItem.summaryData && Array.isArray(defItem.summaryData.sections) && defItem.summaryData.sections.length > 0) {
       var matchSecCount = (res.summaryData && Array.isArray(res.summaryData.sections)) ? res.summaryData.sections.length : 0;
-      if (defItem.summaryData.sections.length >= matchSecCount) {
+      if (defItem.summaryData.sections.length > matchSecCount) {
         res.summaryData = defItem.summaryData;
         res.summaryDataJson = defItem.summaryDataJson || JSON.stringify(defItem.summaryData);
         res.writtenSummary = defItem.writtenSummary || res.writtenSummary;
       }
     }
 
-    // 3. تأمين وتوليد المتن الكتابي للدليل الدراسي إذا كان النص الحرفي فارغاً بينما الكائن متوفر
+    // 3. تأمين كويز السحابة والرسوم البصرية ومخططات العرض
+    if ((!res.quizQuestions || !Array.isArray(res.quizQuestions) || res.quizQuestions.length === 0) && match.quizQuestions && Array.isArray(match.quizQuestions) && match.quizQuestions.length > 0) {
+      res.quizQuestions = match.quizQuestions;
+    }
+    if (!res.visualsData && match.visualsData) {
+      res.visualsData = match.visualsData;
+    }
+    if ((!res.visualsDataJson || res.visualsDataJson.length < 5) && match.visualsDataJson) {
+      res.visualsDataJson = match.visualsDataJson;
+    }
+
+    // 4. تأمين وتوليد المتن الكتابي للدليل الدراسي إذا كان النص الحرفي فارغاً بينما الكائن متوفر
     if ((!res.writtenSummary || !res.writtenSummary.trim()) && res.summaryData) {
       var s = res.summaryData;
       var textParts = [];
@@ -11468,18 +11484,20 @@ window.mergeWithDefaultLectures = function(incomingList) {
       }
     }
 
-    // 4. إذا كان التفريغ النصي موجوداً في الكود وغير موجود في العنصر القادم، نحافظ عليه
+    // 5. إذا كان التفريغ النصي موجوداً في الكود وغير موجود في العنصر القادم، نحافظ عليه
     if (defItem.transcriptText && !match.transcriptText && !match.transcript) {
       res.transcriptText = defItem.transcriptText;
       res.transcript = defItem.transcript || defItem.transcriptText;
     }
 
-    // 5. حماية وتثبيت حالة النشر للدليل الدراسي إذا كان متوفراً
-    if (res.summaryData || (res.summaryDataJson && res.summaryDataJson.length > 10) || (res.writtenSummary && res.writtenSummary.trim())) {
-      if (!res.publishStatus) res.publishStatus = {};
-      if (res.publishStatus.summary === undefined) {
-        res.publishStatus.summary = true;
-      }
+    // 6. حماية حالة النشر بدقة متناهية:
+    // إذا كانت محددة في السحابة كمسودة (false) نحافظ عليها 100% كمسودة ولا نغيرها!
+    if (match.publishStatus && typeof match.publishStatus === "object") {
+      res.publishStatus = Object.assign({}, match.publishStatus);
+    } else if (defItem.publishStatus && typeof defItem.publishStatus === "object") {
+      res.publishStatus = Object.assign({}, defItem.publishStatus);
+    } else {
+      res.publishStatus = res.publishStatus || {};
     }
 
     return res;

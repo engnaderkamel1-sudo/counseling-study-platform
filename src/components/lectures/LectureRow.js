@@ -129,7 +129,28 @@ window.LectureRow = function(props) {
             count + " ملف"
           );
         })(),
-        (lec.audioSummaryUrl || lec.writtenSummary || lec.summaryData || (lec.summaryDataJson && lec.summaryDataJson.length > 10)) && React.createElement("span", { title: "ملخص متاح", className: "px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/50" }, "ملخص")
+        (function() {
+          var hasRealSummary = Boolean(
+            (lec.audioSummaryUrl && lec.audioSummaryUrl.trim()) ||
+            (lec.writtenSummary && lec.writtenSummary.trim().length > 30) ||
+            (lec.summaryData && Array.isArray(lec.summaryData.sections) && lec.summaryData.sections.length > 0) ||
+            (lec.summaryDataJson && lec.summaryDataJson.trim().length > 30)
+          );
+          if (!hasRealSummary) return null;
+          var isDraft = (lec.publishStatus && lec.publishStatus.summary === false);
+          if (currentUser.role !== "admin" && isDraft) return null;
+          return React.createElement(
+            "span",
+            {
+              title: isDraft ? "ملخص متاح (🔒 مسودة خاصة للمشرف)" : "ملخص متاح",
+              className: "px-2 py-0.5 rounded-md font-bold border " +
+                (isDraft
+                  ? "bg-amber-100/80 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60"
+                  : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50")
+            },
+            isDraft ? "ملخص (مسودة)" : "ملخص"
+          );
+        })()
       ),
       // شارة الحالة
       React.createElement("span", { className: "text-[11px] font-bold px-2.5 py-0.5 rounded-md shrink-0 " + st.badgeClass }, st.label),
