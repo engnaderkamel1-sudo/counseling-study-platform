@@ -504,8 +504,8 @@
     },
 
     // 4.4 توليد خطوة أسئلة الكويز التفاعلي بشكل مستقل مع القطعة المرجعية وزر المساعدة
-    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions) {
-      var count = parseInt(quizCount, 10) || 10;
+    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
+      var count = parseInt(quizCount, 10) || 8;
       if (typeof lectureContent === "string") {
         lectureContent = lectureContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
@@ -522,7 +522,10 @@
         "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
         "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
         "3. التغطية العضوية الشاملة (المعيار الأكاديمي الذهبي: سؤالان لكل محور حقيقي):\n" +
-        "   - تتبع مسار المحاضرة وصغ الأسئلة لتغطي كافة محاور ومفاصل المحاضرة بالتساوي (بواقع سؤالين لكل محور رئيسي تم شرحه في المحاضرة ما يقارب " + count + " سؤالاً إجمالياً).\n" +
+        "   - تتبع مسار المحاضرة وصغ الأسئلة لتغطي كافة محاور ومفاصل المحاضرة بالتساوي (بواقع سؤالين لكل محور رئيسي تم شرحه في المحاضرة ما مجموعه " + count + " سؤالاً بالتمام):\n" +
+        (Array.isArray(sectionsReference) && sectionsReference.length > 0
+          ? ("   - قائمة محاور المحاضرة المطلوب تغطيتها بسؤالين لكل محور:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
+          : "") +
         "   - لكل محور رئيسي، احرص على صياغة سؤالين متكاملين:\n" +
         "     • السؤال الأول (مفاهيمي ولغوي ولاهوتي): يقيس الاستيعاب الدقيق للمصطلح والتعريف والفروق العلمية التي ذكرها المحاضر (مثل الفارق بين ساركس وسوما، أو أركان العقد المشوري).\n" +
         "     • السؤال الثاني (تطبيقي وإكلينيكي ورعائي): يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة، والتعامل مع حالات وسيناريوهات المخدومين والمحاذير الأخلاقية.\n" +
@@ -675,15 +678,18 @@
         }
       }
 
-      // الخطوة 2: الكويز التفاعلي مع عزل الأخطاء لضمان بقاء الأركان السابقة
+      // الخطوة 2: الكويز التفاعلي العضوي (سؤالان متكاملان لكل محور رئيسي تم استخراجه)
       if (selected.quiz !== false) {
-        if (onProgress) onProgress(80, "جاري صياغة أسئلة الكويز التفاعلي والتفسيرات (" + quizCount + " سؤال)... [2/2]");
+        var secList = (output.summary && Array.isArray(output.summary.sections)) ? output.summary.sections : [];
+        var organicQuizCount = secList.length > 0 ? (secList.length * 2) : (parseInt(options.quizCount, 10) || 8);
+        if (onProgress) onProgress(80, "جاري صياغة أسئلة الكويز التفاعلي عضوياً (سؤالان لكل محور: " + organicQuizCount + " أسئلة)... [2/2]");
         try {
           output.quiz = await window.EducationalAIService.generateQuizOnly(
             lectureTitle,
             lectureContent,
-            quizCount,
-            customInstructions
+            organicQuizCount,
+            customInstructions,
+            secList
           );
 
           if (typeof options.onStepSuccess === "function") {

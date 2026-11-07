@@ -596,23 +596,9 @@ window.LectureViewerModal = function(props) {
         updated.visualsDataJson = JSON.stringify(result.visuals);
       }
 
-      if (result.quiz && Array.isArray(result.quiz.questions)) {
-        var requestedQuizCount = parseInt(genQuizCount, 10) || 10;
-        if (result.quiz.questions.length < requestedQuizCount) {
-          var keepIncompletePkg = window.confirm(
-            "تنبيه حول عدد أسئلة الكويز في الحزمة الشاملة:\n\n" +
-            "تم استخراج " + result.quiz.questions.length + " سؤالاً من أصل " + requestedQuizCount + " سؤالاً طُلبت.\n\n" +
-            "• اضغط (موافق / OK) لاعتماد وحفظ هذه الأسئلة ضمن الحزمة.\n" +
-            "• اضغط (إلغاء / Cancel) للاحتفاظ بالأسئلة الحالية وعدم استبدالها بعدد ناقص."
-          );
-          if (keepIncompletePkg) {
-            updated.quizQuestions = result.quiz.questions;
-            updated.publishStatus.quiz = false;
-          }
-        } else {
-          updated.quizQuestions = result.quiz.questions;
-          updated.publishStatus.quiz = false;
-        }
+      if (result.quiz && Array.isArray(result.quiz.questions) && result.quiz.questions.length > 0) {
+        updated.quizQuestions = result.quiz.questions;
+        updated.publishStatus.quiz = false;
       }
 
       // تم استبعاد توليد التفريغ من هنا ليكون التفريغ الحرفي حصرياً عبر Google Antigravity بأعلى دقة
