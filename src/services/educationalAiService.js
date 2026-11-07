@@ -60,7 +60,7 @@
       // المحاولة 1: إزالة وسوم markdown البرمجية إذا كانت موجودة
       cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 
-      // المحاولة 2 الإلزامية: التحليل المباشر للنص الأصلي دون أي تعديل إطلاقاً (لحماية البيانات السليمة)
+      // المحاولة 2: التحليل المباشر للنص الأصلي دون أي تعديل إطلاقاً (لحماية البيانات السليمة)
       try {
         return JSON.parse(cleaned);
       } catch (firstErr) {
@@ -75,98 +75,114 @@
           return JSON.parse(subJson);
         } catch (eSub) {}
 
-        // المحاولة 4: تطهير المفاتيح غير المحاطة بتنصيص وعلامات التنصيص المفردة والإسناد الشاذ
-        var normalized = subJson;
-        // تصحيح صياغات الإسناد الشاذة: type='...' أو type="..." إلى "type": "..."
-        normalized = normalized.replace(/([a-zA-Z0-9_\-]+)\s*=\s*['"]?([a-zA-Z0-9_]+)['"]?/g, '"$1": "$2"');
-        
-        // تصحيح المفاتيح المحاطة بتنصيص مفرد أو غير المحاطة بتنصيص عبر تكرار التطهير
-        for (var pass = 0; pass < 3; pass++) {
-          normalized = normalized.replace(/([{\[,]\s*)'([a-zA-Z0-9_\-]+)'\s*:/g, '$1"$2":');
-          normalized = normalized.replace(/([{\[,]\s*)([a-zA-Z0-9_\-]+)\s*:/g, '$1"$2":');
-        }
-
-        // تصحيح القيم النصية المحاطة بتنصيص مفرد
-        normalized = normalized.replace(/:\s*'([^'\\]*(?:\\.[^'\\]*)*)'/g, ': "$1"');
-        normalized = normalized.replace(/\[\s*'([^'\\]*(?:\\.[^'\\]*)*)'/g, '["$1"');
-        normalized = normalized.replace(/,\s*'([^'\\]*(?:\\.[^'\\]*)*)'/g, ', "$1"');
-        
-        // إزالة الفواصل المتأخرة الزائدة قبل إغلاق الأقواس
-        normalized = normalized.replace(/,\s*([}\]])/g, '$1');
-
+        // المحاولة 4: الماسح الشامل الذكي لمعالجة قفزات الأسطر وعلامات التنصيص الداخلية
         try {
-          return JSON.parse(normalized);
-        } catch (eNorm) {}
+          var s = subJson;
+          var out = [];
+          var inStrVal = false;
+          var inKey = false;
+          var isEsc = false;
+          var quoteCount = 0;
+          var n = s.length;
 
-        // المحاولة 5: محلل تدفق الحالات الذكي (State Machine Parser) لحل علامات التنصيص والقفزات السطرية الداخلية
-        var repairJsonStateMachine = function(s) {
-          var result = "";
-          var inString = false;
-          var isEscaped = false;
-          var quoteOpen = true;
-          var endPattern = /^\s*(:\s*|,\s*("[a-zA-Z0-9_\-]+"\s*:|["{\[]|[\]\}])|[\]\}]|$)/;
+          for (var i = 0; i < n; i++) {
+            var ch = s.charAt(i);
 
-          for (var i = 0; i < s.length; i++) {
-            var ch = s[i];
-
-            if (ch === '\\' && !isEscaped) {
-              isEscaped = true;
-              result += ch;
+            if (isEsc) {
+              out.push(ch);
+              isEsc = false;
               continue;
             }
 
-            if (ch === '"' && !isEscaped) {
-              if (!inString) {
-                inString = true;
-                quoteOpen = true;
-                result += ch;
-              } else {
-                var nextPart = s.substring(i + 1, i + 100);
-                if (endPattern.test(nextPart)) {
-                  inString = false;
-                  result += ch;
-                } else {
-                  result += quoteOpen ? "«" : "»";
-                  quoteOpen = !quoteOpen;
-                }
-              }
-            } else if (inString && (ch === '\n' || ch === '\r')) {
-              result += "\\n";
-            } else {
-              result += ch;
+            if (ch === '\\') {
+              isEsc = true;
+              out.push(ch);
+              continue;
             }
 
-            isEscaped = false;
+            if (inKey) {
+              if (ch === '"') {
+                var restKey = s.substring(i + 1, i + 50);
+                if (/^\s*:/.test(restKey)) {
+                  inKey = false;
+                  out.push('"');
+                } else {
+                  out.push('\\"');
+                }
+              } else {
+                out.push(ch);
+              }
+              continue;
+            }
+
+            if (inStrVal) {
+              if (ch === '"') {
+                var restVal = s.substring(i + 1, i + 50);
+                if (/^\s*(?:,|\}|\]|$)/.test(restVal)) {
+                  inStrVal = false;
+                  out.push('"');
+                } else {
+                  quoteCount++;
+                  out.push(quoteCount % 2 === 1 ? "«" : "»");
+                }
+              } else if (ch === '\n') {
+                out.push('\\n');
+              } else if (ch === '\r') {
+                // تجاهل قفزة سطر ويندوز داخل النص
+              } else if (ch === '\t') {
+                out.push('\\t');
+              } else {
+                out.push(ch);
+              }
+              continue;
+            }
+
+            // خارج النصوص
+            if (ch === '"') {
+              var prevStr = out.join("").trim();
+              var lastNonWs = prevStr.length > 0 ? prevStr.charAt(prevStr.length - 1) : "";
+              if (lastNonWs === ':') {
+                inStrVal = true;
+                quoteCount = 0;
+                out.push('"');
+              } else if (lastNonWs === '[' || lastNonWs === ',') {
+                var restArr = s.substring(i + 1, i + 100);
+                if (/^[^"]*"\s*:/.test(restArr)) {
+                  inKey = true;
+                } else {
+                  inStrVal = true;
+                  quoteCount = 0;
+                }
+                out.push('"');
+              } else {
+                inKey = true;
+                out.push('"');
+              }
+              continue;
+            }
+
+            out.push(ch);
           }
-          return result;
-        };
 
-        var sanitizedState = repairJsonStateMachine(normalized);
-        sanitizedState = sanitizedState.replace(/,\s*([}\]])/g, '$1');
+          var fixed = out.join("");
+          // إزالة الفواصل المتأخرة الزائدة قبل إغلاق الأقواس
+          fixed = fixed.replace(/,\s*([\}\]])/g, "$1");
 
-        try {
-          return JSON.parse(sanitizedState);
-        } catch (eState) {}
-
-        // المحاولة 6: دالة إنقاذ وترميم JSON المقطوع عند سقف التوكنز
-        var repairTruncatedJson = function(str) {
-          var lastB = str.lastIndexOf("}");
-          if (lastB === -1) return null;
-          var trimmed = str.substring(0, lastB + 1).trim();
-          trimmed = trimmed.replace(/,\s*$/, "");
-          var openBrackets = (trimmed.match(/\[/g) || []).length - (trimmed.match(/\]/g) || []).length;
-          for (var b = 0; b < openBrackets; b++) trimmed += "]";
-          var openBraces = (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
-          for (var c = 0; c < openBraces; c++) trimmed += "}";
-          return trimmed;
-        };
-
-        try {
-          var repaired = repairTruncatedJson(sanitizedState);
-          if (repaired) {
-            return JSON.parse(repaired);
+          try {
+            return JSON.parse(fixed);
+          } catch (eFix) {
+            // إنقاذ عند انقطاع النص عند سقف التوكنز
+            var lastB = fixed.lastIndexOf("}");
+            if (lastB !== -1) {
+              var trimmed = fixed.substring(0, lastB + 1).replace(/,\s*$/, "");
+              var openBrackets = (trimmed.match(/\[/g) || []).length - (trimmed.match(/\]/g) || []).length;
+              for (var b = 0; b < openBrackets; b++) trimmed += "]";
+              var openBraces = (trimmed.match(/\{/g) || []).length - (trimmed.match(/\}/g) || []).length;
+              for (var c = 0; c < openBraces; c++) trimmed += "}";
+              return JSON.parse(trimmed);
+            }
           }
-        } catch (repairErr) {}
+        } catch (scannerErr) {}
 
         console.error("All JSON parsing tiers failed:", firstErr);
         throw new Error("تعذر استخراج بيانات بصيغة صالحة: " + firstErr.message);
