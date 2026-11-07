@@ -71,8 +71,8 @@ window.GeminiAIService = {
           if (models.length > 0) {
             // تفضيل نماذج flash الخفيفة والسريعة أولاً
             models.sort(function(a, b) {
-              var aScore = (a.includes("2.0") ? 10 : 0) + (a.includes("flash") ? 5 : 0);
-              var bScore = (b.includes("2.0") ? 10 : 0) + (b.includes("flash") ? 5 : 0);
+              var aScore = (a.includes("3.8") ? 30 : 0) + (a.includes("3.5") ? 20 : 0) + (a.includes("flash") ? 5 : 0) - (a.includes("2.5") || a.includes("1.5") ? 100 : 0);
+              var bScore = (b.includes("3.8") ? 30 : 0) + (b.includes("3.5") ? 20 : 0) + (b.includes("flash") ? 5 : 0) - (b.includes("2.5") || b.includes("1.5") ? 100 : 0);
               return bScore - aScore;
             });
             window.GeminiAIService._cachedModels = models;
@@ -115,7 +115,7 @@ window.GeminiAIService = {
     // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
     var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
     var candidateModels = [
-      "gemini-3.5-flash-lite",
+      "gemini-3.8-flash",
       "gemini-3.5-flash",
       "gemini-3.6-flash",
       "gemini-flash-latest",
@@ -219,7 +219,7 @@ window.GeminiAIService = {
     // اكتشاف النماذج المتاحة من حساب المستخدم تلقائياً
     var autoModels = await window.GeminiAIService.fetchSupportedModels(key);
     var candidateModels = [
-      "gemini-3.5-flash-lite",
+      "gemini-3.8-flash",
       "gemini-3.5-flash",
       "gemini-3.6-flash",
       "gemini-flash-latest",

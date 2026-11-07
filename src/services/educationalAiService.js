@@ -247,8 +247,8 @@
       // النموذج الأول: نموذج الفلاش فائق السرعة
       // النموذج الثاني: نموذج الإنتاج الرسمي الدائم المعتمد
       var candidateModels = [
-        "gemini-flash-latest",
-        "gemini-2.5-flash"
+        "gemini-3.8-flash",
+        "gemini-3.5-flash"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
@@ -257,13 +257,13 @@
           if (Array.isArray(discovered) && discovered.length > 0) {
             var activeFlashes = discovered.filter(function(m) {
               return m.includes("flash") &&
-                     !m.includes("tts") &&
+                     !m.includes("2.5") && !m.includes("1.5") && !m.includes("tts") &&
                      !m.includes("image") &&
                      !m.includes("embedding") &&
                      !m.includes("vision");
             });
-            var primary = activeFlashes.find(function(m) { return m === "gemini-flash-latest" || m.includes("flash-latest"); }) || activeFlashes[0] || "gemini-flash-latest";
-            var backup = activeFlashes.find(function(m) { return m === "gemini-2.5-flash" || m.includes("2.5-flash"); }) || activeFlashes[1] || "gemini-2.5-flash";
+            var primary = activeFlashes.find(function(m) { return m === "gemini-3.8-flash" || m.includes("3.8-flash"); }) || activeFlashes[0] || "gemini-3.8-flash";
+            var backup = activeFlashes.find(function(m) { return m === "gemini-3.5-flash" || m.includes("3.5-flash"); }) || activeFlashes[1] || "gemini-3.5-flash";
             candidateModels = [primary, backup];
           }
         } catch (discErr) {}
