@@ -895,7 +895,7 @@ window.LectureViewerModal = function(props) {
             React.createElement("span", null, "تخصيص نشر الأركان")
           )
         ),
-        currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript || activeLecture.summaryData) && React.createElement(
+        currentUser.role === "admin" && (activeLecture.writtenSummary || activeLecture.summaryData || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10) || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript) && React.createElement(
           "button",
           {
             type: "button",
@@ -1026,7 +1026,7 @@ window.LectureViewerModal = function(props) {
         [
           { id: "media", label: "📺 مشاهدة المحاضرة" },
           { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", isDraft: getIsDraft("transcript"), hasData: Boolean((activeLecture.transcript && activeLecture.transcript.trim()) || (activeLecture.transcriptText && activeLecture.transcriptText.trim())) },
-          { id: "summary", label: "📄 الدليل الدراسي المصور", isDraft: getIsDraft("summary"), hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0)) },
+          { id: "summary", label: "📄 الدليل الدراسي المصور", isDraft: getIsDraft("summary"), hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0) || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10)) },
           { id: "quiz", label: "📝 الاختبار التفاعلي", isDraft: getIsDraft("quiz"), hasData: Boolean(Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0) },
           { id: "handout", label: "📁 المرفقات والملفات" },
           { id: "notes", label: "✍️ الملاحظات" }
@@ -1413,7 +1413,7 @@ window.LectureViewerModal = function(props) {
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
                 "🔒 مسودة"
               ),
-              (activeLecture.writtenSummary || summaryData) && React.createElement(
+              (activeLecture.writtenSummary || summaryData || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10)) && React.createElement(
                 "button",
                 {
                   type: "button",
@@ -2252,7 +2252,7 @@ window.LectureViewerModal = function(props) {
           { className: "space-y-3" },
           [
             { id: "transcript", label: "📜 تفريغ المحاضرة من الفيديو", desc: "النص الحرفي الكامل لكلام المحاضر مع التوقيتات الدقيقة", hasData: Boolean(activeLecture.transcript || activeLecture.transcriptText) },
-            { id: "summary", label: "📄 الدليل الدراسي المصور", desc: "الشرح الأكاديمي الشامل متضمناً المخططات والمقارنات البصرية المدمجة", hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData) },
+            { id: "summary", label: "📄 الدليل الدراسي المصور", desc: "الشرح الأكاديمي الشامل متضمناً المخططات والمقارنات البصرية المدمجة", hasData: Boolean(activeLecture.writtenSummary || activeLecture.summaryData || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10)) },
             { id: "quiz", label: "📝 الاختبار التفاعلي", desc: "أسئلة الكويز الذاتي والتفسيرات التعليمية", hasData: Boolean(activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) }
           ].map(function(item) {
             var isDraft = getIsDraft(item.id);
@@ -2471,7 +2471,7 @@ window.LectureViewerModal = function(props) {
         React.createElement(
           "div",
           { className: "flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" },
-          (activeLecture.writtenSummary || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript) && React.createElement(
+          (activeLecture.writtenSummary || activeLecture.summaryData || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10) || activeLecture.presentationSlides || activeLecture.slidesData || activeLecture.slidesDataJson || activeLecture.mindMapData || activeLecture.mindMapDataJson || (activeLecture.quizQuestions && activeLecture.quizQuestions.length > 0) || activeLecture.transcript) && React.createElement(
             "button",
             {
               type: "button",
@@ -2623,7 +2623,7 @@ window.LectureViewerModal = function(props) {
               id: "summary",
               label: "📄 الدليل الدراسي المصور",
               desc: "الشرح الأكاديمي الشامل متضمناً المخططات والمقارنات البصرية المدمجة",
-              hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0))
+              hasData: Boolean((activeLecture.writtenSummary && activeLecture.writtenSummary.trim()) || (activeLecture.summaryData && Object.keys(activeLecture.summaryData).length > 0) || (activeLecture.summaryDataJson && activeLecture.summaryDataJson.trim().length > 10))
             },
             {
               id: "quiz",

@@ -129,7 +129,7 @@ window.LectureRow = function(props) {
             count + " ملف"
           );
         })(),
-        (lec.audioSummaryUrl || lec.writtenSummary) && React.createElement("span", { title: "ملخص متاح", className: "px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/50" }, "ملخص")
+        (lec.audioSummaryUrl || lec.writtenSummary || lec.summaryData || (lec.summaryDataJson && lec.summaryDataJson.length > 10)) && React.createElement("span", { title: "ملخص متاح", className: "px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold border border-amber-200 dark:border-amber-800/50" }, "ملخص")
       ),
       // شارة الحالة
       React.createElement("span", { className: "text-[11px] font-bold px-2.5 py-0.5 rounded-md shrink-0 " + st.badgeClass }, st.label),

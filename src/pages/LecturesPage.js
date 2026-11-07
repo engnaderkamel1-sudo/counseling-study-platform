@@ -580,9 +580,18 @@ window.LecturesPage = function(props) {
       handoutName: currentHandouts[0] ? currentHandouts[0].name : (editingHandoutName || "").trim(),
       audioSummaryUrl: (editingLecture.audioSummaryUrl || "").trim(),
       writtenSummary: (editingLecture.writtenSummary || "").trim(),
-      quizQuestions: parsedQuiz
+      summaryData: editingLecture.summaryData || null,
+      summaryDataJson: editingLecture.summaryDataJson || "",
+      visualsData: editingLecture.visualsData || null,
+      visualsDataJson: editingLecture.visualsDataJson || "",
+      quizQuestions: (Array.isArray(parsedQuiz) && parsedQuiz.length > 0) ? parsedQuiz : (editingLecture.quizQuestions || [])
     });
     cloud.saveLecture(updated);
+    setLectures(function(prev) {
+      var next = prev.map(function(l) { return l.id === updated.id ? Object.assign({}, l, updated) : l; });
+      utils.setLocal(cfg.storageKeys.lectures, next);
+      return next;
+    });
     if (shouldBroadcastZoom && window.NotificationService && typeof window.NotificationService.broadcastZoomLinkNotification === "function") {
       window.NotificationService.broadcastZoomLinkNotification(updated);
     }
@@ -1148,7 +1157,14 @@ window.LecturesPage = function(props) {
       handleClearZoom: handleClearZoomLink,
       handleSavePosition: handleSavePosition,
       filteredLectures: filteredLectures,
-      onSelectLecture: function(item) { setActiveLecture(item); },
+      onSelectLecture: function(item) {
+        setActiveLecture(item);
+        setLectures(function(prev) {
+          var next = prev.map(function(l) { return l.id === item.id ? Object.assign({}, l, item) : l; });
+          utils.setLocal(cfg.storageKeys.lectures, next);
+          return next;
+        });
+      },
       hasMultipleSessions: activeLecture && ((dateSessionsCount[(activeLecture.date || "").trim()] || 0) > 1),
       onAddSession: handleAddSessionForLecture
     }),
