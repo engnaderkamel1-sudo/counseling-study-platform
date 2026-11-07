@@ -247,8 +247,8 @@
       // النموذج الأول: نموذج الفلاش فائق السرعة
       // النموذج الثاني: نموذج الإنتاج الرسمي الدائم المعتمد
       var candidateModels = [
-        "gemini-2.5-flash",
-        "gemini-flash-latest"
+        "gemini-flash-latest",
+        "gemini-2.5-flash"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
@@ -262,8 +262,8 @@
                      !m.includes("embedding") &&
                      !m.includes("vision");
             });
-            var primary = activeFlashes.find(function(m) { return m === "gemini-2.5-flash" || m.includes("2.5-flash"); }) || activeFlashes[0] || "gemini-2.5-flash";
-            var backup = activeFlashes.find(function(m) { return m === "gemini-flash-latest" || m.includes("flash-latest"); }) || activeFlashes[1] || "gemini-flash-latest";
+            var primary = activeFlashes.find(function(m) { return m === "gemini-flash-latest" || m.includes("flash-latest"); }) || activeFlashes[0] || "gemini-flash-latest";
+            var backup = activeFlashes.find(function(m) { return m === "gemini-2.5-flash" || m.includes("2.5-flash"); }) || activeFlashes[1] || "gemini-2.5-flash";
             candidateModels = [primary, backup];
           }
         } catch (discErr) {}
@@ -276,7 +276,7 @@
         var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
 
         var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 90000);
+        var timeoutId = setTimeout(function() { controller.abort(); }, 150000);
 
         try {
           var response = await fetch(url, {
@@ -314,7 +314,7 @@
         } catch (netErr) {
           clearTimeout(timeoutId);
           if (netErr.name === "AbortError") {
-            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 90 ثانية): " + modelName;
+            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 150 ثانية): " + modelName;
           } else {
             if (netErr.message && netErr.message.includes("مفتاح API")) throw netErr;
             lastError = netErr.message;
