@@ -269,7 +269,11 @@ window.UsersManagementPage = function(props) {
   var [sendingNotifUserId, setSendingNotifUserId] = React.useState(null);
   var handleSendTestNotifToUser = async function(user) {
     if (!user) return;
-    var confirmSend = confirm("هل تريد إرسال إشعار تجريبي خاص للدارس '" + (user.fullName || user.email) + "' فقط؟\n\nلن يظهر هذا الإشعار لأي شخص آخر.");
+    var hasPush = !!(user.pushSubscription || (user.pushSubscriptions && user.pushSubscriptions.length > 0));
+    var confirmSend = confirm(hasPush
+      ? ("هل تريد إرسال إشعار تجريبي فوري لموبايل الدارس '" + (user.fullName || user.email) + "'؟\n\n🔔 تنبيه: هذا الدارس مفعل للإشعارات وسيهتز هاتفه فوراً حتى وإن كانت الشاشة مقفلة.")
+      : ("تنبيه: الدارس '" + (user.fullName || user.email) + "' لم يقم بتفعيل الإشعارات على هاتفه بعد (🔕 بدون إشعارات)!\n\nهل ترغب في تسجيل الإشعار له في حسابه بالمنصة ليراه فور تسجيل دخوله؟")
+    );
     if (!confirmSend) return;
 
     setSendingNotifUserId(user.id);
@@ -372,7 +376,19 @@ window.UsersManagementPage = function(props) {
     return diffMs <= 5 * 60 * 1000; // نشط خلال الـ 5 دقائق الماضية
   });
 
+  // فحص اشتراك المستخدم في الإشعارات الفورية على الهاتف
+  var isPushEnabled = function(u) {
+    if (!u) return false;
+    if (u.pushSubscription && typeof u.pushSubscription === "string" && u.pushSubscription.indexOf("endpoint") !== -1) return true;
+    if (u.pushSubscriptions && Array.isArray(u.pushSubscriptions) && u.pushSubscriptions.length > 0) return true;
+    return false;
+  };
+  var usersWithPush = users.filter(isPushEnabled);
+  var usersWithoutPush = users.filter(function(u) { return !isPushEnabled(u); });
+
   var filteredUsers = users.filter(function(u) {
+    if (activeFilter === "notifications_on" && !isPushEnabled(u)) return false;
+    if (activeFilter === "notifications_off" && isPushEnabled(u)) return false;
     if (activeFilter === "online") {
       return onlineUsers.some(function(ou) { return ou.id === u.id; });
     }
@@ -510,7 +526,7 @@ window.UsersManagementPage = function(props) {
       // إحصائيات سريعة للطلبات والتواجد الحي
       React.createElement(
         "div",
-        { className: "grid grid-cols-2 sm:grid-cols-4 gap-3" },
+        { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" },
         // بطاقة النشطين الآن
         React.createElement(
           "button",
@@ -562,6 +578,36 @@ window.UsersManagementPage = function(props) {
           },
           React.createElement("span", { className: "text-xs text-slate-500 block font-semibold" }, "المرفوض / المعلق"),
           React.createElement("span", { className: "text-2xl font-black text-rose-600 block mt-1" }, rejectedUsers.length)
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter(activeFilter === "notifications_on" ? "all" : "notifications_on"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "notifications_on"
+                ? "bg-teal-500/15 border-teal-500/50 text-teal-800 dark:text-teal-200 ring-2 ring-teal-500/30"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-teal-300")
+          },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "text-xs text-teal-700 dark:text-teal-400 block font-bold" }, "إشعارات مفعلة 🔔"),
+            React.createElement("span", { className: "text-[10px] text-teal-600 font-bold" }, "✓")
+          ),
+          React.createElement("span", { className: "text-2xl font-black text-teal-600 dark:text-teal-400 block mt-1" }, usersWithPush.length)
+        ),
+        React.createElement(
+          "button",
+          {
+            onClick: function() { setActiveFilter(activeFilter === "notifications_off" ? "all" : "notifications_off"); },
+            className: "p-4 rounded-2xl border text-right transition-all " +
+              (activeFilter === "notifications_off"
+                ? "bg-slate-200/60 dark:bg-slate-800 border-slate-400 text-slate-800 dark:text-slate-200 ring-2 ring-slate-400/30"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400")
+          },
+          React.createElement("div", { className: "flex items-center justify-between" },
+            React.createElement("span", { className: "text-xs text-slate-500 dark:text-slate-400 block font-bold" }, "بدون إشعارات 🔕"),
+            React.createElement("span", { className: "text-[10px] text-slate-400 font-bold" }, "✕")
+          ),
+          React.createElement("span", { className: "text-2xl font-black text-slate-500 dark:text-slate-400 block mt-1" }, usersWithoutPush.length)
         )
       )
     ),
@@ -635,6 +681,20 @@ window.UsersManagementPage = function(props) {
                   }, isPending ? "⏳ بانتظار الاعتماد" : isApproved ? "✓ معتمد ونشط" : "✕ معلق / مرفوض"),
                   u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
                     u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
+                  ),
+                  React.createElement(
+                    "span",
+                    {
+                      className: "inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full " +
+                        (isPushEnabled(u)
+                          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"),
+                      title: isPushEnabled(u)
+                        ? ("الإشعارات الفورية مفعلة على الهاتف" + (u.lastDevice ? (" • " + u.lastDevice) : ""))
+                        : "الإشعارات الفورية غير مفعلة على الهاتف"
+                    },
+                    React.createElement("span", { className: "text-xs" }, isPushEnabled(u) ? "🔔" : "🔕"),
+                    React.createElement("span", null, isPushEnabled(u) ? "إشعارات مفعلة" : "بدون إشعارات")
                   ),
                   u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
                     u.studyYear
@@ -1101,7 +1161,21 @@ window.UsersManagementPage = function(props) {
                       u.studyType && React.createElement("span", { className: "text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-2 py-0.5 rounded-md" },
                         u.studyType === "أكاديمي" ? "🎓 أكاديمي" : "📖 ثقافي"
                       ),
-                      u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
+                      React.createElement(
+                    "span",
+                    {
+                      className: "inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full " +
+                        (isPushEnabled(u)
+                          ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"),
+                      title: isPushEnabled(u)
+                        ? ("الإشعارات الفورية مفعلة على الهاتف" + (u.lastDevice ? (" • " + u.lastDevice) : ""))
+                        : "الإشعارات الفورية غير مفعلة على الهاتف"
+                    },
+                    React.createElement("span", { className: "text-xs" }, isPushEnabled(u) ? "🔔" : "🔕"),
+                    React.createElement("span", null, isPushEnabled(u) ? "إشعارات مفعلة" : "بدون إشعارات")
+                  ),
+                  u.studyYear && React.createElement("span", { className: "text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold px-2 py-0.5 rounded-md" },
                         u.studyYear
                       ),
                       React.createElement(
