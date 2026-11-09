@@ -16,27 +16,42 @@ window.CloudSyncService = {
       }
     };
 
-    // 1. جلب فوري ومباشر وسريع جداً عبر REST API لتخطي أي قيود لشبكات المحمول أو المتصفح الخفي (Incognito)
+    // 1. جلب فوري ومباشر وسريع جداً عبر REST API يدعم الترقيم وتعدد الصفحات (Pagination)
     var fetchRestLectures = function(retryCount) {
       var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
-      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 12000) : null;
+      var timeoutId = controller ? setTimeout(function() { controller.abort(); }, 15000) : null;
       var fetchOpts = {
         cache: "no-store",
         headers: { "Cache-Control": "no-cache", "Pragma": "no-cache" }
       };
       var apiKey = (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey) || "";
-      var restUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/lectures?key=" + apiKey + "&pageSize=100";
+      var baseUrl = "https://firestore.googleapis.com/v1/projects/counseling-study-app/databases/(default)/documents/lectures?key=" + apiKey + "&pageSize=100";
       if (controller) fetchOpts.signal = controller.signal;
 
-      fetch(restUrl, fetchOpts)
-        .then(function(res) {
+      var allDocs = [];
+      var fetchPage = function(pageToken) {
+        var pageUrl = pageToken ? (baseUrl + "&pageToken=" + encodeURIComponent(pageToken)) : baseUrl;
+        return fetch(pageUrl, fetchOpts)
+          .then(function(res) {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          })
+          .then(function(data) {
+            if (data && Array.isArray(data.documents)) {
+              allDocs = allDocs.concat(data.documents);
+            }
+            if (data && data.nextPageToken) {
+              return fetchPage(data.nextPageToken);
+            }
+            return allDocs;
+          });
+      };
+
+      fetchPage(null)
+        .then(function(docs) {
           if (timeoutId) clearTimeout(timeoutId);
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          return res.json();
-        })
-        .then(function(data) {
-          if (data && data.documents && Array.isArray(data.documents)) {
-            var restList = data.documents.map(function(d) { return self.parseFirestoreDoc(d); });
+          if (Array.isArray(docs) && docs.length > 0) {
+            var restList = docs.map(function(d) { return self.parseFirestoreDoc(d); });
             restList = restList.filter(function(l) { return !l.isDeleted; });
             if (restList.length > 0) {
               handleUpdate(restList);
