@@ -13002,7 +13002,9 @@ window.mergeWithDefaultLectures = function(incomingList) {
     }
 
     // 4. تأمين وتوليد المتن الكتابي للدليل الدراسي إذا كان النص الحرفي فارغاً بينما الكائن متوفر
-    if ((!res.writtenSummary || !res.writtenSummary.trim()) && res.summaryData) {
+    // صمام أمان: يُمنع تركيب أي تلخيص للمحاضرة إذا لم تكن مرفوعة برابط أو تفريغ، أو إذا كان summaryData فارغاً
+    var hasLecMediaOrTrans = Boolean((res.mediaUrl && res.mediaUrl.trim()) || (res.transcript && res.transcript.trim().length > 100));
+    if ((!res.writtenSummary || !res.writtenSummary.trim()) && res.summaryData && Array.isArray(res.summaryData.sections) && res.summaryData.sections.length > 0 && hasLecMediaOrTrans) {
       var s = res.summaryData;
       var textParts = [];
       if (s.overview) textParts.push("📌 **الرؤية والسياق العام للمحاضرة:**\n" + s.overview);

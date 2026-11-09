@@ -130,6 +130,13 @@ window.LectureRow = function(props) {
           );
         })(),
         (function() {
+          // صمام أمان صارم: يُمنع منعاً باتاً اعتبار أي ملخص أو إظهار شارة له إذا لم تكن المحاضرة مرفوعة برابط أو تفريغ حقيقي
+          var hasLectureContent = Boolean(
+            (lec.mediaUrl && lec.mediaUrl.trim()) ||
+            (lec.transcript && lec.transcript.trim().length > 100)
+          );
+          if (!hasLectureContent) return null;
+
           var hasRealSummary = Boolean(
             (lec.audioSummaryUrl && lec.audioSummaryUrl.trim()) ||
             (lec.writtenSummary && lec.writtenSummary.trim().length > 30) ||
