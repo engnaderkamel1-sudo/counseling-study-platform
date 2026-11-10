@@ -1001,3 +1001,218 @@ window.APP_UTILS = window.utils = {
     }
   }
 };
+
+
+// منظومة تدقيق المطابقة والتغطية الأكاديمية للمشرف (Admin Quality & Coverage Audit Engine)
+window.LectureAuditHelper = {
+  // 1. تدقيق ومطابقة الدليل الدراسي (الملخص والمخططات)
+  auditSummary: function(lecture, summaryData) {
+    if (!lecture) return null;
+    var transcript = lecture.transcriptText || lecture.transcript || "";
+    var transcriptLen = transcript ? transcript.length : 0;
+    
+    var summary = summaryData || (function() {
+      if (lecture.summaryDataJson) {
+        try { return JSON.parse(lecture.summaryDataJson); } catch(e) {}
+      }
+      return lecture.summaryData || null;
+    })();
+
+    if (!summary || !Array.isArray(summary.sections) || summary.sections.length === 0) {
+      return {
+        percentage: 0,
+        status: "missing",
+        statusText: "لا يوجد ملخص معتمد بعد",
+        color: "text-rose-500",
+        badgeBg: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+        secCount: 0,
+        expectedSections: 0,
+        diagramsCount: 0,
+        transcriptChars: transcriptLen,
+        sections: []
+      };
+    }
+
+    var sections = summary.sections;
+    var secCount = sections.length;
+
+    var expectedSections = 2;
+    if (transcriptLen > 45000) expectedSections = 7;
+    else if (transcriptLen > 25000) expectedSections = 5;
+    else if (transcriptLen > 10000) expectedSections = 3;
+
+    var volumeScore = Math.min(40, Math.round((secCount / expectedSections) * 40));
+
+    var diagramsCount = 0;
+    sections.forEach(function(s) {
+      if (s.visualDiagram && s.visualDiagram.type) diagramsCount++;
+    });
+    var diagramScore = secCount > 0 ? Math.round((diagramsCount / secCount) * 25) : 0;
+
+    var hasOverview = (summary.overview && summary.overview.length > 50) ? 5 : 0;
+    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 3) ? 5 : 0;
+    var hasGlossary = (Array.isArray(summary.glossary) && summary.glossary.length >= 2) ? 5 : 0;
+    var hasTakeaways = (Array.isArray(summary.keyTakeaways) && summary.keyTakeaways.length >= 2) ? 5 : 0;
+    var structScore = hasOverview + hasObjectives + hasGlossary + hasTakeaways;
+
+    var adminKeywords = ["زووم", "zoom", "ساعات التسجيل", "مدة المحاضرة", "وقت الاستراحة", "منصة البث"];
+    var summaryStr = JSON.stringify(summary);
+    var adminViolations = 0;
+    adminKeywords.forEach(function(kw) {
+      if (summaryStr.indexOf(kw) !== -1) adminViolations++;
+    });
+    var sanityScore = Math.max(0, 15 - (adminViolations * 5));
+
+    var totalPercentage = Math.min(100, volumeScore + diagramScore + structScore + sanityScore);
+
+    var statusText = "تغطية ممتازة ومطابقة تامة";
+    var color = "text-emerald-600 dark:text-emerald-400";
+    var badgeBg = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800";
+
+    if (totalPercentage < 70) {
+      statusText = "تغطية منخفضة (بتر محتمل يحتاج استكمالاً)";
+      color = "text-rose-600 dark:text-rose-400";
+      badgeBg = "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800";
+    } else if (totalPercentage < 88) {
+      statusText = "تغطية متوسطة ومقبولة";
+      color = "text-amber-600 dark:text-amber-400";
+      badgeBg = "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800";
+    }
+
+    return {
+      percentage: totalPercentage,
+      statusText: statusText,
+      color: color,
+      badgeBg: badgeBg,
+      volumeScore: volumeScore,
+      diagramScore: diagramScore,
+      structScore: structScore,
+      sanityScore: sanityScore,
+      secCount: secCount,
+      expectedSections: expectedSections,
+      diagramsCount: diagramsCount,
+      transcriptChars: transcriptLen,
+      hasOverview: Boolean(hasOverview),
+      hasObjectives: Boolean(hasObjectives),
+      hasGlossary: Boolean(hasGlossary),
+      hasTakeaways: Boolean(hasTakeaways),
+      adminViolations: adminViolations,
+      sections: sections.map(function(s, idx) {
+        return {
+          order: idx + 1,
+          title: s.title || ("المحور " + (idx + 1)),
+          hasDiagram: Boolean(s.visualDiagram && s.visualDiagram.type),
+          diagramType: s.visualDiagram ? s.visualDiagram.type : null,
+          contentLength: s.content ? s.content.length : 0
+        };
+      })
+    };
+  },
+
+  // 2. تدقيق ومطابقة الكويز التفاعلي
+  auditQuiz: function(lecture, quizQuestions) {
+    if (!lecture) return null;
+    var transcript = lecture.transcriptText || lecture.transcript || "";
+    var transcriptLen = transcript ? transcript.length : 0;
+    
+    var questions = (Array.isArray(quizQuestions) && quizQuestions.length > 0)
+      ? quizQuestions
+      : (Array.isArray(lecture.quizQuestions) ? lecture.quizQuestions : []);
+
+    var summary = (function() {
+      if (lecture.summaryDataJson) {
+        try { return JSON.parse(lecture.summaryDataJson); } catch(e) {}
+      }
+      return lecture.summaryData || null;
+    })();
+    var secCount = (summary && Array.isArray(summary.sections)) ? summary.sections.length : 0;
+
+    if (!questions || questions.length === 0) {
+      return {
+        percentage: 0,
+        status: "missing",
+        statusText: "لا توجد أسئلة كويز مضافة بعد",
+        color: "text-rose-500",
+        badgeBg: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+        qCount: 0,
+        expectedQuestions: 0,
+        questions: []
+      };
+    }
+
+    var qCount = questions.length;
+    var expectedQuestions = secCount > 0 ? Math.min(16, Math.max(6, secCount * 2)) : 8;
+
+    var volumeScore = Math.min(35, Math.round((qCount / expectedQuestions) * 35));
+
+    var hasQuotes = 0;
+    questions.forEach(function(q) {
+      if (q.sourceQuote && q.sourceQuote.trim().length > 15) hasQuotes++;
+    });
+    var quoteScore = Math.round((hasQuotes / qCount) * 25);
+
+    var hasTimestamps = 0;
+    questions.forEach(function(q) {
+      if (q.timestamp && q.timestamp.indexOf(":") !== -1) hasTimestamps++;
+    });
+    var timeScore = Math.round((hasTimestamps / qCount) * 15);
+
+    var hasInsights = 0;
+    questions.forEach(function(q) {
+      if ((q.hint && q.hint.trim().length > 5) || (q.explanation && q.explanation.trim().length > 5)) hasInsights++;
+    });
+    var insightScore = Math.round((hasInsights / qCount) * 15);
+
+    var validOptions = 0;
+    questions.forEach(function(q) {
+      if (Array.isArray(q.options) && q.options.length === 4 && typeof q.correctAnswerIndex === "number" && q.correctAnswerIndex >= 0 && q.correctAnswerIndex <= 3) {
+        validOptions++;
+      }
+    });
+    var optionsScore = Math.round((validOptions / qCount) * 10);
+
+    var totalPercentage = Math.min(100, volumeScore + quoteScore + timeScore + insightScore + optionsScore);
+
+    var statusText = "كويز متكامل وشامل";
+    var color = "text-emerald-600 dark:text-emerald-400";
+    var badgeBg = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800";
+
+    if (totalPercentage < 70) {
+      statusText = "كويز يحتاج استكمالاً وتوثيقاً";
+      color = "text-rose-600 dark:text-rose-400";
+      badgeBg = "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800";
+    } else if (totalPercentage < 88) {
+      statusText = "كويز جيد ومقبول";
+      color = "text-amber-600 dark:text-amber-400";
+      badgeBg = "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800";
+    }
+
+    return {
+      percentage: totalPercentage,
+      statusText: statusText,
+      color: color,
+      badgeBg: badgeBg,
+      volumeScore: volumeScore,
+      quoteScore: quoteScore,
+      timeScore: timeScore,
+      insightScore: insightScore,
+      optionsScore: optionsScore,
+      qCount: qCount,
+      expectedQuestions: expectedQuestions,
+      hasQuotesCount: hasQuotes,
+      hasTimestampsCount: hasTimestamps,
+      hasInsightsCount: hasInsights,
+      validOptionsCount: validOptions,
+      questions: questions.map(function(q, idx) {
+        return {
+          order: idx + 1,
+          question: q.question,
+          timestamp: q.timestamp || "غير محدد",
+          hasQuote: Boolean(q.sourceQuote && q.sourceQuote.length > 15),
+          hasHint: Boolean(q.hint),
+          hasExplanation: Boolean(q.explanation)
+        };
+      })
+    };
+  }
+};

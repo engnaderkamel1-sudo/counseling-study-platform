@@ -20,6 +20,7 @@ window.InteractiveQuizViewer = function(props) {
   var [showFinalScore, setShowFinalScore] = React.useState(false);
   var [showHelp, setShowHelp] = React.useState(false);
   var [showAllQuestionsView, setShowAllQuestionsView] = React.useState(false);
+  var [showQuizAuditModal, setShowQuizAuditModal] = React.useState(false);
 
   // حالة نافذة إضافة وتعديل السؤال يدوياً للمشرف
   var [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -38,6 +39,9 @@ window.InteractiveQuizViewer = function(props) {
   }, [currentIndex]);
 
   var total = questions.length;
+  var quizAudit = (window.LectureAuditHelper && props.lecture)
+    ? window.LectureAuditHelper.auditQuiz(props.lecture, questions)
+    : null;
 
   // فتح نافذة التعديل لسؤال محدد
   var handleOpenEditQuestion = function(idx) {
@@ -328,6 +332,18 @@ window.InteractiveQuizViewer = function(props) {
       ) : React.createElement(
         "div",
         { className: "flex items-center justify-center gap-2 flex-wrap pt-2" },
+        isAdmin && quizAudit && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowQuizAuditModal(true); },
+            className: "px-4 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer",
+            title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
+          },
+          React.createElement("span", null, "📊"),
+          React.createElement("span", null, "فحص مطابقة الكويز"),
+          React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
+        ),
         isAdmin && onRegenerateQuiz && React.createElement(
           "button",
           {
@@ -349,9 +365,166 @@ window.InteractiveQuizViewer = function(props) {
           React.createElement("span", null, "إضافة أول سؤال يدوياً")
         )
       ),
-      renderEditorModal()
+      renderEditorModal(),
+      renderQuizAuditModal()
     );
   }
+
+
+
+  // نافذة تقرير فحص ومطابقة الكويز للمسؤول
+  var renderQuizAuditModal = function() {
+    if (!showQuizAuditModal || !quizAudit) return null;
+
+    return React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget) setShowQuizAuditModal(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-right font-sans" },
+
+        // الرأس
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-2xl" }, "📊"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تقرير فحص جودة ومطابقة الكويز التفاعلي"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, (props.lecture ? props.lecture.title : "الاختبار التفاعلي"))
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+            },
+            "✕"
+          )
+        ),
+
+        // بطاقة النسبة الإجمالية والحالة
+        React.createElement(
+          "div",
+          { className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("span", { className: "text-xs text-slate-500 block font-medium" }, "نسبة المطابقة والتوثيق المعرفي"),
+              React.createElement("span", { className: "text-3xl font-black text-slate-900 dark:text-white" }, quizAudit.percentage + "%")
+            ),
+            React.createElement(
+              "span",
+              { className: "px-3 py-1 rounded-full text-xs font-bold border " + quizAudit.badgeBg },
+              quizAudit.statusText
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" },
+            React.createElement("div", {
+              className: "h-full transition-all duration-500 " + (quizAudit.percentage >= 88 ? "bg-emerald-500" : (quizAudit.percentage >= 70 ? "bg-amber-500" : "bg-rose-500")),
+              style: { width: quizAudit.percentage + "%" }
+            })
+          )
+        ),
+
+        // شبكة المؤشرات الأربعة
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 gap-3" },
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد الأسئلة والشمولية"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.qCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + quizAudit.expectedQuestions + " أسئلة متوقعة")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الشواهد النصية من التفريغ"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasQuotesCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة موثقة باقتباس")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "التتبع الزمني الدقيق"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasTimestampsCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة بتوقيت دقيق")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الإضاءات والشرح التعليمي"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasInsightsCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة بتلميح وتفسير")
+            )
+          )
+        ),
+
+        // قائمة الأسئلة المفحوصة
+        React.createElement(
+          "div",
+          { className: "space-y-2 pt-1" },
+          React.createElement("h4", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "بيان فحص الأسئلة المعتمدة:"),
+          React.createElement(
+            "div",
+            { className: "space-y-1.5 max-h-48 overflow-y-auto pr-1" },
+            quizAudit.questions.map(function(q) {
+              return React.createElement(
+                "div",
+                { key: q.order, className: "flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs" },
+                React.createElement("div", { className: "flex items-center gap-2 truncate pl-2" },
+                  React.createElement("span", { className: "w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-[10px] shrink-0" }, q.order),
+                  React.createElement("span", { className: "truncate font-medium text-slate-800 dark:text-slate-200" }, q.question)
+                ),
+                React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+                  q.timestamp !== "غير محدد" && React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-mono" }, "⏱️ " + q.timestamp),
+                  q.hasQuote && React.createElement("span", { className: "text-emerald-500 font-bold text-[10px]" }, "✓ شاهد")
+                )
+              );
+            })
+          )
+        ),
+
+        // زر الإغلاق
+        React.createElement(
+          "div",
+          { className: "pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(false); },
+              className: "px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+            },
+            "إغلاق"
+          )
+        )
+      )
+    );
+  };
 
   // حساب الدرجة النهائية
   var calculateScore = function() {
@@ -490,6 +663,18 @@ window.InteractiveQuizViewer = function(props) {
         isAdmin && React.createElement(
           "div",
           { className: "flex items-center gap-1.5 flex-wrap" },
+          quizAudit && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(true); },
+              className: "px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer",
+              title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
+            },
+            React.createElement("span", null, "📊"),
+            React.createElement("span", null, "فحص مطابقة الكويز"),
+            React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
+          ),
           onPublishToggle && React.createElement(
             "button",
             {
@@ -962,6 +1147,7 @@ window.InteractiveQuizViewer = function(props) {
     ),
 
     // نافذة محرر السؤال المنبثقة
-    renderEditorModal()
+    renderEditorModal(),
+    renderQuizAuditModal()
   );
 };

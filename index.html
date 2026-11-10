@@ -695,13 +695,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"d340532","date":"2026-11-09 08:53","message":"fix(security): purge legacy summaryData and add strict UI guard preventing summaries for unuploaded lectures"},{"hash":"b0c4741","date":"2026-11-09 08:19","message":"fix: bump cache to v5 to reflect cleared legacy summaries and keep only the 5 approved summaries"},{"hash":"a8cd124","date":"2026-11-09 08:09","message":"fix(sync): support Firestore pagination and add full academic summaries for lectures 11 and 12"},{"hash":"fc6299a","date":"2026-11-08 15:41","message":"feat: add full transcripts and media URLs for lectures 11 (Body 3) and 12 (Self-Image)"},{"hash":"f1510e7","date":"2026-11-08 15:18","message":"Display push notification activation badges and filters in Users Management page"},{"hash":"9931c9d","date":"2026-11-07 22:10","message":"fix(lectures): purge legacy test summaries for lectures 6 and 10 in cloud and upgrade cache version to v3"},{"hash":"dd02992","date":"2026-11-07 22:05","message":"fix(lectures): publish lecture 1, lock lecture 2 as persistent draft, and purge old summaries for lectures 4 and 5 in cloud"},{"hash":"94f4f5e","date":"2026-11-07 21:53","message":"fix(lectures): enforce cumulative non-destructive cloud merge, preserve draft visibility for admins, and fix summary badge flicker"},{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"},{"hash":"e8464ed","date":"2026-11-06 00:20","message":"upgrade lecture 10 to comprehensive textbook standard with firestore sync"}];
+window.APP_UPDATES_HISTORY = [{"hash":"55c1396","date":"2026-11-10 09:20","message":"feat(ai-engine): adopt two-phase generation pipeline, coverage guard, and upgrade lecture 2 to comprehensive 8-section study package"},{"hash":"d340532","date":"2026-11-09 08:53","message":"fix(security): purge legacy summaryData and add strict UI guard preventing summaries for unuploaded lectures"},{"hash":"b0c4741","date":"2026-11-09 08:19","message":"fix: bump cache to v5 to reflect cleared legacy summaries and keep only the 5 approved summaries"},{"hash":"a8cd124","date":"2026-11-09 08:09","message":"fix(sync): support Firestore pagination and add full academic summaries for lectures 11 and 12"},{"hash":"fc6299a","date":"2026-11-08 15:41","message":"feat: add full transcripts and media URLs for lectures 11 (Body 3) and 12 (Self-Image)"},{"hash":"f1510e7","date":"2026-11-08 15:18","message":"Display push notification activation badges and filters in Users Management page"},{"hash":"9931c9d","date":"2026-11-07 22:10","message":"fix(lectures): purge legacy test summaries for lectures 6 and 10 in cloud and upgrade cache version to v3"},{"hash":"dd02992","date":"2026-11-07 22:05","message":"fix(lectures): publish lecture 1, lock lecture 2 as persistent draft, and purge old summaries for lectures 4 and 5 in cloud"},{"hash":"94f4f5e","date":"2026-11-07 21:53","message":"fix(lectures): enforce cumulative non-destructive cloud merge, preserve draft visibility for admins, and fix summary badge flicker"},{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"},{"hash":"a43b81d","date":"2026-11-06 00:48","message":"╪¡╪╕╪▒ ┘é╪╖╪╣┘è ┘ä┘ä╪¿┘è╪º┘å╪º╪¬ ╪º┘ä╪Ñ╪»╪º╪▒┘è╪⌐ ┘ê╪º┘ä┘ä┘ê╪¼╪│╪¬┘è╪⌐ ┘ü┘è ╪º┘ä╪¬┘ä╪«┘è╪╡ ┘ê╪º┘ä┘à╪«╪╖╪╖╪º╪¬ ╪º┘ä╪¿╪╡╪▒┘è╪⌐ ┘à╪╣ ╪¬┘å┘é┘è╪⌐ ╪¬┘ä┘é╪º╪ª┘è╪⌐"},{"hash":"486148c","date":"2026-11-06 00:23","message":"fix(reader): bind interactive font size controller to lecture transcript and study guide sections"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1794295139",
-  buildTime: "2026-11-10T07:18:59",
+  version: "1.2.1794300457",
+  buildTime: "2026-11-10T08:47:37",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -19363,6 +19363,221 @@ window.APP_UTILS = window.utils = {
   }
 };
 
+
+// منظومة تدقيق المطابقة والتغطية الأكاديمية للمشرف (Admin Quality & Coverage Audit Engine)
+window.LectureAuditHelper = {
+  // 1. تدقيق ومطابقة الدليل الدراسي (الملخص والمخططات)
+  auditSummary: function(lecture, summaryData) {
+    if (!lecture) return null;
+    var transcript = lecture.transcriptText || lecture.transcript || "";
+    var transcriptLen = transcript ? transcript.length : 0;
+    
+    var summary = summaryData || (function() {
+      if (lecture.summaryDataJson) {
+        try { return JSON.parse(lecture.summaryDataJson); } catch(e) {}
+      }
+      return lecture.summaryData || null;
+    })();
+
+    if (!summary || !Array.isArray(summary.sections) || summary.sections.length === 0) {
+      return {
+        percentage: 0,
+        status: "missing",
+        statusText: "لا يوجد ملخص معتمد بعد",
+        color: "text-rose-500",
+        badgeBg: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+        secCount: 0,
+        expectedSections: 0,
+        diagramsCount: 0,
+        transcriptChars: transcriptLen,
+        sections: []
+      };
+    }
+
+    var sections = summary.sections;
+    var secCount = sections.length;
+
+    var expectedSections = 2;
+    if (transcriptLen > 45000) expectedSections = 7;
+    else if (transcriptLen > 25000) expectedSections = 5;
+    else if (transcriptLen > 10000) expectedSections = 3;
+
+    var volumeScore = Math.min(40, Math.round((secCount / expectedSections) * 40));
+
+    var diagramsCount = 0;
+    sections.forEach(function(s) {
+      if (s.visualDiagram && s.visualDiagram.type) diagramsCount++;
+    });
+    var diagramScore = secCount > 0 ? Math.round((diagramsCount / secCount) * 25) : 0;
+
+    var hasOverview = (summary.overview && summary.overview.length > 50) ? 5 : 0;
+    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 3) ? 5 : 0;
+    var hasGlossary = (Array.isArray(summary.glossary) && summary.glossary.length >= 2) ? 5 : 0;
+    var hasTakeaways = (Array.isArray(summary.keyTakeaways) && summary.keyTakeaways.length >= 2) ? 5 : 0;
+    var structScore = hasOverview + hasObjectives + hasGlossary + hasTakeaways;
+
+    var adminKeywords = ["زووم", "zoom", "ساعات التسجيل", "مدة المحاضرة", "وقت الاستراحة", "منصة البث"];
+    var summaryStr = JSON.stringify(summary);
+    var adminViolations = 0;
+    adminKeywords.forEach(function(kw) {
+      if (summaryStr.indexOf(kw) !== -1) adminViolations++;
+    });
+    var sanityScore = Math.max(0, 15 - (adminViolations * 5));
+
+    var totalPercentage = Math.min(100, volumeScore + diagramScore + structScore + sanityScore);
+
+    var statusText = "تغطية ممتازة ومطابقة تامة";
+    var color = "text-emerald-600 dark:text-emerald-400";
+    var badgeBg = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800";
+
+    if (totalPercentage < 70) {
+      statusText = "تغطية منخفضة (بتر محتمل يحتاج استكمالاً)";
+      color = "text-rose-600 dark:text-rose-400";
+      badgeBg = "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800";
+    } else if (totalPercentage < 88) {
+      statusText = "تغطية متوسطة ومقبولة";
+      color = "text-amber-600 dark:text-amber-400";
+      badgeBg = "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800";
+    }
+
+    return {
+      percentage: totalPercentage,
+      statusText: statusText,
+      color: color,
+      badgeBg: badgeBg,
+      volumeScore: volumeScore,
+      diagramScore: diagramScore,
+      structScore: structScore,
+      sanityScore: sanityScore,
+      secCount: secCount,
+      expectedSections: expectedSections,
+      diagramsCount: diagramsCount,
+      transcriptChars: transcriptLen,
+      hasOverview: Boolean(hasOverview),
+      hasObjectives: Boolean(hasObjectives),
+      hasGlossary: Boolean(hasGlossary),
+      hasTakeaways: Boolean(hasTakeaways),
+      adminViolations: adminViolations,
+      sections: sections.map(function(s, idx) {
+        return {
+          order: idx + 1,
+          title: s.title || ("المحور " + (idx + 1)),
+          hasDiagram: Boolean(s.visualDiagram && s.visualDiagram.type),
+          diagramType: s.visualDiagram ? s.visualDiagram.type : null,
+          contentLength: s.content ? s.content.length : 0
+        };
+      })
+    };
+  },
+
+  // 2. تدقيق ومطابقة الكويز التفاعلي
+  auditQuiz: function(lecture, quizQuestions) {
+    if (!lecture) return null;
+    var transcript = lecture.transcriptText || lecture.transcript || "";
+    var transcriptLen = transcript ? transcript.length : 0;
+    
+    var questions = (Array.isArray(quizQuestions) && quizQuestions.length > 0)
+      ? quizQuestions
+      : (Array.isArray(lecture.quizQuestions) ? lecture.quizQuestions : []);
+
+    var summary = (function() {
+      if (lecture.summaryDataJson) {
+        try { return JSON.parse(lecture.summaryDataJson); } catch(e) {}
+      }
+      return lecture.summaryData || null;
+    })();
+    var secCount = (summary && Array.isArray(summary.sections)) ? summary.sections.length : 0;
+
+    if (!questions || questions.length === 0) {
+      return {
+        percentage: 0,
+        status: "missing",
+        statusText: "لا توجد أسئلة كويز مضافة بعد",
+        color: "text-rose-500",
+        badgeBg: "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800",
+        qCount: 0,
+        expectedQuestions: 0,
+        questions: []
+      };
+    }
+
+    var qCount = questions.length;
+    var expectedQuestions = secCount > 0 ? Math.min(16, Math.max(6, secCount * 2)) : 8;
+
+    var volumeScore = Math.min(35, Math.round((qCount / expectedQuestions) * 35));
+
+    var hasQuotes = 0;
+    questions.forEach(function(q) {
+      if (q.sourceQuote && q.sourceQuote.trim().length > 15) hasQuotes++;
+    });
+    var quoteScore = Math.round((hasQuotes / qCount) * 25);
+
+    var hasTimestamps = 0;
+    questions.forEach(function(q) {
+      if (q.timestamp && q.timestamp.indexOf(":") !== -1) hasTimestamps++;
+    });
+    var timeScore = Math.round((hasTimestamps / qCount) * 15);
+
+    var hasInsights = 0;
+    questions.forEach(function(q) {
+      if ((q.hint && q.hint.trim().length > 5) || (q.explanation && q.explanation.trim().length > 5)) hasInsights++;
+    });
+    var insightScore = Math.round((hasInsights / qCount) * 15);
+
+    var validOptions = 0;
+    questions.forEach(function(q) {
+      if (Array.isArray(q.options) && q.options.length === 4 && typeof q.correctAnswerIndex === "number" && q.correctAnswerIndex >= 0 && q.correctAnswerIndex <= 3) {
+        validOptions++;
+      }
+    });
+    var optionsScore = Math.round((validOptions / qCount) * 10);
+
+    var totalPercentage = Math.min(100, volumeScore + quoteScore + timeScore + insightScore + optionsScore);
+
+    var statusText = "كويز متكامل وشامل";
+    var color = "text-emerald-600 dark:text-emerald-400";
+    var badgeBg = "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800";
+
+    if (totalPercentage < 70) {
+      statusText = "كويز يحتاج استكمالاً وتوثيقاً";
+      color = "text-rose-600 dark:text-rose-400";
+      badgeBg = "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-300 dark:border-rose-800";
+    } else if (totalPercentage < 88) {
+      statusText = "كويز جيد ومقبول";
+      color = "text-amber-600 dark:text-amber-400";
+      badgeBg = "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300 dark:border-amber-800";
+    }
+
+    return {
+      percentage: totalPercentage,
+      statusText: statusText,
+      color: color,
+      badgeBg: badgeBg,
+      volumeScore: volumeScore,
+      quoteScore: quoteScore,
+      timeScore: timeScore,
+      insightScore: insightScore,
+      optionsScore: optionsScore,
+      qCount: qCount,
+      expectedQuestions: expectedQuestions,
+      hasQuotesCount: hasQuotes,
+      hasTimestampsCount: hasTimestamps,
+      hasInsightsCount: hasInsights,
+      validOptionsCount: validOptions,
+      questions: questions.map(function(q, idx) {
+        return {
+          order: idx + 1,
+          question: q.question,
+          timestamp: q.timestamp || "غير محدد",
+          hasQuote: Boolean(q.sourceQuote && q.sourceQuote.length > 15),
+          hasHint: Boolean(q.hint),
+          hasExplanation: Boolean(q.explanation)
+        };
+      })
+    };
+  }
+};
+
 // Module: utils/embedHelpers.js
 // دالة استخراج معرف فيديو يوتيوب المكون من 11 حرفاً
 window.APP_UTILS.getYouTubeVideoId = function(url) {
@@ -28751,6 +28966,7 @@ window.InteractiveQuizViewer = function(props) {
   var [showFinalScore, setShowFinalScore] = React.useState(false);
   var [showHelp, setShowHelp] = React.useState(false);
   var [showAllQuestionsView, setShowAllQuestionsView] = React.useState(false);
+  var [showQuizAuditModal, setShowQuizAuditModal] = React.useState(false);
 
   // حالة نافذة إضافة وتعديل السؤال يدوياً للمشرف
   var [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -28769,6 +28985,9 @@ window.InteractiveQuizViewer = function(props) {
   }, [currentIndex]);
 
   var total = questions.length;
+  var quizAudit = (window.LectureAuditHelper && props.lecture)
+    ? window.LectureAuditHelper.auditQuiz(props.lecture, questions)
+    : null;
 
   // فتح نافذة التعديل لسؤال محدد
   var handleOpenEditQuestion = function(idx) {
@@ -29059,6 +29278,18 @@ window.InteractiveQuizViewer = function(props) {
       ) : React.createElement(
         "div",
         { className: "flex items-center justify-center gap-2 flex-wrap pt-2" },
+        isAdmin && quizAudit && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowQuizAuditModal(true); },
+            className: "px-4 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer",
+            title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
+          },
+          React.createElement("span", null, "📊"),
+          React.createElement("span", null, "فحص مطابقة الكويز"),
+          React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
+        ),
         isAdmin && onRegenerateQuiz && React.createElement(
           "button",
           {
@@ -29080,9 +29311,166 @@ window.InteractiveQuizViewer = function(props) {
           React.createElement("span", null, "إضافة أول سؤال يدوياً")
         )
       ),
-      renderEditorModal()
+      renderEditorModal(),
+      renderQuizAuditModal()
     );
   }
+
+
+
+  // نافذة تقرير فحص ومطابقة الكويز للمسؤول
+  var renderQuizAuditModal = function() {
+    if (!showQuizAuditModal || !quizAudit) return null;
+
+    return React.createElement(
+      "div",
+      {
+        className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+        onClick: function(e) { if (e.target === e.currentTarget) setShowQuizAuditModal(false); }
+      },
+      React.createElement(
+        "div",
+        { className: "bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-right font-sans" },
+
+        // الرأس
+        React.createElement(
+          "div",
+          { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center gap-2.5" },
+            React.createElement("span", { className: "text-2xl" }, "📊"),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تقرير فحص جودة ومطابقة الكويز التفاعلي"),
+              React.createElement("p", { className: "text-xs text-slate-500" }, (props.lecture ? props.lecture.title : "الاختبار التفاعلي"))
+            )
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(false); },
+              className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+            },
+            "✕"
+          )
+        ),
+
+        // بطاقة النسبة الإجمالية والحالة
+        React.createElement(
+          "div",
+          { className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3" },
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("span", { className: "text-xs text-slate-500 block font-medium" }, "نسبة المطابقة والتوثيق المعرفي"),
+              React.createElement("span", { className: "text-3xl font-black text-slate-900 dark:text-white" }, quizAudit.percentage + "%")
+            ),
+            React.createElement(
+              "span",
+              { className: "px-3 py-1 rounded-full text-xs font-bold border " + quizAudit.badgeBg },
+              quizAudit.statusText
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" },
+            React.createElement("div", {
+              className: "h-full transition-all duration-500 " + (quizAudit.percentage >= 88 ? "bg-emerald-500" : (quizAudit.percentage >= 70 ? "bg-amber-500" : "bg-rose-500")),
+              style: { width: quizAudit.percentage + "%" }
+            })
+          )
+        ),
+
+        // شبكة المؤشرات الأربعة
+        React.createElement(
+          "div",
+          { className: "grid grid-cols-2 gap-3" },
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد الأسئلة والشمولية"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.qCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + quizAudit.expectedQuestions + " أسئلة متوقعة")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الشواهد النصية من التفريغ"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasQuotesCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة موثقة باقتباس")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "التتبع الزمني الدقيق"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasTimestampsCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة بتوقيت دقيق")
+            )
+          ),
+          React.createElement(
+            "div",
+            { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+            React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الإضاءات والشرح التعليمي"),
+            React.createElement("div", { className: "flex items-baseline gap-1" },
+              React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, quizAudit.hasInsightsCount),
+              React.createElement("span", { className: "text-[11px] text-slate-400" }, "أسئلة بتلميح وتفسير")
+            )
+          )
+        ),
+
+        // قائمة الأسئلة المفحوصة
+        React.createElement(
+          "div",
+          { className: "space-y-2 pt-1" },
+          React.createElement("h4", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "بيان فحص الأسئلة المعتمدة:"),
+          React.createElement(
+            "div",
+            { className: "space-y-1.5 max-h-48 overflow-y-auto pr-1" },
+            quizAudit.questions.map(function(q) {
+              return React.createElement(
+                "div",
+                { key: q.order, className: "flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs" },
+                React.createElement("div", { className: "flex items-center gap-2 truncate pl-2" },
+                  React.createElement("span", { className: "w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-[10px] shrink-0" }, q.order),
+                  React.createElement("span", { className: "truncate font-medium text-slate-800 dark:text-slate-200" }, q.question)
+                ),
+                React.createElement("div", { className: "flex items-center gap-1.5 shrink-0" },
+                  q.timestamp !== "غير محدد" && React.createElement("span", { className: "px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-mono" }, "⏱️ " + q.timestamp),
+                  q.hasQuote && React.createElement("span", { className: "text-emerald-500 font-bold text-[10px]" }, "✓ شاهد")
+                )
+              );
+            })
+          )
+        ),
+
+        // زر الإغلاق
+        React.createElement(
+          "div",
+          { className: "pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end" },
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(false); },
+              className: "px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+            },
+            "إغلاق"
+          )
+        )
+      )
+    );
+  };
 
   // حساب الدرجة النهائية
   var calculateScore = function() {
@@ -29221,6 +29609,18 @@ window.InteractiveQuizViewer = function(props) {
         isAdmin && React.createElement(
           "div",
           { className: "flex items-center gap-1.5 flex-wrap" },
+          quizAudit && React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: function() { setShowQuizAuditModal(true); },
+              className: "px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer",
+              title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
+            },
+            React.createElement("span", null, "📊"),
+            React.createElement("span", null, "فحص مطابقة الكويز"),
+            React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
+          ),
           onPublishToggle && React.createElement(
             "button",
             {
@@ -29693,7 +30093,8 @@ window.InteractiveQuizViewer = function(props) {
     ),
 
     // نافذة محرر السؤال المنبثقة
-    renderEditorModal()
+    renderEditorModal(),
+    renderQuizAuditModal()
   );
 };
 
@@ -30425,6 +30826,7 @@ window.LectureViewerModal = function(props) {
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
   var [showClearPackageModal, setShowClearPackageModal] = React.useState(false);
+  var [showSummaryAuditModal, setShowSummaryAuditModal] = React.useState(false);
   var [clearItemsSelection, setClearItemsSelection] = React.useState({
     summary: true,
     quiz: true,
@@ -31789,16 +32191,36 @@ window.LectureViewerModal = function(props) {
               } catch(e) { return []; }
             })();
 
+        var summaryAudit = (window.LectureAuditHelper && activeLecture)
+          ? window.LectureAuditHelper.auditSummary(activeLecture, summaryData)
+          : null;
+
 
 
         return React.createElement(
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // خيارات المسؤول (نشر، تعديل، إعادة توليد)
+          // خيارات المسؤول (نشر، تعديل، إعادة توليد، تدقيق)
           currentUser.role === "admin" && React.createElement(
             "div",
             { className: "flex items-center justify-end p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
+              summaryAudit && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setShowSummaryAuditModal(true); },
+                  className: "px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer",
+                  title: "تدقيق نسبة المطابقة والتغطية الأكاديمية للدليل الدراسي"
+                },
+                React.createElement("span", null, "📊"),
+                React.createElement("span", null, "فحص التغطية والمطابقة"),
+                React.createElement(
+                  "span",
+                  { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + summaryAudit.badgeBg },
+                  summaryAudit.percentage + "%"
+                )
+              ),
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
@@ -32192,6 +32614,7 @@ window.LectureViewerModal = function(props) {
         window.InteractiveQuizViewer ? React.createElement(
           window.InteractiveQuizViewer,
           {
+            lecture: activeLecture,
             quiz: activeLecture.quizQuestions,
             isDraft: getIsDraft("quiz"),
             isAdmin: currentUser.role === "admin",
@@ -33174,7 +33597,169 @@ window.LectureViewerModal = function(props) {
     ),
 
     // نافذة التعديل وإعادة الصياغة بالذكاء الاصطناعي لركن محدد
-    aiEditTarget && React.createElement(
+
+
+    // نافذة تدقيق المطابقة والتغطية للدليل الدراسي للمسؤول
+    showSummaryAuditModal && (function() {
+      var sAudit = (window.LectureAuditHelper && activeLecture)
+        ? window.LectureAuditHelper.auditSummary(activeLecture)
+        : null;
+      if (!sAudit) return null;
+
+      return React.createElement(
+        "div",
+        {
+          className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+          onClick: function(e) { if (e.target === e.currentTarget) setShowSummaryAuditModal(false); }
+        },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-right" },
+
+          // الرأس
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2.5" },
+              React.createElement("span", { className: "text-2xl" }, "📊"),
+              React.createElement(
+                "div",
+                null,
+                React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تقرير فحص مطابقة وتغطية الدليل الدراسي"),
+                React.createElement("p", { className: "text-xs text-slate-500" }, activeLecture.title)
+              )
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowSummaryAuditModal(false); },
+                className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+              },
+              "✕"
+            )
+          ),
+
+          // بطاقة النسبة الإجمالية والحالة
+          React.createElement(
+            "div",
+            { className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("span", { className: "text-xs text-slate-500 block font-medium" }, "نسبة المطابقة والتغطية التقديرية"),
+                React.createElement("span", { className: "text-3xl font-black text-slate-900 dark:text-white" }, sAudit.percentage + "%")
+              ),
+              React.createElement(
+                "span",
+                { className: "px-3 py-1 rounded-full text-xs font-bold border " + sAudit.badgeBg },
+                sAudit.statusText
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" },
+              React.createElement("div", {
+                className: "h-full transition-all duration-500 " + (sAudit.percentage >= 88 ? "bg-emerald-500" : (sAudit.percentage >= 70 ? "bg-amber-500" : "bg-rose-500")),
+                style: { width: sAudit.percentage + "%" }
+              })
+            )
+          ),
+
+          // شبكة المؤشرات الأربعة
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد المحاور المفصلة"),
+              React.createElement("div", { className: "flex items-baseline gap-1" },
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.secCount),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + sAudit.expectedSections + " متوقعة")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية المدمجة"),
+              React.createElement("div", { className: "flex items-baseline gap-1" },
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.diagramsCount),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط لكل محور")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "اكتمال الأركان الأكاديمية"),
+              React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 block" },
+                (sAudit.hasOverview && sAudit.hasObjectives && sAudit.hasGlossary) ? "✅ سياق + أهداف + معجم" : "⚠️ بحاجة لبعض الأركان"
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الأمانة وتصفية الشوائب"),
+              React.createElement("span", { className: "text-xs font-bold " + (sAudit.adminViolations === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500") },
+                sAudit.adminViolations === 0 ? "✅ نقي من الشوائب الإدارية" : "⚠️ يتضمن هوامش تنظيمية"
+              )
+            )
+          ),
+
+          // بيان المحاور المستخرجة
+          React.createElement(
+            "div",
+            { className: "space-y-2 pt-1" },
+            React.createElement("h4", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "قائمة المحاور المشمولة في الدليل:"),
+            React.createElement(
+              "div",
+              { className: "space-y-1.5 max-h-48 overflow-y-auto pr-1" },
+              sAudit.sections.map(function(sec) {
+                return React.createElement(
+                  "div",
+                  { key: sec.order, className: "flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs" },
+                  React.createElement("div", { className: "flex items-center gap-2 truncate pl-2" },
+                    React.createElement("span", { className: "w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-[10px] shrink-0" }, sec.order),
+                    React.createElement("span", { className: "truncate font-medium text-slate-800 dark:text-slate-200" }, sec.title)
+                  ),
+                  sec.hasDiagram ? React.createElement(
+                    "span",
+                    { className: "px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 text-[10px] font-bold shrink-0" },
+                    "🎨 " + sec.diagramType
+                  ) : React.createElement(
+                    "span",
+                    { className: "text-[10px] text-slate-400 shrink-0" },
+                    "بدون رسم"
+                  )
+                );
+              })
+            )
+          ),
+
+          // زر الإغلاق
+          React.createElement(
+            "div",
+            { className: "pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowSummaryAuditModal(false); },
+                className: "px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+              },
+              "إغلاق"
+            )
+          )
+        )
+      );
+    })(),
+
+        aiEditTarget && React.createElement(
       "div",
       {
         className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",

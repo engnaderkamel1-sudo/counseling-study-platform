@@ -28,6 +28,7 @@ window.LectureViewerModal = function(props) {
   var [showPackageModal, setShowPackageModal] = React.useState(false);
   var [showPublishModal, setShowPublishModal] = React.useState(false);
   var [showClearPackageModal, setShowClearPackageModal] = React.useState(false);
+  var [showSummaryAuditModal, setShowSummaryAuditModal] = React.useState(false);
   var [clearItemsSelection, setClearItemsSelection] = React.useState({
     summary: true,
     quiz: true,
@@ -1392,16 +1393,36 @@ window.LectureViewerModal = function(props) {
               } catch(e) { return []; }
             })();
 
+        var summaryAudit = (window.LectureAuditHelper && activeLecture)
+          ? window.LectureAuditHelper.auditSummary(activeLecture, summaryData)
+          : null;
+
 
 
         return React.createElement(
           "div",
           { className: "space-y-5 animate-in fade-in duration-200" },
 
-          // خيارات المسؤول (نشر، تعديل، إعادة توليد)
+          // خيارات المسؤول (نشر، تعديل، إعادة توليد، تدقيق)
           currentUser.role === "admin" && React.createElement(
             "div",
             { className: "flex items-center justify-end p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 gap-2 flex-wrap" },
+              summaryAudit && React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: function() { setShowSummaryAuditModal(true); },
+                  className: "px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer",
+                  title: "تدقيق نسبة المطابقة والتغطية الأكاديمية للدليل الدراسي"
+                },
+                React.createElement("span", null, "📊"),
+                React.createElement("span", null, "فحص التغطية والمطابقة"),
+                React.createElement(
+                  "span",
+                  { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + summaryAudit.badgeBg },
+                  summaryAudit.percentage + "%"
+                )
+              ),
               getIsDraft("summary") && React.createElement(
                 "span",
                 { className: "px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[10px] font-black" },
@@ -1795,6 +1816,7 @@ window.LectureViewerModal = function(props) {
         window.InteractiveQuizViewer ? React.createElement(
           window.InteractiveQuizViewer,
           {
+            lecture: activeLecture,
             quiz: activeLecture.quizQuestions,
             isDraft: getIsDraft("quiz"),
             isAdmin: currentUser.role === "admin",
@@ -2777,7 +2799,169 @@ window.LectureViewerModal = function(props) {
     ),
 
     // نافذة التعديل وإعادة الصياغة بالذكاء الاصطناعي لركن محدد
-    aiEditTarget && React.createElement(
+
+
+    // نافذة تدقيق المطابقة والتغطية للدليل الدراسي للمسؤول
+    showSummaryAuditModal && (function() {
+      var sAudit = (window.LectureAuditHelper && activeLecture)
+        ? window.LectureAuditHelper.auditSummary(activeLecture)
+        : null;
+      if (!sAudit) return null;
+
+      return React.createElement(
+        "div",
+        {
+          className: "fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
+          onClick: function(e) { if (e.target === e.currentTarget) setShowSummaryAuditModal(false); }
+        },
+        React.createElement(
+          "div",
+          { className: "bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-right" },
+
+          // الرأس
+          React.createElement(
+            "div",
+            { className: "flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3" },
+            React.createElement(
+              "div",
+              { className: "flex items-center gap-2.5" },
+              React.createElement("span", { className: "text-2xl" }, "📊"),
+              React.createElement(
+                "div",
+                null,
+                React.createElement("h3", { className: "text-base font-bold text-slate-900 dark:text-white" }, "تقرير فحص مطابقة وتغطية الدليل الدراسي"),
+                React.createElement("p", { className: "text-xs text-slate-500" }, activeLecture.title)
+              )
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowSummaryAuditModal(false); },
+                className: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 flex items-center justify-center text-sm font-bold cursor-pointer"
+              },
+              "✕"
+            )
+          ),
+
+          // بطاقة النسبة الإجمالية والحالة
+          React.createElement(
+            "div",
+            { className: "p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3" },
+            React.createElement(
+              "div",
+              { className: "flex items-center justify-between" },
+              React.createElement(
+                "div",
+                null,
+                React.createElement("span", { className: "text-xs text-slate-500 block font-medium" }, "نسبة المطابقة والتغطية التقديرية"),
+                React.createElement("span", { className: "text-3xl font-black text-slate-900 dark:text-white" }, sAudit.percentage + "%")
+              ),
+              React.createElement(
+                "span",
+                { className: "px-3 py-1 rounded-full text-xs font-bold border " + sAudit.badgeBg },
+                sAudit.statusText
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden" },
+              React.createElement("div", {
+                className: "h-full transition-all duration-500 " + (sAudit.percentage >= 88 ? "bg-emerald-500" : (sAudit.percentage >= 70 ? "bg-amber-500" : "bg-rose-500")),
+                style: { width: sAudit.percentage + "%" }
+              })
+            )
+          ),
+
+          // شبكة المؤشرات الأربعة
+          React.createElement(
+            "div",
+            { className: "grid grid-cols-2 gap-3" },
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد المحاور المفصلة"),
+              React.createElement("div", { className: "flex items-baseline gap-1" },
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.secCount),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + sAudit.expectedSections + " متوقعة")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية المدمجة"),
+              React.createElement("div", { className: "flex items-baseline gap-1" },
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.diagramsCount),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط لكل محور")
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "اكتمال الأركان الأكاديمية"),
+              React.createElement("span", { className: "text-xs font-bold text-emerald-600 dark:text-emerald-400 block" },
+                (sAudit.hasOverview && sAudit.hasObjectives && sAudit.hasGlossary) ? "✅ سياق + أهداف + معجم" : "⚠️ بحاجة لبعض الأركان"
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "الأمانة وتصفية الشوائب"),
+              React.createElement("span", { className: "text-xs font-bold " + (sAudit.adminViolations === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500") },
+                sAudit.adminViolations === 0 ? "✅ نقي من الشوائب الإدارية" : "⚠️ يتضمن هوامش تنظيمية"
+              )
+            )
+          ),
+
+          // بيان المحاور المستخرجة
+          React.createElement(
+            "div",
+            { className: "space-y-2 pt-1" },
+            React.createElement("h4", { className: "text-xs font-bold text-slate-700 dark:text-slate-300" }, "قائمة المحاور المشمولة في الدليل:"),
+            React.createElement(
+              "div",
+              { className: "space-y-1.5 max-h-48 overflow-y-auto pr-1" },
+              sAudit.sections.map(function(sec) {
+                return React.createElement(
+                  "div",
+                  { key: sec.order, className: "flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs" },
+                  React.createElement("div", { className: "flex items-center gap-2 truncate pl-2" },
+                    React.createElement("span", { className: "w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center font-bold text-[10px] shrink-0" }, sec.order),
+                    React.createElement("span", { className: "truncate font-medium text-slate-800 dark:text-slate-200" }, sec.title)
+                  ),
+                  sec.hasDiagram ? React.createElement(
+                    "span",
+                    { className: "px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950/50 text-teal-800 dark:text-teal-300 text-[10px] font-bold shrink-0" },
+                    "🎨 " + sec.diagramType
+                  ) : React.createElement(
+                    "span",
+                    { className: "text-[10px] text-slate-400 shrink-0" },
+                    "بدون رسم"
+                  )
+                );
+              })
+            )
+          ),
+
+          // زر الإغلاق
+          React.createElement(
+            "div",
+            { className: "pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: function() { setShowSummaryAuditModal(false); },
+                className: "px-5 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+              },
+              "إغلاق"
+            )
+          )
+        )
+      );
+    })(),
+
+        aiEditTarget && React.createElement(
       "div",
       {
         className: "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-200",
