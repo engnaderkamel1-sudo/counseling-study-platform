@@ -311,66 +311,6 @@ window.InteractiveQuizViewer = function(props) {
     );
   };
 
-  if (!questions || total === 0) {
-    return React.createElement(
-      "div",
-      { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
-      React.createElement("div", { className: "text-4xl" }, isGenerating ? "⏳" : "📝"),
-      React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" },
-        isGenerating ? "جاري استخراج وتوليد أسئلة الكويز..." : "هذا المحتوى غير متوفر حالياً جاري إعداده"
-      ),
-      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
-        isGenerating
-          ? (generatingStatus || "يقوم الذكاء الاصطناعي الآن بقراءة وتحليل نص وتفريغ المحاضرة واستخراج أسئلة دقيقة...")
-          : "سيتم توفير ونشر أسئلة الاختبار التفاعلي فور الانتهاء من إعدادها وتدقيقها."
-      ),
-      isGenerating ? React.createElement(
-        "div",
-        { className: "pt-2 flex items-center justify-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse" },
-        React.createElement("span", { className: "w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin inline-block" }),
-        React.createElement("span", null, "يرجى الانتظار بضع ثوانٍ حتى اكتمال المعالجة...")
-      ) : React.createElement(
-        "div",
-        { className: "flex items-center justify-center gap-2 flex-wrap pt-2" },
-        isAdmin && quizAudit && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: function() { setShowQuizAuditModal(true); },
-            className: "px-4 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer",
-            title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
-          },
-          React.createElement("span", null, "📊"),
-          React.createElement("span", null, "فحص مطابقة الكويز"),
-          React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
-        ),
-        isAdmin && onRegenerateQuiz && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: onRegenerateQuiz,
-            className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-          },
-          React.createElement("span", null, "🔄"),
-          React.createElement("span", null, "توليد الكويز بالذكاء الاصطناعي")
-        ),
-        isAdmin && React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: handleOpenAddQuestion,
-            className: "px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
-          },
-          React.createElement("span", null, "➕"),
-          React.createElement("span", null, "إضافة أول سؤال يدوياً")
-        )
-      ),
-      renderEditorModal(),
-      renderQuizAuditModal()
-    );
-  }
-
-
 
   // نافذة تقرير فحص ومطابقة الكويز للمسؤول
   var renderQuizAuditModal = function() {
@@ -525,6 +465,67 @@ window.InteractiveQuizViewer = function(props) {
       )
     );
   };
+
+
+  if (!questions || total === 0) {
+    return React.createElement(
+      "div",
+      { className: "p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 space-y-3" },
+      React.createElement("div", { className: "text-4xl" }, isGenerating ? "⏳" : "📝"),
+      React.createElement("h4", { className: "text-sm font-bold text-slate-800 dark:text-slate-200" },
+        isGenerating ? "جاري استخراج وتوليد أسئلة الكويز..." : "هذا المحتوى غير متوفر حالياً جاري إعداده"
+      ),
+      React.createElement("p", { className: "text-xs text-slate-500 max-w-sm mx-auto leading-relaxed" },
+        isGenerating
+          ? (generatingStatus || "يقوم الذكاء الاصطناعي الآن بقراءة وتحليل نص وتفريغ المحاضرة واستخراج أسئلة دقيقة...")
+          : "سيتم توفير ونشر أسئلة الاختبار التفاعلي فور الانتهاء من إعدادها وتدقيقها."
+      ),
+      isGenerating ? React.createElement(
+        "div",
+        { className: "pt-2 flex items-center justify-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 animate-pulse" },
+        React.createElement("span", { className: "w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin inline-block" }),
+        React.createElement("span", null, "يرجى الانتظار بضع ثوانٍ حتى اكتمال المعالجة...")
+      ) : React.createElement(
+        "div",
+        { className: "flex items-center justify-center gap-2 flex-wrap pt-2" },
+        isAdmin && quizAudit && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: function() { setShowQuizAuditModal(true); },
+            className: "px-4 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 hover:bg-teal-100 text-xs font-bold inline-flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer",
+            title: "تدقيق نسبة المطابقة والتوثيق المعرفي للكويز"
+          },
+          React.createElement("span", null, "📊"),
+          React.createElement("span", null, "فحص مطابقة الكويز"),
+          React.createElement("span", { className: "px-2 py-0.5 rounded-full text-[10px] font-black border " + quizAudit.badgeBg }, quizAudit.percentage + "%")
+        ),
+        isAdmin && onRegenerateQuiz && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: onRegenerateQuiz,
+            className: "px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+          },
+          React.createElement("span", null, "🔄"),
+          React.createElement("span", null, "توليد الكويز بالذكاء الاصطناعي")
+        ),
+        isAdmin && React.createElement(
+          "button",
+          {
+            type: "button",
+            onClick: handleOpenAddQuestion,
+            className: "px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-sm inline-flex items-center gap-1.5 transition-all active:scale-95"
+          },
+          React.createElement("span", null, "➕"),
+          React.createElement("span", null, "إضافة أول سؤال يدوياً")
+        )
+      ),
+      renderEditorModal(),
+      renderQuizAuditModal()
+    );
+  }
+
 
   // حساب الدرجة النهائية
   var calculateScore = function() {
