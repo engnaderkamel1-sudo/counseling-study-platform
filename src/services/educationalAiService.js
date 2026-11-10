@@ -647,31 +647,42 @@
     },
 
     // 4.4 توليد خطوة أسئلة الكويز التفاعلي بشكل مستقل مع القطعة المرجعية وزر المساعدة
-    _generateQuizSingleBatch: async function(lectureTitle, lectureContent, count, customInstructions, sectionsReference, startIdNum) {
+    _generateQuizSingleBatch: async function(lectureTitle, lectureContent, customInstructions, batchSections, startIdNum) {
       startIdNum = startIdNum || 1;
-      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محددة من محاضرة المشورة: '" + lectureTitle + "'.\n" +
+      batchSections = Array.isArray(batchSections) ? batchSections : [];
+      var targetCount = batchSections.length * 2;
+
+      var planItems = [];
+      var qCounter = startIdNum;
+      batchSections.forEach(function(s, idx) {
+        var secTitle = s.title || ("النقطة " + (idx + 1));
+        planItems.push(
+          "📌 النقطة المعتمدة رقم (" + (idx + 1) + "): «" + secTitle + "»\n" +
+          "   • السؤال (" + qCounter + "): [مفاهيمي/لغوي/تأصيلي] يختبر الفهم الدقيق للمفهوم والمصطلحات المشروحة في هذه النقطة.\n" +
+          "   • السؤال (" + (qCounter + 1) + "): [تطبيقي/إكلينيكي/مشوري] يختبر التطبيق العملي وكيف يوظف المشير هذه النقطة داخل غرفة المشورة."
+        );
+        qCounter += 2;
+      });
+      var planText = planItems.join("\n\n");
+
+      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي نقاط الدليل الدراسي المعتمدة لمحاضرة المشورة: '" + lectureTitle + "'.\n\n" +
+        "القاعدة الذهبية الصارمة (سؤالان اثنان لكل نقطة معتمدة حصراً دون أي زيادة أو نقصان):\n" +
+        "يجب صياغة السؤالين المحددين لكل نقطة من النقاط التالية بالتمام والكمال (" + targetCount + " أسئلة):\n\n" +
+        planText + "\n\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
-        "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
-        "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
-        "3. التغطية العضوية الشاملة للمحاور المحددة:\n" +
-        "   - صغ بالضبط " + count + " أسئلة لتغطي المحاور التالية بالتساوي (بواقع سؤالين لكل محور):\n" +
-        (Array.isArray(sectionsReference) && sectionsReference.length > 0
-          ? ("   - قائمة المحاور المطلوب تغطيتها في هذه الحزمة:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
-          : "") +
-        "   - لكل محور، احرص على صياغة سؤالين متكاملين:\n" +
-        "     • السؤال الأول: مفاهيمي ولغوي ولاهوتي يقيس الاستيعاب الدقيق للتعريف والفروق العلمية التي ذكرها المحاضر.\n" +
-        "     • السؤال الثاني: تطبيقي وإكلينيكي ورعائي يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة.\n" +
+        "1. الالتزام بسؤالين لكل نقطة معتمدة: صغ بالضبط الـ " + targetCount + " أسئلة المحددة في خطة النقاط أعلاه. يُحظر نهائياً الاكتفاء بسؤال واحد لأي نقطة أو تجاوز سؤالين.\n" +
+        "2. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
+        "3. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +
-        "5. إكمال العدد المطلوب بالتمام (" + count + " أسئلة): يجب صياغة بالضبط " + count + " أسئلة كاملة دون أي نقصان.\n" +
-        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
-        (customInstructions ? ("7. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
+        "5. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
+        (customInstructions ? ("6. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق للنموذج التالي:\n" +
         JSON.stringify({
           questions: [
             {
               id: "q-" + startIdNum,
-              question: "نص السؤال الدقيق المركز على صلب فكرة المحاضر؟",
+              question: "نص السؤال الدقيق المركز على صلب فكرة النقطة المعتمدة؟",
               options: ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
               correctAnswerIndex: 0,
               sourceQuote: "الفقرة النصية المقتبسة نصاً من كلام المحاضر التي تشرح وتثبت صحة هذه الإجابة وموضعها",
@@ -684,7 +695,7 @@
 
       var raw = await window.EducationalAIService.callModel(
         prompt,
-        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب بالعدد المحدد كاملاً.",
+        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب ملتزماً بسؤالين لكل نقطة معتمدة بالتمام.",
         { maxOutputTokens: 8192, temperature: 0.3, responseMimeType: "application/json" }
       );
 
@@ -693,7 +704,6 @@
     },
 
     generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
-      var count = parseInt(quizCount, 10) || 8;
       if (typeof lectureContent === "string") {
         lectureContent = lectureContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
@@ -705,40 +715,58 @@
         throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
       }
 
-      // إذا كانت المحاضرة تحتوي على أكثر من 4 محاور (تتطلب 10 أسئلة فأكثر)،
-      // نقسم التوليد تلقائياً إلى دفعتين متوازيتين لضمان عدم كسل النموذج أو بتر الأسئلة
-      if (Array.isArray(sectionsReference) && sectionsReference.length > 4) {
-        var mid = Math.ceil(sectionsReference.length / 2);
-        var batch1Sections = sectionsReference.slice(0, mid);
-        var batch2Sections = sectionsReference.slice(mid);
-        var count1 = batch1Sections.length * 2;
-        var count2 = batch2Sections.length * 2;
+      var secList = Array.isArray(sectionsReference) ? sectionsReference : [];
 
-        var results = await Promise.all([
-          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count1, customInstructions, batch1Sections, 1),
-          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count2, customInstructions, batch2Sections, count1 + 1)
-        ]);
+      // القاعدة العضوية الذهبية: سؤالان لكل نقطة معتمدة في الدليل الدراسي
+      if (secList.length > 0) {
+        var targetTotal = secList.length * 2;
 
-        var merged = (results[0] || []).concat(results[1] || []);
-        merged.forEach(function(q, i) {
+        // إذا كان عدد النقاط أكبر من 4 (تتطلب أكثر من 8 أسئلة)،
+        // نقسم التوليد إلى دفعتين متوازيتين لنضمن سؤالين لكل نقطة بدون إجهاد النموذج
+        if (secList.length > 4) {
+          var mid = Math.ceil(secList.length / 2);
+          var batch1Sections = secList.slice(0, mid);
+          var batch2Sections = secList.slice(mid);
+
+          var results = await Promise.all([
+            window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, customInstructions, batch1Sections, 1),
+            window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, customInstructions, batch2Sections, (batch1Sections.length * 2) + 1)
+          ]);
+
+          var merged = (results[0] || []).concat(results[1] || []);
+          merged.forEach(function(q, i) {
+            q.id = "q-" + (i + 1);
+          });
+          return { questions: merged, isPublished: false, targetCount: targetTotal };
+        }
+
+        var singleQuestions = await window.EducationalAIService._generateQuizSingleBatch(
+          lectureTitle,
+          lectureContent,
+          customInstructions,
+          secList,
+          1
+        );
+        singleQuestions.forEach(function(q, i) {
           q.id = "q-" + (i + 1);
         });
-        return { questions: merged, isPublished: false, targetCount: count1 + count2 };
+        return { questions: singleQuestions, isPublished: false, targetCount: targetTotal };
       }
 
-      // للحزم الصغيرة (4 محاور فأقل أو عدد أسئلة محدود)
-      var singleQuestions = await window.EducationalAIService._generateQuizSingleBatch(
-        lectureTitle,
-        lectureContent,
-        count,
-        customInstructions,
-        sectionsReference,
-        1
+      // في حال عدم توفر نقاط معتمدة في الدليل الدراسي
+      var fallbackCount = parseInt(quizCount, 10) || 8;
+      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاضرة المشورة: '" + lectureTitle + "'.\n" +
+        "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
+        "صغ بالضبط " + fallbackCount + " سؤالاً يغطي المحاضرة بالتساوي مع الاقتباس والتوقيت والتلميح والتفسير بصيغة JSON.";
+      var rawFallback = await window.EducationalAIService.callModel(
+        prompt,
+        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب.",
+        { maxOutputTokens: 8192, temperature: 0.3, responseMimeType: "application/json" }
       );
-      singleQuestions.forEach(function(q, i) {
-        q.id = "q-" + (i + 1);
-      });
-      return { questions: singleQuestions, isPublished: false, targetCount: count };
+      var parsedFallback = window.EducationalAIService._cleanAndParseJson(rawFallback);
+      var fallbackQs = Array.isArray(parsedFallback.questions) ? parsedFallback.questions : (Array.isArray(parsedFallback) ? parsedFallback : []);
+      fallbackQs.forEach(function(q, i) { q.id = "q-" + (i + 1); });
+      return { questions: fallbackQs, isPublished: false, targetCount: fallbackCount };
     },
 
     // 4.4 توليد المخططات والرسوم البيانية البصرية التفاعلية بأسلوب NotebookLM المعمق

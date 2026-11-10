@@ -317,9 +317,9 @@ window.LectureViewerModal = function(props) {
       if (questions.length < targetQCount) {
         var keepIncomplete = window.confirm(
           "تنبيه حول عدد أسئلة الكويز:\n\n" +
-          "تم استخراج وتوثيق " + questions.length + " سؤالاً بنجاح من أصل " + targetQCount + " سؤالاً طُلبت.\n\n" +
+          "تم استخراج وتوثيق " + questions.length + " سؤالاً من أصل " + targetQCount + " سؤالاً (المطلوب سؤالان لكل نقطة من نقاط الدليل الدراسي الـ " + secList.length + ").\n\n" +
           "• اضغط (موافق / OK) لاعتماد وحفظ هذه الأسئلة (" + questions.length + " سؤال).\n" +
-          "• اضغط (إلغاء / Cancel) لعدم الحفظ وإعادة المحاولة لتوليد العدد كاملاً (" + targetQCount + " سؤال)."
+          "• اضغط (إلغاء / Cancel) لعدم الحفظ وإعادة المحاولة لتوليد سؤالين لكل نقطة بالكامل."
         );
         if (!keepIncomplete) {
           setIsAiGenerating(false);
