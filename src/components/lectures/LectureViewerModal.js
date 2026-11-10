@@ -274,10 +274,18 @@ window.LectureViewerModal = function(props) {
   // إعادة توليد الكويز فقط بالمعايير الصارمة الجديدة والاقتباسات المرجعية
   var handleRegenerateQuizOnly = async function() {
     if (!activeLecture || currentUser.role !== "admin") return;
-    var currentQCount = (Array.isArray(activeLecture.quizQuestions) && activeLecture.quizQuestions.length > 0)
-      ? activeLecture.quizQuestions.length
-      : (parseInt(genQuizCount, 10) || 10);
-    var confirmMsg = "هل تريد إعادة استخراج وتوليد أسئلة الكويز (" + currentQCount + " سؤال) بالمعايير الصارمة الجديدة مع المقتطفات المرجعية من صلب تفريغ المحاضرة؟";
+
+    var summaryData = (function() {
+      if (activeLecture.summaryDataJson) {
+        try { return JSON.parse(activeLecture.summaryDataJson); } catch(e) {}
+      }
+      return activeLecture.summaryData || null;
+    })();
+    var secList = (summaryData && Array.isArray(summaryData.sections)) ? summaryData.sections : [];
+
+    // القاعدة العضوية الصارمة: سؤالان لكل محور معتمد في الدليل الدراسي
+    var targetQCount = secList.length > 0 ? (secList.length * 2) : 10;
+    var confirmMsg = "هل تريد استخراج وتوليد أسئلة الكويز العضوي الشامل (" + targetQCount + " سؤال: سؤالان لكل محور) بالمعايير الصارمة الجديدة مع المقتطفات المرجعية من صلب تفريغ المحاضرة؟";
     if (!window.confirm(confirmMsg)) return;
 
     var content = (activeLecture.transcript || activeLecture.transcriptText || "").trim();
@@ -294,22 +302,24 @@ window.LectureViewerModal = function(props) {
     }
 
     setIsAiGenerating(true);
-    setPackageGenStatus("جاري استخراج أسئلة الكويز المقتبسة بدقة...");
+    setPackageGenStatus("جاري استخراج " + targetQCount + " سؤالاً مقتبساً يغطي محاور المحاضرة...");
     try {
       var quizRes = await window.EducationalAIService.generateQuizOnly(
         activeLecture.title,
         content,
-        currentQCount
+        targetQCount,
+        "",
+        secList
       );
       var questions = Array.isArray(quizRes.questions) ? quizRes.questions : (Array.isArray(quizRes) ? quizRes : []);
       
       // التخيير الصريح للمستخدم في حال كان العدد المستخرج أقل من المطلوب
-      if (questions.length < currentQCount) {
+      if (questions.length < targetQCount) {
         var keepIncomplete = window.confirm(
           "تنبيه حول عدد أسئلة الكويز:\n\n" +
-          "تم استخراج وتوثيق " + questions.length + " سؤالاً بنجاح من أصل " + currentQCount + " سؤالاً طُلبت.\n\n" +
+          "تم استخراج وتوثيق " + questions.length + " سؤالاً بنجاح من أصل " + targetQCount + " سؤالاً طُلبت.\n\n" +
           "• اضغط (موافق / OK) لاعتماد وحفظ هذه الأسئلة (" + questions.length + " سؤال).\n" +
-          "• اضغط (إلغاء / Cancel) لعدم الحفظ وإعادة المحاولة لتوليد العدد كاملاً (" + currentQCount + " سؤال)."
+          "• اضغط (إلغاء / Cancel) لعدم الحفظ وإعادة المحاولة لتوليد العدد كاملاً (" + targetQCount + " سؤال)."
         );
         if (!keepIncomplete) {
           setIsAiGenerating(false);
