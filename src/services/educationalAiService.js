@@ -199,7 +199,11 @@
               for (var c = 0; c < Math.max(0, openBraces); c++) trimmed += "}";
               trimmed = trimmed.replace(/,\s*([\}\]])/g, "$1");
               try {
-                return JSON.parse(trimmed);
+                var rescued = JSON.parse(trimmed);
+                if (rescued && typeof rescued === "object") {
+                  rescued._wasTruncated = true;
+                }
+                return rescued;
               } catch (eTrim) {}
             }
           }
@@ -284,8 +288,9 @@
       // النموذج الأول: نموذج الفلاش فائق السرعة
       // النموذج الثاني: نموذج الإنتاج الرسمي الدائم المعتمد
       var candidateModels = [
+        "gemini-3.5-flash",
         "gemini-3.8-flash",
-        "gemini-3.5-flash"
+        "gemini-flash-latest"
       ];
 
       if (window.GeminiAIService && typeof window.GeminiAIService.fetchSupportedModels === "function") {
@@ -313,7 +318,7 @@
         var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
 
         var controller = new AbortController();
-        var timeoutId = setTimeout(function() { controller.abort(); }, 150000);
+        var timeoutId = setTimeout(function() { controller.abort(); }, 60000);
 
         try {
           var response = await fetch(url, {
@@ -351,7 +356,7 @@
         } catch (netErr) {
           clearTimeout(timeoutId);
           if (netErr.name === "AbortError") {
-            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 150 ثانية): " + modelName;
+            lastError = "استغرق النموذج وقتاً أطول من المتوقع (تجاوز 60 ثانية): " + modelName;
           } else {
             if (netErr.message && netErr.message.includes("مفتاح API")) throw netErr;
             lastError = netErr.message;
@@ -363,9 +368,9 @@
       throw new Error("خوادم الذكاء الاصطناعي تشهد حالياً ذروة ضغط استثنائية لدى جوجل. يرجى الانتظار دقيقة واحدة ثم المحاولة مجدداً: " + lastError);
     },
 
-    // 4.1 توليد خطوة الملخص الموسع بشكل مستقل
-    generateSummaryOnly: async function(lectureTitle, lectureContent, targetPages, customInstructions) {
-      var pages = parseInt(targetPages, 10) || 5;
+    // 4.1 توليد خطوة الملخص الموسع بمعمارية التوليد على مرحلتين وصمام فحص الاكتمال
+    generateSummaryOnly: async function(lectureTitle, lectureContent, targetPages, customInstructions, onProgress) {
+      var pages = parseInt(targetPages, 10) || 7;
       if (typeof lectureContent === "string") {
         lectureContent = lectureContent
           .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
@@ -376,36 +381,150 @@
       if (!lectureContent || lectureContent.length < 100) {
         throw new Error("لا يمكن توليد الدليل الدراسي: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
       }
-      var prompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية والبصرية (Chief Educational & Visual Architect) في معهد المشورة المسيحية الأرثوذكسية.\n" +
+
+      var isLongLecture = lectureContent.length > 18000;
+
+      // للمحاضرات الطويلة (> 18000 حرف ~ أكثر من 25 دقيقة): نطبق معمارية التوليد المتسلسل على مرحلتين لمنع سقف الرموز
+      if (isLongLecture) {
+        if (typeof onProgress === "function") {
+          onProgress("المرحلة 1/3: استخراج خريطة المحاور والتغطية الشاملة لكافة دقائق المحاضرة...");
+        }
+
+        var outlinePrompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية في معهد المشورة المسيحية الأرثوذكسية.\n" +
+          "المطلوب: تحليل النص المرجعي للمحاضرة بدقة متناهية من بدايته وحتى نهايته، واستخراج خريطة المحاور والهدف العام.\n" +
+          "عنوان المحاضرة: '" + lectureTitle + "'\n\n" +
+          "المحتوى المرجعي الكامل للمحاضرة:\n" + lectureContent + "\n\n" +
+          "الشروط الصارمة:\n" +
+          "1. قم بمسح المحاضرة بالكامل واستخراج من 5 إلى 8 محاور رئيسية تغطي 100% من وقت وتسجيل المحاضرة دون إغفال أي قسم.\n" +
+          "2. أمانة علمية مطلقة 100% مستندة لكلام المحاضر فقط.\n" +
+          "3. حظر تام للمعلومات الإدارية والتنظيمية (زووم، أوقات الاستراحة، مدة الفيديو).\n\n" +
+          "أخرج حصراً كائن JSON نقي وفق الهيكل التالي:\n" +
+          JSON.stringify({
+            overview: "ملخص تنفيذي وسياق عام للمحاضرة يوضح الإطار العام والهدف من اللقاء وأهميته للدارس والمشير",
+            learningObjectives: ["هدف تعليمي 1", "هدف تعليمي 2", "هدف تعليمي 3", "هدف تعليمي 4"],
+            topics: [
+              {
+                id: "topic_1",
+                order: 1,
+                title: "عنوان المحور الرئيسي",
+                focusPoints: "إيجاز مكثف في نقطتين عما تناوله المحاضر في هذا الجزء"
+              }
+            ],
+            keyTakeaways: ["خلاصة عملية وتطبيقية للمشير في الخدمة والحياة 1", "خلاصة عملية وتطبيقية 2"],
+            glossary: [
+              {
+                term: "المصطلح أو المفهوم المشوري",
+                definition: "تعريفه وشرحه كما ورد في سياق المحاضرة"
+              }
+            ],
+            reflectionQuestions: ["سؤال تأملي عميق للتقييم الذاتي والنمو الشخصي للمشير", "سؤال نقاشي لدراسة الحالات والتطبيق العملي"]
+          }, null, 2);
+
+        var outlineRaw = await window.EducationalAIService.callModel(
+          outlinePrompt,
+          "أنت مصمم مناهج تعليمية ومستشار في دراسات المشورة المسيحية. قم بالرد الحصري بهيكل JSON النقي المطلوب دون أي كود إضافي.",
+          { maxOutputTokens: 4096, temperature: 0.25, responseMimeType: "application/json" }
+        );
+
+        var outline = window.EducationalAIService._cleanAndParseJson(outlineRaw);
+        var topics = Array.isArray(outline.topics) && outline.topics.length > 0 ? outline.topics : [];
+
+        if (topics.length < 3) {
+          throw new Error("تعذر استخراج خريطة محاور كافية لتغطية المحاضرة بالكامل؛ يرجى المحاولة مرة ثانية.");
+        }
+
+        var mid = Math.ceil(topics.length / 2);
+        var part1Topics = topics.slice(0, mid);
+        var part2Topics = topics.slice(mid);
+
+        var generateSectionsBatch = async function(batchTopics) {
+          var batchPrompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية والبصرية في معهد المشورة المسيحية الأرثوذكسية.\n" +
+            "المطلوب: صياغة المتن الأكاديمي التفصيلي، وركائز التطبيق، والمخطط البصري المركز للمحاور التالية حصراً لمادة: '" + lectureTitle + "':\n" +
+            JSON.stringify(batchTopics, null, 2) + "\n\n" +
+            "المحتوى المرجعي الكامل للمحاضرة للاستناد إليه:\n" + lectureContent + "\n\n" +
+            "الشروط الأكاديمية الصارمة:\n" +
+            "1. لكل محور من المحاور المذكورة أعلاه (" + batchTopics.length + " محاور)، صغ قسماً في 'sections' يحتوي على:\n" +
+            "   - 'title': عنوان المحور المطابق للفهرس.\n" +
+            "   - 'content': شرح تفصيلي موسع ومترابط (من 4 إلى 7 أسطر غنية) لجوهر الفكرة والأمثلة التي ذكرها المحاضر.\n" +
+            "   - 'keyPoints': 3 إلى 4 نقاط جوهرية توضح التطبيق والمثال الأصلي والمحذور الإرشادي.\n" +
+            "   - 'visualDiagram': مخطط بصري منضبط وفق أحد الأنماط (comparison, process, dual_system, cycle, pillars, pyramid).\n" +
+            "2. قاعدة الأمانة العلمية: استند حصراً بنسبة 100% لكلام المحاضر دون أي افتراضات أو هلاوس خارجية.\n" +
+            "3. سلامة البيانات: استبدل أي علامات تنصيص داخلية بالأقواس العربية « ».\n\n" +
+            "يجب الرد الحصري بهيكل JSON نقي:\n" +
+            JSON.stringify({
+              sections: [
+                {
+                  title: batchTopics[0].title,
+                  content: "شرح تفصيلي موسع ومترابط يغطي كافة النقاط والأمثلة والشروحات التي ذكرها المحاضر في هذا الجزء",
+                  keyPoints: ["نقطة جوهرية 1", "نقطة جوهرية 2", "نقطة جوهرية 3"],
+                  visualDiagram: {
+                    id: "sec_vis_" + (batchTopics[0].id || "1"),
+                    type: "pillars",
+                    title: "عنوان المخطط البصري",
+                    subtitle: "الهدف من المخطط",
+                    badge: "المحور الأكاديمي",
+                    pillars: [
+                      { title: "الركن الأول", description: "شرح الركن", directive: "التوجيه المشوري", warning: "المحذور الإرشادي" }
+                    ]
+                  }
+                }
+              ]
+            }, null, 2);
+
+          var rawRes = await window.EducationalAIService.callModel(
+            batchPrompt,
+            "أنت مصمم مناهج تعليمية ومستشار في دراسات المشورة المسيحية. قم بالرد الحصري بهيكل JSON النقي المطلوب دون أي كود إضافي.",
+            { maxOutputTokens: 8192, temperature: 0.25, responseMimeType: "application/json" }
+          );
+          var parsedBatch = window.EducationalAIService._cleanAndParseJson(rawRes);
+          return (parsedBatch && Array.isArray(parsedBatch.sections)) ? parsedBatch.sections : [];
+        };
+
+        if (typeof onProgress === "function") {
+          onProgress("المرحلة 2/3: صياغة المتن والمخططات البصرية للنصف الأول من المحاور...");
+        }
+        var sectionsPart1 = await generateSectionsBatch(part1Topics);
+
+        if (typeof onProgress === "function") {
+          onProgress("المرحلة 3/3: صياغة المتن والمخططات البصرية للنصف الثاني وخاتمة المحاضرة...");
+        }
+        var sectionsPart2 = await generateSectionsBatch(part2Topics);
+
+        var combinedSections = sectionsPart1.concat(sectionsPart2);
+
+        // صمام الأمان الفاحص للاكتمال والتغطية
+        if (combinedSections.length < Math.min(4, topics.length - 1)) {
+          throw new Error("حدث انقطاع جزئي أثناء توليد الأقسام (" + combinedSections.length + " من أصل " + topics.length + " محاور)؛ تم إيقاف الحفظ لحماية الأمانة العلمية. يرجى إعادة المحاولة.");
+        }
+
+        combinedSections.forEach(function(sec) {
+          if (sec.visualDiagram) {
+            sec.visualDiagram = window.EducationalAIService._sanitizeDiagram(sec.visualDiagram);
+          }
+        });
+
+        return {
+          overview: outline.overview || ("دليل دراسي شامل لمادة " + lectureTitle),
+          learningObjectives: outline.learningObjectives || [],
+          sections: combinedSections,
+          keyTakeaways: outline.keyTakeaways || [],
+          glossary: outline.glossary || [],
+          reflectionQuestions: outline.reflectionQuestions || [],
+          isPublished: false,
+          targetPages: pages
+        };
+      }
+
+      // للمحاضرات الأقصر من 18000 حرف: خطوة واحدة مع صمام التحقق
+      var prompt = "أنت كبير معماريي ومصممي المعرفة الأكاديمية والبصرية في معهد المشورة المسيحية الأرثوذكسية.\n" +
         "المطلوب: صياغة دليل دراسي مصور فائق الجودة والعمق بأسلوب Google NotebookLM المعمق لمحاضرة: '" + lectureTitle + "'.\n\n" +
         "المحتوى المرجعي الكامل للمحاضرة:\n" + lectureContent + "\n\n" +
-        "الشروط الأكاديمية الصارمة (قواعد قطعية لا تهاون فيها):\n" +
-        "1. قاعدة الأمانة العلمية الإلزامية (مُحرّم التوقع أو التأليف نهائياً): يُمنع منعاً باتاً ذكر أي رأي شخصي أو معلومة أو نظرية غير واردة صراحة في كلام المحاضر في هذا التسجيل.\n" +
-        "2. حظر قطعي مطلق للبيانات الإدارية والتنظيمية: يُمنع منعاً باتاً ذكر أو تلخيص أو تحويل أي بيانات شكلية أو إدارية إلى نقاط أو بطاقات (مثل: تطبيق زووم، مدة الفيديو، عدد ساعات التسجيل والتدريس، رقم المحاضرة، الجزء الأول أو الثاني، تاريخ اللقاء، منصة البث، وقت الاستراحة، الحضور والغياب). التلخيص والمخططات مخصصة حصراً بنسبة 100% للمحتوى اللاهوتي والنفسي والمشوري الصافي.\n" +
-        "3. الدمج البصري الإلزامي المنضبط والمقيد بالمحتوى الحقيقي (Mandatory Grounded Visual Diagrams):\n" +
-        "   - لكل محور تفصيلي في 'sections'، يجب تصميم مخطط بصري وتطبيقي متكامل في حقل 'visualDiagram' من واقع كلام المحاضر نصاً دون أي اختراع أو هلاوس.\n" +
-        "   - يُمنع منعاً باتاً ترك visualDiagram فارغاً أو null؛ فكل محور يجب أن يحمل بطاقة بصرية وفقاً لأحد الأنماط العلمية المنضبطة التالية حصراً:\n" +
-        "     • النمط comparison (مصفوفة مقارنة بصرية عميقة): يُستخدم عند وجود مفهومين أو مصطلحين متقابلين في كلام المحاضر (مثل سوما وساركس، أو العقل والوجدان، أو المشورة والصداقة، أو التقبل مقابل الموافقة).\n" +
-        "     • النمط process (مسار تسلسلي ومراحل ديناميكية): يُستخدم عند ذكر خطوات أو مراحل متتالية لعملية إرشادية أو علاجية أو نمو شخصي.\n" +
-        "     • النمط dual_system (نظام ثنائي متكامل ومتقابل): يُستخدم عند تشريح نصفي المخ، أو الجهاز السمبثاوي والباراسمبثاوي، أو العقل العاطفي مقابل المنطقي.\n" +
-        "     • النمط cycle (حلقة أو دورة مغلقة أو مثلث علاقات ديناميكي): كدورة الصدمة، أو حلقة الإدمان، أو مثلث كاربمان.\n" +
-        "     • النمط pillars (أركان وأبعاد الموقف التطبيقي للمشير): إذا كان المحور فكرياً عاماً، يُصمم كمخطط أبعاد وتطبيقات إرشادية للمشير توضح: ما هو التوجيه السليم؟ وما هي المحاذير المشورية؟ من واقع نص كلام المحاضر حصراً.\n" +
-        "     • النمط pyramid (هرم متدرج هندسياً): يُستخدم عند وجود تدرج هرمي صريح ذكره المحاضر (كهرم الاحتياجات الإنسانية)، ويكون المستوى 1 في القاعدة والقمة تحمل الوسم isPeak: true.\n" +
-        "   ⚠️ قاعدة منع الهلاوس والتأليف البصري (Zero Hallucination Rule): يُحظر تماماً اختراع أي أشكال أو رموز وهمية لم يذكرها المحاضر، وكل عنصر أو نقطة في المخطط يجب أن تستند صراحة لكلامه في التسجيل.\n" +
-        "   ⚠️ شرط قطعي لسلامة بنية البيانات: يُحظر استخدام علامات التنصيص المزدوجة (\") نهائياً داخل نصوص الشرح أو الأمثلة أو قيم المخططات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
-        "   ⚠️ قواعد إلزامية صارمة لسلامة JSON:\n" +
-        "     - كل اسم خاصية (key) وكل قيمة نصية يجب أن تكون محاطة حصراً بعلامات تنصيص مزدوجة قياسية (\").\n" +
-        "     - يُحظر نهائياً استخدام علامات التنصيص المفردة (') أو كتابة أي اسم خاصية بدون علامات تنصيص مزدوجة.\n" +
-        "     - يُحظر ترك أي فواصل زائدة قبل إغلاق الأقواس المعقوفة أو المربعة.\n" +
-        "4. المرجعية الأكاديمية الشاملة والمعادلة الذهبية للاستيعاب السريع (Comprehensive High-Yield Standard):\n" +
-        "   - التقسيم العضوي التلقائي للمحاور: قسّم المحاضرة إلى محاور رئيسية وافية بحسب التحولات الفكرية الحقيقية للمحاضر في التسجيل دون تقيد مسبق بعدد مصطنع (سواء استلزمت مادة المحاضرة 4 أو 6 أو 8 محاور)؛ تتبع خط سير أفكاره بدقة وموضوعية دون قفز.\n" +
-        "   - بنية المحور المركزة ثلاثية الطبقات (قراءة مكثفة وشاملة في 7 إلى 10 دقائق): في كل محور في 'sections'، التزم بالطبقات الثلاث التالية حصراً:\n" +
-        "     1. المتن الأكاديمي المكثف في 'content' (فقرة من 4 إلى 7 أسطر مركزة): صياغة عربية فصحى نقية ورصينة لجوهر الفكرة دون حشو شفهي، مع الحفظ الحرفي الصارم لكافة المصطلحات الأصيلة (يونانية، نفسية، كتابية) وأسماء النظريات وواضعيها ونقدها (كجبل الثلج، أو هرم ماسلو بتعديله المشوري، أو قاعدة 1 إلى 9 في التشجيع، أو مصطلحات ساركس وسوما وهابتو).\n" +
-        "     2. ركائز التطبيق والمثال في 'keyPoints' (مصفوفة نقاط محددة): رصد الشاهد والمثال التوضيحي الأصلي الذي ذكره المحاضر لتثبيت الفكرة في الذاكرة، والتوجيه المشوري التطبيقي، والمحذور الإرشادي.\n" +
-        "     3. المخطط البصري المركز في 'visualDiagram': بطاقة بصرية وفق أحد الأنماط العلمية تلخص علاقات المحور في ثوانٍ معدودة.\n" +
-        "   - التصفية الصارمة للشوائب والهوامش: احذف تماماً أي مقدمات ترحيبية، أو تفقد للحضور، أو إعلانات، أو تنبيهات إدارية، أو إشارات لمنصة زووم أو التسجيل أو أوقات الاستراحة؛ فالدليل مخصص حصراً بنسبة 100% للمادة اللاهوتية والنفسية والمشورية الصافية.\n" +
-        (customInstructions ? ("5. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
-        "\nيجب الرد الحصري بهيكل JSON نقي مطابق تماماً للنموذج التالي:\n" +
+        "الشروط الأكاديمية الصارمة:\n" +
+        "1. قاعدة الأمانة العلمية الإلزامية (100% من كلام المحاضر فقط).\n" +
+        "2. حظر قطعي مطلق للبيانات الإدارية والتنظيمية (زووم، مدة الفيديو، وقت الاستراحة).\n" +
+        "3. الدمج البصري الإلزامي: لكل محور تفصيلي في 'sections'، صمم مخططاً بصرياً متكاملاً في 'visualDiagram'.\n" +
+        (customInstructions ? ("4. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
+        "\nيجب الرد الحصري بهيكل JSON نقي:\n" +
         JSON.stringify({
           overview: "ملخص تنفيذي وسياق عام للمحاضرة يوضح الإطار العام والهدف من اللقاء وأهميته للدارس والمشير",
           learningObjectives: ["هدف تعليمي أساسي 1", "هدف تعليمي أساسي 2", "هدف تعليمي أساسي 3", "هدف تعليمي أساسي 4"],
@@ -442,6 +561,9 @@
       );
 
       var parsed = window.EducationalAIService._cleanAndParseJson(raw);
+      if (parsed._wasTruncated) {
+        throw new Error("حدث انقطاع في سقف المخرجات أثناء التوليد؛ تم إيقاف الحفظ لضمان سلامة الدليل واكتماله.");
+      }
       if (parsed && Array.isArray(parsed.sections)) {
         parsed.sections.forEach(function(sec) {
           if (sec.visualDiagram) {
