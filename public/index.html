@@ -695,13 +695,13 @@
   <script>
 
 // Updates history
-window.APP_UPDATES_HISTORY = [{"hash":"b0ee910","date":"2026-11-10 11:54","message":"fix(quiz): bind regenerate quiz to organic section count instead of legacy question count"},{"hash":"8e8de7e","date":"2026-11-10 10:49","message":"feat(audit): add admin-only quality and coverage audit engine for summary and quiz cards"},{"hash":"55c1396","date":"2026-11-10 09:20","message":"feat(ai-engine): adopt two-phase generation pipeline, coverage guard, and upgrade lecture 2 to comprehensive 8-section study package"},{"hash":"d340532","date":"2026-11-09 08:53","message":"fix(security): purge legacy summaryData and add strict UI guard preventing summaries for unuploaded lectures"},{"hash":"b0c4741","date":"2026-11-09 08:19","message":"fix: bump cache to v5 to reflect cleared legacy summaries and keep only the 5 approved summaries"},{"hash":"a8cd124","date":"2026-11-09 08:09","message":"fix(sync): support Firestore pagination and add full academic summaries for lectures 11 and 12"},{"hash":"fc6299a","date":"2026-11-08 15:41","message":"feat: add full transcripts and media URLs for lectures 11 (Body 3) and 12 (Self-Image)"},{"hash":"f1510e7","date":"2026-11-08 15:18","message":"Display push notification activation badges and filters in Users Management page"},{"hash":"9931c9d","date":"2026-11-07 22:10","message":"fix(lectures): purge legacy test summaries for lectures 6 and 10 in cloud and upgrade cache version to v3"},{"hash":"dd02992","date":"2026-11-07 22:05","message":"fix(lectures): publish lecture 1, lock lecture 2 as persistent draft, and purge old summaries for lectures 4 and 5 in cloud"},{"hash":"94f4f5e","date":"2026-11-07 21:53","message":"fix(lectures): enforce cumulative non-destructive cloud merge, preserve draft visibility for admins, and fix summary badge flicker"},{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"},{"hash":"77caa46","date":"2026-11-06 00:56","message":"feat(safety): enforce strict transcript requirement for study guide, visuals and quiz generation"}];
+window.APP_UPDATES_HISTORY = [{"hash":"9e6fd38","date":"2026-11-10 12:16","message":"fix(quiz): move renderQuizAuditModal before empty quiz return guard to fix TypeError"},{"hash":"b0ee910","date":"2026-11-10 11:54","message":"fix(quiz): bind regenerate quiz to organic section count instead of legacy question count"},{"hash":"8e8de7e","date":"2026-11-10 10:49","message":"feat(audit): add admin-only quality and coverage audit engine for summary and quiz cards"},{"hash":"55c1396","date":"2026-11-10 09:20","message":"feat(ai-engine): adopt two-phase generation pipeline, coverage guard, and upgrade lecture 2 to comprehensive 8-section study package"},{"hash":"d340532","date":"2026-11-09 08:53","message":"fix(security): purge legacy summaryData and add strict UI guard preventing summaries for unuploaded lectures"},{"hash":"b0c4741","date":"2026-11-09 08:19","message":"fix: bump cache to v5 to reflect cleared legacy summaries and keep only the 5 approved summaries"},{"hash":"a8cd124","date":"2026-11-09 08:09","message":"fix(sync): support Firestore pagination and add full academic summaries for lectures 11 and 12"},{"hash":"fc6299a","date":"2026-11-08 15:41","message":"feat: add full transcripts and media URLs for lectures 11 (Body 3) and 12 (Self-Image)"},{"hash":"f1510e7","date":"2026-11-08 15:18","message":"Display push notification activation badges and filters in Users Management page"},{"hash":"9931c9d","date":"2026-11-07 22:10","message":"fix(lectures): purge legacy test summaries for lectures 6 and 10 in cloud and upgrade cache version to v3"},{"hash":"dd02992","date":"2026-11-07 22:05","message":"fix(lectures): publish lecture 1, lock lecture 2 as persistent draft, and purge old summaries for lectures 4 and 5 in cloud"},{"hash":"94f4f5e","date":"2026-11-07 21:53","message":"fix(lectures): enforce cumulative non-destructive cloud merge, preserve draft visibility for admins, and fix summary badge flicker"},{"hash":"ef54d61","date":"2026-11-07 20:57","message":"Fix push notifications delivery, registration payload, and REST direct subscription sync"},{"hash":"2b96b46","date":"2026-11-07 16:16","message":"fix(ai): add missing comma auto-repair and structural recovery to JSON engine"},{"hash":"bbac87f","date":"2026-11-07 15:47","message":"feat(ai): adopt 100% organic quiz generation based on actual lecture sections and remove shortfall alert"},{"hash":"e35eb7e","date":"2026-11-07 15:23","message":"fix(reader): enable viewport pinch-zoom and make visual diagram text scale with reader font size"},{"hash":"3dd768f","date":"2026-11-07 15:08","message":"fix(lectures): resolve missing summary visibility on mobile/desktop and protect cloud summary data"},{"hash":"552b357","date":"2026-11-07 13:48","message":"refactor(lectures): align clear package modal with 3 core pillars using platform official naming"},{"hash":"c1d5ab9","date":"2026-11-07 11:43","message":"feat(lectures): add selective clear modal for educational package with transcript protection"},{"hash":"2a73cb4","date":"2026-11-07 11:26","message":"fix(parser): replace fragile regex JSON parser with bulletproof state-aware scanner for unescaped newlines and quotes"},{"hash":"7c74500","date":"2026-11-07 11:17","message":"fix(ai-service): upgrade to gemini-3.8-flash as recommended by Google and ban deprecated 2.5/1.5 models"},{"hash":"9db47c7","date":"2026-11-07 11:14","message":"fix(lectures): display session badge only for dates with multiple sessions"},{"hash":"8e7ae07","date":"2026-11-07 11:08","message":"perf(ai-service): prioritize gemini-flash-latest and extend timeout to 150s for comprehensive lectures"},{"hash":"cda5f71","date":"2026-11-07 11:03","message":"Update publish status logic and display \u0027content currently unavailable\u0027 message when empty"},{"hash":"2d7cc07","date":"2026-11-07 10:51","message":"Remove summaries and quizzes except for Lecture 1 (Dr. Magdy Isaac) and preserve all transcripts"},{"hash":"2029b70","date":"2026-11-07 10:39","message":"perf(ai-service): extend model timeout to 90s to accommodate comprehensive multi-section guides"},{"hash":"91e08d1","date":"2026-11-06 20:45","message":"fix(ai-service): lock candidate models to verified account flash models (2.5-flash and flash-latest)"},{"hash":"969d97a","date":"2026-11-06 20:33","message":"feat(ai-service): constrain model fallback to exactly 2 tiers with smart 2s high-demand backoff"},{"hash":"a65dfdf","date":"2026-11-06 19:54","message":"feat(ai-service): implement organic high-yield architecture with flash prioritization and 45s timeout"},{"hash":"6670d18","date":"2026-11-06 18:49","message":"feat(emergency): add standalone emergency safe reader for library, curriculum, and lectures"},{"hash":"1291860","date":"2026-11-06 17:06","message":"fix(syntax): correct string concatenation in prompt definition to fix invalid token error"},{"hash":"1ad537f","date":"2026-11-06 16:33","message":"fix(ai-service): upgrade json parser with state-machine for internal quotes and newlines"},{"hash":"bce01b7","date":"2026-11-06 16:06","message":"feat(ui): remove manual page/quiz count fields from package modal and adopt smart auto-generation standards"},{"hash":"24186a6","date":"2026-11-06 15:54","message":"build: re-bundle index.html and update service worker after merging syntax fixes from remote upload"},{"hash":"0b4a077","date":"2026-11-06 15:43","message":"Add files via upload"},{"hash":"b751613","date":"2026-11-06 12:08","message":"fix(lectures): fix syntax error in summaryDataJson escaped string and rebuild bundle"},{"hash":"86d1d1c","date":"2026-11-06 10:17","message":"feat(ai-engine): enforce zero-hallucination grounded visuals and 2-question quiz standard"},{"hash":"635f9e4","date":"2026-11-06 03:17","message":"clean: backup and clear summaries and quizzes for lectures 2-24, preserve lec1 and transcripts"},{"hash":"fa640db","date":"2026-11-06 02:54","message":"feat(package): remove transcript generation option from package generator modal"},{"hash":"d2aa711","date":"2026-11-06 02:51","message":"feat(ui): ensure Antigravity transcript buttons are always visible on all lectures"},{"hash":"45b4a6f","date":"2026-11-06 02:45","message":"feat(transcript): guide user to Google Antigravity for verbatim transcript extraction"},{"hash":"2751d14","date":"2026-11-06 02:39","message":"feat(transcript): add local python transcript service and connect app button"},{"hash":"1b0962d","date":"2026-11-06 02:27","message":"feat(extension): add browser helper extension and smart transcript fetcher"},{"hash":"87a7d9b","date":"2026-11-06 02:18","message":"restore(lec9): restore verbatim transcript for lecture 9"},{"hash":"4a61b0d","date":"2026-11-06 02:06","message":"fix(transcript): establish official YouTube visitor session to bypass cloud bot blocking"},{"hash":"6ddaede","date":"2026-11-06 01:55","message":"fix(transcript): add comprehensive diagnostic trace"},{"hash":"f8843e3","date":"2026-11-06 01:53","message":"fix(transcript): prioritize clean InnerTube Android protocol without exp=xpe blocking"},{"hash":"4c83081","date":"2026-11-06 01:41","message":"fix(lectures): resiliently merge default lectures with cloud list to prevent lectures disappearing"},{"hash":"1f8a33d","date":"2026-11-06 01:26","message":"feat(transcript-api): upgrade to Android InnerTube protocol and clear lecture 9 transcript for live user test"},{"hash":"bbe3deb","date":"2026-11-06 01:09","message":"feat(transcripts): extract and sync full audio transcripts for term 1 lectures 2 through 10 to firestore and bundle"}];
 // Module: config/appConfig.js
 // إعدادات التطبيق وتخزين المفاتيح
 window.APP_CONFIG = {
   appName: "الرفيق الذكي لدارسي معهد المشورة",
-  version: "1.2.1794305667",
-  buildTime: "2026-11-10T10:14:27",
+  version: "1.2.1794306940",
+  buildTime: "2026-11-10T10:35:41",
   // المفتاح المركزي الافتراضي للتطبيق (محفوظ بصيغة مشفرة غير مكشوفة لروبوتات الفحص الأمني، ويفك تشفيرها تلقائياً بالمتصفح)
   defaultApiKeyEnc: "QVEuQWI4Uk42S2F0RDBWcTAtTWgtdncwbFgxemNsbGN2dHpULTc5QWN5TTMzSFNFeW9xakE=",
   getDefaultApiKey: function() {
@@ -16529,40 +16529,30 @@ window.GeminiAIService = {
     },
 
     // 4.4 توليد خطوة أسئلة الكويز التفاعلي بشكل مستقل مع القطعة المرجعية وزر المساعدة
-    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
-      var count = parseInt(quizCount, 10) || 8;
-      if (typeof lectureContent === "string") {
-        lectureContent = lectureContent
-          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
-          .replace(/عبر\s+زووم/gi, "")
-          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
-          .trim();
-      }
-      if (!lectureContent || lectureContent.length < 100) {
-        throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
-      }
-      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محاضرة المشورة: '" + lectureTitle + "'.\n" +
+    _generateQuizSingleBatch: async function(lectureTitle, lectureContent, count, customInstructions, sectionsReference, startIdNum) {
+      startIdNum = startIdNum || 1;
+      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محددة من محاضرة المشورة: '" + lectureTitle + "'.\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
         "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
         "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
-        "3. التغطية العضوية الشاملة (المعيار الأكاديمي الذهبي: سؤالان لكل محور حقيقي):\n" +
-        "   - تتبع مسار المحاضرة وصغ الأسئلة لتغطي كافة محاور ومفاصل المحاضرة بالتساوي (بواقع سؤالين لكل محور رئيسي تم شرحه في المحاضرة ما مجموعه " + count + " سؤالاً بالتمام):\n" +
+        "3. التغطية العضوية الشاملة للمحاور المحددة:\n" +
+        "   - صغ بالضبط " + count + " أسئلة لتغطي المحاور التالية بالتساوي (بواقع سؤالين لكل محور):\n" +
         (Array.isArray(sectionsReference) && sectionsReference.length > 0
-          ? ("   - قائمة محاور المحاضرة المطلوب تغطيتها بسؤالين لكل محور:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
+          ? ("   - قائمة المحاور المطلوب تغطيتها في هذه الحزمة:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
           : "") +
-        "   - لكل محور رئيسي، احرص على صياغة سؤالين متكاملين:\n" +
-        "     • السؤال الأول (مفاهيمي ولغوي ولاهوتي): يقيس الاستيعاب الدقيق للمصطلح والتعريف والفروق العلمية التي ذكرها المحاضر (مثل الفارق بين ساركس وسوما، أو أركان العقد المشوري).\n" +
-        "     • السؤال الثاني (تطبيقي وإكلينيكي ورعائي): يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة، والتعامل مع حالات وسيناريوهات المخدومين والمحاذير الأخلاقية.\n" +
+        "   - لكل محور، احرص على صياغة سؤالين متكاملين:\n" +
+        "     • السؤال الأول: مفاهيمي ولغوي ولاهوتي يقيس الاستيعاب الدقيق للتعريف والفروق العلمية التي ذكرها المحاضر.\n" +
+        "     • السؤال الثاني: تطبيقي وإكلينيكي ورعائي يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +
-        "5. إكمال العدد المطلوب بدقة (" + count + " سؤال): صغ بالضبط " + count + " سؤالاً دون أي نقصان، مع الحفاظ على إيجاز بليغ ومحكم ومركز في نصوص التلميح والتفسير (جملة أو جملتان مفيدتان لكل حقل) لضمان اكتمال كافة الأسئلة الـ " + count + " بالكامل وتجنب انقطاع النص عند سقف الإخراج.\n" +
-        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (\") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
-        (customInstructions ? ("7. ملاحظات خاصة: " + customInstructions + "\n") : "") +
+        "5. إكمال العدد المطلوب بالتمام (" + count + " أسئلة): يجب صياغة بالضبط " + count + " أسئلة كاملة دون أي نقصان.\n" +
+        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
+        (customInstructions ? ("7. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق للنموذج التالي:\n" +
         JSON.stringify({
           questions: [
             {
-              id: "q-1",
+              id: "q-" + startIdNum,
               question: "نص السؤال الدقيق المركز على صلب فكرة المحاضر؟",
               options: ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
               correctAnswerIndex: 0,
@@ -16576,13 +16566,61 @@ window.GeminiAIService = {
 
       var raw = await window.EducationalAIService.callModel(
         prompt,
-        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب.",
+        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب بالعدد المحدد كاملاً.",
         { maxOutputTokens: 8192, temperature: 0.3, responseMimeType: "application/json" }
       );
 
       var parsed = window.EducationalAIService._cleanAndParseJson(raw);
-      var questions = Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed) ? parsed : []);
-      return { questions: questions, isPublished: false, targetCount: count };
+      return Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed) ? parsed : []);
+    },
+
+    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
+      var count = parseInt(quizCount, 10) || 8;
+      if (typeof lectureContent === "string") {
+        lectureContent = lectureContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
+      }
+
+      // إذا كانت المحاضرة تحتوي على أكثر من 4 محاور (تتطلب 10 أسئلة فأكثر)،
+      // نقسم التوليد تلقائياً إلى دفعتين متوازيتين لضمان عدم كسل النموذج أو بتر الأسئلة
+      if (Array.isArray(sectionsReference) && sectionsReference.length > 4) {
+        var mid = Math.ceil(sectionsReference.length / 2);
+        var batch1Sections = sectionsReference.slice(0, mid);
+        var batch2Sections = sectionsReference.slice(mid);
+        var count1 = batch1Sections.length * 2;
+        var count2 = batch2Sections.length * 2;
+
+        var results = await Promise.all([
+          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count1, customInstructions, batch1Sections, 1),
+          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count2, customInstructions, batch2Sections, count1 + 1)
+        ]);
+
+        var merged = (results[0] || []).concat(results[1] || []);
+        merged.forEach(function(q, i) {
+          q.id = "q-" + (i + 1);
+        });
+        return { questions: merged, isPublished: false, targetCount: count1 + count2 };
+      }
+
+      // للحزم الصغيرة (4 محاور فأقل أو عدد أسئلة محدود)
+      var singleQuestions = await window.EducationalAIService._generateQuizSingleBatch(
+        lectureTitle,
+        lectureContent,
+        count,
+        customInstructions,
+        sectionsReference,
+        1
+      );
+      singleQuestions.forEach(function(q, i) {
+        q.id = "q-" + (i + 1);
+      });
+      return { questions: singleQuestions, isPublished: false, targetCount: count };
     },
 
     // 4.4 توليد المخططات والرسوم البيانية البصرية التفاعلية بأسلوب NotebookLM المعمق
@@ -19397,25 +19435,70 @@ window.LectureAuditHelper = {
     var sections = summary.sections;
     var secCount = sections.length;
 
-    var expectedSections = 2;
-    if (transcriptLen > 45000) expectedSections = 7;
-    else if (transcriptLen > 25000) expectedSections = 5;
-    else if (transcriptLen > 10000) expectedSections = 3;
+    // 1. معيار كثافة وعمق الشرح الأكاديمي (40 نقطة):
+    // يقيس المجموع الإجمالي لمتن المحاور مجتمعة ونسبته لحجم المحاضرة،
+    // مع خلو البنية من المحاور الصورية الفارغة دون إلزام كل محور بطول موحد.
+    var totalContentLen = sections.reduce(function(acc, s) {
+      return acc + ((s.content && typeof s.content === "string") ? s.content.trim().length : 0);
+    }, 0);
 
-    var volumeScore = Math.min(40, Math.round((secCount / expectedSections) * 40));
+    var targetTotalLen = 4000;
+    if (transcriptLen > 50000) targetTotalLen = 8000;
+    else if (transcriptLen > 25000) targetTotalLen = 6000;
+    else if (transcriptLen > 10000) targetTotalLen = 4000;
+    else targetTotalLen = 2500;
 
-    var diagramsCount = 0;
+    var depthRatio = Math.min(1, totalContentLen / targetTotalLen);
+    var depthScore = Math.round(depthRatio * 30);
+
+    var emptySectionsCount = 0;
     sections.forEach(function(s) {
-      if (s.visualDiagram && s.visualDiagram.type) diagramsCount++;
+      var len = (s.content && typeof s.content === "string") ? s.content.trim().length : 0;
+      if (len < 80) emptySectionsCount++;
     });
-    var diagramScore = secCount > 0 ? Math.round((diagramsCount / secCount) * 25) : 0;
+    var structureIntegrityScore = Math.max(0, 10 - (emptySectionsCount * 5));
+    var volumeScore = Math.min(40, depthScore + structureIntegrityScore);
 
-    var hasOverview = (summary.overview && summary.overview.length > 50) ? 5 : 0;
-    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 3) ? 5 : 0;
+    // 2. معيار المخططات والرسوم البصرية التخصصية (25 نقطة كاملة دون تخفيض):
+    // - 15 نقطة لتغطية المحاور بالرسوم (تتحقق إذا غطت الرسوم 70% فأكثر من المحاور، أو بلغت 5 مخططات فأكثر لمحاضرة دسمة)
+    // - 10 نقاط لجودة وعمق هيكل المخطط ذاته وخلوه من الرسوم الصورية الفارغة
+    var diagramsCount = 0;
+    var richDiagramsCount = 0;
+    sections.forEach(function(s) {
+      if (s.visualDiagram && s.visualDiagram.type) {
+        diagramsCount++;
+        var diag = s.visualDiagram;
+        var isRich = false;
+        if (diag.type === "comparison" && diag.left && diag.right) isRich = true;
+        else if (diag.type === "dual_system" && diag.leftWing && diag.rightWing) isRich = true;
+        else if (diag.type === "cycle" && Array.isArray(diag.stages) && diag.stages.length >= 2) isRich = true;
+        else if (diag.type === "process" && Array.isArray(diag.steps) && diag.steps.length >= 2) isRich = true;
+        else if (diag.type === "pillars" && Array.isArray(diag.pillars) && diag.pillars.length >= 2) isRich = true;
+        else if (diag.title && (diag.description || diag.subtitle)) isRich = true;
+        if (isRich) richDiagramsCount++;
+      }
+    });
+
+    var diagCoverageRatio = secCount > 0 ? (diagramsCount / secCount) : 0;
+    var diagCoverageScore = 0;
+    if (diagramsCount >= 5 || diagCoverageRatio >= 0.70) {
+      diagCoverageScore = 15;
+    } else {
+      diagCoverageScore = Math.round((diagramsCount / Math.max(1, Math.ceil(secCount * 0.75))) * 15);
+    }
+    diagCoverageScore = Math.min(15, diagCoverageScore);
+
+    var diagQualityScore = diagramsCount > 0 ? Math.round((richDiagramsCount / diagramsCount) * 10) : 0;
+    var diagramScore = Math.min(25, diagCoverageScore + diagQualityScore);
+
+    // 3. معيار الأركان الأكاديمية الأربعة (20 نقطة - 5 نقاط لكل ركن):
+    var hasOverview = (summary.overview && summary.overview.trim().length > 40) ? 5 : 0;
+    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 2) ? 5 : 0;
     var hasGlossary = (Array.isArray(summary.glossary) && summary.glossary.length >= 2) ? 5 : 0;
     var hasTakeaways = (Array.isArray(summary.keyTakeaways) && summary.keyTakeaways.length >= 2) ? 5 : 0;
     var structScore = hasOverview + hasObjectives + hasGlossary + hasTakeaways;
 
+    // 4. معيار النقاء من الشوائب الإدارية والتنظيمية (15 نقطة):
     var adminKeywords = ["زووم", "zoom", "ساعات التسجيل", "مدة المحاضرة", "وقت الاستراحة", "منصة البث"];
     var summaryStr = JSON.stringify(summary);
     var adminViolations = 0;
@@ -19450,8 +19533,10 @@ window.LectureAuditHelper = {
       structScore: structScore,
       sanityScore: sanityScore,
       secCount: secCount,
-      expectedSections: expectedSections,
+      totalContentLen: totalContentLen,
+      targetTotalLen: targetTotalLen,
       diagramsCount: diagramsCount,
+      richDiagramsCount: richDiagramsCount,
       transcriptChars: transcriptLen,
       hasOverview: Boolean(hasOverview),
       hasObjectives: Boolean(hasObjectives),
@@ -19502,7 +19587,7 @@ window.LectureAuditHelper = {
     }
 
     var qCount = questions.length;
-    var expectedQuestions = secCount > 0 ? Math.min(16, Math.max(6, secCount * 2)) : 8;
+    var expectedQuestions = secCount > 0 ? (secCount * 2) : 10;
 
     var volumeScore = Math.min(35, Math.round((qCount / expectedQuestions) * 35));
 
@@ -33689,19 +33774,19 @@ window.LectureViewerModal = function(props) {
             React.createElement(
               "div",
               { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
-              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد المحاور المفصلة"),
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "كثافة وعمق الشرح الأكاديمي"),
               React.createElement("div", { className: "flex items-baseline gap-1" },
-                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.secCount),
-                React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + sAudit.expectedSections + " متوقعة")
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, (sAudit.totalContentLen || 0).toLocaleString()),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "حرف عبر " + sAudit.secCount + " محاور")
               )
             ),
             React.createElement(
               "div",
               { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
-              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية المدمجة"),
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية والرسوم"),
               React.createElement("div", { className: "flex items-baseline gap-1" },
                 React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.diagramsCount),
-                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط لكل محور")
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط تخصصي (" + sAudit.diagramScore + "/25)")
               )
             ),
             React.createElement(

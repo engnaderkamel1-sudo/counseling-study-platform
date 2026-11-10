@@ -647,40 +647,30 @@
     },
 
     // 4.4 توليد خطوة أسئلة الكويز التفاعلي بشكل مستقل مع القطعة المرجعية وزر المساعدة
-    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
-      var count = parseInt(quizCount, 10) || 8;
-      if (typeof lectureContent === "string") {
-        lectureContent = lectureContent
-          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
-          .replace(/عبر\s+زووم/gi, "")
-          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
-          .trim();
-      }
-      if (!lectureContent || lectureContent.length < 100) {
-        throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
-      }
-      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محاضرة المشورة: '" + lectureTitle + "'.\n" +
+    _generateQuizSingleBatch: async function(lectureTitle, lectureContent, count, customInstructions, sectionsReference, startIdNum) {
+      startIdNum = startIdNum || 1;
+      var prompt = "المطلوب: إعداد وتوليد بنك أسئلة كويز تفاعلي استيعابي وتطبيقي يغطي محاور محددة من محاضرة المشورة: '" + lectureTitle + "'.\n" +
         "محتوى المحاضرة المرجعي الكامل:\n" + lectureContent + "\n\n" +
         "الشروط والمعايير الأكاديمية الصارمة:\n" +
         "1. شرط الاقتباس المرجعي الدقيق والموجز (sourceQuote & timestamp): لكل سؤال يُصاغ، استخرج واقتبس العبارة أو الجملة الجوهرية الصريحة من كلام المحاضر في سطر واحد مركز ومختصر (جملة واحدة فقط دون أي فواصل أسطر Enter حقيقية) في حقل 'sourceQuote'، مع تحديد التوقيت الزمني الدقيق بالدقيقة والثانية من الفيديو (مثل: '14:25' أو '01:05:30') في حقل 'timestamp'. إذا كانت الفكرة غير مشروحة بنص وتوقيت صريح، يُحظر صياغة سؤال عنها نهائياً.\n" +
         "2. حظر أسئلة المجاملات والشكليات البحتة: يُمنع منعاً باتاً صياغة أي سؤال عن التحيات الشكلية، الترحيب الودي العابر، الواجبات، أو الترتيبات التنظيمية. يجب أن يختبر كل سؤال فكرة أو مفهوماً أو تمييزاً أو مهارة مشورية حقيقية شرحها المحاضر.\n" +
-        "3. التغطية العضوية الشاملة (المعيار الأكاديمي الذهبي: سؤالان لكل محور حقيقي):\n" +
-        "   - تتبع مسار المحاضرة وصغ الأسئلة لتغطي كافة محاور ومفاصل المحاضرة بالتساوي (بواقع سؤالين لكل محور رئيسي تم شرحه في المحاضرة ما مجموعه " + count + " سؤالاً بالتمام):\n" +
+        "3. التغطية العضوية الشاملة للمحاور المحددة:\n" +
+        "   - صغ بالضبط " + count + " أسئلة لتغطي المحاور التالية بالتساوي (بواقع سؤالين لكل محور):\n" +
         (Array.isArray(sectionsReference) && sectionsReference.length > 0
-          ? ("   - قائمة محاور المحاضرة المطلوب تغطيتها بسؤالين لكل محور:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
+          ? ("   - قائمة المحاور المطلوب تغطيتها في هذه الحزمة:\n" + sectionsReference.map(function(s, idx) { return "     " + (idx + 1) + ". " + (s.title || ""); }).join("\n") + "\n")
           : "") +
-        "   - لكل محور رئيسي، احرص على صياغة سؤالين متكاملين:\n" +
-        "     • السؤال الأول (مفاهيمي ولغوي ولاهوتي): يقيس الاستيعاب الدقيق للمصطلح والتعريف والفروق العلمية التي ذكرها المحاضر (مثل الفارق بين ساركس وسوما، أو أركان العقد المشوري).\n" +
-        "     • السؤال الثاني (تطبيقي وإكلينيكي ورعائي): يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة، والتعامل مع حالات وسيناريوهات المخدومين والمحاذير الأخلاقية.\n" +
+        "   - لكل محور، احرص على صياغة سؤالين متكاملين:\n" +
+        "     • السؤال الأول: مفاهيمي ولغوي ولاهوتي يقيس الاستيعاب الدقيق للتعريف والفروق العلمية التي ذكرها المحاضر.\n" +
+        "     • السؤال الثاني: تطبيقي وإكلينيكي ورعائي يقيس كيف يوظف المشير هذا المفهوم عملياً داخل غرفة المشورة.\n" +
         "4. جودة الخيارات والتفسير: 4 خيارات حصرية وذكية، ورقم الإجابة الصحيحة (0 أو 1 أو 2 أو 3)، مع تلميح توجيهي (hint) يوجه ذهن الدارس، وتفسير تعليمي رصين (explanation).\n" +
-        "5. إكمال العدد المطلوب بدقة (" + count + " سؤال): صغ بالضبط " + count + " سؤالاً دون أي نقصان، مع الحفاظ على إيجاز بليغ ومحكم ومركز في نصوص التلميح والتفسير (جملة أو جملتان مفيدتان لكل حقل) لضمان اكتمال كافة الأسئلة الـ " + count + " بالكامل وتجنب انقطاع النص عند سقف الإخراج.\n" +
-        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (\") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
-        (customInstructions ? ("7. ملاحظات خاصة: " + customInstructions + "\n") : "") +
+        "5. إكمال العدد المطلوب بالتمام (" + count + " أسئلة): يجب صياغة بالضبط " + count + " أسئلة كاملة دون أي نقصان.\n" +
+        "6. شرط قطعي لسلامة صيغة JSON: يُحظر استخدام علامات التنصيص المزدوجة (") نهائياً داخل نصوص الاقتباسات أو الشرح لتجنب تلف بنية البيانات، واستبدلها دائماً بالأقواس العربية « » عند الاقتباس الداخلي.\n" +
+        (customInstructions ? ("7. توجيهات إضافية خاصة: " + customInstructions + "\n") : "") +
         "\nيجب الرد الحصري بهيكل JSON نقي مطابق للنموذج التالي:\n" +
         JSON.stringify({
           questions: [
             {
-              id: "q-1",
+              id: "q-" + startIdNum,
               question: "نص السؤال الدقيق المركز على صلب فكرة المحاضر؟",
               options: ["الخيار الأول", "الخيار الثاني", "الخيار الثالث", "الخيار الرابع"],
               correctAnswerIndex: 0,
@@ -694,13 +684,61 @@
 
       var raw = await window.EducationalAIService.callModel(
         prompt,
-        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب.",
+        "أنت واضع اختبارات وأستاذ قياس وتقويم في علوم المشورة المسيحية. أخرج حصراً كائن JSON النقي المطلوب بالعدد المحدد كاملاً.",
         { maxOutputTokens: 8192, temperature: 0.3, responseMimeType: "application/json" }
       );
 
       var parsed = window.EducationalAIService._cleanAndParseJson(raw);
-      var questions = Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed) ? parsed : []);
-      return { questions: questions, isPublished: false, targetCount: count };
+      return Array.isArray(parsed.questions) ? parsed.questions : (Array.isArray(parsed) ? parsed : []);
+    },
+
+    generateQuizOnly: async function(lectureTitle, lectureContent, quizCount, customInstructions, sectionsReference) {
+      var count = parseInt(quizCount, 10) || 8;
+      if (typeof lectureContent === "string") {
+        lectureContent = lectureContent
+          .replace(/محاضرة\s+أونلاين\s+عبر\s+زووم\s*\([^)]*\)\s*[-–—]?/gi, "")
+          .replace(/عبر\s+زووم/gi, "")
+          .replace(/\(من\s+\d+\s+إلى\s+\d+\s+(مساءً|صباحاً|ظهراً)\)/gi, "")
+          .trim();
+      }
+      if (!lectureContent || lectureContent.length < 100) {
+        throw new Error("لا يمكن توليد أسئلة الكويز: محتوى تفريغ المحاضرة غير متوفر أو غير كافٍ لضمان الأمانة العلمية.");
+      }
+
+      // إذا كانت المحاضرة تحتوي على أكثر من 4 محاور (تتطلب 10 أسئلة فأكثر)،
+      // نقسم التوليد تلقائياً إلى دفعتين متوازيتين لضمان عدم كسل النموذج أو بتر الأسئلة
+      if (Array.isArray(sectionsReference) && sectionsReference.length > 4) {
+        var mid = Math.ceil(sectionsReference.length / 2);
+        var batch1Sections = sectionsReference.slice(0, mid);
+        var batch2Sections = sectionsReference.slice(mid);
+        var count1 = batch1Sections.length * 2;
+        var count2 = batch2Sections.length * 2;
+
+        var results = await Promise.all([
+          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count1, customInstructions, batch1Sections, 1),
+          window.EducationalAIService._generateQuizSingleBatch(lectureTitle, lectureContent, count2, customInstructions, batch2Sections, count1 + 1)
+        ]);
+
+        var merged = (results[0] || []).concat(results[1] || []);
+        merged.forEach(function(q, i) {
+          q.id = "q-" + (i + 1);
+        });
+        return { questions: merged, isPublished: false, targetCount: count1 + count2 };
+      }
+
+      // للحزم الصغيرة (4 محاور فأقل أو عدد أسئلة محدود)
+      var singleQuestions = await window.EducationalAIService._generateQuizSingleBatch(
+        lectureTitle,
+        lectureContent,
+        count,
+        customInstructions,
+        sectionsReference,
+        1
+      );
+      singleQuestions.forEach(function(q, i) {
+        q.id = "q-" + (i + 1);
+      });
+      return { questions: singleQuestions, isPublished: false, targetCount: count };
     },
 
     // 4.4 توليد المخططات والرسوم البيانية البصرية التفاعلية بأسلوب NotebookLM المعمق

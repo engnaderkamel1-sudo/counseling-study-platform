@@ -1036,25 +1036,70 @@ window.LectureAuditHelper = {
     var sections = summary.sections;
     var secCount = sections.length;
 
-    var expectedSections = 2;
-    if (transcriptLen > 45000) expectedSections = 7;
-    else if (transcriptLen > 25000) expectedSections = 5;
-    else if (transcriptLen > 10000) expectedSections = 3;
+    // 1. معيار كثافة وعمق الشرح الأكاديمي (40 نقطة):
+    // يقيس المجموع الإجمالي لمتن المحاور مجتمعة ونسبته لحجم المحاضرة،
+    // مع خلو البنية من المحاور الصورية الفارغة دون إلزام كل محور بطول موحد.
+    var totalContentLen = sections.reduce(function(acc, s) {
+      return acc + ((s.content && typeof s.content === "string") ? s.content.trim().length : 0);
+    }, 0);
 
-    var volumeScore = Math.min(40, Math.round((secCount / expectedSections) * 40));
+    var targetTotalLen = 4000;
+    if (transcriptLen > 50000) targetTotalLen = 8000;
+    else if (transcriptLen > 25000) targetTotalLen = 6000;
+    else if (transcriptLen > 10000) targetTotalLen = 4000;
+    else targetTotalLen = 2500;
 
-    var diagramsCount = 0;
+    var depthRatio = Math.min(1, totalContentLen / targetTotalLen);
+    var depthScore = Math.round(depthRatio * 30);
+
+    var emptySectionsCount = 0;
     sections.forEach(function(s) {
-      if (s.visualDiagram && s.visualDiagram.type) diagramsCount++;
+      var len = (s.content && typeof s.content === "string") ? s.content.trim().length : 0;
+      if (len < 80) emptySectionsCount++;
     });
-    var diagramScore = secCount > 0 ? Math.round((diagramsCount / secCount) * 25) : 0;
+    var structureIntegrityScore = Math.max(0, 10 - (emptySectionsCount * 5));
+    var volumeScore = Math.min(40, depthScore + structureIntegrityScore);
 
-    var hasOverview = (summary.overview && summary.overview.length > 50) ? 5 : 0;
-    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 3) ? 5 : 0;
+    // 2. معيار المخططات والرسوم البصرية التخصصية (25 نقطة كاملة دون تخفيض):
+    // - 15 نقطة لتغطية المحاور بالرسوم (تتحقق إذا غطت الرسوم 70% فأكثر من المحاور، أو بلغت 5 مخططات فأكثر لمحاضرة دسمة)
+    // - 10 نقاط لجودة وعمق هيكل المخطط ذاته وخلوه من الرسوم الصورية الفارغة
+    var diagramsCount = 0;
+    var richDiagramsCount = 0;
+    sections.forEach(function(s) {
+      if (s.visualDiagram && s.visualDiagram.type) {
+        diagramsCount++;
+        var diag = s.visualDiagram;
+        var isRich = false;
+        if (diag.type === "comparison" && diag.left && diag.right) isRich = true;
+        else if (diag.type === "dual_system" && diag.leftWing && diag.rightWing) isRich = true;
+        else if (diag.type === "cycle" && Array.isArray(diag.stages) && diag.stages.length >= 2) isRich = true;
+        else if (diag.type === "process" && Array.isArray(diag.steps) && diag.steps.length >= 2) isRich = true;
+        else if (diag.type === "pillars" && Array.isArray(diag.pillars) && diag.pillars.length >= 2) isRich = true;
+        else if (diag.title && (diag.description || diag.subtitle)) isRich = true;
+        if (isRich) richDiagramsCount++;
+      }
+    });
+
+    var diagCoverageRatio = secCount > 0 ? (diagramsCount / secCount) : 0;
+    var diagCoverageScore = 0;
+    if (diagramsCount >= 5 || diagCoverageRatio >= 0.70) {
+      diagCoverageScore = 15;
+    } else {
+      diagCoverageScore = Math.round((diagramsCount / Math.max(1, Math.ceil(secCount * 0.75))) * 15);
+    }
+    diagCoverageScore = Math.min(15, diagCoverageScore);
+
+    var diagQualityScore = diagramsCount > 0 ? Math.round((richDiagramsCount / diagramsCount) * 10) : 0;
+    var diagramScore = Math.min(25, diagCoverageScore + diagQualityScore);
+
+    // 3. معيار الأركان الأكاديمية الأربعة (20 نقطة - 5 نقاط لكل ركن):
+    var hasOverview = (summary.overview && summary.overview.trim().length > 40) ? 5 : 0;
+    var hasObjectives = (Array.isArray(summary.learningObjectives) && summary.learningObjectives.length >= 2) ? 5 : 0;
     var hasGlossary = (Array.isArray(summary.glossary) && summary.glossary.length >= 2) ? 5 : 0;
     var hasTakeaways = (Array.isArray(summary.keyTakeaways) && summary.keyTakeaways.length >= 2) ? 5 : 0;
     var structScore = hasOverview + hasObjectives + hasGlossary + hasTakeaways;
 
+    // 4. معيار النقاء من الشوائب الإدارية والتنظيمية (15 نقطة):
     var adminKeywords = ["زووم", "zoom", "ساعات التسجيل", "مدة المحاضرة", "وقت الاستراحة", "منصة البث"];
     var summaryStr = JSON.stringify(summary);
     var adminViolations = 0;
@@ -1089,8 +1134,10 @@ window.LectureAuditHelper = {
       structScore: structScore,
       sanityScore: sanityScore,
       secCount: secCount,
-      expectedSections: expectedSections,
+      totalContentLen: totalContentLen,
+      targetTotalLen: targetTotalLen,
       diagramsCount: diagramsCount,
+      richDiagramsCount: richDiagramsCount,
       transcriptChars: transcriptLen,
       hasOverview: Boolean(hasOverview),
       hasObjectives: Boolean(hasObjectives),
@@ -1141,7 +1188,7 @@ window.LectureAuditHelper = {
     }
 
     var qCount = questions.length;
-    var expectedQuestions = secCount > 0 ? Math.min(16, Math.max(6, secCount * 2)) : 8;
+    var expectedQuestions = secCount > 0 ? (secCount * 2) : 10;
 
     var volumeScore = Math.min(35, Math.round((qCount / expectedQuestions) * 35));
 

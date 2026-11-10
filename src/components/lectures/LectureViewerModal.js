@@ -2890,19 +2890,19 @@ window.LectureViewerModal = function(props) {
             React.createElement(
               "div",
               { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
-              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "عدد المحاور المفصلة"),
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "كثافة وعمق الشرح الأكاديمي"),
               React.createElement("div", { className: "flex items-baseline gap-1" },
-                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.secCount),
-                React.createElement("span", { className: "text-[11px] text-slate-400" }, "من " + sAudit.expectedSections + " متوقعة")
+                React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, (sAudit.totalContentLen || 0).toLocaleString()),
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "حرف عبر " + sAudit.secCount + " محاور")
               )
             ),
             React.createElement(
               "div",
               { className: "p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1" },
-              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية المدمجة"),
+              React.createElement("span", { className: "text-[11px] text-slate-500 block" }, "المخططات البصرية والرسوم"),
               React.createElement("div", { className: "flex items-baseline gap-1" },
                 React.createElement("span", { className: "text-lg font-black text-slate-800 dark:text-slate-100" }, sAudit.diagramsCount),
-                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط لكل محور")
+                React.createElement("span", { className: "text-[11px] text-slate-400" }, "مخطط تخصصي (" + sAudit.diagramScore + "/25)")
               )
             ),
             React.createElement(
